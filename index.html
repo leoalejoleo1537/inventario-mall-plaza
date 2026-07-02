@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventario Café Mall Plaza</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#f7f6f3; --card:#ffffff; --border:#e3e1da; --text:#2c2c2a; --muted:#767570;
+    --red-bg:#fcebeb; --red-fg:#a32d2d;
+    --green-bg:#eaf3de; --green-fg:#3b6d11;
+    --amber-bg:#faeeda; --amber-fg:#854f0b;
+    --gray-bg:#f1efe8; --gray-fg:#5f5e5a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  header{position:sticky;top:0;background:var(--bg);padding:16px 16px 8px;z-index:10;border-bottom:1px solid var(--border)}
+  .wrap{max-width:900px;margin:0 auto;padding:0 16px}
+  h1{font-size:18px;font-weight:600;margin:12px 0}
+  .status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .status .dot{width:8px;height:8px;border-radius:50%;background:#3b6d11}
+  .status.off .dot{background:#a32d2d}
+  .controls{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+  input[type=text],select{flex:1;min-width:160px;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:var(--card);color:var(--text)}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+  .mcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;user-select:none}
+  .mcard.sel{border-color:var(--text);border-width:2px}
+  .mcard .n{font-size:22px;font-weight:600}
+  .mcard .l{font-size:11px;color:var(--muted);margin-top:2px}
+  .list{margin-top:8px}
+  .row{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+  .row .dot{width:10px;height:10px;border-radius:50%}
+  .row .name{font-size:14px;font-weight:500}
+  .row .sub{font-size:12px;color:var(--muted)}
+  .row .right{display:flex;align-items:center;gap:8px}
+  .pill{font-size:11px;padding:3px 8px;border-radius:6px;white-space:nowrap;font-weight:600}
+  .row input[type=number]{width:64px;height:36px;text-align:center;border:1px solid var(--border);border-radius:8px;font-size:15px}
+  .count{font-size:12px;color:var(--muted);margin:8px 0}
+  footer{text-align:center;padding:24px;font-size:11px;color:var(--muted)}
+  .saving{opacity:0.5}
+  ::placeholder{color:#a8a69f}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h1>Inventario — Café Mall Plaza</h1>
+      <span class="status" id="status"><span class="dot"></span><span id="statusText">conectando…</span></span>
+    </div>
+    <div class="controls">
+      <input type="text" id="q" placeholder="Buscar producto…">
+      <select id="rubro"></select>
+    </div>
+    <div class="metrics">
+      <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
+      <div class="mcard" data-f="ok"><div class="n" id="c-ok" style="color:var(--green-fg)">0</div><div class="l">En rango</div></div>
+      <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
+      <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
+    </div>
+  </div>
+</header>
+<div class="wrap">
+  <div class="count" id="count"></div>
+  <div class="list" id="list"></div>
+</div>
+<footer>Café Mall Plaza · sincronizado en tiempo real</footer>
+
+<script>
+const SUPABASE_URL = 'https://fqjdecjsbnicvyrxkxcu.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_P5TfG3nhMG3oNT9VLs16_w_iKHvktwl';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let DATA = [];
+let filterState = null;
+
+const qEl = document.getElementById('q');
+const rubroEl = document.getElementById('rubro');
+const listEl = document.getElementById('list');
+const countEl = document.getElementById('count');
+const statusEl = document.getElementById('status');
+const statusTextEl = document.getElementById('statusText');
+
+function maxOk(p){ return p.stock_max != null && (p.stock_min == null || p.stock_max > p.stock_min); }
+function estado(p){
+  const a = p.stock_actual;
+  if (a == null) return 'sindato';
+  if (p.stock_min != null && a <= p.stock_min) return 'critico';
+  if (maxOk(p) && a > p.stock_max) return 'sobre';
+  return 'ok';
+}
+const CFG = {
+  critico: {bg:'var(--red-bg)', fg:'var(--red-fg)', t:'Crítico'},
+  ok: {bg:'var(--green-bg)', fg:'var(--green-fg)', t:'En rango'},
+  sobre: {bg:'var(--amber-bg)', fg:'var(--amber-fg)', t:'Sobre-stock'},
+  sindato: {bg:'var(--gray-bg)', fg:'var(--gray-fg)', t:'Sin dato'},
+};
+const fmt = n => n == null ? '—' : (Math.round(n*100)/100);
+
+function populateRubros(){
+  const rubros = [...new Set(DATA.map(d=>d.rubro))].sort();
+  rubroEl.innerHTML = '<option value="">Todos los rubros</option>' + rubros.map(r=>`<option>${r}</option>`).join('');
+}
+
+function metrics(){
+  const m = {critico:0, ok:0, sobre:0, sindato:0};
+  DATA.forEach(p => m[estado(p)]++);
+  for (const k in m) document.getElementById('c-'+k).textContent = m[k];
+}
+
+function render(){
+  const q = qEl.value.trim().toLowerCase();
+  const rf = rubroEl.value;
+  let rows = DATA.filter(p =>
+    (!q || p.producto.toLowerCase().includes(q)) &&
+    (!rf || p.rubro === rf) &&
+    (!filterState || estado(p) === filterState)
+  );
+  const order = {critico:0, sindato:1, sobre:2, ok:3};
+  rows.sort((a,b)=> order[estado(a)] - order[estado(b)] || a.producto.localeCompare(b.producto));
+  countEl.textContent = `${rows.length} de ${DATA.length} productos`;
+
+  listEl.innerHTML = rows.map(p=>{
+    const e = estado(p), cf = CFG[e];
+    return `<div class="row" data-row="${p.id}">
+      <span class="dot" style="background:${cf.fg}"></span>
+      <div>
+        <div class="name">${p.producto}</div>
+        <div class="sub">${p.rubro} · mín ${fmt(p.stock_min)}${maxOk(p) ? ' · máx '+fmt(p.stock_max) : ''}</div>
+      </div>
+      <div class="right">
+        <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
+        <input type="number" step="0.5" value="${p.stock_actual==null?'':p.stock_actual}" data-id="${p.id}" aria-label="Stock de ${p.producto}">
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function loadData(){
+  const { data, error } = await sb.from('productos').select('*').eq('activo','SÍ').order('producto');
+  if (error){ statusTextEl.textContent = 'error de conexión'; statusEl.classList.add('off'); console.error(error); return; }
+  DATA = data;
+  populateRubros();
+  metrics();
+  render();
+  statusTextEl.textContent = 'en vivo';
+  statusEl.classList.remove('off');
+}
+
+let saveTimers = {};
+async function saveStock(id, value){
+  const row = document.querySelector(`.row[data-row="${id}"]`);
+  if (row) row.classList.add('saving');
+  const { error } = await sb.from('productos').update({ stock_actual: value, updated_at: new Date().toISOString() }).eq('id', id);
+  if (row) row.classList.remove('saving');
+  if (error) { alert('No se pudo guardar. Revisa tu conexión.'); console.error(error); }
+}
+
+listEl.addEventListener('change', e => {
+  const inp = e.target.closest('input[data-id]');
+  if (!inp) return;
+  const id = +inp.dataset.id;
+  const val = inp.value === '' ? null : +inp.value;
+  const p = DATA.find(d=>d.id===id);
+  p.stock_actual = val;
+  metrics();
+  render();
+  saveStock(id, val);
+});
+
+qEl.addEventListener('input', render);
+rubroEl.addEventListener('change', render);
+document.querySelectorAll('.mcard').forEach(c=>{
+  c.addEventListener('click', ()=>{
+    const f = c.dataset.f;
+    filterState = filterState === f ? null : f;
+    document.querySelectorAll('.mcard').forEach(x=>x.classList.toggle('sel', x.dataset.f===filterState));
+    render();
+  });
+});
+
+sb.channel('productos-realtime')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'productos' }, payload => {
+    const row = payload.new;
+    if (!row || !row.id) return;
+    const idx = DATA.findIndex(d=>d.id===row.id);
+    if (idx >= 0) DATA[idx] = row; else DATA.push(row);
+    metrics();
+    render();
+  })
+  .subscribe(status => {
+    if (status === 'SUBSCRIBED'){ statusTextEl.textContent = 'en vivo'; statusEl.classList.remove('off'); }
+  });
+
+loadData();
+</script>
+</body>
+</html>
