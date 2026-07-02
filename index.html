@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inventario Café Mall Plaza</title>
+<title>Inventario</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -19,11 +19,24 @@
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  /* ---------- pantalla de selección (gate) ---------- */
+  .gate{position:fixed;inset:0;background:linear-gradient(160deg,var(--navy),var(--navy2));display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .gate.hidden{display:none}
+  .gate-box{background:#fff;border-radius:20px;padding:34px 26px;max-width:390px;width:100%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.45)}
+  .gate-logo{font-size:27px;font-weight:800;color:var(--navy);letter-spacing:-.5px}
+  .gate-sub{font-size:15px;color:var(--muted);margin:8px 0 26px}
+  .gate-btn{display:flex;align-items:center;gap:14px;width:100%;padding:20px 22px;margin-bottom:12px;border-radius:14px;border:2px solid var(--border);background:#fff;font-size:18px;font-weight:700;color:var(--text);cursor:pointer;transition:.15s;text-align:left}
+  .gate-btn:hover{border-color:var(--orange);background:#FFF7F3;transform:translateY(-1px)}
+  .gate-btn:last-child{margin-bottom:0}
+  .gate-btn .em{font-size:26px}
   /* ---------- top bar ---------- */
   .topbar{background:var(--navy);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:20}
-  .topbar .inner{max-width:900px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
-  .topbar h1{font-size:19px;font-weight:700;margin:0}
-  .live{font-size:12px;display:flex;align-items:center;gap:6px;color:#cdd6e0}
+  .topbar .inner{max-width:900px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .topbar h1{font-size:19px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+  .btn-switch{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .btn-switch:hover{background:rgba(255,255,255,.22)}
+  .live{font-size:12px;display:flex;align-items:center;gap:6px;color:#cdd6e0;white-space:nowrap}
   .live .dot{width:8px;height:8px;border-radius:50%;background:#4CAF50}
   .live.off .dot{background:#e53935}
   /* ---------- tabs (FUDO pills) ---------- */
@@ -89,10 +102,23 @@
 </head>
 <body>
 
+<!-- ================= SELECTOR DE SEDE (obligatorio al abrir) ================= -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">Inventario</div>
+    <p class="gate-sub">¿Qué inventario quieres abrir?</p>
+    <button class="gate-btn" data-sede="plaza"><span class="em">☕</span> Café Mall Plaza</button>
+    <button class="gate-btn" data-sede="angamos"><span class="em">🏬</span> Parque Angamos</button>
+  </div>
+</div>
+
 <div class="topbar">
   <div class="inner">
-    <h1>Inventario · Café Mall Plaza</h1>
-    <span class="live" id="live"><span class="dot"></span><span id="liveText">conectando…</span></span>
+    <h1 id="topTitle">Inventario</h1>
+    <div class="top-right">
+      <button class="btn-switch" id="btnCambiar">⇄ Cambiar sede</button>
+      <span class="live" id="live"><span class="dot"></span><span id="liveText">—</span></span>
+    </div>
   </div>
 </div>
 
@@ -164,12 +190,20 @@
   </div>
 </div>
 
-<footer>Café Mall Plaza · sincronizado en tiempo real</footer>
+<footer id="footText">Inventario · sincronizado en tiempo real</footer>
 
 <script>
 const SUPABASE_URL = 'https://fqjdecjsbnicvyrxkxcu.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_P5TfG3nhMG3oNT9VLs16_w_iKHvktwl';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ---------------- sedes ---------------- */
+const SEDES = {
+  plaza:   { label:'Café Mall Plaza',  excel:'plaza'   },
+  angamos: { label:'Parque Angamos',   excel:'angamos' },
+};
+let SEDE = null;
+let channel = null;
 
 let DATA = [];
 let filterState = null;
@@ -208,6 +242,33 @@ function vencChip(p){
   return `<span class="${cls}">${txt}</span>`;
 }
 
+/* ---------------- selección de sede ---------------- */
+function pickSede(s){
+  SEDE = s;
+  $('topTitle').textContent = 'Inventario · ' + SEDES[s].label;
+  $('footText').textContent = SEDES[s].label + ' · sincronizado en tiempo real';
+  // reset estado/filtros
+  DATA=[]; filterState=null; modalProd=null;
+  document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
+  qEl.value=''; rubroEl.value='';
+  // volver a la pestaña Inventario
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
+  $('view-inv').style.display='block'; $('view-hist').style.display='none';
+  listEl.innerHTML=''; countEl.textContent='';
+  $('gate').classList.add('hidden');
+  $('liveText').textContent='conectando…'; $('live').classList.remove('off');
+  loadData();
+  subscribeRealtime();
+}
+function showGate(){
+  if(channel){ sb.removeChannel(channel); channel=null; }
+  SEDE=null;
+  $('gate').classList.remove('hidden');
+  $('liveText').textContent='—';
+}
+document.querySelectorAll('.gate-btn').forEach(b=>b.addEventListener('click',()=>pickSede(b.dataset.sede)));
+$('btnCambiar').addEventListener('click',showGate);
+
 /* ---------------- inventario ---------------- */
 function populateRubros(){
   const rubros=[...new Set(DATA.map(d=>d.rubro))].sort();
@@ -239,7 +300,7 @@ function render(){
   }).join('');
 }
 async function loadData(){
-  const {data,error}=await sb.from('productos').select('*').eq('activo','SÍ').order('producto');
+  const {data,error}=await sb.from('productos').select('*').eq('sede',SEDE).eq('activo','SÍ').order('producto');
   if(error){$('liveText').textContent='error de conexión';$('live').classList.add('off');console.error(error);return;}
   DATA=data;
   hasVenc = DATA.length>0 && ('vencimiento' in DATA[0]);
@@ -297,13 +358,15 @@ $('m-guardar').addEventListener('click',async()=>{
   const num=el=>el.value===''?null:+el.value;
   const fields={stock_actual:num($('m-stock')),stock_min:num($('m-min')),stock_max:num($('m-max'))};
   if(modalProd.rubro==='Sándwiches' && hasVenc) fields.vencimiento=$('m-venc').value||null;
+  const savedId=modalProd.id;
   Object.assign(modalProd,fields);
   metrics(); render(); closeModal();
-  await saveFields(modalProd?.id ?? fields.id, fields);
+  await saveFields(savedId, fields);
 });
 
 /* ---------------- tabs ---------------- */
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  if(!SEDE)return;
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
   const tab=t.dataset.tab;
   $('view-inv').style.display = tab==='inv'?'block':'none';
@@ -315,7 +378,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 async function loadHistorial(){
   $('hist-detail').style.display='none'; $('hist-home').style.display='block';
   const box=$('hist-list');
-  const {data,error}=await sb.from('historial').select('fecha');
+  const {data,error}=await sb.from('historial').select('fecha').eq('sede',SEDE);
   if(error){
     box.innerHTML='<div class="empty">El historial aún no está activado en la base de datos.<br>Pídele a Claude el SQL para activarlo.</div>';
     return;
@@ -335,7 +398,7 @@ $('hist-list').addEventListener('click',e=>{
 let histRows=[], histFecha='';
 async function openHistDetail(fecha){
   histFecha=fecha;
-  const {data,error}=await sb.from('historial').select('*').eq('fecha',fecha).order('producto');
+  const {data,error}=await sb.from('historial').select('*').eq('sede',SEDE).eq('fecha',fecha).order('producto');
   if(error){alert('No se pudo cargar ese día.');return;}
   histRows=data;
   $('hist-home').style.display='none'; $('hist-detail').style.display='block';
@@ -363,17 +426,17 @@ $('btnExcel').addEventListener('click',()=>{
   ws['!cols']=[{wch:11},{wch:34},{wch:22},{wch:8},{wch:8},{wch:8},{wch:12},{wch:12}];
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Inventario');
-  XLSX.writeFile(wb,`inventario-plaza-${histFecha}.xlsx`);
+  XLSX.writeFile(wb,`inventario-${SEDES[SEDE].excel}-${histFecha}.xlsx`);
 });
 $('btnGuardarHoy').addEventListener('click',async()=>{
   const fecha=hoyISO();
   const btn=$('btnGuardarHoy'); btn.disabled=true; btn.textContent='Guardando…';
   try{
-    const {data:ex,error:e1}=await sb.from('historial').select('id').eq('fecha',fecha).limit(1);
+    const {data:ex,error:e1}=await sb.from('historial').select('id').eq('sede',SEDE).eq('fecha',fecha).limit(1);
     if(e1){alert('El historial aún no está activado en la base de datos. Pídele a Claude el SQL.');return;}
     if(ex.length && !confirm('Ya guardaste el inventario de hoy. ¿Quieres reemplazarlo con los valores actuales?')) return;
-    if(ex.length) await sb.from('historial').delete().eq('fecha',fecha);
-    const rows=DATA.map(p=>({fecha,producto_id:p.id,producto:p.producto,rubro:p.rubro,
+    if(ex.length) await sb.from('historial').delete().eq('sede',SEDE).eq('fecha',fecha);
+    const rows=DATA.map(p=>({fecha,sede:SEDE,producto_id:p.id,producto:p.producto,rubro:p.rubro,
       stock_actual:p.stock_actual,stock_min:p.stock_min,stock_max:p.stock_max,
       vencimiento:(hasVenc?p.vencimiento:null)??null}));
     const {error:e2}=await sb.from('historial').insert(rows);
@@ -384,18 +447,21 @@ $('btnGuardarHoy').addEventListener('click',async()=>{
 });
 
 /* ---------------- tiempo real ---------------- */
-sb.channel('productos-realtime')
-  .on('postgres_changes',{event:'*',schema:'public',table:'productos'},payload=>{
-    const row=payload.new; if(!row||!row.id)return;
-    const idx=DATA.findIndex(d=>d.id===row.id);
-    if(idx>=0)DATA[idx]=row; else DATA.push(row);
-    metrics(); render();
-  })
-  .subscribe(status=>{
-    if(status==='SUBSCRIBED'){$('liveText').textContent='en vivo';$('live').classList.remove('off');}
-  });
+function subscribeRealtime(){
+  if(channel){ sb.removeChannel(channel); channel=null; }
+  channel = sb.channel('productos-'+SEDE)
+    .on('postgres_changes',{event:'*',schema:'public',table:'productos',filter:'sede=eq.'+SEDE},payload=>{
+      const row=payload.new; if(!row||!row.id||row.sede!==SEDE)return;
+      const idx=DATA.findIndex(d=>d.id===row.id);
+      if(idx>=0)DATA[idx]=row; else DATA.push(row);
+      metrics(); render();
+    })
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED'){$('liveText').textContent='en vivo';$('live').classList.remove('off');}
+    });
+}
 
-loadData();
+/* al abrir: no cargamos nada hasta que se elija una sede (gate visible) */
 </script>
 </body>
 </html>
