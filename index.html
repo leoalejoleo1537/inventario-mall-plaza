@@ -5,66 +5,165 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventario Café Mall Plaza</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{
-    --bg:#f7f6f3; --card:#ffffff; --border:#e3e1da; --text:#2c2c2a; --muted:#767570;
-    --red-bg:#fcebeb; --red-fg:#a32d2d;
-    --green-bg:#eaf3de; --green-fg:#3b6d11;
-    --amber-bg:#faeeda; --amber-fg:#854f0b;
-    --gray-bg:#f1efe8; --gray-fg:#5f5e5a;
+    --navy:#0F1E31; --navy2:#16283F;
+    --orange:#DC4405; --orange-dark:#B93A04;
+    --bg:#F2F3F5; --card:#ffffff; --border:#E3E5E8;
+    --text:#1C2733; --muted:#6B7684;
+    --red-bg:#FDECEA; --red-fg:#C0392B;
+    --green-bg:#E6F4E6; --green-fg:#2E7D32;
+    --amber-bg:#FFF3E0; --amber-fg:#B26A00;
+    --gray-bg:#EDEEF0; --gray-fg:#5F6670;
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-  header{position:sticky;top:0;background:var(--bg);padding:16px 16px 8px;z-index:10;border-bottom:1px solid var(--border)}
-  .wrap{max-width:900px;margin:0 auto;padding:0 16px}
-  h1{font-size:18px;font-weight:600;margin:12px 0}
-  .status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
-  .status .dot{width:8px;height:8px;border-radius:50%;background:#3b6d11}
-  .status.off .dot{background:#a32d2d}
-  .controls{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
-  input[type=text],select{flex:1;min-width:160px;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;background:var(--card);color:var(--text)}
-  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
-  .mcard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;user-select:none}
-  .mcard.sel{border-color:var(--text);border-width:2px}
-  .mcard .n{font-size:22px;font-weight:600}
+  /* ---------- top bar ---------- */
+  .topbar{background:var(--navy);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:20}
+  .topbar .inner{max-width:900px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+  .topbar h1{font-size:19px;font-weight:700;margin:0}
+  .live{font-size:12px;display:flex;align-items:center;gap:6px;color:#cdd6e0}
+  .live .dot{width:8px;height:8px;border-radius:50%;background:#4CAF50}
+  .live.off .dot{background:#e53935}
+  /* ---------- tabs (FUDO pills) ---------- */
+  .tabs{background:#fff;border-bottom:1px solid var(--border);padding:10px 16px;position:sticky;top:51px;z-index:19}
+  .tabs .inner{max-width:900px;margin:0 auto;display:flex;gap:10px}
+  .tab{padding:9px 22px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:15px;font-weight:600;cursor:pointer}
+  .tab.active{background:var(--orange);border-color:var(--orange);color:#fff}
+  /* ---------- layout ---------- */
+  .wrap{max-width:900px;margin:0 auto;padding:14px 16px 90px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  input[type=text],select,input[type=date]{flex:1;min-width:150px;height:42px;padding:0 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--card);color:var(--text)}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+  .mcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;user-select:none}
+  .mcard.sel{border:2px solid var(--orange)}
+  .mcard .n{font-size:22px;font-weight:700}
   .mcard .l{font-size:11px;color:var(--muted);margin-top:2px}
-  .list{margin-top:8px}
-  .row{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px}
-  .row .dot{width:10px;height:10px;border-radius:50%}
-  .row .name{font-size:14px;font-weight:500}
-  .row .sub{font-size:12px;color:var(--muted)}
+  .count{font-size:12px;color:var(--muted);margin:6px 0}
+  /* ---------- product rows (FUDO cards) ---------- */
+  .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
+  .row .info{cursor:pointer;min-width:0}
+  .row .name{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .row .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
   .row .right{display:flex;align-items:center;gap:8px}
-  .pill{font-size:11px;padding:3px 8px;border-radius:6px;white-space:nowrap;font-weight:600}
-  .row input[type=number]{width:64px;height:36px;text-align:center;border:1px solid var(--border);border-radius:8px;font-size:15px}
-  .count{font-size:12px;color:var(--muted);margin:8px 0}
-  footer{text-align:center;padding:24px;font-size:11px;color:var(--muted)}
+  .pill{font-size:11px;padding:4px 10px;border-radius:999px;white-space:nowrap;font-weight:700}
+  .venc{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:600;background:var(--gray-bg);color:var(--gray-fg)}
+  .venc.rojo{background:var(--red-bg);color:var(--red-fg)}
+  .venc.ambar{background:var(--amber-bg);color:var(--amber-fg)}
+  .row input[type=number]{width:68px;height:40px;text-align:center;border:1px solid var(--border);border-radius:10px;font-size:16px;font-weight:600}
   .saving{opacity:0.5}
-  ::placeholder{color:#a8a69f}
+  /* ---------- buttons ---------- */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 20px;border-radius:10px;border:none;font-size:16px;font-weight:700;cursor:pointer}
+  .btn-orange{background:var(--orange);color:#fff}
+  .btn-orange:active{background:var(--orange-dark)}
+  .btn-outline{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
+  .btn-block{width:100%}
+  .btn-sm{height:38px;font-size:14px;padding:0 14px}
+  /* ---------- historial ---------- */
+  .hist-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+  .hist-card .f{font-size:15px;font-weight:700}
+  .hist-card .m{font-size:12px;color:var(--muted)}
+  .hrow{display:grid;grid-template-columns:1fr auto;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px;align-items:center}
+  .hrow .hn{font-size:14px;font-weight:600}
+  .hrow .hs{font-size:12px;color:var(--muted)}
+  .hrow .hv{font-size:16px;font-weight:700}
+  .empty{text-align:center;color:var(--muted);font-size:14px;padding:30px 10px}
+  /* ---------- modal (FUDO) ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(10,20,35,0.55);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .overlay.open{display:flex}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;padding:20px}
+  .modal h2{font-size:20px;font-weight:800;margin:0 0 4px}
+  .modal .mr{font-size:13px;color:var(--muted);margin:0 0 14px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+  .stepper{display:flex;align-items:center;justify-content:center;gap:22px;margin:16px 0}
+  .stepper button{width:52px;height:52px;border-radius:50%;border:1.5px solid var(--border);background:#fff;font-size:26px;font-weight:700;color:var(--navy);cursor:pointer}
+  .stepper input{width:90px;height:52px;text-align:center;font-size:26px;font-weight:800;border:1px solid var(--border);border-radius:10px}
+  .field{margin:12px 0}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:600}
+  .field input{width:100%;height:44px;padding:0 12px;border:1px solid var(--border);border-radius:10px;font-size:16px}
+  .mbtns{display:flex;gap:10px;margin-top:18px}
+  .mbtns .btn{flex:1}
+  footer{text-align:center;padding:20px;font-size:11px;color:var(--muted)}
+  ::placeholder{color:#9aa3ad}
 </style>
 </head>
 <body>
-<header>
-  <div class="wrap">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h1>Inventario — Café Mall Plaza</h1>
-      <span class="status" id="status"><span class="dot"></span><span id="statusText">conectando…</span></span>
+
+<div class="topbar">
+  <div class="inner">
+    <h1>Inventario · Café Mall Plaza</h1>
+    <span class="live" id="live"><span class="dot"></span><span id="liveText">conectando…</span></span>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="inner">
+    <button class="tab active" data-tab="inv">Inventario</button>
+    <button class="tab" data-tab="hist">Historial</button>
+  </div>
+</div>
+
+<!-- ================= INVENTARIO ================= -->
+<div class="wrap" id="view-inv">
+  <div class="controls">
+    <input type="text" id="q" placeholder="Buscar producto…">
+    <select id="rubro"></select>
+  </div>
+  <div class="metrics">
+    <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
+    <div class="mcard" data-f="ok"><div class="n" id="c-ok" style="color:var(--green-fg)">0</div><div class="l">En rango</div></div>
+    <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
+    <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
+  </div>
+  <div class="count" id="count"></div>
+  <div id="list"></div>
+</div>
+
+<!-- ================= HISTORIAL ================= -->
+<div class="wrap" id="view-hist" style="display:none">
+  <div id="hist-home">
+    <button class="btn btn-orange btn-block" id="btnGuardarHoy">Guardar inventario de hoy</button>
+    <p style="font-size:12px;color:var(--muted);margin:8px 2px 16px">Guarda una foto del stock actual con la fecha de hoy. Así queda el registro del día y se puede consultar o descargar después.</p>
+    <div id="hist-list"><div class="empty">Cargando historial…</div></div>
+  </div>
+  <div id="hist-detail" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+      <button class="btn btn-outline btn-sm" id="btnVolver">← Volver</button>
+      <div style="flex:1;font-weight:800;font-size:16px" id="hist-title"></div>
+      <button class="btn btn-orange btn-sm" id="btnExcel">Descargar Excel</button>
     </div>
-    <div class="controls">
-      <input type="text" id="q" placeholder="Buscar producto…">
-      <select id="rubro"></select>
+    <div id="hist-rows"></div>
+  </div>
+</div>
+
+<!-- ================= MODAL PRODUCTO ================= -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="m-nombre">Producto</h2>
+    <p class="mr" id="m-rubro"></p>
+    <div class="field" style="text-align:center;margin-top:0">
+      <label style="text-align:center">Stock actual</label>
+      <div class="stepper">
+        <button type="button" id="m-menos">−</button>
+        <input type="number" step="0.5" id="m-stock">
+        <button type="button" id="m-mas">+</button>
+      </div>
     </div>
-    <div class="metrics">
-      <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
-      <div class="mcard" data-f="ok"><div class="n" id="c-ok" style="color:var(--green-fg)">0</div><div class="l">En rango</div></div>
-      <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
-      <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
+    <div style="display:flex;gap:10px">
+      <div class="field" style="flex:1"><label>Stock mínimo</label><input type="number" step="0.5" id="m-min"></div>
+      <div class="field" style="flex:1"><label>Stock máximo</label><input type="number" step="0.5" id="m-max"></div>
+    </div>
+    <div class="field" id="m-venc-field" style="display:none">
+      <label>Fecha de vencimiento</label>
+      <input type="date" id="m-venc">
+    </div>
+    <div class="mbtns">
+      <button class="btn btn-outline" id="m-cancelar">Cancelar</button>
+      <button class="btn btn-orange" id="m-guardar">Guardar</button>
     </div>
   </div>
-</header>
-<div class="wrap">
-  <div class="count" id="count"></div>
-  <div class="list" id="list"></div>
 </div>
+
 <footer>Café Mall Plaza · sincronizado en tiempo real</footer>
 
 <script>
@@ -74,14 +173,13 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let DATA = [];
 let filterState = null;
+let hasVenc = false;      // true cuando exista la columna vencimiento en la tabla
+let modalProd = null;
 
-const qEl = document.getElementById('q');
-const rubroEl = document.getElementById('rubro');
-const listEl = document.getElementById('list');
-const countEl = document.getElementById('count');
-const statusEl = document.getElementById('status');
-const statusTextEl = document.getElementById('statusText');
+const $ = id => document.getElementById(id);
+const qEl=$('q'), rubroEl=$('rubro'), listEl=$('list'), countEl=$('count');
 
+/* ---------------- semáforo ---------------- */
 function maxOk(p){ return p.stock_max != null && (p.stock_min == null || p.stock_max > p.stock_min); }
 function estado(p){
   const a = p.stock_actual;
@@ -91,43 +189,47 @@ function estado(p){
   return 'ok';
 }
 const CFG = {
-  critico: {bg:'var(--red-bg)', fg:'var(--red-fg)', t:'Crítico'},
-  ok: {bg:'var(--green-bg)', fg:'var(--green-fg)', t:'En rango'},
-  sobre: {bg:'var(--amber-bg)', fg:'var(--amber-fg)', t:'Sobre-stock'},
-  sindato: {bg:'var(--gray-bg)', fg:'var(--gray-fg)', t:'Sin dato'},
+  critico:{bg:'var(--red-bg)',fg:'var(--red-fg)',t:'Crítico'},
+  ok:{bg:'var(--green-bg)',fg:'var(--green-fg)',t:'En rango'},
+  sobre:{bg:'var(--amber-bg)',fg:'var(--amber-fg)',t:'Sobre-stock'},
+  sindato:{bg:'var(--gray-bg)',fg:'var(--gray-fg)',t:'Sin dato'},
 };
-const fmt = n => n == null ? '—' : (Math.round(n*100)/100);
+const fmt = n => n==null ? '—' : (Math.round(n*100)/100);
+const hoyISO = () => new Date().toLocaleDateString('en-CA');
+const fmtFecha = iso => { const [y,m,d]=iso.split('-'); return `${d}-${m}-${y}`; };
 
+function vencChip(p){
+  if (!hasVenc || p.rubro!=='Sándwiches' || !p.vencimiento) return '';
+  const dias = Math.round((new Date(p.vencimiento+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
+  let cls='venc', txt='vence '+fmtFecha(p.vencimiento);
+  if (dias < 0){ cls='venc rojo'; txt='VENCIDO '+fmtFecha(p.vencimiento); }
+  else if (dias === 0){ cls='venc rojo'; txt='vence HOY'; }
+  else if (dias === 1){ cls='venc ambar'; txt='vence mañana'; }
+  return `<span class="${cls}">${txt}</span>`;
+}
+
+/* ---------------- inventario ---------------- */
 function populateRubros(){
-  const rubros = [...new Set(DATA.map(d=>d.rubro))].sort();
-  rubroEl.innerHTML = '<option value="">Todos los rubros</option>' + rubros.map(r=>`<option>${r}</option>`).join('');
+  const rubros=[...new Set(DATA.map(d=>d.rubro))].sort();
+  rubroEl.innerHTML='<option value="">Todos los rubros</option>'+rubros.map(r=>`<option>${r}</option>`).join('');
 }
-
 function metrics(){
-  const m = {critico:0, ok:0, sobre:0, sindato:0};
-  DATA.forEach(p => m[estado(p)]++);
-  for (const k in m) document.getElementById('c-'+k).textContent = m[k];
+  const m={critico:0,ok:0,sobre:0,sindato:0};
+  DATA.forEach(p=>m[estado(p)]++);
+  for(const k in m)$('c-'+k).textContent=m[k];
 }
-
 function render(){
-  const q = qEl.value.trim().toLowerCase();
-  const rf = rubroEl.value;
-  let rows = DATA.filter(p =>
-    (!q || p.producto.toLowerCase().includes(q)) &&
-    (!rf || p.rubro === rf) &&
-    (!filterState || estado(p) === filterState)
-  );
-  const order = {critico:0, sindato:1, sobre:2, ok:3};
-  rows.sort((a,b)=> order[estado(a)] - order[estado(b)] || a.producto.localeCompare(b.producto));
-  countEl.textContent = `${rows.length} de ${DATA.length} productos`;
-
-  listEl.innerHTML = rows.map(p=>{
-    const e = estado(p), cf = CFG[e];
+  const q=qEl.value.trim().toLowerCase(), rf=rubroEl.value;
+  let rows=DATA.filter(p=>(!q||p.producto.toLowerCase().includes(q))&&(!rf||p.rubro===rf)&&(!filterState||estado(p)===filterState));
+  const order={critico:0,sindato:1,sobre:2,ok:3};
+  rows.sort((a,b)=>order[estado(a)]-order[estado(b)]||a.producto.localeCompare(b.producto));
+  countEl.textContent=`${rows.length} de ${DATA.length} productos`;
+  listEl.innerHTML=rows.map(p=>{
+    const e=estado(p),cf=CFG[e];
     return `<div class="row" data-row="${p.id}">
-      <span class="dot" style="background:${cf.fg}"></span>
-      <div>
-        <div class="name">${p.producto}</div>
-        <div class="sub">${p.rubro} · mín ${fmt(p.stock_min)}${maxOk(p) ? ' · máx '+fmt(p.stock_max) : ''}</div>
+      <div class="info" data-open="${p.id}">
+        <div class="name">${p.producto} ${vencChip(p)}</div>
+        <div class="sub">${p.rubro} · mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''} · <u>tocar para editar</u></div>
       </div>
       <div class="right">
         <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
@@ -136,61 +238,161 @@ function render(){
     </div>`;
   }).join('');
 }
-
 async function loadData(){
-  const { data, error } = await sb.from('productos').select('*').eq('activo','SÍ').order('producto');
-  if (error){ statusTextEl.textContent = 'error de conexión'; statusEl.classList.add('off'); console.error(error); return; }
-  DATA = data;
-  populateRubros();
-  metrics();
-  render();
-  statusTextEl.textContent = 'en vivo';
-  statusEl.classList.remove('off');
+  const {data,error}=await sb.from('productos').select('*').eq('activo','SÍ').order('producto');
+  if(error){$('liveText').textContent='error de conexión';$('live').classList.add('off');console.error(error);return;}
+  DATA=data;
+  hasVenc = DATA.length>0 && ('vencimiento' in DATA[0]);
+  populateRubros(); metrics(); render();
+  $('liveText').textContent='en vivo'; $('live').classList.remove('off');
+}
+async function saveFields(id,fields){
+  const row=document.querySelector(`.row[data-row="${id}"]`);
+  if(row)row.classList.add('saving');
+  const {error}=await sb.from('productos').update({...fields,updated_at:new Date().toISOString()}).eq('id',id);
+  if(row)row.classList.remove('saving');
+  if(error){alert('No se pudo guardar. Revisa tu conexión.');console.error(error);}
 }
 
-let saveTimers = {};
-async function saveStock(id, value){
-  const row = document.querySelector(`.row[data-row="${id}"]`);
-  if (row) row.classList.add('saving');
-  const { error } = await sb.from('productos').update({ stock_actual: value, updated_at: new Date().toISOString() }).eq('id', id);
-  if (row) row.classList.remove('saving');
-  if (error) { alert('No se pudo guardar. Revisa tu conexión.'); console.error(error); }
-}
-
-listEl.addEventListener('change', e => {
-  const inp = e.target.closest('input[data-id]');
-  if (!inp) return;
-  const id = +inp.dataset.id;
-  const val = inp.value === '' ? null : +inp.value;
-  const p = DATA.find(d=>d.id===id);
-  p.stock_actual = val;
-  metrics();
+/* edición rápida (input de la fila) */
+listEl.addEventListener('change',e=>{
+  const inp=e.target.closest('input[data-id]'); if(!inp)return;
+  const id=+inp.dataset.id, val=inp.value===''?null:+inp.value;
+  const p=DATA.find(d=>d.id===id); p.stock_actual=val;
+  metrics(); render(); saveFields(id,{stock_actual:val});
+});
+/* abrir ficha */
+listEl.addEventListener('click',e=>{
+  const info=e.target.closest('[data-open]'); if(!info)return;
+  openModal(+info.dataset.open);
+});
+qEl.addEventListener('input',render);
+rubroEl.addEventListener('change',render);
+document.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
+  const f=c.dataset.f; filterState=filterState===f?null:f;
+  document.querySelectorAll('.mcard').forEach(x=>x.classList.toggle('sel',x.dataset.f===filterState));
   render();
-  saveStock(id, val);
+}));
+
+/* ---------------- modal ---------------- */
+function openModal(id){
+  modalProd=DATA.find(d=>d.id===id); if(!modalProd)return;
+  $('m-nombre').textContent=modalProd.producto;
+  $('m-rubro').textContent=modalProd.rubro;
+  $('m-stock').value=modalProd.stock_actual??'';
+  $('m-min').value=modalProd.stock_min??'';
+  $('m-max').value=modalProd.stock_max??'';
+  const esSand = modalProd.rubro==='Sándwiches';
+  $('m-venc-field').style.display = (esSand && hasVenc) ? 'block' : 'none';
+  if(esSand && hasVenc) $('m-venc').value = modalProd.vencimiento ?? '';
+  $('overlay').classList.add('open');
+}
+function closeModal(){ $('overlay').classList.remove('open'); modalProd=null; }
+$('m-cancelar').addEventListener('click',closeModal);
+$('overlay').addEventListener('click',e=>{ if(e.target===$('overlay')) closeModal(); });
+$('m-menos').addEventListener('click',()=>{const i=$('m-stock');i.value=Math.max(0,(+i.value||0)-1);});
+$('m-mas').addEventListener('click',()=>{const i=$('m-stock');i.value=(+i.value||0)+1;});
+$('m-guardar').addEventListener('click',async()=>{
+  if(!modalProd)return;
+  const num=el=>el.value===''?null:+el.value;
+  const fields={stock_actual:num($('m-stock')),stock_min:num($('m-min')),stock_max:num($('m-max'))};
+  if(modalProd.rubro==='Sándwiches' && hasVenc) fields.vencimiento=$('m-venc').value||null;
+  Object.assign(modalProd,fields);
+  metrics(); render(); closeModal();
+  await saveFields(modalProd?.id ?? fields.id, fields);
 });
 
-qEl.addEventListener('input', render);
-rubroEl.addEventListener('change', render);
-document.querySelectorAll('.mcard').forEach(c=>{
-  c.addEventListener('click', ()=>{
-    const f = c.dataset.f;
-    filterState = filterState === f ? null : f;
-    document.querySelectorAll('.mcard').forEach(x=>x.classList.toggle('sel', x.dataset.f===filterState));
-    render();
-  });
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
+  const tab=t.dataset.tab;
+  $('view-inv').style.display = tab==='inv'?'block':'none';
+  $('view-hist').style.display = tab==='hist'?'block':'none';
+  if(tab==='hist') loadHistorial();
+}));
+
+/* ---------------- historial ---------------- */
+async function loadHistorial(){
+  $('hist-detail').style.display='none'; $('hist-home').style.display='block';
+  const box=$('hist-list');
+  const {data,error}=await sb.from('historial').select('fecha');
+  if(error){
+    box.innerHTML='<div class="empty">El historial aún no está activado en la base de datos.<br>Pídele a Claude el SQL para activarlo.</div>';
+    return;
+  }
+  const fechas=[...new Set(data.map(r=>r.fecha))].sort().reverse();
+  if(!fechas.length){ box.innerHTML='<div class="empty">Todavía no hay días guardados.<br>Usa el botón naranjo para guardar el primero.</div>'; return; }
+  const counts={}; data.forEach(r=>counts[r.fecha]=(counts[r.fecha]||0)+1);
+  box.innerHTML=fechas.map(f=>`<div class="hist-card" data-fecha="${f}">
+    <div><div class="f">${fmtFecha(f)}</div><div class="m">${counts[f]} productos guardados</div></div>
+    <div style="color:var(--orange);font-weight:800">Ver ›</div>
+  </div>`).join('');
+}
+$('hist-list').addEventListener('click',e=>{
+  const c=e.target.closest('[data-fecha]'); if(!c)return;
+  openHistDetail(c.dataset.fecha);
+});
+let histRows=[], histFecha='';
+async function openHistDetail(fecha){
+  histFecha=fecha;
+  const {data,error}=await sb.from('historial').select('*').eq('fecha',fecha).order('producto');
+  if(error){alert('No se pudo cargar ese día.');return;}
+  histRows=data;
+  $('hist-home').style.display='none'; $('hist-detail').style.display='block';
+  $('hist-title').textContent='Inventario del '+fmtFecha(fecha);
+  $('hist-rows').innerHTML=data.map(p=>{
+    const e=estado(p),cf=CFG[e];
+    return `<div class="hrow">
+      <div><div class="hn">${p.producto}</div><div class="hs">${p.rubro} · mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
+        <span class="hv">${fmt(p.stock_actual)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+$('btnVolver').addEventListener('click',loadHistorial);
+$('btnExcel').addEventListener('click',()=>{
+  if(!histRows.length)return;
+  const rows=histRows.map(p=>({
+    Fecha:fmtFecha(p.fecha), Producto:p.producto, Rubro:p.rubro,
+    'Stock':p.stock_actual, 'Mínimo':p.stock_min, 'Máximo':p.stock_max,
+    'Estado':CFG[estado(p)].t, 'Vencimiento':p.vencimiento?fmtFecha(p.vencimiento):''
+  }));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:11},{wch:34},{wch:22},{wch:8},{wch:8},{wch:8},{wch:12},{wch:12}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Inventario');
+  XLSX.writeFile(wb,`inventario-plaza-${histFecha}.xlsx`);
+});
+$('btnGuardarHoy').addEventListener('click',async()=>{
+  const fecha=hoyISO();
+  const btn=$('btnGuardarHoy'); btn.disabled=true; btn.textContent='Guardando…';
+  try{
+    const {data:ex,error:e1}=await sb.from('historial').select('id').eq('fecha',fecha).limit(1);
+    if(e1){alert('El historial aún no está activado en la base de datos. Pídele a Claude el SQL.');return;}
+    if(ex.length && !confirm('Ya guardaste el inventario de hoy. ¿Quieres reemplazarlo con los valores actuales?')) return;
+    if(ex.length) await sb.from('historial').delete().eq('fecha',fecha);
+    const rows=DATA.map(p=>({fecha,producto_id:p.id,producto:p.producto,rubro:p.rubro,
+      stock_actual:p.stock_actual,stock_min:p.stock_min,stock_max:p.stock_max,
+      vencimiento:(hasVenc?p.vencimiento:null)??null}));
+    const {error:e2}=await sb.from('historial').insert(rows);
+    if(e2){alert('No se pudo guardar: '+e2.message);return;}
+    alert('Inventario del '+fmtFecha(fecha)+' guardado ('+rows.length+' productos).');
+    loadHistorial();
+  } finally { btn.disabled=false; btn.textContent='Guardar inventario de hoy'; }
 });
 
+/* ---------------- tiempo real ---------------- */
 sb.channel('productos-realtime')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'productos' }, payload => {
-    const row = payload.new;
-    if (!row || !row.id) return;
-    const idx = DATA.findIndex(d=>d.id===row.id);
-    if (idx >= 0) DATA[idx] = row; else DATA.push(row);
-    metrics();
-    render();
+  .on('postgres_changes',{event:'*',schema:'public',table:'productos'},payload=>{
+    const row=payload.new; if(!row||!row.id)return;
+    const idx=DATA.findIndex(d=>d.id===row.id);
+    if(idx>=0)DATA[idx]=row; else DATA.push(row);
+    metrics(); render();
   })
-  .subscribe(status => {
-    if (status === 'SUBSCRIBED'){ statusTextEl.textContent = 'en vivo'; statusEl.classList.remove('off'); }
+  .subscribe(status=>{
+    if(status==='SUBSCRIBED'){$('liveText').textContent='en vivo';$('live').classList.remove('off');}
   });
 
 loadData();
