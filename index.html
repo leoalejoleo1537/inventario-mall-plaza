@@ -393,7 +393,7 @@ function render(){
     return `<div class="row" data-row="${p.id}">
       <div class="info" data-open="${p.id}">
         <div class="name">${p.producto} ${vencChip(p)}</div>
-        <div class="sub">${p.rubro} · mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div>
+        <div class="sub">mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div>
       </div>
       <div class="right">
         <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
