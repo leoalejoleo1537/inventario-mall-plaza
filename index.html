@@ -20,16 +20,17 @@
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-  /* ---------- pantalla de selección (gate) ---------- */
-  .gate{position:fixed;inset:0;background:linear-gradient(160deg,var(--navy),var(--navy2));display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+  /* ---------- pantalla de selección (gate, estilo FUDO) ---------- */
+  .gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
   .gate.hidden{display:none}
-  .gate-box{background:#fff;border-radius:20px;padding:34px 26px;max-width:390px;width:100%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.45)}
-  .gate-logo{font-size:27px;font-weight:800;color:var(--navy);letter-spacing:-.5px}
-  .gate-sub{font-size:15px;color:var(--muted);margin:8px 0 26px}
-  .gate-btn{display:flex;align-items:center;gap:14px;width:100%;padding:20px 22px;margin-bottom:12px;border-radius:14px;border:2px solid var(--border);background:#fff;font-size:18px;font-weight:700;color:var(--text);cursor:pointer;transition:.15s;text-align:left}
-  .gate-btn:hover{border-color:var(--orange);background:#FFF7F3;transform:translateY(-1px)}
-  .gate-btn:last-child{margin-bottom:0}
-  .gate-btn .em{font-size:26px}
+  .gate-box{background:#fff;border-radius:18px;padding:40px 30px 30px;max-width:380px;width:100%;text-align:center;box-shadow:0 10px 45px rgba(15,30,49,.12)}
+  .gate-logo{font-size:34px;font-weight:800;color:var(--orange);letter-spacing:.5px;margin-bottom:4px}
+  .gate-sub{font-size:14.5px;color:var(--muted);margin:0 0 26px}
+  .gate-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:17px 20px;margin-bottom:12px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-size:16.5px;font-weight:700;color:var(--text);cursor:pointer;transition:.15s;text-align:left}
+  .gate-btn:hover,.gate-btn:active{border-color:var(--orange);background:#FFF7F3}
+  .gate-btn::after{content:"›";color:var(--orange);font-size:22px;font-weight:800;line-height:1}
+  .gate-btn:last-of-type{margin-bottom:0}
+  .gate-foot{font-size:12px;color:var(--muted);margin-top:24px}
   /* ---------- top bar ---------- */
   .topbar{background:var(--navy);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:20}
   .topbar .inner{max-width:900px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
@@ -107,9 +108,10 @@
 <div class="gate" id="gate">
   <div class="gate-box">
     <div class="gate-logo">Inventario</div>
-    <p class="gate-sub">¿Qué inventario quieres abrir?</p>
-    <button class="gate-btn" data-sede="plaza"><span class="em">☕</span> Café Mall Plaza</button>
-    <button class="gate-btn" data-sede="angamos"><span class="em">🏬</span> Parque Angamos</button>
+    <p class="gate-sub">Elige tu local para comenzar</p>
+    <button class="gate-btn" data-sede="plaza">Café Mall Plaza</button>
+    <button class="gate-btn" data-sede="angamos">Parque Angamos</button>
+    <div class="gate-foot">Sincronizado en tiempo real</div>
   </div>
 </div>
 
@@ -308,12 +310,22 @@ async function loadData(){
   populateRubros(); metrics(); render();
   $('liveText').textContent='en vivo'; $('live').classList.remove('off');
 }
+/* reintenta una operación de Supabase hasta 3 veces (para señal móvil floja) */
+async function conReintento(fn,intentos=3){
+  let res;
+  for(let i=1;i<=intentos;i++){
+    res=await fn();
+    if(!res.error) return res;
+    if(i<intentos) await new Promise(r=>setTimeout(r,500*i));
+  }
+  return res;
+}
 async function saveFields(id,fields){
   const row=document.querySelector(`.row[data-row="${id}"]`);
   if(row)row.classList.add('saving');
-  const {error}=await sb.from('productos').update({...fields,updated_at:new Date().toISOString()}).eq('id',id);
+  const {error}=await conReintento(()=>sb.from('productos').update({...fields,updated_at:new Date().toISOString()}).eq('id',id));
   if(row)row.classList.remove('saving');
-  if(error){alert('No se pudo guardar. Revisa tu conexión.');console.error(error);}
+  if(error){alert('No se pudo guardar. La conexión falló varias veces — revisa tu señal e inténtalo de nuevo.');console.error(error);}
 }
 
 /* edición rápida (input de la fila) */
@@ -433,16 +445,19 @@ $('btnGuardarHoy').addEventListener('click',async()=>{
   const fecha=hoyISO();
   const btn=$('btnGuardarHoy'); btn.disabled=true; btn.textContent='Guardando…';
   try{
-    const {data:ex,error:e1}=await sb.from('historial').select('id').eq('sede',SEDE).eq('fecha',fecha).limit(1);
-    if(e1){alert('El historial aún no está activado en la base de datos. Pídele a Claude el SQL.');return;}
+    const {data:ex,error:e1}=await conReintento(()=>sb.from('historial').select('id').eq('sede',SEDE).eq('fecha',fecha).limit(1));
+    if(e1){alert('No se pudo conectar con la base para guardar. Revisa tu señal e inténtalo de nuevo.');console.error(e1);return;}
     if(ex.length && !confirm('Ya guardaste el inventario de hoy. ¿Quieres reemplazarlo con los valores actuales?')) return;
-    if(ex.length) await sb.from('historial').delete().eq('sede',SEDE).eq('fecha',fecha);
+    if(ex.length){
+      const {error:ed}=await conReintento(()=>sb.from('historial').delete().eq('sede',SEDE).eq('fecha',fecha));
+      if(ed){alert('No se pudo actualizar el guardado de hoy (conexión). Inténtalo de nuevo.');console.error(ed);return;}
+    }
     const rows=DATA.map(p=>({fecha,sede:SEDE,producto_id:p.id,producto:p.producto,rubro:p.rubro,
       stock_actual:p.stock_actual,stock_min:p.stock_min,stock_max:p.stock_max,
       vencimiento:(hasVenc?p.vencimiento:null)??null}));
-    const {error:e2}=await sb.from('historial').insert(rows);
-    if(e2){alert('No se pudo guardar: '+e2.message);return;}
-    alert('Inventario del '+fmtFecha(fecha)+' guardado ('+rows.length+' productos).');
+    const {error:e2}=await conReintento(()=>sb.from('historial').insert(rows));
+    if(e2){alert('No se pudo guardar el historial. La conexión falló — revisa tu señal e inténtalo otra vez.');console.error(e2);return;}
+    alert('✓ Inventario del '+fmtFecha(fecha)+' guardado ('+rows.length+' productos).');
     loadHistorial();
   } finally { btn.disabled=false; btn.textContent='Guardar inventario de hoy'; }
 });
