@@ -46,6 +46,8 @@
   .tabs .inner{max-width:900px;margin:0 auto;display:flex;gap:10px}
   .tab{padding:9px 22px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:15px;font-weight:600;cursor:pointer}
   .tab.active{background:var(--orange);border-color:var(--orange);color:#fff}
+  .tab-badge{background:var(--amber-fg);color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:5px}
+  .tab.active .tab-badge{background:#fff;color:var(--orange)}
   /* ---------- layout ---------- */
   .wrap{max-width:900px;margin:0 auto;padding:14px 16px 90px}
   .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
@@ -84,6 +86,22 @@
   .hrow .hs{font-size:12px;color:var(--muted)}
   .hrow .hv{font-size:16px;font-weight:700}
   .empty{text-align:center;color:var(--muted);font-size:14px;padding:30px 10px}
+  /* ---------- reparto ---------- */
+  .rep-result{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:6px;cursor:pointer}
+  .rep-result:hover{border-color:var(--orange);background:#FFF7F3}
+  .rep-result .rn{font-size:14px;font-weight:600}
+  .rep-result .rs{font-size:12px;color:var(--muted);margin-top:2px}
+  .rep-result .add{color:var(--orange);font-weight:800;font-size:22px;line-height:1}
+  .cart-title{font-weight:800;font-size:14px;margin:16px 0 8px}
+  .cart-row{display:grid;grid-template-columns:1fr 68px 34px;gap:8px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:6px}
+  .cart-row .cn{font-size:14px;font-weight:600}
+  .cart-row input{width:100%;height:38px;text-align:center;border:1px solid var(--border);border-radius:8px;font-size:15px;font-weight:700}
+  .cart-row .rm{background:none;border:none;color:var(--red-fg);font-size:22px;font-weight:800;cursor:pointer;padding:2px}
+  .pend-title{font-weight:800;font-size:14px;margin:26px 0 8px;display:flex;align-items:center;gap:8px}
+  .pend-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px}
+  .pend-row .pn{font-size:14px;font-weight:700}
+  .pend-row .pm{font-size:12px;color:var(--muted);margin-top:2px}
+  .btn-done{background:var(--green-bg);color:var(--green-fg);border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
   /* ---------- modal (FUDO) ---------- */
   .overlay{position:fixed;inset:0;background:rgba(10,20,35,0.55);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
   .overlay.open{display:flex}
@@ -128,6 +146,7 @@
 <div class="tabs">
   <div class="inner">
     <button class="tab active" data-tab="inv">Inventario</button>
+    <button class="tab" data-tab="reparto">Reparto <span class="tab-badge" id="repBadge" style="display:none"></span></button>
     <button class="tab" data-tab="hist">Historial</button>
   </div>
 </div>
@@ -146,6 +165,24 @@
   </div>
   <div class="count" id="count"></div>
   <div id="list"></div>
+</div>
+
+<!-- ================= REPARTO ================= -->
+<div class="wrap" id="view-reparto" style="display:none">
+  <div class="controls">
+    <input type="text" id="rq" placeholder="Buscar producto que llegó…">
+  </div>
+  <div id="reparto-results"></div>
+
+  <div id="carrito-box" style="display:none">
+    <div class="cart-title">Productos que llegaron</div>
+    <div id="carrito-list"></div>
+    <button class="btn btn-orange btn-block" id="btnRegistrarReparto" style="margin-top:10px">Registrar llegada</button>
+    <p style="font-size:12px;color:var(--muted);margin:8px 2px 0">Suma la cantidad al stock y avisa a Adriana que hay que actualizar FUDO.</p>
+  </div>
+
+  <div class="pend-title">Pendientes por actualizar en FUDO <span class="pill" id="pend-count" style="background:var(--amber-bg);color:var(--amber-fg)">0</span></div>
+  <div id="pend-list"><div class="empty">Cargando…</div></div>
 </div>
 
 <!-- ================= HISTORIAL ================= -->
@@ -212,6 +249,7 @@ let DATA = [];
 let filterState = null;
 let hasVenc = false;      // true cuando exista la columna vencimiento en la tabla
 let modalProd = null;
+let carrito = [];         // productos que llegaron, pendientes de registrar
 
 const $ = id => document.getElementById(id);
 const qEl=$('q'), rubroEl=$('rubro'), listEl=$('list'), countEl=$('count');
@@ -251,17 +289,19 @@ function pickSede(s){
   $('topTitle').textContent = 'Inventario · ' + SEDES[s].label;
   $('footText').textContent = SEDES[s].label + ' · sincronizado en tiempo real';
   // reset estado/filtros
-  DATA=[]; filterState=null; modalProd=null;
+  DATA=[]; filterState=null; modalProd=null; carrito=[];
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
   qEl.value=''; rubroEl.value='';
+  $('rq').value=''; $('reparto-results').innerHTML=''; $('carrito-box').style.display='none';
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
-  $('view-inv').style.display='block'; $('view-hist').style.display='none';
+  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none';
   listEl.innerHTML=''; countEl.textContent='';
   $('gate').classList.add('hidden');
   $('liveText').textContent='conectando…'; $('live').classList.remove('off');
   loadData();
   subscribeRealtime();
+  refreshPendientes();
 }
 function showGate(){
   if(channel){ sb.removeChannel(channel); channel=null; }
@@ -377,14 +417,103 @@ $('m-guardar').addEventListener('click',async()=>{
   await saveFields(savedId, fields);
 });
 
+/* ---------------- reparto ---------------- */
+const rqEl = $('rq');
+function renderRepartoResults(){
+  const q = rqEl.value.trim().toLowerCase();
+  if(!q){ $('reparto-results').innerHTML=''; return; }
+  const enCarrito = new Set(carrito.map(c=>c.id));
+  const rows = DATA.filter(p=>p.producto.toLowerCase().includes(q) && !enCarrito.has(p.id)).slice(0,15);
+  $('reparto-results').innerHTML = rows.map(p=>`
+    <div class="rep-result" data-add="${p.id}">
+      <div><div class="rn">${p.producto}</div><div class="rs">${p.rubro} · stock actual ${fmt(p.stock_actual)}</div></div>
+      <div class="add">+</div>
+    </div>`).join('');
+}
+rqEl.addEventListener('input', renderRepartoResults);
+$('reparto-results').addEventListener('click', e=>{
+  const el = e.target.closest('[data-add]'); if(!el) return;
+  const id = +el.dataset.add;
+  const p = DATA.find(d=>d.id===id); if(!p) return;
+  carrito.push({id:p.id, producto:p.producto, rubro:p.rubro, cantidad:1});
+  rqEl.value=''; renderRepartoResults(); renderCarrito();
+});
+function renderCarrito(){
+  $('carrito-box').style.display = carrito.length ? 'block' : 'none';
+  $('carrito-list').innerHTML = carrito.map((c,i)=>`
+    <div class="cart-row">
+      <div class="cn">${c.producto}</div>
+      <input type="number" step="0.5" min="0" value="${c.cantidad}" data-idx="${i}" aria-label="Cantidad de ${c.producto}">
+      <button type="button" class="rm" data-rm="${i}" aria-label="Quitar">×</button>
+    </div>`).join('');
+}
+$('carrito-list').addEventListener('input', e=>{
+  const inp = e.target.closest('input[data-idx]'); if(!inp) return;
+  carrito[+inp.dataset.idx].cantidad = +inp.value || 0;
+});
+$('carrito-list').addEventListener('click', e=>{
+  const rm = e.target.closest('[data-rm]'); if(!rm) return;
+  carrito.splice(+rm.dataset.rm,1); renderCarrito();
+});
+$('btnRegistrarReparto').addEventListener('click', async()=>{
+  const items = carrito.filter(c=>c.cantidad>0);
+  if(!items.length){ alert('Agrega una cantidad mayor a 0.'); return; }
+  const btn=$('btnRegistrarReparto'); btn.disabled=true; btn.textContent='Registrando…';
+  try{
+    for(const item of items){
+      const p = DATA.find(d=>d.id===item.id); if(!p) continue;
+      const nuevoStock = (p.stock_actual??0) + item.cantidad;
+      const {error:e1} = await conReintento(()=>sb.from('productos').update({stock_actual:nuevoStock, updated_at:new Date().toISOString()}).eq('id',item.id));
+      if(e1){ alert('No se pudo actualizar "'+item.producto+'". Revisa tu señal e inténtalo de nuevo.'); console.error(e1); return; }
+      p.stock_actual = nuevoStock;
+      const {error:e2} = await conReintento(()=>sb.from('fudo_pendientes').insert([{sede:SEDE, producto_id:item.id, producto:item.producto, rubro:item.rubro, cantidad:item.cantidad}]));
+      if(e2) console.error('No se pudo avisar a FUDO para '+item.producto, e2);
+    }
+    metrics(); render();
+    alert('✓ Reparto registrado. El stock ya está actualizado.');
+    carrito=[]; renderCarrito(); renderRepartoResults();
+    refreshPendientes();
+  } finally { btn.disabled=false; btn.textContent='Registrar llegada'; }
+});
+
+async function refreshPendientes(){
+  if(!SEDE) return;
+  const {data,error} = await sb.from('fudo_pendientes').select('*').eq('sede',SEDE).order('created_at',{ascending:false});
+  const badge=$('repBadge'), visible=$('view-reparto').style.display!=='none';
+  if(error){
+    badge.style.display='none';
+    if(visible){ $('pend-list').innerHTML='<div class="empty">El aviso a FUDO aún no está activado en la base de datos.<br>Pídele a Claude el SQL para activarlo.</div>'; $('pend-count').textContent='0'; }
+    return;
+  }
+  if(data.length){ badge.textContent=data.length; badge.style.display='inline-block'; } else { badge.style.display='none'; }
+  if(!visible) return;
+  $('pend-count').textContent=data.length;
+  if(!data.length){ $('pend-list').innerHTML='<div class="empty">No hay pendientes. Todo al día 👍</div>'; return; }
+  $('pend-list').innerHTML = data.map(p=>`
+    <div class="pend-row" data-pend="${p.id}">
+      <div><div class="pn">${p.producto}</div><div class="pm">+${fmt(p.cantidad)} · ${new Date(p.created_at).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>
+      <button type="button" class="btn-done" data-done="${p.id}">Ya actualicé</button>
+    </div>`).join('');
+}
+$('pend-list').addEventListener('click', async e=>{
+  const btn=e.target.closest('[data-done]'); if(!btn) return;
+  const id=+btn.dataset.done;
+  btn.disabled=true; btn.textContent='…';
+  const {error}=await conReintento(()=>sb.from('fudo_pendientes').delete().eq('id',id));
+  if(error){ alert('No se pudo marcar. Revisa tu señal e inténtalo de nuevo.'); btn.disabled=false; btn.textContent='Ya actualicé'; return; }
+  refreshPendientes();
+});
+
 /* ---------------- tabs ---------------- */
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   if(!SEDE)return;
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
   const tab=t.dataset.tab;
   $('view-inv').style.display = tab==='inv'?'block':'none';
+  $('view-reparto').style.display = tab==='reparto'?'block':'none';
   $('view-hist').style.display = tab==='hist'?'block':'none';
   if(tab==='hist') loadHistorial();
+  if(tab==='reparto') refreshPendientes();
 }));
 
 /* ---------------- historial ---------------- */
@@ -465,12 +594,15 @@ $('btnGuardarHoy').addEventListener('click',async()=>{
 /* ---------------- tiempo real ---------------- */
 function subscribeRealtime(){
   if(channel){ sb.removeChannel(channel); channel=null; }
-  channel = sb.channel('productos-'+SEDE)
+  channel = sb.channel('sede-'+SEDE)
     .on('postgres_changes',{event:'*',schema:'public',table:'productos',filter:'sede=eq.'+SEDE},payload=>{
       const row=payload.new; if(!row||!row.id||row.sede!==SEDE)return;
       const idx=DATA.findIndex(d=>d.id===row.id);
       if(idx>=0)DATA[idx]=row; else DATA.push(row);
       metrics(); render();
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'fudo_pendientes',filter:'sede=eq.'+SEDE},()=>{
+      refreshPendientes();
     })
     .subscribe(status=>{
       if(status==='SUBSCRIBED'){$('liveText').textContent='en vivo';$('live').classList.remove('off');}
