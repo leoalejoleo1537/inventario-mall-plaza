@@ -114,7 +114,8 @@
   .modal h2{font-size:20px;font-weight:800;margin:0 0 4px}
   .modal .mr{font-size:13px;color:var(--muted);margin:0 0 14px;padding-bottom:12px;border-bottom:1px solid var(--border)}
   .stepper{display:flex;align-items:center;justify-content:center;gap:22px;margin:16px 0}
-  .stepper button{width:52px;height:52px;border-radius:50%;border:1.5px solid var(--border);background:#fff;font-size:26px;font-weight:700;color:var(--navy);cursor:pointer}
+  .stepper button{width:52px;height:52px;border:none;background:transparent;font-size:32px;font-weight:700;color:var(--navy);cursor:pointer}
+  .stepper button:active{color:var(--orange)}
   .stepper input{width:90px;height:52px;text-align:center;font-size:26px;font-weight:800;border:1px solid var(--border);border-radius:10px}
   .field{margin:12px 0}
   .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:600}
@@ -392,7 +393,7 @@ function render(){
     return `<div class="row" data-row="${p.id}">
       <div class="info" data-open="${p.id}">
         <div class="name">${p.producto} ${vencChip(p)}</div>
-        <div class="sub">${p.rubro} · mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''} · <u>tocar para editar</u></div>
+        <div class="sub">${p.rubro} · mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div>
       </div>
       <div class="right">
         <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
