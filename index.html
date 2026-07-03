@@ -121,6 +121,15 @@
   .field input{width:100%;height:44px;padding:0 12px;border:1px solid var(--border);border-radius:10px;font-size:16px}
   .mbtns{display:flex;gap:10px;margin-top:18px}
   .mbtns .btn{flex:1}
+  .btn-del{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;margin-top:14px;border-radius:10px;border:1.5px solid var(--red-fg);background:var(--red-bg);color:var(--red-fg);font-size:14.5px;font-weight:700;cursor:pointer}
+  .btn-del:active{background:#F8D7D3}
+  .btn-del svg{width:17px;height:17px}
+  .fab{position:fixed;right:18px;bottom:24px;width:58px;height:58px;border-radius:50%;background:var(--orange);color:#fff;border:none;font-size:32px;font-weight:600;line-height:1;box-shadow:0 6px 18px rgba(220,68,5,.45);cursor:pointer;z-index:30;display:flex;align-items:center;justify-content:center}
+  .fab:active{background:var(--orange-dark)}
+  .chkrow{display:flex;align-items:center;gap:10px;margin:14px 0;cursor:pointer;user-select:none}
+  .chkrow input{width:20px;height:20px;accent-color:var(--orange);cursor:pointer}
+  .chkrow span{font-size:14.5px;font-weight:600}
+  .chkrow small{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:1px}
   footer{text-align:center;padding:20px;font-size:11px;color:var(--muted)}
   ::placeholder{color:#9aa3ad}
 </style>
@@ -170,6 +179,7 @@
   </div>
   <div class="count" id="count"></div>
   <div id="list"></div>
+  <button class="fab" id="btnNuevo" title="Agregar producto" aria-label="Agregar producto">+</button>
 </div>
 
 <!-- ================= REPARTO ================= -->
@@ -224,13 +234,51 @@
       <div class="field" style="flex:1"><label>Stock mínimo</label><input type="number" step="0.5" id="m-min"></div>
       <div class="field" style="flex:1"><label>Stock máximo</label><input type="number" step="0.5" id="m-max"></div>
     </div>
+    <label class="chkrow" id="m-perec-row" style="display:none">
+      <input type="checkbox" id="m-perec">
+      <span>Producto perecedero<small>Muestra campo de fecha de vencimiento</small></span>
+    </label>
     <div class="field" id="m-venc-field" style="display:none">
       <label>Fecha de vencimiento</label>
       <input type="date" id="m-venc">
     </div>
+    <button type="button" class="btn-del" id="m-eliminar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      Eliminar producto
+    </button>
     <div class="mbtns">
       <button class="btn btn-outline" id="m-cancelar">Cancelar</button>
       <button class="btn btn-orange" id="m-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL NUEVO PRODUCTO ================= -->
+<div class="overlay" id="overlay-nuevo">
+  <div class="modal">
+    <h2>Nuevo producto</h2>
+    <p class="mr" id="n-sede-label">Se agregará a esta sede</p>
+    <div class="field" style="margin-top:0">
+      <label>Nombre del producto</label>
+      <input type="text" id="n-nombre" placeholder="Ej: Torta selva negra" maxlength="60">
+    </div>
+    <div class="field">
+      <label>Rubro</label>
+      <input type="text" id="n-rubro" list="rubros-list" placeholder="Elige uno o escribe uno nuevo">
+      <datalist id="rubros-list"></datalist>
+    </div>
+    <label class="chkrow">
+      <input type="checkbox" id="n-perec">
+      <span>Producto perecedero<small>Tendrá campo de fecha de vencimiento</small></span>
+    </label>
+    <div style="display:flex;gap:10px">
+      <div class="field" style="flex:1"><label>Stock actual</label><input type="number" step="0.5" min="0" id="n-stock" placeholder="0"></div>
+      <div class="field" style="flex:1"><label>Mínimo</label><input type="number" step="0.5" min="0" id="n-min" placeholder="—"></div>
+      <div class="field" style="flex:1"><label>Máximo</label><input type="number" step="0.5" min="0" id="n-max" placeholder="—"></div>
+    </div>
+    <div class="mbtns">
+      <button class="btn btn-outline" id="n-cancelar">Cancelar</button>
+      <button class="btn btn-orange" id="n-guardar">Agregar</button>
     </div>
   </div>
 </div>
@@ -253,8 +301,12 @@ let channel = null;
 let DATA = [];
 let filterState = null;
 let hasVenc = false;      // true cuando exista la columna vencimiento en la tabla
+let hasPerec = false;     // true cuando exista la columna perecedero
 let modalProd = null;
 let carrito = [];         // productos que llegaron, pendientes de registrar
+
+/* ¿este producto es perecedero? (usa la columna si existe; si no, la regla vieja de Sándwiches) */
+function esPerec(p){ return hasPerec ? !!p.perecedero : p.rubro==='Sándwiches'; }
 
 const $ = id => document.getElementById(id);
 const qEl=$('q'), rubroEl=$('rubro'), listEl=$('list'), countEl=$('count');
@@ -279,7 +331,7 @@ const hoyISO = () => new Date().toLocaleDateString('en-CA');
 const fmtFecha = iso => { const [y,m,d]=iso.split('-'); return `${d}-${m}-${y}`; };
 
 function vencChip(p){
-  if (!hasVenc || p.rubro!=='Sándwiches' || !p.vencimiento) return '';
+  if (!hasVenc || !esPerec(p) || !p.vencimiento) return '';
   const dias = Math.round((new Date(p.vencimiento+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
   let cls='venc', txt='vence '+fmtFecha(p.vencimiento);
   if (dias < 0){ cls='venc rojo'; txt='VENCIDO '+fmtFecha(p.vencimiento); }
@@ -319,8 +371,10 @@ $('btnCambiar').addEventListener('click',showGate);
 
 /* ---------------- inventario ---------------- */
 function populateRubros(){
+  const sel=rubroEl.value;
   const rubros=[...new Set(DATA.map(d=>d.rubro))].sort();
   rubroEl.innerHTML='<option value="">Todos los rubros</option>'+rubros.map(r=>`<option>${r}</option>`).join('');
+  if(rubros.includes(sel)) rubroEl.value=sel;   // conserva el filtro elegido
 }
 function metrics(){
   const m={critico:0,ok:0,sobre:0,sindato:0};
@@ -352,6 +406,7 @@ async function loadData(){
   if(error){$('liveText').textContent='error de conexión';$('live').classList.add('off');console.error(error);return;}
   DATA=data;
   hasVenc = DATA.length>0 && ('vencimiento' in DATA[0]);
+  hasPerec = DATA.length>0 && ('perecedero' in DATA[0]);
   populateRubros(); metrics(); render();
   $('liveText').textContent='en vivo'; $('live').classList.remove('off');
 }
@@ -401,11 +456,18 @@ function openModal(id){
   $('m-stock').value=modalProd.stock_actual??'';
   $('m-min').value=modalProd.stock_min??'';
   $('m-max').value=modalProd.stock_max??'';
-  const esSand = modalProd.rubro==='Sándwiches';
-  $('m-venc-field').style.display = (esSand && hasVenc) ? 'block' : 'none';
-  if(esSand && hasVenc) $('m-venc').value = modalProd.vencimiento ?? '';
+  $('m-perec-row').style.display = hasPerec ? 'flex' : 'none';
+  if(hasPerec) $('m-perec').checked = !!modalProd.perecedero;
+  const conVenc = esPerec(modalProd) && hasVenc;
+  $('m-venc-field').style.display = conVenc ? 'block' : 'none';
+  if(conVenc) $('m-venc').value = modalProd.vencimiento ?? '';
   $('overlay').classList.add('open');
 }
+/* el checkbox muestra/oculta la fecha al instante */
+$('m-perec').addEventListener('change',()=>{
+  if(!modalProd) return;
+  $('m-venc-field').style.display = ($('m-perec').checked && hasVenc) ? 'block' : 'none';
+});
 function closeModal(){ $('overlay').classList.remove('open'); modalProd=null; }
 $('m-cancelar').addEventListener('click',closeModal);
 $('overlay').addEventListener('click',e=>{ if(e.target===$('overlay')) closeModal(); });
@@ -415,11 +477,66 @@ $('m-guardar').addEventListener('click',async()=>{
   if(!modalProd)return;
   const num=el=>el.value===''?null:+el.value;
   const fields={stock_actual:num($('m-stock')),stock_min:num($('m-min')),stock_max:num($('m-max'))};
-  if(modalProd.rubro==='Sándwiches' && hasVenc) fields.vencimiento=$('m-venc').value||null;
+  if(hasPerec) fields.perecedero=$('m-perec').checked;
+  const quedaPerec = hasPerec ? $('m-perec').checked : modalProd.rubro==='Sándwiches';
+  if(hasVenc) fields.vencimiento = quedaPerec ? ($('m-venc').value||null) : null;
   const savedId=modalProd.id;
   Object.assign(modalProd,fields);
   metrics(); render(); closeModal();
   await saveFields(savedId, fields);
+});
+/* eliminar producto (se desactiva, no se borra de verdad: recuperable si hay error) */
+$('m-eliminar').addEventListener('click', async()=>{
+  if(!modalProd) return;
+  if(!confirm(`¿Estás seguro que deseas eliminar "${modalProd.producto}"?\n\nDesaparecerá de la lista del inventario.`)) return;
+  const id=modalProd.id, nombre=modalProd.producto;
+  const btn=$('m-eliminar'); btn.disabled=true;
+  try{
+    const {error}=await conReintento(()=>sb.from('productos').update({activo:'NO',updated_at:new Date().toISOString()}).eq('id',id));
+    if(error){ alert('No se pudo eliminar. Revisa tu señal e inténtalo de nuevo.'); console.error(error); return; }
+    const idx=DATA.findIndex(d=>d.id===id); if(idx>=0)DATA.splice(idx,1);
+    closeModal(); populateRubros(); metrics(); render();
+  } finally { btn.disabled=false; }
+});
+
+/* ---------------- nuevo producto ---------------- */
+$('btnNuevo').addEventListener('click',()=>{
+  $('n-sede-label').textContent = 'Se agregará a ' + SEDES[SEDE].label;
+  $('n-nombre').value=''; $('n-rubro').value=''; $('n-perec').checked=false;
+  $('n-stock').value=''; $('n-min').value=''; $('n-max').value='';
+  $('rubros-list').innerHTML=[...new Set(DATA.map(d=>d.rubro))].sort().map(r=>`<option value="${r}">`).join('');
+  $('overlay-nuevo').classList.add('open');
+  setTimeout(()=>$('n-nombre').focus(),50);
+});
+function closeNuevo(){ $('overlay-nuevo').classList.remove('open'); }
+$('n-cancelar').addEventListener('click',closeNuevo);
+$('overlay-nuevo').addEventListener('click',e=>{ if(e.target===$('overlay-nuevo')) closeNuevo(); });
+const normNombre = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+$('n-guardar').addEventListener('click', async()=>{
+  const nombre=$('n-nombre').value.replace(/\s+/g,' ').trim();
+  const rubro=$('n-rubro').value.replace(/\s+/g,' ').trim();
+  if(!nombre){ alert('Escribe el nombre del producto.'); $('n-nombre').focus(); return; }
+  if(!rubro){ alert('Elige o escribe un rubro.'); $('n-rubro').focus(); return; }
+  const dup=DATA.find(d=>normNombre(d.producto)===normNombre(nombre));
+  if(dup){ alert(`"${dup.producto}" ya existe en este inventario. Búscalo en la lista para editarlo.`); return; }
+  const num=el=>el.value===''?null:+el.value;
+  const fila={producto:nombre, rubro, stock_actual:num($('n-stock')), stock_min:num($('n-min')), stock_max:num($('n-max')),
+    activo:'SÍ', origen:'APP', notas:'', sede:SEDE};
+  if(hasPerec) fila.perecedero=$('n-perec').checked;
+  const btn=$('n-guardar'); btn.disabled=true; btn.textContent='Agregando…';
+  try{
+    const {data,error}=await conReintento(()=>sb.from('productos').insert([fila]).select());
+    if(error){
+      if(error.code==='42501'){ alert('Agregar productos aún no está activado en la base de datos.\nPídele a Claude el SQL para activarlo.'); }
+      else { alert('No se pudo agregar. Revisa tu señal e inténtalo de nuevo.'); }
+      console.error(error); return;
+    }
+    if(data && data[0]) DATA.push(data[0]);
+    closeNuevo(); populateRubros(); metrics(); render();
+    qEl.value=nombre; rubroEl.value=''; filterState=null;
+    document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
+    render();
+  } finally { btn.disabled=false; btn.textContent='Agregar'; }
 });
 
 /* ---------------- reparto ---------------- */
@@ -620,8 +737,9 @@ function subscribeRealtime(){
     .on('postgres_changes',{event:'*',schema:'public',table:'productos',filter:'sede=eq.'+SEDE},payload=>{
       const row=payload.new; if(!row||!row.id||row.sede!==SEDE)return;
       const idx=DATA.findIndex(d=>d.id===row.id);
-      if(idx>=0)DATA[idx]=row; else DATA.push(row);
-      metrics(); render();
+      if(row.activo!=='SÍ'){ if(idx>=0)DATA.splice(idx,1); }   // eliminado por otro usuario
+      else if(idx>=0)DATA[idx]=row; else DATA.push(row);        // editado o agregado
+      populateRubros(); metrics(); render();
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'fudo_pendientes',filter:'sede=eq.'+SEDE},()=>{
       refreshPendientes();
