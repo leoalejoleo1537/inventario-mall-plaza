@@ -93,10 +93,15 @@
   .rep-result .rs{font-size:12px;color:var(--muted);margin-top:2px}
   .rep-result .add{color:var(--orange);font-weight:800;font-size:22px;line-height:1}
   .cart-title{font-weight:800;font-size:14px;margin:16px 0 8px}
-  .cart-row{display:grid;grid-template-columns:1fr 68px 34px;gap:8px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin-bottom:6px}
-  .cart-row .cn{font-size:14px;font-weight:600}
-  .cart-row input{width:100%;height:38px;text-align:center;border:1px solid var(--border);border-radius:8px;font-size:15px;font-weight:700}
-  .cart-row .rm{background:none;border:none;color:var(--red-fg);font-size:22px;font-weight:800;cursor:pointer;padding:2px}
+  .cart-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px 8px 12px;margin-bottom:6px}
+  .cart-row .cn{font-size:14px;font-weight:600;min-width:0}
+  .qty{display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-shrink:0}
+  .qty .qbtn{width:42px;height:40px;border:none;background:#fff;font-size:22px;font-weight:700;color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+  .qty .qbtn:active{background:var(--bg)}
+  .qty .qleft.is-trash{color:var(--red-fg)}
+  .qty .qleft svg{width:18px;height:18px}
+  .qty input{width:52px;height:40px;text-align:center;border:none;border-left:1px solid var(--border);border-right:1px solid var(--border);font-size:16px;font-weight:700;background:#fff;-moz-appearance:textfield}
+  .qty input::-webkit-outer-spin-button,.qty input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .pend-title{font-weight:800;font-size:14px;margin:26px 0 8px;display:flex;align-items:center;gap:8px}
   .pend-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px}
   .pend-row .pn{font-size:14px;font-weight:700}
@@ -438,22 +443,39 @@ $('reparto-results').addEventListener('click', e=>{
   carrito.push({id:p.id, producto:p.producto, rubro:p.rubro, cantidad:1});
   rqEl.value=''; renderRepartoResults(); renderCarrito();
 });
+const TRASH_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
 function renderCarrito(){
   $('carrito-box').style.display = carrito.length ? 'block' : 'none';
-  $('carrito-list').innerHTML = carrito.map((c,i)=>`
-    <div class="cart-row">
+  $('carrito-list').innerHTML = carrito.map((c,i)=>{
+    const esUno = (+c.cantidad||0) <= 1;
+    return `<div class="cart-row">
       <div class="cn">${c.producto}</div>
-      <input type="number" step="0.5" min="0" value="${c.cantidad}" data-idx="${i}" aria-label="Cantidad de ${c.producto}">
-      <button type="button" class="rm" data-rm="${i}" aria-label="Quitar">×</button>
-    </div>`).join('');
+      <div class="qty">
+        <button type="button" class="qbtn qleft ${esUno?'is-trash':''}" data-left="${i}" aria-label="${esUno?'Quitar':'Restar'}">${esUno?TRASH_SVG:'−'}</button>
+        <input type="number" step="0.5" min="0" value="${c.cantidad}" data-idx="${i}" aria-label="Cantidad de ${c.producto}">
+        <button type="button" class="qbtn qplus" data-inc="${i}" aria-label="Sumar">+</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 $('carrito-list').addEventListener('input', e=>{
   const inp = e.target.closest('input[data-idx]'); if(!inp) return;
-  carrito[+inp.dataset.idx].cantidad = +inp.value || 0;
+  const i = +inp.dataset.idx;
+  carrito[i].cantidad = +inp.value || 0;
+  const left = $('carrito-list').querySelector(`[data-left="${i}"]`);
+  if(left){
+    if(carrito[i].cantidad>1){ left.textContent='−'; left.classList.remove('is-trash'); left.setAttribute('aria-label','Restar'); }
+    else { left.innerHTML=TRASH_SVG; left.classList.add('is-trash'); left.setAttribute('aria-label','Quitar'); }
+  }
 });
 $('carrito-list').addEventListener('click', e=>{
-  const rm = e.target.closest('[data-rm]'); if(!rm) return;
-  carrito.splice(+rm.dataset.rm,1); renderCarrito();
+  const inc = e.target.closest('[data-inc]');
+  if(inc){ const i=+inc.dataset.inc; carrito[i].cantidad=(+carrito[i].cantidad||0)+1; renderCarrito(); return; }
+  const left = e.target.closest('[data-left]');
+  if(left){ const i=+left.dataset.left;
+    if((+carrito[i].cantidad||0)>1){ carrito[i].cantidad=+carrito[i].cantidad-1; renderCarrito(); }
+    else { carrito.splice(i,1); renderCarrito(); }
+  }
 });
 $('btnRegistrarReparto').addEventListener('click', async()=>{
   const items = carrito.filter(c=>c.cantidad>0);
