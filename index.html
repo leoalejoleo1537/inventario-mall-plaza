@@ -441,7 +441,15 @@ listEl.addEventListener('click',e=>{
   const info=e.target.closest('[data-open]'); if(!info)return;
   openModal(+info.dataset.open);
 });
-qEl.addEventListener('input',render);
+qEl.addEventListener('input',()=>{
+  // El buscador siempre busca en términos generales: al escribir se limpia
+  // el filtro de estado (crítico/en rango/…) para no acotar la búsqueda.
+  if(qEl.value.trim() && filterState){
+    filterState=null;
+    document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
+  }
+  render();
+});
 rubroEl.addEventListener('change',render);
 document.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
   const f=c.dataset.f; filterState=filterState===f?null:f;
