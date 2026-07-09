@@ -1,0 +1,305 @@
+<title>¿Qué pedir y para cuándo? — Agenda de pedidos</title>
+<style>
+  :root{
+    --bg:#F2F3F5; --card:#ffffff; --card-2:#FAFBFC; --border:#E3E5E8;
+    --ink:#1C2733; --muted:#6B7684; --faint:#9AA4AF;
+    --navy:#0F1E31; --orange:#DC4405; --orange-dark:#B93A04; --orange-soft:#FFF4EF;
+    --red:#C0392B; --red-bg:#FDECEA;
+    --green:#2E7D32; --green-bg:#E6F4E6;
+    --amber:#B26A00; --amber-bg:#FFF3E0;
+    --gray:#5F6670; --gray-bg:#EDEEF0;
+    --shadow:0 1px 2px rgba(15,30,49,.05),0 6px 20px rgba(15,30,49,.04);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0C1826; --card:#13233A; --card-2:#16283F; --border:#213650;
+      --ink:#F3F6F9; --muted:#9FB0C0; --faint:#6E8095;
+      --navy:#0A1420; --orange:#FF7A47; --orange-dark:#FF7A47; --orange-soft:#1E2E3F;
+      --red:#F06A5C; --red-bg:#37211F; --green:#5FBF63; --green-bg:#16301B;
+      --amber:#E0983A; --amber-bg:#332411; --gray:#93A0AD; --gray-bg:#22303F;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#F2F3F5; --card:#ffffff; --card-2:#FAFBFC; --border:#E3E5E8;
+    --ink:#1C2733; --muted:#6B7684; --faint:#9AA4AF;
+    --navy:#0F1E31; --orange:#DC4405; --orange-dark:#B93A04; --orange-soft:#FFF4EF;
+    --red:#C0392B; --red-bg:#FDECEA; --green:#2E7D32; --green-bg:#E6F4E6;
+    --amber:#B26A00; --amber-bg:#FFF3E0; --gray:#5F6670; --gray-bg:#EDEEF0;
+    --shadow:0 1px 2px rgba(15,30,49,.05),0 6px 20px rgba(15,30,49,.04);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0C1826; --card:#13233A; --card-2:#16283F; --border:#213650;
+    --ink:#F3F6F9; --muted:#9FB0C0; --faint:#6E8095;
+    --navy:#0A1420; --orange:#FF7A47; --orange-dark:#FF7A47; --orange-soft:#1E2E3F;
+    --red:#F06A5C; --red-bg:#37211F; --green:#5FBF63; --green-bg:#16301B;
+    --amber:#E0983A; --amber-bg:#332411; --gray:#93A0AD; --gray-bg:#22303F;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5}
+  .num{font-variant-numeric:tabular-nums}
+  .wrap{max-width:940px;margin:0 auto;padding:0 18px 80px}
+
+  header{background:var(--navy);color:#fff;padding:22px 0 20px;position:relative;overflow:hidden}
+  header::after{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;
+    background:radial-gradient(circle,rgba(220,68,5,.30),transparent 62%)}
+  .head-in{max-width:940px;margin:0 auto;padding:0 18px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;position:relative;z-index:1}
+  .brand{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#F0A585;font-weight:700;margin-bottom:5px}
+  header h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+  header p{margin:7px 0 0;color:#B9C6D4;font-size:13.5px;max-width:62ch}
+  .toggle{flex-shrink:0;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.24);
+    color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .toggle:hover{background:rgba(255,255,255,.2)}
+  .toggle:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+
+  .demo-note{display:flex;align-items:flex-start;gap:9px;background:var(--orange-soft);
+    border:1px solid color-mix(in srgb,var(--orange) 30%,transparent);
+    color:var(--ink);border-radius:12px;padding:10px 14px;margin:16px 0 4px;font-size:13px}
+  .demo-note b{color:var(--orange)}
+  .demo-note .dot{width:8px;height:8px;border-radius:50%;background:var(--orange);flex-shrink:0;margin-top:5px}
+  code{background:var(--gray-bg);padding:1px 5px;border-radius:5px;font-size:.9em}
+
+  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:18px 0 6px}
+  .controls .lab{font-size:13px;font-weight:700;color:var(--muted)}
+  .seg{display:inline-flex;background:var(--card-2);border:1px solid var(--border);border-radius:999px;padding:3px;gap:2px}
+  .seg button{border:none;background:transparent;color:var(--muted);font:inherit;font-size:12.5px;font-weight:700;
+    padding:6px 13px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .seg button.on{background:var(--orange);color:#fff}
+  .seg button:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+  .hint{font-size:12px;color:var(--faint);font-weight:600}
+
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0 8px}
+  .tile{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .tile .stripe{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .tile .t-lab{font-size:12.5px;color:var(--muted);font-weight:600}
+  .tile .t-val{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:5px;line-height:1}
+  .tile .t-val small{font-size:14px;font-weight:600;color:var(--muted)}
+  .tile .t-note{font-size:12px;color:var(--faint);font-weight:600;margin-top:6px}
+
+  .sec-lab{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);
+    font-weight:700;margin:28px 0 12px;display:flex;align-items:center;gap:10px}
+  .sec-lab::after{content:"";flex:1;height:1px;background:var(--border)}
+
+  /* calendar strip */
+  .strip-scroll{overflow-x:auto;padding-bottom:4px}
+  .strip{display:flex;gap:8px;min-width:min-content}
+  .day{flex:0 0 auto;width:74px;background:var(--card);border:1px solid var(--border);border-radius:13px;
+    padding:9px 6px 10px;text-align:center;cursor:pointer;transition:.12s;user-select:none}
+  .day:hover{border-color:var(--orange)}
+  .day.sel{border-color:var(--orange);box-shadow:0 0 0 2px color-mix(in srgb,var(--orange) 30%,transparent)}
+  .day.hoy{background:var(--navy);border-color:var(--navy)}
+  .day.hoy .d-dow,.day.hoy .d-num{color:#fff}
+  .day .d-dow{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  .day .d-num{font-size:18px;font-weight:800;margin-top:1px}
+  .day .d-badge{margin-top:7px;height:22px;display:flex;align-items:center;justify-content:center}
+  .day .d-badge span{min-width:22px;height:22px;padding:0 6px;border-radius:999px;font-size:12px;font-weight:800;
+    display:inline-flex;align-items:center;justify-content:center;color:#fff}
+  .day .d-empty{width:7px;height:7px;border-radius:50%;background:var(--border)}
+
+  /* agenda */
+  .agenda{display:flex;flex-direction:column;gap:16px}
+  .aday{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+  .aday-head{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--card-2)}
+  .aday-head .ah-day{font-size:15px;font-weight:800}
+  .aday-head .ah-date{font-size:12.5px;color:var(--muted);font-weight:600}
+  .aday-head .ah-count{margin-left:auto;font-size:12px;font-weight:700;color:var(--muted)}
+  .aday.urgent .aday-head{background:var(--red-bg)}
+  .aday.urgent .ah-day{color:var(--red)}
+  .order{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--border)}
+  .order:first-child{border-top:none}
+  .order .qty{background:var(--orange);color:#fff;font-weight:800;font-size:14px;border-radius:9px;padding:7px 11px;white-space:nowrap;text-align:center;min-width:58px}
+  .order .qty small{display:block;font-size:9.5px;font-weight:700;opacity:.85;letter-spacing:.04em}
+  .order .o-name{font-size:14.5px;font-weight:700;min-width:0}
+  .order .o-name small{display:block;color:var(--faint);font-weight:500;font-size:11.5px}
+  .order .o-why{font-size:12px;font-weight:600;text-align:right;white-space:nowrap}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+  .quiet{background:var(--card-2);border:1px dashed var(--border);border-radius:14px;padding:14px 16px;font-size:13px;color:var(--muted);margin-top:16px}
+  .quiet b{color:var(--ink)}
+  .reset{display:inline-block;margin:12px 0 0;font-size:13px;font-weight:700;color:var(--orange);cursor:pointer;background:none;border:none;padding:0}
+
+  footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--border);color:var(--faint);font-size:12px;text-align:center}
+  @media (max-width:640px){
+    .tiles{grid-template-columns:1fr}
+    header h1{font-size:22px}
+    .order{grid-template-columns:auto 1fr;gap:10px}
+    .order .o-why{grid-column:1 / -1;text-align:left}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header>
+  <div class="head-in">
+    <div>
+      <div class="brand">Café Mall Plaza · Agenda de pedidos</div>
+      <h1>¿Qué pedir y para cuándo?</h1>
+      <p>Calculado del stock de hoy, el consumo estimado y el mínimo/máximo de cada producto. Te dice qué pedir, cuánto, y qué día hacerlo para no quedar sin stock.</p>
+    </div>
+    <button class="toggle" id="themeBtn" aria-label="Cambiar tema">◐ Tema</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="demo-note">
+    <span class="dot"></span>
+    <div><b>Vista de propuesta · datos de ejemplo.</b> En la app real: el stock y el mín/máx salen de <code>productos</code>, el consumo se estima del <code>historial</code>. La <b>anticipación</b> (con cuántos días de aviso pedir) es el supuesto simple que puedes mover aquí abajo — después lo afinamos por proveedor.</div>
+  </div>
+
+  <div class="controls">
+    <span class="lab">Pedir con anticipación de:</span>
+    <div class="seg" id="antSeg" role="group" aria-label="Anticipación">
+      <button data-ant="0">mismo día</button>
+      <button data-ant="1" class="on">1 día</button>
+      <button data-ant="2">2 días</button>
+      <button data-ant="3">3 días</button>
+    </div>
+    <span class="hint" id="antHint"></span>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="sec-lab">Próximos 12 días</div>
+  <div class="strip-scroll"><div class="strip" id="strip"></div></div>
+  <button class="reset" id="reset" style="display:none">‹ Ver todos los días</button>
+
+  <div class="sec-lab" id="agendaLab">La agenda, día por día</div>
+  <div class="agenda" id="agenda"></div>
+
+  <div class="quiet" id="quiet"></div>
+
+  <footer>Propuesta · datos de ejemplo · <b>qué pedir = bajo el mínimo · cuánto = hasta el máximo · cuándo = antes de tocar el mínimo</b></footer>
+</div>
+
+<script>
+const HOY=new Date(2026,6,8);
+const DOW=['dom','lun','mar','mié','jue','vie','sáb'];
+const addD=(base,n)=>{const d=new Date(base);d.setDate(d.getDate()+n);return d;};
+const fmtDM=d=>d.getDate()+'/'+(d.getMonth()+1);
+const HORIZ=12;
+
+/* producto: stock actual, mín, máx, consumo diario estimado (u/día) */
+const P=[
+ {n:'Sánd. Ave-Palta',  r:'Sándwiches', stock:5,  min:4,  max:16, cons:3.6},
+ {n:'Sánd. Italiano',   r:'Sándwiches', stock:4,  min:3,  max:12, cons:2.7},
+ {n:'Sánd. Vegetariano',r:'Sándwiches', stock:3,  min:2,  max:8,  cons:1.4},
+ {n:'Pan de molde',     r:'Panadería',  stock:5,  min:4,  max:12, cons:2.2},
+ {n:'Café en grano',    r:'Café',       stock:4,  min:3,  max:15, cons:1.1},
+ {n:'Jamón pierna',     r:'Fiambres',   stock:3,  min:2,  max:8,  cons:1.15},
+ {n:'Palta Hass',       r:'Verduras',   stock:5,  min:3,  max:15, cons:0.95},
+ {n:'Leche entera',     r:'Lácteos',    stock:14, min:6,  max:24, cons:3.1},
+ {n:'Croissant',        r:'Pastelería', stock:17, min:6,  max:20, cons:4.4},
+ {n:'Queso mantecoso',  r:'Lácteos',    stock:6,  min:2,  max:10, cons:0.85},
+ {n:'Pulpa maracuyá',   r:'Congelados', stock:9,  min:2,  max:10, cons:1.5},
+ {n:'Coca-Cola lata',   r:'Bebidas',    stock:40, min:12, max:48, cons:1.6},
+ {n:'Servilletas',      r:'Insumos',    stock:31, min:5,  max:30, cons:0.4},
+];
+// calcular días hasta tocar el mínimo + cantidad sugerida
+P.forEach(p=>{
+  p.diasMin = p.cons>0 ? Math.max(0,(p.stock-p.min)/p.cons) : 99;
+  p.tocaMin = Math.floor(p.diasMin);            // offset en días desde hoy
+  p.qty = Math.max(0, Math.ceil(p.max - p.stock));
+});
+
+let ANT=1, FILTER=null;
+
+const tt=(o)=>o<=0?'hoy':o===1?'mañana':DOW[addD(HOY,o).getDay()]+' '+fmtDM(addD(HOY,o));
+
+function compute(){
+  // pedirOffset = cuándo toca el mínimo - anticipación
+  return P.map(p=>{
+    const raw = p.tocaMin - ANT;
+    const atrasado = raw < 0;
+    const bucket = Math.max(0, raw);
+    return {...p, raw, atrasado, bucket};
+  }).filter(p=>p.qty>0);            // si ya está lleno, nada que pedir
+}
+
+function render(){
+  document.getElementById('antHint').textContent =
+    ANT===0 ? 'pide justo cuando toca el mínimo' : `pide ${ANT} día${ANT>1?'s':''} antes de tocar el mínimo`;
+  const items = compute();
+  const enHoriz = items.filter(p=>p.bucket<=HORIZ);
+  const lejos = items.filter(p=>p.bucket>HORIZ);
+
+  // tiles
+  const hoyN = enHoriz.filter(p=>p.bucket===0);
+  const hoyU = hoyN.reduce((a,p)=>a+p.qty,0);
+  const semana = enHoriz.filter(p=>p.bucket<=6).length;
+  const T=[
+   {lab:'Pedir hoy',val:hoyN.length,unit:'productos',stripe:'var(--red)',note:hoyU+' unidades en total'},
+   {lab:'Esta semana (7 días)',val:semana,unit:'pedidos',stripe:'var(--amber)',note:'productos a reponer'},
+   {lab:'Bajo control',val:P.length-enHoriz.length,unit:'productos',stripe:'var(--green)',note:'sin urgencia en 12 días'},
+  ];
+  document.getElementById('tiles').innerHTML=T.map(t=>`
+   <div class="tile"><div class="stripe" style="background:${t.stripe}"></div>
+     <div class="t-lab">${t.lab}</div>
+     <div class="t-val num">${t.val} <small>${t.unit}</small></div>
+     <div class="t-note">${t.note}</div>
+   </div>`).join('');
+
+  // strip
+  let strip='';
+  for(let o=0;o<=HORIZ;o++){
+    const d=addD(HOY,o), c=enHoriz.filter(p=>p.bucket===o).length;
+    const col=o===0?'var(--red)':o<=2?'var(--amber)':'var(--gray)';
+    strip+=`<div class="day${o===0?' hoy':''}${FILTER===o?' sel':''}" data-off="${o}">
+      <div class="d-dow">${o===0?'HOY':DOW[d.getDay()]}</div>
+      <div class="d-num num">${d.getDate()}</div>
+      <div class="d-badge">${c?`<span style="background:${col}">${c}</span>`:'<i class="d-empty"></i>'}</div>
+    </div>`;
+  }
+  document.getElementById('strip').innerHTML=strip;
+  document.querySelectorAll('.day').forEach(el=>el.addEventListener('click',()=>{
+    const o=+el.dataset.off; FILTER=(FILTER===o?null:o); render();
+  }));
+  document.getElementById('reset').style.display=FILTER!=null?'inline-block':'none';
+  document.getElementById('agendaLab').textContent=FILTER!=null?`Pedidos para el ${tt(FILTER)}`:'La agenda, día por día';
+
+  // agenda agrupada por bucket
+  const urg=o=>o===0?{c:'var(--red)',t:'hoy'}:o<=2?{c:'var(--amber)',t:tt(o)}:{c:'var(--green)',t:tt(o)};
+  const offs=[...new Set(enHoriz.map(p=>p.bucket))].sort((a,b)=>a-b).filter(o=>FILTER==null||o===FILTER);
+  let ag='';
+  offs.forEach(o=>{
+    const rows=enHoriz.filter(p=>p.bucket===o).sort((a,b)=>b.qty-a.qty);
+    const d=addD(HOY,o), u=urg(o);
+    ag+=`<div class="aday${o===0?' urgent':''}">
+      <div class="aday-head">
+        <span class="ah-day">${o===0?'Pedir hoy':tt(o).charAt(0).toUpperCase()+tt(o).slice(1)}</span>
+        <span class="ah-date">${o===0?fmtDM(HOY):fmtDM(d)}</span>
+        <span class="ah-count">${rows.length} producto${rows.length>1?'s':''}</span>
+      </div>
+      ${rows.map(p=>{
+        const motivo = p.atrasado ? 'ya está en el mínimo' : `quedan ${p.stock} · toca el mínimo ${p.tocaMin<=0?'hoy':tt(p.tocaMin)}`;
+        return `<div class="order">
+          <div class="qty num">${p.qty}<small>UNID.</small></div>
+          <div class="o-name">${p.n}<small>${p.r}</small></div>
+          <div class="o-why" style="color:${u.c}"><span class="dot" style="background:${u.c}"></span>${motivo}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  });
+  document.getElementById('agenda').innerHTML=ag || `<div class="quiet">No hay pedidos para el ${tt(FILTER)}. 👍</div>`;
+
+  // sin urgencia
+  const q=document.getElementById('quiet');
+  if(lejos.length){
+    q.style.display='block';
+    q.innerHTML=`<b>${lejos.length} producto${lejos.length>1?'s':''} sin urgencia:</b> ${lejos.map(p=>p.n).join(', ')} — todavía tienen stock para más de 12 días.`;
+  } else q.style.display='none';
+}
+
+document.getElementById('antSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-ant]'); if(!b)return;
+  ANT=+b.dataset.ant; FILTER=null;
+  document.querySelectorAll('#antSeg button').forEach(x=>x.classList.toggle('on',x===b));
+  render();
+});
+document.getElementById('reset').addEventListener('click',()=>{FILTER=null;render();});
+(function(){const btn=document.getElementById('themeBtn'),root=document.documentElement;
+  btn.addEventListener('click',()=>{const cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    root.setAttribute('data-theme',cur==='dark'?'light':'dark');});})();
+render();
+</script>
