@@ -31,6 +31,24 @@
   .gate-btn::after{content:"›";color:var(--orange);font-size:22px;font-weight:800;line-height:1}
   .gate-btn:last-of-type{margin-bottom:0}
   .gate-foot{font-size:12px;color:var(--muted);margin-top:24px}
+  .gate.top{z-index:110}
+  .gate-input{width:100%;height:46px;padding:0 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15.5px;margin-bottom:10px;background:#fff;color:var(--text)}
+  .gate-input:focus{outline:none;border-color:var(--orange)}
+  .gate-cta{width:100%;padding:15px;border:none;border-radius:10px;background:var(--orange);color:#fff;font-size:16.5px;font-weight:800;cursor:pointer;margin-top:2px}
+  .gate-cta:disabled{opacity:.6}
+  .gate-err{display:none;background:var(--red-bg);color:var(--red-fg);border-radius:8px;padding:9px 12px;font-size:13px;font-weight:600;margin:0 0 10px;text-align:left}
+  .gate-link{background:none;border:none;color:var(--muted);font-size:12.5px;cursor:pointer;text-decoration:underline;margin-top:16px;padding:0}
+  .gate-link:hover{color:var(--orange)}
+  /* ---------- quién está en línea (presencia) ---------- */
+  .online{display:none;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;color:#fff;max-width:190px;min-width:0}
+  .online .odot{width:8px;height:8px;border-radius:50%;background:#4CAF50;flex-shrink:0}
+  .online .onames{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  @media (max-width:560px){
+    .topbar .inner{gap:8px}
+    .top-right{gap:8px}
+    .online{max-width:96px;padding:6px 9px;font-size:11.5px}
+    .btn-switch{padding:6px 10px;font-size:12px}
+  }
   /* ---------- top bar ---------- */
   .topbar{background:var(--navy);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:20}
   .topbar .inner{max-width:900px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
@@ -137,14 +155,28 @@
 </head>
 <body>
 
-<!-- ================= SELECTOR DE SEDE (obligatorio al abrir) ================= -->
+<!-- ================= INICIO DE SESIÓN (obligatorio al abrir) ================= -->
+<div class="gate top" id="login-gate">
+  <div class="gate-box">
+    <div class="gate-logo">Inventario</div>
+    <p class="gate-sub">Inicia sesión para comenzar</p>
+    <div class="gate-err" id="login-err"></div>
+    <input type="email" class="gate-input" id="login-email" placeholder="Correo" autocomplete="username">
+    <input type="password" class="gate-input" id="login-pass" placeholder="Contraseña" autocomplete="current-password">
+    <button class="gate-cta" id="login-btn">Entrar</button>
+    <div class="gate-foot">¿Sin cuenta? Pídesela al administrador</div>
+  </div>
+</div>
+
+<!-- ================= SELECTOR DE SEDE (tras iniciar sesión) ================= -->
 <div class="gate" id="gate">
   <div class="gate-box">
     <div class="gate-logo">Inventario</div>
     <p class="gate-sub">Elige tu local para comenzar</p>
     <button class="gate-btn" data-sede="plaza">Café Mall Plaza</button>
     <button class="gate-btn" data-sede="angamos">Parque Angamos</button>
-    <div class="gate-foot">Sincronizado en tiempo real</div>
+    <div class="gate-foot" id="gateUser">Sincronizado en tiempo real</div>
+    <button class="gate-link" id="btnSalir">Cerrar sesión</button>
   </div>
 </div>
 
@@ -152,6 +184,7 @@
   <div class="inner">
     <h1 id="topTitle">Inventario</h1>
     <div class="top-right">
+      <span class="online" id="online"><span class="odot"></span><span class="onames" id="onames"></span></span>
       <button class="btn-switch" id="btnCambiar">⇄ Cambiar sede</button>
       <span class="live" id="live"><span class="dot"></span><span id="liveText">—</span></span>
     </div>
@@ -360,6 +393,7 @@ function pickSede(s){
   loadData();
   subscribeRealtime();
   refreshPendientes();
+  if(presChannel){ try{ presChannel.track({nombre:NOMBRE, sede:SEDE}); }catch(e){} }  // avisa en qué sede estoy
 }
 function showGate(){
   if(channel){ sb.removeChannel(channel); channel=null; }
@@ -369,6 +403,75 @@ function showGate(){
 }
 document.querySelectorAll('.gate-btn').forEach(b=>b.addEventListener('click',()=>pickSede(b.dataset.sede)));
 $('btnCambiar').addEventListener('click',showGate);
+
+/* ---------------- inicio de sesión + quién está en línea ---------------- */
+let USER=null, NOMBRE=null, presChannel=null;
+
+async function doLogin(){
+  const email=$('login-email').value.trim(), pass=$('login-pass').value;
+  const err=$('login-err'); err.style.display='none';
+  if(!email||!pass){ err.textContent='Escribe tu correo y contraseña.'; err.style.display='block'; return; }
+  const btn=$('login-btn'); btn.disabled=true; btn.textContent='Entrando…';
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error){
+      err.textContent=/invalid/i.test(error.message||'')?'Correo o contraseña incorrectos.':'No se pudo iniciar sesión. Revisa tu señal e inténtalo de nuevo.';
+      err.style.display='block'; return;
+    }
+    onLogin(data.user);
+  } finally { btn.disabled=false; btn.textContent='Entrar'; }
+}
+function onLogin(user){
+  USER=user;
+  NOMBRE=(user.user_metadata&&user.user_metadata.nombre)||(user.email||'').split('@')[0]||'Usuario';
+  $('login-gate').classList.add('hidden');
+  $('login-pass').value='';
+  $('gateUser').textContent='Conectado como '+NOMBRE;
+  joinPresence();
+}
+$('login-btn').addEventListener('click',doLogin);
+$('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+$('login-email').addEventListener('keydown',e=>{ if(e.key==='Enter') $('login-pass').focus(); });
+
+$('btnSalir').addEventListener('click', async()=>{
+  try{ await sb.auth.signOut(); }catch(e){ console.error(e); }
+  if(presChannel){ sb.removeChannel(presChannel); presChannel=null; }
+  USER=null; NOMBRE=null;
+  $('online').style.display='none';
+  $('gateUser').textContent='Sincronizado en tiempo real';
+  showGate();
+  $('login-gate').classList.remove('hidden');
+  setTimeout(()=>$('login-email').focus(),50);
+});
+
+/* presencia: como el "pato" de Google Sheets — solo quién está conectado AHORA, no guarda nada */
+function joinPresence(){
+  if(presChannel||!USER) return;
+  presChannel = sb.channel('presencia-global',{config:{presence:{key:USER.id}}});
+  presChannel.on('presence',{event:'sync'},renderPresence)
+    .subscribe(async status=>{
+      if(status==='SUBSCRIBED'){
+        try{ await presChannel.track({nombre:NOMBRE, sede:SEDE}); }catch(e){ console.error(e); }
+        renderPresence();
+      }
+    });
+}
+function renderPresence(){
+  const el=$('online');
+  if(!presChannel){ el.style.display='none'; return; }
+  const metas=Object.values(presChannel.presenceState()).map(a=>a[a.length-1]).filter(m=>m&&m.nombre);
+  if(!metas.length){ el.style.display='none'; return; }
+  const names=[...new Set(metas.map(m=>m.nombre))];
+  $('onames').textContent=names.join(', ');
+  el.title='En línea: '+metas.map(m=>m.nombre+(m.sede&&SEDES[m.sede]?' · '+SEDES[m.sede].label:'')).join(', ');
+  el.style.display='inline-flex';
+}
+async function initAuth(){
+  try{
+    const {data}=await sb.auth.getSession();
+    if(data&&data.session&&data.session.user) onLogin(data.session.user);  // sesión guardada: entra directo
+  }catch(e){ console.error(e); }
+}
 
 /* ---------------- inventario ---------------- */
 function populateRubros(){
@@ -758,7 +861,8 @@ function subscribeRealtime(){
     });
 }
 
-/* al abrir: no cargamos nada hasta que se elija una sede (gate visible) */
+/* al abrir: primero inicio de sesión (o sesión guardada); luego se elige sede */
+initAuth();
 </script>
 </body>
 </html>
