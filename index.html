@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventario</title>
-<!-- multi-sede: Cafe Mall Plaza + Parque Angamos -->
+<!-- multi-sede: Cafe Mall Plaza + Parque Angamos + Bodega -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -175,6 +175,7 @@
     <p class="gate-sub">Elige tu local para comenzar</p>
     <button class="gate-btn" data-sede="plaza">Café Mall Plaza</button>
     <button class="gate-btn" data-sede="angamos">Parque Angamos</button>
+    <button class="gate-btn" data-sede="bodega">Bodega</button>
     <div class="gate-foot" id="gateUser">Sincronizado en tiempo real</div>
     <button class="gate-link" id="btnSalir">Cerrar sesión</button>
   </div>
@@ -328,6 +329,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const SEDES = {
   plaza:   { label:'Café Mall Plaza',  excel:'plaza'   },
   angamos: { label:'Parque Angamos',   excel:'angamos' },
+  bodega:  { label:'Bodega',           excel:'bodega'  },
 };
 let SEDE = null;
 let channel = null;
