@@ -352,6 +352,7 @@ function maxOk(p){ return p.stock_max != null && (p.stock_min == null || p.stock
 function estado(p){
   const a = p.stock_actual;
   if (a == null) return 'sindato';
+  if (a <= 0) return 'critico';                              // en 0 siempre es crítico, aunque el mínimo sea 0 o esté vacío
   if (p.stock_min != null && a <= p.stock_min) return 'critico';
   if (maxOk(p) && a > p.stock_max) return 'sobre';
   return 'ok';
