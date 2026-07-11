@@ -122,8 +122,12 @@
   .qty input::-webkit-outer-spin-button,.qty input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .pend-title{font-weight:800;font-size:14px;margin:26px 0 8px;display:flex;align-items:center;gap:8px}
   .pend-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px}
+  .pend-row .pend-main{flex:1;min-width:0}
   .pend-row .pn{font-size:14px;font-weight:700}
   .pend-row .pm{font-size:12px;color:var(--muted);margin-top:2px}
+  .pend-qty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:56px;padding:5px 10px;background:var(--amber-bg);border-radius:10px;line-height:1}
+  .pend-qty b{font-size:22px;font-weight:800;color:var(--amber-fg)}
+  .pend-qty small{font-size:9px;font-weight:700;color:var(--amber-fg);opacity:.8;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
   .btn-done{background:var(--green-bg);color:var(--green-fg);border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
   /* ---------- modal (FUDO) ---------- */
   .overlay{position:fixed;inset:0;background:rgba(10,20,35,0.55);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
@@ -745,7 +749,8 @@ async function refreshPendientes(){
   if(!data.length){ $('pend-list').innerHTML='<div class="empty">No hay pendientes. Todo al día 👍</div>'; return; }
   $('pend-list').innerHTML = data.map(p=>`
     <div class="pend-row" data-pend="${p.id}">
-      <div><div class="pn">${p.producto}</div><div class="pm">+${fmt(p.cantidad)} · ${new Date(p.created_at).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>
+      <div class="pend-main"><div class="pn">${p.producto}</div><div class="pm">${new Date(p.created_at).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>
+      <div class="pend-qty"><b>+${fmt(p.cantidad)}</b><small>unid.</small></div>
       <button type="button" class="btn-done" data-done="${p.id}">Ya actualicé</button>
     </div>`).join('');
 }
