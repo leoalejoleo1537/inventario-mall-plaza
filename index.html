@@ -76,6 +76,17 @@
   .mcard .n{font-size:22px;font-weight:700}
   .mcard .l{font-size:11px;color:var(--muted);margin-top:2px}
   .count{font-size:12px;color:var(--muted);margin:6px 0}
+  /* secciones (acordeón) */
+  .sec{margin-bottom:8px}
+  .sec-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:15px;font-weight:800;color:var(--text);cursor:pointer;box-shadow:0 1px 2px rgba(15,30,49,0.04);text-align:left}
+  .sec.open .sec-btn{border-bottom-left-radius:0;border-bottom-right-radius:0}
+  .sec-tags{display:flex;align-items:center;gap:6px;flex-shrink:0}
+  .sec-count{background:var(--gray-bg);color:var(--gray-fg);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800}
+  .sec-crit{background:var(--red-bg);color:var(--red-fg);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800}
+  .sec-arrow{color:var(--muted);font-size:11px;transition:transform .15s}
+  .sec.open .sec-arrow{transform:rotate(180deg)}
+  .sec-body{border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:8px;background:var(--bg)}
+  .sec-body .row:last-child{margin-bottom:0}
   /* ---------- product rows (FUDO cards) ---------- */
   .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
   .row .info{cursor:pointer;min-width:0}
@@ -208,7 +219,6 @@
 <div class="wrap" id="view-inv">
   <div class="controls">
     <input type="text" id="q" placeholder="Buscar producto…">
-    <select id="rubro"></select>
   </div>
   <div class="metrics">
     <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
@@ -302,8 +312,8 @@
       <input type="text" id="n-nombre" placeholder="Ej: Torta selva negra" maxlength="60">
     </div>
     <div class="field">
-      <label>Rubro</label>
-      <input type="text" id="n-rubro" list="rubros-list" placeholder="Elige uno o escribe uno nuevo">
+      <label>Sección</label>
+      <input type="text" id="n-rubro" list="rubros-list" placeholder="Elige una o escribe una nueva">
       <datalist id="rubros-list"></datalist>
     </div>
     <label class="chkrow">
@@ -349,7 +359,8 @@ let carrito = [];         // productos que llegaron, pendientes de registrar
 function esPerec(p){ return hasPerec ? !!p.perecedero : p.rubro==='Sándwiches'; }
 
 const $ = id => document.getElementById(id);
-const qEl=$('q'), rubroEl=$('rubro'), listEl=$('list'), countEl=$('count');
+const qEl=$('q'), listEl=$('list'), countEl=$('count');
+let openSecs=new Set();   // secciones desplegadas
 
 /* ---------------- semáforo ---------------- */
 function maxOk(p){ return p.stock_max != null && (p.stock_min == null || p.stock_max > p.stock_min); }
@@ -389,7 +400,7 @@ function pickSede(s){
   // reset estado/filtros
   DATA=[]; filterState=null; modalProd=null; carrito=[];
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
-  qEl.value=''; rubroEl.value='';
+  qEl.value=''; openSecs=new Set();
   $('rq').value=''; $('reparto-results').innerHTML=''; $('carrito-box').style.display='none';
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
@@ -481,36 +492,53 @@ async function initAuth(){
 }
 
 /* ---------------- inventario ---------------- */
-function populateRubros(){
-  const sel=rubroEl.value;
-  const rubros=[...new Set(DATA.map(d=>d.rubro))].sort();
-  rubroEl.innerHTML='<option value="">Todos los rubros</option>'+rubros.map(r=>`<option>${r}</option>`).join('');
-  if(rubros.includes(sel)) rubroEl.value=sel;   // conserva el filtro elegido
-}
+/* orden físico de las secciones del café; cualquier otra va al final */
+const SEC_ORDEN=['Vitrina de tortas','Limpieza','Sándwiches','Mesones','Congelador','Té','Vitrina de dulces','Vitrina de bebidas','Mueble de mezclas','Mueble de bolsas','Mueble de caja'];
 function metrics(){
   const m={critico:0,ok:0,sobre:0,sindato:0};
   DATA.forEach(p=>m[estado(p)]++);
   for(const k in m)$('c-'+k).textContent=m[k];
 }
+function rowHTML(p){
+  const e=estado(p),cf=CFG[e];
+  return `<div class="row" data-row="${p.id}">
+    <div class="info" data-open="${p.id}">
+      <div class="name">${p.producto} ${vencChip(p)}</div>
+      <div class="sub">mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div>
+    </div>
+    <div class="right">
+      <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
+      <input type="number" step="0.5" value="${p.stock_actual==null?'':p.stock_actual}" data-id="${p.id}" aria-label="Stock de ${p.producto}">
+    </div>
+  </div>`;
+}
 function render(){
-  const q=qEl.value.trim().toLowerCase(), rf=rubroEl.value;
-  let rows=DATA.filter(p=>(!q||p.producto.toLowerCase().includes(q))&&(!rf||p.rubro===rf)&&(!filterState||estado(p)===filterState));
-  const order={critico:0,sindato:1,sobre:2,ok:3};
-  rows.sort((a,b)=>order[estado(a)]-order[estado(b)]||a.producto.localeCompare(b.producto));
+  const q=qEl.value.trim().toLowerCase();
+  let rows=DATA.filter(p=>(!q||p.producto.toLowerCase().includes(q))&&(!filterState||estado(p)===filterState));
+  // SIEMPRE alfabético: el orden no depende de cantidades ni estados,
+  // así una fila no se mueve cuando cambia su stock.
+  rows.sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}));
   countEl.textContent=`${rows.length} de ${DATA.length} productos`;
-  listEl.innerHTML=rows.map(p=>{
-    const e=estado(p),cf=CFG[e];
-    return `<div class="row" data-row="${p.id}">
-      <div class="info" data-open="${p.id}">
-        <div class="name">${p.producto} ${vencChip(p)}</div>
-        <div class="sub">mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div>
-      </div>
-      <div class="right">
-        <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
-        <input type="number" step="0.5" value="${p.stock_actual==null?'':p.stock_actual}" data-id="${p.id}" aria-label="Stock de ${p.producto}">
-      </div>
+  // agrupar por sección
+  const grupos=new Map();
+  rows.forEach(p=>{const s=p.rubro||'Sin sección'; if(!grupos.has(s))grupos.set(s,[]); grupos.get(s).push(p);});
+  const orden=[...grupos.keys()].sort((a,b)=>{
+    const ia=SEC_ORDEN.indexOf(a),ib=SEC_ORDEN.indexOf(b);
+    return (ia<0?SEC_ORDEN.length:ia)-(ib<0?SEC_ORDEN.length:ib)||a.localeCompare(b,'es');
+  });
+  const filtrando=!!q||!!filterState;   // al buscar o filtrar, las secciones con resultados se abren solas
+  listEl.innerHTML=orden.map(sec=>{
+    const items=grupos.get(sec);
+    const crit=items.reduce((n,p)=>n+(estado(p)==='critico'?1:0),0);
+    const abierta=filtrando||openSecs.has(sec);
+    return `<div class="sec${abierta?' open':''}">
+      <button type="button" class="sec-btn" data-sec="${sec}">
+        <span>${sec}</span>
+        <span class="sec-tags">${crit?`<span class="sec-crit" title="productos en crítico">${crit} crít.</span>`:''}<span class="sec-count">${items.length}</span><span class="sec-arrow">▼</span></span>
+      </button>
+      ${abierta?`<div class="sec-body">${items.map(rowHTML).join('')}</div>`:''}
     </div>`;
-  }).join('');
+  }).join('')||'<div class="empty">No hay productos que coincidan.</div>';
 }
 async function loadData(){
   const {data,error}=await sb.from('productos').select('*').eq('sede',SEDE).eq('activo','SÍ').order('producto');
@@ -518,7 +546,7 @@ async function loadData(){
   DATA=data;
   hasVenc = DATA.length>0 && ('vencimiento' in DATA[0]);
   hasPerec = DATA.length>0 && ('perecedero' in DATA[0]);
-  populateRubros(); metrics(); render();
+  metrics(); render();
   $('liveText').textContent='en vivo'; $('live').classList.remove('off');
 }
 /* reintenta una operación de Supabase hasta 3 veces (para señal móvil floja) */
@@ -546,8 +574,14 @@ listEl.addEventListener('change',e=>{
   const p=DATA.find(d=>d.id===id); p.stock_actual=val;
   metrics(); render(); saveFields(id,{stock_actual:val});
 });
-/* abrir ficha */
+/* abrir/cerrar sección, o abrir ficha de producto */
 listEl.addEventListener('click',e=>{
+  const secBtn=e.target.closest('[data-sec]');
+  if(secBtn){
+    const s=secBtn.dataset.sec;
+    if(openSecs.has(s)) openSecs.delete(s); else openSecs.add(s);
+    render(); return;
+  }
   const info=e.target.closest('[data-open]'); if(!info)return;
   openModal(+info.dataset.open);
 });
@@ -560,7 +594,6 @@ qEl.addEventListener('input',()=>{
   }
   render();
 });
-rubroEl.addEventListener('change',render);
 document.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
   const f=c.dataset.f; filterState=filterState===f?null:f;
   document.querySelectorAll('.mcard').forEach(x=>x.classList.toggle('sel',x.dataset.f===filterState));
@@ -614,7 +647,7 @@ $('m-eliminar').addEventListener('click', async()=>{
     const {error}=await conReintento(()=>sb.from('productos').update({activo:'NO',updated_at:new Date().toISOString()}).eq('id',id));
     if(error){ alert('No se pudo eliminar. Revisa tu señal e inténtalo de nuevo.'); console.error(error); return; }
     const idx=DATA.findIndex(d=>d.id===id); if(idx>=0)DATA.splice(idx,1);
-    closeModal(); populateRubros(); metrics(); render();
+    closeModal(); metrics(); render();
   } finally { btn.disabled=false; }
 });
 
@@ -623,7 +656,7 @@ $('btnNuevo').addEventListener('click',()=>{
   $('n-sede-label').textContent = 'Se agregará a ' + SEDES[SEDE].label;
   $('n-nombre').value=''; $('n-rubro').value=''; $('n-perec').checked=false;
   $('n-stock').value=''; $('n-min').value=''; $('n-max').value='';
-  $('rubros-list').innerHTML=[...new Set(DATA.map(d=>d.rubro))].sort().map(r=>`<option value="${r}">`).join('');
+  $('rubros-list').innerHTML=[...new Set([...SEC_ORDEN,...DATA.map(d=>d.rubro)])].map(r=>`<option value="${r}">`).join('');
   $('overlay-nuevo').classList.add('open');
   setTimeout(()=>$('n-nombre').focus(),50);
 });
@@ -635,7 +668,7 @@ $('n-guardar').addEventListener('click', async()=>{
   const nombre=$('n-nombre').value.replace(/\s+/g,' ').trim();
   const rubro=$('n-rubro').value.replace(/\s+/g,' ').trim();
   if(!nombre){ alert('Escribe el nombre del producto.'); $('n-nombre').focus(); return; }
-  if(!rubro){ alert('Elige o escribe un rubro.'); $('n-rubro').focus(); return; }
+  if(!rubro){ alert('Elige o escribe una sección.'); $('n-rubro').focus(); return; }
   const dup=DATA.find(d=>normNombre(d.producto)===normNombre(nombre));
   if(dup){ alert(`"${dup.producto}" ya existe en este inventario. Búscalo en la lista para editarlo.`); return; }
   const num=el=>el.value===''?null:+el.value;
@@ -651,8 +684,8 @@ $('n-guardar').addEventListener('click', async()=>{
       console.error(error); return;
     }
     if(data && data[0]) DATA.push(data[0]);
-    closeNuevo(); populateRubros(); metrics(); render();
-    qEl.value=nombre; rubroEl.value=''; filterState=null;
+    closeNuevo(); metrics(); render();
+    qEl.value=nombre; filterState=null;
     document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
     render();
   } finally { btn.disabled=false; btn.textContent='Agregar'; }
@@ -819,7 +852,7 @@ $('btnVolver').addEventListener('click',loadHistorial);
 $('btnExcel').addEventListener('click',()=>{
   if(!histRows.length)return;
   const rows=histRows.map(p=>({
-    Fecha:fmtFecha(p.fecha), Producto:p.producto, Rubro:p.rubro,
+    Fecha:fmtFecha(p.fecha), Producto:p.producto, 'Sección':p.rubro,
     'Stock':p.stock_actual, 'Mínimo':p.stock_min, 'Máximo':p.stock_max,
     'Estado':CFG[estado(p)].t, 'Vencimiento':p.vencimiento?fmtFecha(p.vencimiento):''
   }));
@@ -859,7 +892,7 @@ function subscribeRealtime(){
       const idx=DATA.findIndex(d=>d.id===row.id);
       if(row.activo!=='SÍ'){ if(idx>=0)DATA.splice(idx,1); }   // eliminado por otro usuario
       else if(idx>=0)DATA[idx]=row; else DATA.push(row);        // editado o agregado
-      populateRubros(); metrics(); render();
+      metrics(); render();
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'fudo_pendientes',filter:'sede=eq.'+SEDE},()=>{
       refreshPendientes();
