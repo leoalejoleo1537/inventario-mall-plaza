@@ -152,7 +152,7 @@
   .stepper input{width:90px;height:52px;text-align:center;font-size:26px;font-weight:800;border:1px solid var(--border);border-radius:10px}
   .field{margin:12px 0}
   .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px;font-weight:600}
-  .field input{width:100%;height:44px;padding:0 12px;border:1px solid var(--border);border-radius:10px;font-size:16px}
+  .field input,.field select{width:100%;height:44px;padding:0 12px;border:1px solid var(--border);border-radius:10px;font-size:16px;background:#fff;color:var(--text)}
   .mbtns{display:flex;gap:10px;margin-top:18px}
   .mbtns .btn{flex:1}
   .btn-del{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;margin-top:14px;border-radius:10px;border:1.5px solid var(--red-fg);background:var(--red-bg);color:var(--red-fg);font-size:14.5px;font-weight:700;cursor:pointer}
@@ -270,7 +270,10 @@
 <div class="overlay" id="overlay">
   <div class="modal">
     <h2 id="m-nombre">Producto</h2>
-    <p class="mr" id="m-rubro"></p>
+    <div class="field" style="margin-top:6px">
+      <label>Sección</label>
+      <select id="m-seccion"></select>
+    </div>
     <div class="field" style="text-align:center;margin-top:0">
       <label style="text-align:center">Stock actual</label>
       <div class="stepper">
@@ -604,7 +607,8 @@ document.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
 function openModal(id){
   modalProd=DATA.find(d=>d.id===id); if(!modalProd)return;
   $('m-nombre').textContent=modalProd.producto;
-  $('m-rubro').textContent=modalProd.rubro;
+  const secs=[...new Set([...SEC_ORDEN,...DATA.map(d=>d.rubro)])];
+  $('m-seccion').innerHTML=secs.map(s=>`<option${s===modalProd.rubro?' selected':''}>${s}</option>`).join('');
   $('m-stock').value=modalProd.stock_actual??'';
   $('m-min').value=modalProd.stock_min??'';
   $('m-max').value=modalProd.stock_max??'';
@@ -628,7 +632,7 @@ $('m-mas').addEventListener('click',()=>{const i=$('m-stock');i.value=(+i.value|
 $('m-guardar').addEventListener('click',async()=>{
   if(!modalProd)return;
   const num=el=>el.value===''?null:+el.value;
-  const fields={stock_actual:num($('m-stock')),stock_min:num($('m-min')),stock_max:num($('m-max'))};
+  const fields={stock_actual:num($('m-stock')),stock_min:num($('m-min')),stock_max:num($('m-max')),rubro:$('m-seccion').value};
   if(hasPerec) fields.perecedero=$('m-perec').checked;
   const quedaPerec = hasPerec ? $('m-perec').checked : modalProd.rubro==='Sándwiches';
   if(hasVenc) fields.vencimiento = quedaPerec ? ($('m-venc').value||null) : null;
