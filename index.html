@@ -87,6 +87,14 @@
   .sec.open .sec-arrow{transform:rotate(180deg)}
   .sec-body{border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:8px;background:var(--bg)}
   .sec-body .row:last-child{margin-bottom:0}
+  /* recetas */
+  .rec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
+  .rec-card .rn{font-weight:700;font-size:15px}
+  .rec-card .ri{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .rec-irow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .rec-irow select{flex:1;min-width:0}
+  .rec-irow .rec-ins-cant{width:66px;flex:none;height:42px;text-align:center;border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:600}
+  .rec-irow .rec-ins-del{flex:none;width:38px;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--red-fg);cursor:pointer;font-size:15px}
   /* ---------- product rows (FUDO cards) ---------- */
   .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
   .row .info{cursor:pointer;min-width:0}
@@ -212,6 +220,7 @@
     <button class="tab active" data-tab="inv">Inventario</button>
     <button class="tab" data-tab="reparto">Reparto <span class="tab-badge" id="repBadge" style="display:none"></span></button>
     <button class="tab" data-tab="hist">Historial</button>
+    <button class="tab" data-tab="recetas">Recetas</button>
   </div>
 </div>
 
@@ -263,6 +272,42 @@
       <button class="btn btn-orange btn-sm" id="btnExcel">Descargar Excel</button>
     </div>
     <div id="hist-rows"></div>
+  </div>
+</div>
+
+<!-- ================= RECETAS ================= -->
+<div class="wrap" id="view-recetas" style="display:none">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+    <input type="text" id="rec-q" placeholder="Buscar receta…">
+    <button class="btn btn-orange" id="btnNuevaReceta" style="white-space:nowrap">+ Nueva</button>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin:2px 2px 12px">Cuando se venda un producto en Fudo, se descuentan del inventario los insumos de su receta.</p>
+  <div class="count" id="rec-count"></div>
+  <div id="rec-list"><div class="empty">Cargando recetas…</div></div>
+</div>
+
+<!-- ================= MODAL RECETA ================= -->
+<div class="overlay" id="overlay-receta">
+  <div class="modal">
+    <h2 id="rec-modal-title">Nueva receta</h2>
+    <p class="mr">Elige el producto que se vende en Fudo y qué insumos descuenta del inventario.</p>
+    <div class="field" style="margin-top:0">
+      <label>Producto de Fudo</label>
+      <select id="rec-fudo"></select>
+    </div>
+    <div class="field">
+      <label>Insumos que se descuentan por unidad vendida</label>
+      <div id="rec-insumos"></div>
+      <button type="button" class="btn btn-outline btn-sm" id="btnAddInsumo" style="margin-top:8px">+ Agregar insumo</button>
+    </div>
+    <button type="button" class="btn-del" id="rec-eliminar" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      Eliminar receta
+    </button>
+    <div class="mbtns">
+      <button class="btn btn-outline" id="rec-cancelar">Cancelar</button>
+      <button class="btn btn-orange" id="rec-guardar">Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -407,7 +452,7 @@ function pickSede(s){
   $('rq').value=''; $('reparto-results').innerHTML=''; $('carrito-box').style.display='none';
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
-  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none';
+  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none';
   listEl.innerHTML=''; countEl.textContent='';
   $('gate').classList.add('hidden');
   $('liveText').textContent='conectando…'; $('live').classList.remove('off');
@@ -808,9 +853,138 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   $('view-inv').style.display = tab==='inv'?'block':'none';
   $('view-reparto').style.display = tab==='reparto'?'block':'none';
   $('view-hist').style.display = tab==='hist'?'block':'none';
+  $('view-recetas').style.display = tab==='recetas'?'block':'none';
   if(tab==='hist') loadHistorial();
   if(tab==='reparto') refreshPendientes();
+  if(tab==='recetas') loadRecetas();
 }));
+
+/* ---------------- recetas ---------------- */
+let FUDOPROD=[];   // productos activos de Fudo de la sede (para el desplegable)
+let RECETAS=[];    // recetas con sus insumos
+let recEditId=null;
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function loadRecetas(){
+  if(!SEDE) return;
+  $('rec-list').innerHTML='<div class="empty">Cargando recetas…</div>';
+  const fp = await sb.from('fudo_productos').select('fudo_product_id,nombre,code').eq('sede',SEDE).eq('activo',true).order('nombre');
+  if(fp.error){
+    $('rec-list').innerHTML='<div class="empty">Todavía no se han traído los productos de Fudo para esta sede.<br>Hay que correr el puente de productos primero.</div>';
+    $('rec-count').textContent=''; return;
+  }
+  FUDOPROD = fp.data||[];
+  const rc = await sb.from('recetas').select('*').eq('sede',SEDE).order('fudo_product_nombre');
+  if(rc.error){
+    $('rec-list').innerHTML='<div class="empty">Las recetas aún no están activadas en la base de datos.</div>';
+    $('rec-count').textContent=''; return;
+  }
+  const ids=(rc.data||[]).map(r=>r.id);
+  let items=[];
+  if(ids.length){ const ri=await sb.from('receta_items').select('*').in('receta_id',ids); items=ri.data||[]; }
+  RECETAS=(rc.data||[]).map(r=>({...r, items: items.filter(it=>it.receta_id===r.id)}));
+  renderRecetas();
+}
+function renderRecetas(){
+  const q=($('rec-q').value||'').trim().toLowerCase();
+  const rows=RECETAS.filter(r=>!q || (r.fudo_product_nombre||'').toLowerCase().includes(q));
+  $('rec-count').textContent = `${rows.length} receta${rows.length===1?'':'s'}`;
+  if(!rows.length){ $('rec-list').innerHTML='<div class="empty">No hay recetas todavía. Usa “+ Nueva” para crear la primera.</div>'; return; }
+  $('rec-list').innerHTML = rows.map(r=>{
+    const det=(r.items||[]).map(it=>{
+      const p=DATA.find(d=>d.id===it.producto_id);
+      return `${fmt(it.cantidad)} × ${esc(p?p.producto:('#'+it.producto_id))}`;
+    }).join('  ·  ') || '<span style="color:var(--red-fg)">sin insumos</span>';
+    return `<div class="rec-card" data-rec="${r.id}">
+      <div class="rn">${esc(r.fudo_product_nombre)||'(producto de Fudo)'}</div>
+      <div class="ri">${det}</div>
+    </div>`;
+  }).join('');
+}
+function insumoOptions(selId){
+  const ops=DATA.slice().sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}))
+    .map(p=>`<option value="${p.id}"${p.id===selId?' selected':''}>${esc(p.producto)}</option>`).join('');
+  return '<option value="">— elige un insumo —</option>'+ops;
+}
+function addInsumoRow(pid=null, cant=1){
+  const div=document.createElement('div');
+  div.className='rec-irow';
+  div.innerHTML=`<select class="rec-ins-prod">${insumoOptions(pid)}</select>`
+    +`<input type="number" class="rec-ins-cant" step="0.5" min="0" value="${cant}" aria-label="Cantidad">`
+    +`<button type="button" class="rec-ins-del" title="Quitar insumo">✕</button>`;
+  $('rec-insumos').appendChild(div);
+}
+function openReceta(id){
+  recEditId=id||null;
+  const r = id? RECETAS.find(x=>x.id===id) : null;
+  $('rec-modal-title').textContent = r? 'Editar receta' : 'Nueva receta';
+  $('rec-fudo').innerHTML = '<option value="">— elige un producto de Fudo —</option>'
+    + FUDOPROD.map(p=>`<option value="${esc(p.fudo_product_id)}"${(r&&r.fudo_product_id===p.fudo_product_id)?' selected':''}>${esc(p.nombre)||'(sin nombre)'}${p.code?(' · '+esc(p.code)):''}</option>`).join('');
+  $('rec-insumos').innerHTML='';
+  if(r && r.items && r.items.length) r.items.forEach(it=>addInsumoRow(it.producto_id, it.cantidad));
+  else addInsumoRow();
+  $('rec-eliminar').style.display = r? 'flex':'none';
+  $('overlay-receta').classList.add('open');
+}
+function closeRecetaModal(){ $('overlay-receta').classList.remove('open'); recEditId=null; }
+$('btnNuevaReceta').addEventListener('click',()=>{
+  if(!FUDOPROD.length){ alert('Aún no hay productos de Fudo traídos para esta sede.'); return; }
+  openReceta(null);
+});
+$('rec-cancelar').addEventListener('click',closeRecetaModal);
+$('overlay-receta').addEventListener('click',e=>{ if(e.target===$('overlay-receta')) closeRecetaModal(); });
+$('btnAddInsumo').addEventListener('click',()=>addInsumoRow());
+$('rec-insumos').addEventListener('click',e=>{ const d=e.target.closest('.rec-ins-del'); if(d) d.closest('.rec-irow').remove(); });
+$('rec-list').addEventListener('click',e=>{ const c=e.target.closest('[data-rec]'); if(c) openReceta(+c.dataset.rec); });
+$('rec-q').addEventListener('input',renderRecetas);
+$('rec-guardar').addEventListener('click', async()=>{
+  const fpid=$('rec-fudo').value;
+  if(!fpid){ alert('Elige el producto de Fudo.'); return; }
+  const fp=FUDOPROD.find(p=>p.fudo_product_id===fpid);
+  const nombre=fp?fp.nombre:'';
+  const items=[];
+  for(const row of $('rec-insumos').querySelectorAll('.rec-irow')){
+    const pid=+row.querySelector('.rec-ins-prod').value;
+    if(!pid) continue;
+    const cv=row.querySelector('.rec-ins-cant').value;
+    const cant = cv===''?null:+cv;
+    if(cant==null || cant<=0){ alert('Cada insumo debe tener una cantidad mayor que 0.'); return; }
+    items.push({producto_id:pid, cantidad:cant});
+  }
+  if(!items.length){ alert('Agrega al menos un insumo.'); return; }
+  const idset=items.map(i=>i.producto_id);
+  if(new Set(idset).size!==idset.length){ alert('Hay un insumo repetido. Déjalo en una sola línea con la cantidad total.'); return; }
+
+  const btn=$('rec-guardar'); btn.disabled=true; btn.textContent='Guardando…';
+  try{
+    let recetaId=recEditId;
+    const yaExiste = RECETAS.find(r=>r.fudo_product_id===fpid && r.id!==recEditId);
+    if(!recetaId && yaExiste) recetaId=yaExiste.id;   // ese producto ya tenía receta: la editamos
+    if(recetaId){
+      const up=await conReintento(()=>sb.from('recetas').update({fudo_product_id:fpid, fudo_product_nombre:nombre, updated_at:new Date().toISOString()}).eq('id',recetaId));
+      if(up.error) throw up.error;
+      const del=await conReintento(()=>sb.from('receta_items').delete().eq('receta_id',recetaId));
+      if(del.error) throw del.error;
+    } else {
+      const ins=await conReintento(()=>sb.from('recetas').insert([{sede:SEDE, fudo_product_id:fpid, fudo_product_nombre:nombre}]).select('id').single());
+      if(ins.error) throw ins.error;
+      recetaId=ins.data.id;
+    }
+    const ri=await conReintento(()=>sb.from('receta_items').insert(items.map(it=>({receta_id:recetaId, producto_id:it.producto_id, cantidad:it.cantidad}))));
+    if(ri.error) throw ri.error;
+    closeRecetaModal(); await loadRecetas();
+  }catch(e){ alert('No se pudo guardar la receta. Revisa tu señal e inténtalo de nuevo.'); console.error(e); }
+  finally{ btn.disabled=false; btn.textContent='Guardar'; }
+});
+$('rec-eliminar').addEventListener('click', async()=>{
+  if(!recEditId) return;
+  if(!confirm('¿Eliminar esta receta? Sus insumos también se borran.')) return;
+  const btn=$('rec-eliminar'); btn.disabled=true;
+  const {error}=await conReintento(()=>sb.from('recetas').delete().eq('id',recEditId));
+  btn.disabled=false;
+  if(error){ alert('No se pudo eliminar. Revisa tu señal e inténtalo de nuevo.'); return; }
+  closeRecetaModal(); loadRecetas();
+});
 
 /* ---------------- historial ---------------- */
 async function loadHistorial(){
