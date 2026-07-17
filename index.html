@@ -91,10 +91,11 @@
   .rec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
   .rec-card .rn{font-weight:700;font-size:15px}
   .rec-card .ri{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5}
-  .rec-irow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-  .rec-irow select{flex:1;min-width:0}
-  .rec-irow .rec-ins-cant{width:66px;flex:none;height:42px;text-align:center;border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:600}
-  .rec-irow .rec-ins-del{flex:none;width:38px;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--red-fg);cursor:pointer;font-size:15px}
+  .rec-irow{display:grid;grid-template-columns:1fr 74px 38px;gap:8px;align-items:center;margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
+  .rec-irow select{min-width:0}
+  .rec-irow .rec-ins-prod{grid-column:1 / -1}
+  .rec-irow .rec-ins-cant{width:100%;height:42px;text-align:center;border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:600}
+  .rec-irow .rec-ins-del{width:38px;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--red-fg);cursor:pointer;font-size:15px}
   /* ---------- product rows (FUDO cards) ---------- */
   .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
   .row .info{cursor:pointer;min-width:0}
@@ -893,7 +894,8 @@ function renderRecetas(){
   $('rec-list').innerHTML = rows.map(r=>{
     const det=(r.items||[]).map(it=>{
       const p=DATA.find(d=>d.id===it.producto_id);
-      return `${fmt(it.cantidad)} × ${esc(p?p.producto:('#'+it.producto_id))}`;
+      const tag = it.aplica==='llevar' ? ' <b style="color:var(--amber-fg)">(p. llevar)</b>' : it.aplica==='servir' ? ' <b style="color:var(--amber-fg)">(al servir)</b>' : '';
+      return `${fmt(it.cantidad)} × ${esc(p?p.producto:('#'+it.producto_id))}${tag}`;
     }).join('  ·  ') || '<span style="color:var(--red-fg)">sin insumos</span>';
     return `<div class="rec-card" data-rec="${r.id}">
       <div class="rn">${esc(r.fudo_product_nombre)||'(producto de Fudo)'}</div>
@@ -906,10 +908,15 @@ function insumoOptions(selId){
     .map(p=>`<option value="${p.id}"${p.id===selId?' selected':''}>${esc(p.producto)}</option>`).join('');
   return '<option value="">— elige un insumo —</option>'+ops;
 }
-function addInsumoRow(pid=null, cant=1){
+function addInsumoRow(pid=null, cant=1, aplica='siempre'){
   const div=document.createElement('div');
   div.className='rec-irow';
   div.innerHTML=`<select class="rec-ins-prod">${insumoOptions(pid)}</select>`
+    +`<select class="rec-ins-aplica" title="Cuándo se descuenta">`
+      +`<option value="siempre"${aplica==='siempre'?' selected':''}>Siempre</option>`
+      +`<option value="llevar"${aplica==='llevar'?' selected':''}>Solo p. llevar</option>`
+      +`<option value="servir"${aplica==='servir'?' selected':''}>Solo al servir</option>`
+    +`</select>`
     +`<input type="number" class="rec-ins-cant" step="0.5" min="0" value="${cant}" aria-label="Cantidad">`
     +`<button type="button" class="rec-ins-del" title="Quitar insumo">✕</button>`;
   $('rec-insumos').appendChild(div);
@@ -921,7 +928,7 @@ function openReceta(id){
   $('rec-fudo').innerHTML = '<option value="">— elige un producto de Fudo —</option>'
     + FUDOPROD.map(p=>`<option value="${esc(p.fudo_product_id)}"${(r&&r.fudo_product_id===p.fudo_product_id)?' selected':''}>${esc(p.nombre)||'(sin nombre)'}${p.code?(' · '+esc(p.code)):''}</option>`).join('');
   $('rec-insumos').innerHTML='';
-  if(r && r.items && r.items.length) r.items.forEach(it=>addInsumoRow(it.producto_id, it.cantidad));
+  if(r && r.items && r.items.length) r.items.forEach(it=>addInsumoRow(it.producto_id, it.cantidad, it.aplica||'siempre'));
   else addInsumoRow();
   $('rec-eliminar').style.display = r? 'flex':'none';
   $('overlay-receta').classList.add('open');
@@ -949,7 +956,8 @@ $('rec-guardar').addEventListener('click', async()=>{
     const cv=row.querySelector('.rec-ins-cant').value;
     const cant = cv===''?null:+cv;
     if(cant==null || cant<=0){ alert('Cada insumo debe tener una cantidad mayor que 0.'); return; }
-    items.push({producto_id:pid, cantidad:cant});
+    const apl=(row.querySelector('.rec-ins-aplica')||{}).value||'siempre';
+    items.push({producto_id:pid, cantidad:cant, aplica:apl});
   }
   if(!items.length){ alert('Agrega al menos un insumo.'); return; }
   const idset=items.map(i=>i.producto_id);
@@ -970,7 +978,7 @@ $('rec-guardar').addEventListener('click', async()=>{
       if(ins.error) throw ins.error;
       recetaId=ins.data.id;
     }
-    const ri=await conReintento(()=>sb.from('receta_items').insert(items.map(it=>({receta_id:recetaId, producto_id:it.producto_id, cantidad:it.cantidad}))));
+    const ri=await conReintento(()=>sb.from('receta_items').insert(items.map(it=>({receta_id:recetaId, producto_id:it.producto_id, cantidad:it.cantidad, aplica:it.aplica||'siempre'}))));
     if(ri.error) throw ri.error;
     closeRecetaModal(); await loadRecetas();
   }catch(e){ alert('No se pudo guardar la receta. Revisa tu señal e inténtalo de nuevo.'); console.error(e); }
