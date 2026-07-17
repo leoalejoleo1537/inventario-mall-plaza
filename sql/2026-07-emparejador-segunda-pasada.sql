@@ -68,7 +68,7 @@ insert into _mapa values
 ('Waffle solo','Waffles'),
 ('Waffle con helado','Waffles'),                 -- helado no contable: descuenta solo el waffle
 ('Waffle con helado y frutillas','Waffles'),     -- idem
-('Llamita KIDS','Llamita kids'),
+-- (Llamita KIDS se arma como combo más abajo: selladito + mini muffin + juguete)
 -- ---- sandwiches / salado ----
 ('Sandwich Apaltado Nuevo','Sandwich Apaltado'),
 ('Sandwich Azapa Nuevo','Sandwich Azapa'),
@@ -87,21 +87,17 @@ insert into _mapa values
 ('PizzaPeperoni Pedidos Ya','Pizza peperoni'),
 -- ---- otros ----
 ('Cafe en grano 250gr Pedidos Ya','Café grano 250 gr'),
-('Pulpa de frambuesa','Pulpa frambuesa'),
-('Pulpa de piña','Pulpa piña'),
-('TE CHAI HOJA','Te chai hoja'),
-('Te perla del norte','Té Hoja Perla Norte'),
-('Té Sendero del Té','Té Sendero del Te'),
-('Te Verdes Matices','Té Verde s Matices'),
--- ---- DUDOSAS: revisa y borra la línea si no corresponde ----
-('Cheesecake maracuyá','T. Cheesecake Mara'),          -- ¿"Mara" = maracuyá?
-('Media luna mantequilla','Medialuna tradicional'),    -- ¿es la tradicional?
-('Sandwich Plateada Luco','Sandwich Mechada'),         -- ¿plateada = mechada?
+-- pulpas: FUERA (no cuantificables, decisión de jhon)
+-- tés de hoja: FUERA (no cuantificables). Solo se cuantifican los EN BOLSA:
+('Té dilmah variedades','Té Dilmah'),
+('Te Manzanilla Tetera','Té Manzanilla'),
+-- ---- confirmadas por jhon ----
+('Cheesecake maracuyá','T. Cheesecake Mara'),
+('Sandwich Plateada Luco','Sandwich Mechada'),
 ('Sandwich plateada luco Pedidos Ya','Sandwich Mechada'),
 ('Sandwich capresse azapa Pedidos Ya','Sandwich Azapa'),
-('Sandwich pollo apaltado Pedidos Ya','Sandwich Apaltado'),
-('Té dilmah variedades','Té Dilmah'),
-('Te Manzanilla Tetera','Té Manzanilla');
+('Sandwich pollo apaltado Pedidos Ya','Sandwich Apaltado');
+-- ("Media luna mantequilla" FUERA: es otro producto, sin pareja en inventario)
 
 -- ---------- crear recetas ----------
 with pares as (
@@ -143,6 +139,49 @@ from pares pa
 join public.recetas r on r.sede='plaza' and r.fudo_product_id = pa.fudo_product_id
 where not exists (select 1 from public.receta_items ri where ri.receta_id = r.id)
 on conflict (receta_id, producto_id) do nothing;
+
+-- ---------- limpieza: recetas que NO deben existir ----------
+-- (pulpas y tés de hoja no se cuantifican; media luna mantequilla no
+--  tiene pareja). Si alguna corrida anterior las creó, se eliminan.
+delete from public.recetas r
+where r.sede='plaza'
+  and translate(lower(regexp_replace(trim(r.fudo_product_nombre),'\s+',' ','g')),'áéíóúñü','aeiounu') in
+  ('pulpa de frambuesa','pulpa de pina','te perla del norte','te sendero del te','te verdes matices','te chai hoja','media luna mantequilla');
+
+-- ---------- receta especial: combo "Llamita KIDS" ----------
+-- 1 selladito + 1 mini muffin + 1 juguete (producto "Llamita kids").
+-- Deja la receta EXACTAMENTE con esos insumos (reemplaza lo que tenga).
+insert into public.recetas(sede, fudo_product_id, fudo_product_nombre)
+select 'plaza', fp.fudo_product_id, fp.nombre
+from public.fudo_productos fp
+where fp.sede='plaza' and fp.activo=true
+  and translate(lower(regexp_replace(trim(fp.nombre),'\s+',' ','g')),'áéíóúñü','aeiounu') = 'llamita kids'
+on conflict (sede, fudo_product_id) do nothing;
+
+delete from public.receta_items ri
+using public.recetas r
+where ri.receta_id = r.id and r.sede='plaza'
+  and translate(lower(regexp_replace(trim(r.fudo_product_nombre),'\s+',' ','g')),'áéíóúñü','aeiounu') = 'llamita kids';
+
+insert into public.receta_items(receta_id, producto_id, cantidad, aplica)
+select r.id, p.id, 1, 'siempre'
+from public.recetas r
+join public.productos p
+  on p.sede='plaza' and p.activo='SÍ'
+ and translate(lower(regexp_replace(trim(p.producto),'\s+',' ','g')),'áéíóúñü','aeiounu')
+     in ('selladitos jamon queso','mini muffin','llamita kids')
+where r.sede='plaza'
+  and translate(lower(regexp_replace(trim(r.fudo_product_nombre),'\s+',' ','g')),'áéíóúñü','aeiounu') = 'llamita kids'
+on conflict (receta_id, producto_id) do nothing;
+
+-- ¿Al combo Llamita le faltó algún insumo? (debería mostrar 3 filas; si
+-- falta el juguete, créalo en el inventario y re-corre este archivo)
+select p.producto as insumo_llamita
+from public.recetas r
+join public.receta_items ri on ri.receta_id=r.id
+join public.productos p on p.id=ri.producto_id
+where r.sede='plaza'
+  and translate(lower(regexp_replace(trim(r.fudo_product_nombre),'\s+',' ','g')),'áéíóúñü','aeiounu') = 'llamita kids';
 
 -- ---------- comprobación ----------
 select count(*) as recetas_en_plaza from public.recetas where sede='plaza';
