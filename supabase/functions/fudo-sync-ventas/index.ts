@@ -23,9 +23,22 @@ const CONCURRENCIA = 20;       // ítems procesados en paralelo por tanda
 
 const isoFudo = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, "Z");
 
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+};
+
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
-    const sede = (new URL(req.url).searchParams.get("sede") ?? "plaza").toLowerCase();
+    // sede desde ?sede=plaza (dashboard) o desde el cuerpo JSON (botón de la app)
+    const qsSede = new URL(req.url).searchParams.get("sede");
+    let bodySede: string | null = null;
+    if (!qsSede && req.method === "POST") {
+      bodySede = (await req.json().catch(() => ({})))?.sede ?? null;
+    }
+    const sede = (qsSede ?? bodySede ?? "plaza").toLowerCase();
     const KEY = `FUDO_${sede.toUpperCase()}_APIKEY`;
     const SECRET = `FUDO_${sede.toUpperCase()}_APISECRET`;
     const apiKey = Deno.env.get(KEY), apiSecret = Deno.env.get(SECRET);
@@ -153,5 +166,5 @@ Deno.serve(async (req) => {
 });
 
 function json(obj: unknown, status = 200): Response {
-  return new Response(JSON.stringify(obj, null, 2), { status, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(obj, null, 2), { status, headers: { "Content-Type": "application/json", ...CORS } });
 }

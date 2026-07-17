@@ -282,7 +282,11 @@
     <input type="text" id="rec-q" placeholder="Buscar receta…">
     <button class="btn btn-orange" id="btnNuevaReceta" style="white-space:nowrap">+ Nueva</button>
   </div>
-  <p style="font-size:12px;color:var(--muted);margin:2px 2px 12px">Cuando se venda un producto en Fudo, se descuentan del inventario los insumos de su receta.</p>
+  <p style="font-size:12px;color:var(--muted);margin:2px 2px 10px">Cuando se venda un producto en Fudo, se descuentan del inventario los insumos de su receta.</p>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 2px 12px">
+    <button class="btn btn-outline btn-sm" id="btnSyncVentas">🔄 Actualizar ventas de Fudo</button>
+    <span id="syncVentasMsg" style="font-size:12px;color:var(--muted)"></span>
+  </div>
   <div class="count" id="rec-count"></div>
   <div id="rec-list"><div class="empty">Cargando recetas…</div></div>
 </div>
@@ -944,6 +948,20 @@ $('btnAddInsumo').addEventListener('click',()=>addInsumoRow());
 $('rec-insumos').addEventListener('click',e=>{ const d=e.target.closest('.rec-ins-del'); if(d) d.closest('.rec-irow').remove(); });
 $('rec-list').addEventListener('click',e=>{ const c=e.target.closest('[data-rec]'); if(c) openReceta(+c.dataset.rec); });
 $('rec-q').addEventListener('input',renderRecetas);
+$('btnSyncVentas').addEventListener('click', async()=>{
+  if(!SEDE) return;
+  const btn=$('btnSyncVentas'), msg=$('syncVentasMsg');
+  btn.disabled=true; btn.textContent='Actualizando…'; msg.textContent='';
+  try{
+    const {data,error}=await sb.functions.invoke('fudo-sync-ventas',{body:{sede:SEDE}});
+    if(error) throw error;
+    if(data&&data.ok){
+      msg.textContent=`✓ ${data.ventas_leidas} ventas · ${data.movimientos_generados} movimientos · modo ${data.modo}`;
+      msg.style.color='var(--green-fg)';
+    } else { msg.textContent=(data&&data.error)?('⚠ '+data.error):'No se pudo actualizar.'; msg.style.color='var(--red-fg)'; }
+  }catch(e){ msg.textContent='⚠ Error al actualizar. Revisa la conexión.'; msg.style.color='var(--red-fg)'; console.error(e); }
+  finally{ btn.disabled=false; btn.textContent='🔄 Actualizar ventas de Fudo'; }
+});
 $('rec-guardar').addEventListener('click', async()=>{
   const fpid=$('rec-fudo').value;
   if(!fpid){ alert('Elige el producto de Fudo.'); return; }
