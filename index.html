@@ -334,7 +334,11 @@
     <input type="text" id="rec-q" placeholder="Buscar receta…">
     <button class="btn btn-orange" id="btnNuevaReceta" style="white-space:nowrap">+ Nueva</button>
   </div>
-  <p style="font-size:12px;color:var(--muted);margin:2px 2px 12px">Cuando se venda un producto en Fudo, se descuentan del inventario los insumos de su receta. El botón "Actualizar inventario" de arriba trae las ventas más recientes.</p>
+  <div style="display:flex;align-items:center;gap:8px;margin:2px 2px 12px">
+    <button type="button" class="btn btn-outline btn-sm" id="btnSyncProductos" style="white-space:nowrap">↻ Actualizar productos de Fudo</button>
+    <span id="syncProductosMsg" style="font-size:12px;color:var(--muted)"></span>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin:2px 2px 12px">Cuando se venda un producto en Fudo, se descuentan del inventario los insumos de su receta. El botón "Actualizar inventario" de arriba trae las ventas más recientes. Si creaste un producto nuevo en Fudo y no aparece al buscarlo aquí, usa "Actualizar productos de Fudo".</p>
   <div class="count" id="rec-count"></div>
   <div id="rec-list"><div class="empty">Cargando recetas…</div></div>
 </div>
@@ -1035,6 +1039,24 @@ $('btnAddInsumo').addEventListener('click',()=>addInsumoRow());
 $('rec-insumos').addEventListener('click',e=>{ const d=e.target.closest('.rec-ins-del'); if(d) d.closest('.rec-irow').remove(); });
 $('rec-list').addEventListener('click',e=>{ const c=e.target.closest('[data-rec]'); if(c) openReceta(+c.dataset.rec); });
 $('rec-q').addEventListener('input',renderRecetas);
+$('btnSyncProductos').addEventListener('click', async()=>{
+  if(!SEDE) return;
+  const btn=$('btnSyncProductos'), msg=$('syncProductosMsg');
+  btn.disabled=true; const original=btn.textContent; btn.textContent='Actualizando…';
+  msg.textContent='Consultando Fudo…';
+  try{
+    const {data,error}=await sb.functions.invoke('fudo-sync-productos',{body:{sede:SEDE}});
+    if(error) throw error;
+    if(data&&data.ok){
+      msg.textContent=`✓ ${data.productos_sincronizados} productos sincronizados`;
+      await loadRecetas();
+    } else { msg.textContent=(data&&data.error)?('⚠ '+data.error):'⚠ No se pudo actualizar.'; }
+  }catch(e){ msg.textContent='⚠ Error al actualizar. Revisa la conexión.'; console.error(e); }
+  finally{
+    btn.disabled=false; btn.textContent=original;
+    setTimeout(()=>{ if(msg.textContent && !msg.textContent.includes('Consultando')) msg.textContent=''; }, 8000);
+  }
+});
 $('btnSyncVentas').addEventListener('click', async()=>{
   if(!SEDE) return;
   const btn=$('btnSyncVentas'), msg=$('syncVentasMsg'), label=btn.querySelector('.sync-label');

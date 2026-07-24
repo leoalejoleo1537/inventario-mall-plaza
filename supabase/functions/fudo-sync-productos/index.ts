@@ -20,8 +20,12 @@ const PAGE_SIZE = 500; // máximo permitido por Fudo
 
 Deno.serve(async (req) => {
   try {
-    // sede desde la URL (?sede=plaza). Por defecto: plaza.
-    const sede = (new URL(req.url).searchParams.get("sede") ?? "plaza").toLowerCase();
+    // sede desde la URL (?sede=plaza) o, si no viene, del body JSON (invocado desde la app).
+    let sedeParam = new URL(req.url).searchParams.get("sede");
+    if (!sedeParam) {
+      try { sedeParam = (await req.json())?.sede ?? null; } catch { /* sin body */ }
+    }
+    const sede = (sedeParam ?? "plaza").toLowerCase();
     const KEY = `FUDO_${sede.toUpperCase()}_APIKEY`;
     const SECRET = `FUDO_${sede.toUpperCase()}_APISECRET`;
 
