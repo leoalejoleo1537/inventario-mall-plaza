@@ -1110,7 +1110,11 @@ $('rec-guardar').addEventListener('click', async()=>{
     const ri=await conReintento(()=>sb.from('receta_items').insert(items.map(it=>({receta_id:recetaId, producto_id:it.producto_id, cantidad:it.cantidad, aplica:it.aplica||'siempre'}))));
     if(ri.error) throw ri.error;
     closeRecetaModal(); await loadRecetas();
-  }catch(e){ alert('No se pudo guardar la receta. Revisa tu señal e inténtalo de nuevo.'); console.error(e); }
+  }catch(e){
+    const detalle = e?.message || e?.error_description || e?.hint || e?.details || (typeof e==='string'?e:JSON.stringify(e));
+    alert('No se pudo guardar la receta.\n\nDetalle: '+detalle);
+    console.error(e);
+  }
   finally{ btn.disabled=false; btn.textContent='Guardar'; }
 });
 $('rec-eliminar').addEventListener('click', async()=>{
