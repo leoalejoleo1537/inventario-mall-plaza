@@ -467,6 +467,10 @@ const $ = id => document.getElementById(id);
 const qEl=$('q'), listEl=$('list'), countEl=$('count');
 let openSecs=new Set();   // secciones desplegadas
 
+/* Normaliza texto para buscar y comparar: sin tildes, sin mayúsculas y sin
+   espacios de más. Así "azucar" encuentra "Azúcar" y al revés. */
+const normNombre = s => (s==null?'':String(s)).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+
 /* ---------------- semáforo ---------------- */
 function maxOk(p){ return p.stock_max != null && (p.stock_min == null || p.stock_max > p.stock_min); }
 function estado(p){
@@ -628,8 +632,8 @@ function rowHTML(p){
   </div>`;
 }
 function render(){
-  const q=qEl.value.trim().toLowerCase();
-  let rows=DATA.filter(p=>(!q||p.producto.toLowerCase().includes(q))&&(!filterState||estado(p)===filterState));
+  const q=normNombre(qEl.value);
+  let rows=DATA.filter(p=>(!q||normNombre(p.producto).includes(q))&&(!filterState||estado(p)===filterState));
   // SIEMPRE alfabético: el orden no depende de cantidades ni estados,
   // así una fila no se mueve cuando cambia su stock.
   rows.sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}));
@@ -779,7 +783,6 @@ $('btnNuevo').addEventListener('click',()=>{
 function closeNuevo(){ $('overlay-nuevo').classList.remove('open'); }
 $('n-cancelar').addEventListener('click',closeNuevo);
 $('overlay-nuevo').addEventListener('click',e=>{ if(e.target===$('overlay-nuevo')) closeNuevo(); });
-const normNombre = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
 /* Suma el stock de un producto en TODAS las secciones de la sede (mismo nombre).
    Cuando el mismo producto vive en más de una sección (ej. Brownie en Congelador
    y en Vitrina), Adriana ve el total combinado para guiar el pedido. */
@@ -820,10 +823,10 @@ $('n-guardar').addEventListener('click', async()=>{
 /* ---------------- reparto ---------------- */
 const rqEl = $('rq');
 function renderRepartoResults(){
-  const q = rqEl.value.trim().toLowerCase();
+  const q = normNombre(rqEl.value);
   if(!q){ $('reparto-results').innerHTML=''; return; }
   const enCarrito = new Set(carrito.map(c=>c.id));
-  const rows = DATA.filter(p=>p.producto.toLowerCase().includes(q) && !enCarrito.has(p.id)).slice(0,15);
+  const rows = DATA.filter(p=>normNombre(p.producto).includes(q) && !enCarrito.has(p.id)).slice(0,15);
   $('reparto-results').innerHTML = rows.map(p=>{
     const t=totalProducto(p.producto);
     const totalTxt = t.multi ? ` · <b style="color:var(--orange-dark)">total ${fmt(t.total)}</b>` : '';
@@ -967,8 +970,8 @@ async function loadRecetas(){
   renderRecetas();
 }
 function renderRecetas(){
-  const q=($('rec-q').value||'').trim().toLowerCase();
-  const rows=RECETAS.filter(r=>!q || (r.fudo_product_nombre||'').toLowerCase().includes(q));
+  const q=normNombre($('rec-q').value);
+  const rows=RECETAS.filter(r=>!q || normNombre(r.fudo_product_nombre).includes(q));
   $('rec-count').textContent = `${rows.length} receta${rows.length===1?'':'s'}`;
   if(!rows.length){ $('rec-list').innerHTML='<div class="empty">No hay recetas todavía. Usa “+ Nueva” para crear la primera.</div>'; return; }
   $('rec-list').innerHTML = rows.map(r=>{
