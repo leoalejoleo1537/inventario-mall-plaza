@@ -136,6 +136,11 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 
 ## 7. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-24** — Total por producto: cuando un mismo producto vive en 2+ secciones
+  (ej. Brownie en Congelador y Vitrina), la app muestra el TOTAL sumado en el
+  inventario (y en el filtro Críticos) y en el buscador de Reparto, para que Adriana
+  guíe el pedido por el total. Es solo lectura: no toca mínimos, ni estado crítico,
+  ni el registro de llegada. Agrupa por nombre normalizado. Helper `totalProducto()`.
 - **2026-07-24** — Permisos de recetas: todos los usuarios logueados pueden crear/
   editar recetas (antes solo la cuenta dueña). SQL en
   `sql/2026-07-recetas-todos-pueden-crear.sql` — borra cualquier política vieja/
