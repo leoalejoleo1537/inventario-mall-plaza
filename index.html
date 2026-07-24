@@ -373,6 +373,10 @@
   <div class="modal">
     <h2 id="m-nombre">Producto</h2>
     <div class="field" style="margin-top:6px">
+      <label>Nombre</label>
+      <input type="text" id="m-producto" autocomplete="off">
+    </div>
+    <div class="field">
       <label>Sección</label>
       <select id="m-seccion"></select>
     </div>
@@ -723,6 +727,7 @@ document.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
 function openModal(id){
   modalProd=DATA.find(d=>d.id===id); if(!modalProd)return;
   $('m-nombre').textContent=modalProd.producto;
+  $('m-producto').value=modalProd.producto??'';
   const secs=[...new Set([...SEC_ORDEN,...DATA.map(d=>d.rubro)])];
   $('m-seccion').innerHTML=secs.map(s=>`<option${s===modalProd.rubro?' selected':''}>${s}</option>`).join('');
   $('m-stock').value=modalProd.stock_actual??'';
@@ -747,8 +752,14 @@ $('m-menos').addEventListener('click',()=>{const i=$('m-stock');i.value=Math.max
 $('m-mas').addEventListener('click',()=>{const i=$('m-stock');i.value=(+i.value||0)+1;});
 $('m-guardar').addEventListener('click',async()=>{
   if(!modalProd)return;
+  const nombre=$('m-producto').value.replace(/\s+/g,' ').trim();
+  if(!nombre){ alert('El producto necesita un nombre.'); $('m-producto').focus(); return; }
+  const rubroNuevo=$('m-seccion').value;
+  // el mismo producto puede vivir en dos secciones; el choque es dentro de una misma
+  const dup=DATA.find(d=>d.id!==modalProd.id && d.rubro===rubroNuevo && normNombre(d.producto)===normNombre(nombre));
+  if(dup){ alert(`"${dup.producto}" ya existe en ${rubroNuevo}.`); return; }
   const num=el=>el.value===''?null:+el.value;
-  const fields={stock_actual:num($('m-stock')),stock_min:num($('m-min')),stock_max:num($('m-max')),rubro:$('m-seccion').value};
+  const fields={producto:nombre,stock_actual:num($('m-stock')),stock_min:num($('m-min')),stock_max:num($('m-max')),rubro:rubroNuevo};
   if(hasPerec) fields.perecedero=$('m-perec').checked;
   const quedaPerec = hasPerec ? $('m-perec').checked : modalProd.rubro==='Sándwiches';
   if(hasVenc) fields.vencimiento = quedaPerec ? ($('m-venc').value||null) : null;
@@ -783,12 +794,15 @@ $('btnNuevo').addEventListener('click',()=>{
 function closeNuevo(){ $('overlay-nuevo').classList.remove('open'); }
 $('n-cancelar').addEventListener('click',closeNuevo);
 $('overlay-nuevo').addEventListener('click',e=>{ if(e.target===$('overlay-nuevo')) closeNuevo(); });
+/* Nombre sin el apellido de sección: "Donas frambuesa vitrina" y
+   "Donas frambuesa congelador" son el mismo producto para sumar. */
+const baseNombre = s => normNombre(s).replace(/\s+(vitrina|congelador)$/,'');
 /* Suma el stock de un producto en TODAS las secciones de la sede (mismo nombre).
    Cuando el mismo producto vive en más de una sección (ej. Brownie en Congelador
    y en Vitrina), Adriana ve el total combinado para guiar el pedido. */
 function totalProducto(nombre){
-  const n = normNombre(nombre);
-  const filas = DATA.filter(d => normNombre(d.producto) === n);
+  const n = baseNombre(nombre);
+  const filas = DATA.filter(d => baseNombre(d.producto) === n);
   const rubros = new Set(filas.map(d => d.rubro || 'Sin sección'));
   const total = filas.reduce((s,d) => s + (+d.stock_actual || 0), 0);
   return { total, multi: rubros.size > 1, secciones: rubros.size };

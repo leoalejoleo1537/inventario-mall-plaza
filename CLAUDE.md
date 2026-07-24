@@ -136,6 +136,14 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 
 ## 7. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-24** — Editar el nombre del producto desde la app (campo "Nombre" en el
+  modal). Valida vacío y duplicado *dentro de la misma sección* (el mismo producto
+  sí puede vivir en dos secciones). Además, apellido de sección para la bollería:
+  `sql/2026-07-apellido-seccion-bolleria.sql` renombra a "… vitrina" / "… congelador"
+  solo la lista de bollería (no toca pizzas ni pulpas), con vista previa e idempotente.
+  Para que el total siga sumando, `totalProducto()` agrupa con `baseNombre()`, que
+  ignora ese apellido.
+
 - **2026-07-24** — Buscadores sin tildes: buscar "azucar" ahora encuentra "Azúcar
   morena/blanca/flor". Los tres buscadores (Inventario, Reparto, Recetas) usan
   `normNombre()` — quita tildes, mayúsculas y espacios de más. Antes una tilde de
