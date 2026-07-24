@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
 <title>Inventario</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0F1E31">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Llamita">
 <!-- multi-sede: Cafe Mall Plaza + Parque Angamos + Bodega -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1191,6 +1198,9 @@ function subscribeRealtime(){
 
 /* al abrir: primero inicio de sesión (o sesión guardada); luego se elige sede */
 initAuth();
+
+/* app instalable (PWA): service worker sin caché, solo para instalación */
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 </script>
 </body>
 </html>
