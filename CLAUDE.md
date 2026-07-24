@@ -136,6 +136,11 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 
 ## 7. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-24** — Permisos de recetas: todos los usuarios logueados pueden crear/
+  editar recetas (antes solo la cuenta dueña). SQL en
+  `sql/2026-07-recetas-todos-pueden-crear.sql` — borra cualquier política vieja/
+  restringida y deja `recetas`/`receta_items` abiertas a anon+authenticated. Hay
+  que correrlo a mano en Supabase → SQL Editor.
 - **2026-07-24** — Ícono real de Jhon aplicado (redimensionado desde su PNG, sin
   redibujar). Botón "↻ Productos de Fudo" agregado en Recetas + CORS en la Edge
   Function `fudo-sync-productos`. Se quitó el párrafo explicativo bajo el botón
