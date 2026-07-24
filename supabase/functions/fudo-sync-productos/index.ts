@@ -18,14 +18,22 @@ const AUTH_URL = "https://auth.fu.do/api";
 const API_BASE = "https://api.fu.do/v1alpha1";
 const PAGE_SIZE = 500; // máximo permitido por Fudo
 
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+};
+
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
-    // sede desde la URL (?sede=plaza) o, si no viene, del body JSON (invocado desde la app).
-    let sedeParam = new URL(req.url).searchParams.get("sede");
-    if (!sedeParam) {
-      try { sedeParam = (await req.json())?.sede ?? null; } catch { /* sin body */ }
+    // sede desde ?sede=plaza (dashboard) o desde el cuerpo JSON (botón de la app).
+    const qsSede = new URL(req.url).searchParams.get("sede");
+    let bodySede: string | null = null;
+    if (!qsSede && req.method === "POST") {
+      bodySede = (await req.json().catch(() => ({})))?.sede ?? null;
     }
-    const sede = (sedeParam ?? "plaza").toLowerCase();
+    const sede = (qsSede ?? bodySede ?? "plaza").toLowerCase();
     const KEY = `FUDO_${sede.toUpperCase()}_APIKEY`;
     const SECRET = `FUDO_${sede.toUpperCase()}_APISECRET`;
 
@@ -95,6 +103,6 @@ Deno.serve(async (req) => {
 function json(obj: unknown, status = 200): Response {
   return new Response(JSON.stringify(obj, null, 2), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...CORS },
   });
 }
