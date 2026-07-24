@@ -115,11 +115,21 @@
   .rec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
   .rec-card .rn{font-weight:700;font-size:15px}
   .rec-card .ri{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5}
-  .rec-irow{display:grid;grid-template-columns:1fr 74px 38px;gap:8px;align-items:center;margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
-  .rec-irow select{min-width:0}
-  .rec-irow .rec-ins-prod{grid-column:1 / -1}
-  .rec-irow .rec-ins-cant{width:100%;height:42px;text-align:center;border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:600}
-  .rec-irow .rec-ins-del{width:38px;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--red-fg);cursor:pointer;font-size:15px}
+  .rec-irow{margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
+  .rec-ins-ctl{display:grid;grid-template-columns:1fr 74px 38px;gap:8px;align-items:center;margin-top:8px}
+  .rec-ins-ctl select{min-width:0}
+  .rec-ins-cant{width:100%;height:42px;text-align:center;border:1px solid var(--border);border-radius:10px;font-size:15px;font-weight:600}
+  .rec-ins-del{width:38px;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--red-fg);cursor:pointer;font-size:15px}
+  /* ---------- buscador desplegable (picker) ---------- */
+  .pick{position:relative}
+  .pick-inp{width:100%;height:44px;padding:0 12px;border:1px solid var(--border);border-radius:10px;font-size:16px;background:#fff;color:var(--text)}
+  .pick-inp:focus{outline:none;border-color:var(--orange)}
+  .pick-menu{margin-top:5px;border:1px solid var(--border);border-radius:10px;background:#fff;max-height:230px;overflow-y:auto;box-shadow:0 4px 14px rgba(15,30,49,.12)}
+  .pick-opt{padding:11px 12px;font-size:15px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:6px}
+  .pick-opt:last-child{border-bottom:none}
+  .pick-opt:active,.pick-opt.hl{background:var(--bg)}
+  .pick-sub{color:var(--muted);font-size:12px;margin-left:auto;flex-shrink:0}
+  .pick-empty{padding:11px 12px;color:var(--muted);font-size:14px}
   /* ---------- product rows (FUDO cards) ---------- */
   .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
   .row .info{cursor:pointer;min-width:0}
@@ -329,7 +339,7 @@
     <p class="mr">Elige el producto que se vende en Fudo y qué insumos descuenta del inventario.</p>
     <div class="field" style="margin-top:0">
       <label>Producto de Fudo</label>
-      <select id="rec-fudo"></select>
+      <div id="rec-fudo"></div>
     </div>
     <div class="field">
       <label>Insumos que se descuentan por unidad vendida</label>
@@ -945,30 +955,62 @@ function renderRecetas(){
     </div>`;
   }).join('');
 }
-function insumoOptions(selId){
-  const ops=DATA.slice().sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}))
-    .map(p=>`<option value="${p.id}"${p.id===selId?' selected':''}>${esc(p.producto)}</option>`).join('');
-  return '<option value="">— elige un insumo —</option>'+ops;
+/* buscador desplegable reutilizable. items: [{id,label,sub}] */
+function makePicker(host, items, opts={}){
+  host.classList.add('pick');
+  host.innerHTML = `<input type="text" class="pick-inp" autocomplete="off" placeholder="${esc(opts.placeholder||'Buscar…')}">`
+                 + `<div class="pick-menu" style="display:none"></div>`;
+  const inp=host.querySelector('.pick-inp'), menu=host.querySelector('.pick-menu');
+  const labelOf={}; items.forEach(it=>labelOf[it.id]=it.label);
+  let value='';
+  function render(q){
+    const nq=normNombre(q||'');
+    const list=(!nq?items:items.filter(it=>normNombre(it.label).includes(nq))).slice(0,60);
+    menu.innerHTML = list.length
+      ? list.map(it=>`<div class="pick-opt" data-id="${esc(String(it.id))}">${esc(it.label)}${it.sub?`<span class="pick-sub">${esc(it.sub)}</span>`:''}</div>`).join('')
+      : '<div class="pick-empty">Sin resultados</div>';
+  }
+  function open(){ render(inp.value===labelOf[value]?'':inp.value); menu.style.display='block'; }
+  function close(){ menu.style.display='none'; }
+  inp.addEventListener('focus',()=>{ inp.select(); open(); });
+  inp.addEventListener('input',open);
+  inp.addEventListener('blur',()=>setTimeout(()=>{ close(); inp.value=value?labelOf[value]:''; },170));
+  menu.addEventListener('click',e=>{
+    const opt=e.target.closest('.pick-opt'); if(!opt)return;
+    value=opt.dataset.id; inp.value=labelOf[value]||''; close();
+    if(opts.onPick) opts.onPick(value);
+  });
+  host._getValue=()=>value;
+  host._setValue=id=>{ id=id==null?'':String(id); value=id; inp.value=id?(labelOf[id]||''):''; };
+  if(opts.selectedId!=null) host._setValue(opts.selectedId);
+  return host;
+}
+function insumoItems(){
+  return DATA.slice().sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}))
+    .map(p=>({id:p.id, label:p.producto}));
 }
 function addInsumoRow(pid=null, cant=1, aplica='siempre'){
   const div=document.createElement('div');
   div.className='rec-irow';
-  div.innerHTML=`<select class="rec-ins-prod">${insumoOptions(pid)}</select>`
-    +`<select class="rec-ins-aplica" title="Cuándo se descuenta">`
-      +`<option value="siempre"${aplica==='siempre'?' selected':''}>Siempre</option>`
-      +`<option value="llevar"${aplica==='llevar'?' selected':''}>Solo p. llevar</option>`
-      +`<option value="servir"${aplica==='servir'?' selected':''}>Solo al servir</option>`
-    +`</select>`
-    +`<input type="number" class="rec-ins-cant" step="0.5" min="0" value="${cant}" aria-label="Cantidad">`
-    +`<button type="button" class="rec-ins-del" title="Quitar insumo">✕</button>`;
+  div.innerHTML=`<div class="rec-ins-prod"></div>`
+    +`<div class="rec-ins-ctl">`
+      +`<select class="rec-ins-aplica" title="Cuándo se descuenta">`
+        +`<option value="siempre"${aplica==='siempre'?' selected':''}>Siempre</option>`
+        +`<option value="llevar"${aplica==='llevar'?' selected':''}>Solo p. llevar</option>`
+        +`<option value="servir"${aplica==='servir'?' selected':''}>Solo al servir</option>`
+      +`</select>`
+      +`<input type="number" class="rec-ins-cant" step="0.5" min="0" value="${cant}" aria-label="Cantidad">`
+      +`<button type="button" class="rec-ins-del" title="Quitar insumo">✕</button>`
+    +`</div>`;
   $('rec-insumos').appendChild(div);
+  makePicker(div.querySelector('.rec-ins-prod'), insumoItems(), {placeholder:'Buscar insumo…', selectedId:pid});
 }
 function openReceta(id){
   recEditId=id||null;
   const r = id? RECETAS.find(x=>x.id===id) : null;
   $('rec-modal-title').textContent = r? 'Editar receta' : 'Nueva receta';
-  $('rec-fudo').innerHTML = '<option value="">— elige un producto de Fudo —</option>'
-    + FUDOPROD.map(p=>`<option value="${esc(p.fudo_product_id)}"${(r&&r.fudo_product_id===p.fudo_product_id)?' selected':''}>${esc(p.nombre)||'(sin nombre)'}${p.code?(' · '+esc(p.code)):''}</option>`).join('');
+  makePicker($('rec-fudo'), FUDOPROD.map(p=>({id:p.fudo_product_id, label:p.nombre||'(sin nombre)', sub:p.code||''})),
+    {placeholder:'Buscar producto de Fudo…', selectedId: r? r.fudo_product_id : null});
   $('rec-insumos').innerHTML='';
   if(r && r.items && r.items.length) r.items.forEach(it=>addInsumoRow(it.producto_id, it.cantidad, it.aplica||'siempre'));
   else addInsumoRow();
@@ -1004,13 +1046,13 @@ $('btnSyncVentas').addEventListener('click', async()=>{
   }
 });
 $('rec-guardar').addEventListener('click', async()=>{
-  const fpid=$('rec-fudo').value;
+  const fpid=$('rec-fudo')._getValue();
   if(!fpid){ alert('Elige el producto de Fudo.'); return; }
   const fp=FUDOPROD.find(p=>p.fudo_product_id===fpid);
   const nombre=fp?fp.nombre:'';
   const items=[];
   for(const row of $('rec-insumos').querySelectorAll('.rec-irow')){
-    const pid=+row.querySelector('.rec-ins-prod').value;
+    const pid=+row.querySelector('.rec-ins-prod')._getValue();
     if(!pid) continue;
     const cv=row.querySelector('.rec-ins-cant').value;
     const cant = cv===''?null:+cv;
