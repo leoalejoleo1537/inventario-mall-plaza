@@ -142,6 +142,7 @@
   .row .info{cursor:pointer;min-width:0}
   .row .name{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .row .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .row .sub-total{color:var(--orange-dark);font-weight:800}
   .row .right{display:flex;align-items:center;gap:8px}
   .pill{font-size:11px;padding:4px 10px;border-radius:999px;white-space:nowrap;font-weight:700}
   .venc{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:600;background:var(--gray-bg);color:var(--gray-fg)}
@@ -612,10 +613,13 @@ function metrics(){
 }
 function rowHTML(p){
   const e=estado(p),cf=CFG[e];
+  const t=totalProducto(p.producto);
+  const totalLine = t.multi ? `<div class="sub sub-total">Total: ${fmt(t.total)} · ${t.secciones} secciones</div>` : '';
   return `<div class="row" data-row="${p.id}">
     <div class="info" data-open="${p.id}">
       <div class="name">${p.producto} ${vencChip(p)}</div>
       <div class="sub">mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div>
+      ${totalLine}
     </div>
     <div class="right">
       <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
@@ -776,6 +780,16 @@ function closeNuevo(){ $('overlay-nuevo').classList.remove('open'); }
 $('n-cancelar').addEventListener('click',closeNuevo);
 $('overlay-nuevo').addEventListener('click',e=>{ if(e.target===$('overlay-nuevo')) closeNuevo(); });
 const normNombre = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+/* Suma el stock de un producto en TODAS las secciones de la sede (mismo nombre).
+   Cuando el mismo producto vive en más de una sección (ej. Brownie en Congelador
+   y en Vitrina), Adriana ve el total combinado para guiar el pedido. */
+function totalProducto(nombre){
+  const n = normNombre(nombre);
+  const filas = DATA.filter(d => normNombre(d.producto) === n);
+  const rubros = new Set(filas.map(d => d.rubro || 'Sin sección'));
+  const total = filas.reduce((s,d) => s + (+d.stock_actual || 0), 0);
+  return { total, multi: rubros.size > 1, secciones: rubros.size };
+}
 $('n-guardar').addEventListener('click', async()=>{
   const nombre=$('n-nombre').value.replace(/\s+/g,' ').trim();
   const rubro=$('n-rubro').value.replace(/\s+/g,' ').trim();
@@ -810,11 +824,15 @@ function renderRepartoResults(){
   if(!q){ $('reparto-results').innerHTML=''; return; }
   const enCarrito = new Set(carrito.map(c=>c.id));
   const rows = DATA.filter(p=>p.producto.toLowerCase().includes(q) && !enCarrito.has(p.id)).slice(0,15);
-  $('reparto-results').innerHTML = rows.map(p=>`
+  $('reparto-results').innerHTML = rows.map(p=>{
+    const t=totalProducto(p.producto);
+    const totalTxt = t.multi ? ` · <b style="color:var(--orange-dark)">total ${fmt(t.total)}</b>` : '';
+    return `
     <div class="rep-result" data-add="${p.id}">
-      <div><div class="rn">${p.producto}</div><div class="rs">${p.rubro} · stock actual ${fmt(p.stock_actual)}</div></div>
+      <div><div class="rn">${p.producto}</div><div class="rs">${p.rubro} · stock actual ${fmt(p.stock_actual)}${totalTxt}</div></div>
       <div class="add">+</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 rqEl.addEventListener('input', renderRepartoResults);
 $('reparto-results').addEventListener('click', e=>{
