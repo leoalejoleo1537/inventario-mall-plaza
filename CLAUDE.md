@@ -136,6 +136,14 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 
 ## 7. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-24** — Tiempo real completo: crear/renombrar/eliminar productos ahora sí
+  se refleja en los otros dispositivos. La conexión en vivo se corta al dejar la app
+  de fondo y nadie recuperaba lo perdido (el stock "funcionaba" solo porque se
+  editaba con la app en pantalla). Se recarga al volver (`visibilitychange`, focus,
+  online) y al reconectar el canal; el indicador marca "sin conexión" de verdad; se
+  maneja el DELETE real (viene en `payload.old`). Además se escapan los nombres al
+  mostrarlos, ahora que los escribe el personal.
+
 - **2026-07-24** — Editar el nombre del producto desde la app (campo "Nombre" en el
   modal). Valida vacío y duplicado *dentro de la misma sección* (el mismo producto
   sí puede vivir en dos secciones). Además, apellido de sección para la bollería:
