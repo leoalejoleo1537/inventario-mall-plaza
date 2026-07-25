@@ -695,7 +695,7 @@ function render(){
     const items=grupos.get(sec);
     const crit=items.reduce((n,p)=>n+(estado(p)==='critico'?1:0),0);
     const abierta=filtrando||openSecs.has(sec);
-    return `<div class="sec${abierta?' open':''}">
+    return `<div class="sec${abierta?' open':''}" data-secname="${esc(sec)}">
       <button type="button" class="sec-btn" data-sec="${esc(sec)}">
         <span>${esc(sec)}</span>
         <span class="sec-tags">${crit?`<span class="sec-crit" title="productos en crítico">${crit} crít.</span>`:''}<span class="sec-count">${items.length}</span><span class="sec-arrow">▼</span></span>
@@ -750,13 +750,34 @@ listEl.addEventListener('change',e=>{
   const p=DATA.find(d=>d.id===id); p.stock_actual=val;
   metrics(); render(); saveFields(id,{stock_actual:val});
 });
+/* Deslizamiento suave al abrir una sección. Se llama SOLO al tocar el
+   encabezado: al repintar por editar stock no se anima nada. */
+function deslizarSeccion(sec){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cont = listEl.querySelector(`.sec[data-secname="${CSS.escape(sec)}"]`);
+  const body = cont && cont.querySelector('.sec-body');
+  if(!body || !body.animate) return;
+  const alto = body.scrollHeight;
+  body.style.overflow = 'hidden';
+  const anim = body.animate(
+    [ {height:'0px', paddingTop:'0px', paddingBottom:'0px', opacity:0},
+      {height:alto+'px', paddingTop:'8px', paddingBottom:'8px', opacity:1} ],
+    {duration:190, easing:'cubic-bezier(.2,.7,.3,1)'}
+  );
+  const limpiar = ()=>{ body.style.overflow=''; };
+  anim.onfinish = limpiar; anim.oncancel = limpiar;
+}
 /* abrir/cerrar sección, o abrir ficha de producto */
 listEl.addEventListener('click',e=>{
   const secBtn=e.target.closest('[data-sec]');
   if(secBtn){
     const s=secBtn.dataset.sec;
-    if(openSecs.has(s)) openSecs.delete(s); else openSecs.add(s);
-    render(); return;
+    // acordeón: solo una sección abierta a la vez, para no dejar listas larguísimas
+    if(openSecs.has(s)) openSecs.delete(s);
+    else { openSecs.clear(); openSecs.add(s); }
+    render();
+    if(openSecs.has(s)) deslizarSeccion(s);
+    return;
   }
   const info=e.target.closest('[data-open]'); if(!info)return;
   openModal(+info.dataset.open);
