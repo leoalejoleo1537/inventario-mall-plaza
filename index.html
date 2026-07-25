@@ -282,7 +282,7 @@
       <button type="button" class="icon-btn" id="btnBuscar" aria-label="Buscar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
       </button>
-      <button type="button" class="icon-btn" id="btnSyncVentas" aria-label="Actualizar inventario" title="Actualizar inventario">
+      <button type="button" class="icon-btn" id="btnActualizar" aria-label="Actualizar" title="Actualizar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
       </button>
     </div>
@@ -313,13 +313,9 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
     Agregar producto
   </button>
-  <button type="button" class="drawer-item" data-accion="sync-ventas">
+  <button type="button" class="drawer-item" data-accion="actualizar">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
-    Actualizar inventario
-  </button>
-  <button type="button" class="drawer-item" data-accion="sync-productos">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.64-6.36"></path><polyline points="3 3 3 9 9 9"></polyline></svg>
-    Productos de Fudo
+    Actualizar
   </button>
 
   <div class="drawer-sec">Sede</div>
@@ -393,13 +389,11 @@
 
 <!-- ================= RECETAS ================= -->
 <div class="wrap" id="view-recetas" style="display:none">
-  <div class="busca" data-busca="recetas" style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-    <input type="text" id="rec-q" placeholder="Buscar receta…">
-    <button class="btn btn-orange" id="btnNuevaReceta" style="white-space:nowrap">+ Nueva</button>
+  <div class="busca" data-busca="recetas" style="margin-bottom:8px">
+    <input type="text" id="rec-q" placeholder="Buscar receta…" style="width:100%">
   </div>
-  <div style="display:flex;align-items:center;gap:8px;margin:2px 2px 12px">
-    <button type="button" class="btn btn-outline btn-sm" id="btnSyncProductos" style="white-space:nowrap">↻ Productos de Fudo</button>
-    <span id="syncProductosMsg" style="font-size:12px;color:var(--muted)"></span>
+  <div style="margin-bottom:12px">
+    <button class="btn btn-orange" id="btnNuevaReceta" style="white-space:nowrap">+ Nueva</button>
   </div>
   <div class="count" id="rec-count"></div>
   <div id="rec-list"><div class="empty">Cargando recetas…</div></div>
@@ -617,8 +611,7 @@ $('drawer').addEventListener('click',e=>{
   const a=it.dataset.accion;
   cerrarMenu();
   if(a==='nuevo')          $('btnNuevo').click();
-  if(a==='sync-ventas')    $('btnSyncVentas').click();
-  if(a==='sync-productos') $('btnSyncProductos').click();
+  if(a==='actualizar')     actualizarTodo();
   if(a==='cambiar-sede')   showGate();
 });
 
@@ -1331,37 +1324,81 @@ $('btnAddInsumo').addEventListener('click',()=>addInsumoRow());
 $('rec-insumos').addEventListener('click',e=>{ const d=e.target.closest('.rec-ins-del'); if(d) d.closest('.rec-irow').remove(); });
 $('rec-list').addEventListener('click',e=>{ const c=e.target.closest('[data-rec]'); if(c) openReceta(+c.dataset.rec); });
 $('rec-q').addEventListener('input',renderRecetas);
-$('btnSyncProductos').addEventListener('click', async()=>{
-  if(!SEDE) return;
-  const btn=$('btnSyncProductos'), msg=$('syncProductosMsg');
-  btn.disabled=true; const original=btn.textContent; btn.textContent='Actualizando…';
-  msg.textContent='Consultando Fudo…';
-  try{
-    const {data,error}=await sb.functions.invoke('fudo-sync-productos',{body:{sede:SEDE}});
-    if(error) throw error;
-    if(data&&data.ok){
-      msg.textContent=`✓ ${data.productos_sincronizados} productos sincronizados`;
-      await loadRecetas();
-    } else { msg.textContent=(data&&data.error)?('⚠ '+data.error):'⚠ No se pudo actualizar.'; }
-  }catch(e){ msg.textContent='⚠ Error al actualizar. Revisa la conexión.'; console.error(e); }
-  finally{
-    btn.disabled=false; btn.textContent=original;
-    setTimeout(()=>{ if(msg.textContent && !msg.textContent.includes('Consultando')) msg.textContent=''; }, 8000);
+/* ================= ACTUALIZAR (un solo botón) =================
+   El ⟳ de la barra corre TODOS los pasos de abajo, en orden, y al
+   terminar relee la pantalla.
+
+   PARA AGREGAR UNA SINCRONIZACIÓN NUEVA EN EL FUTURO: sumar una
+   entrada a PASOS_SYNC. El botón la va a incluir sola, sin tocar
+   nada más. Cada paso devuelve un texto corto para el aviso, o ''
+   si no hay nada que contar.
+
+   Si un paso falla, los demás igual se ejecutan: una caída de la
+   sincronización de productos no debe impedir que se descuenten
+   las ventas. */
+const PASOS_SYNC = [
+  {
+    nombre: 'productos',
+    fn: async () => {
+      const {data,error} = await sb.functions.invoke('fudo-sync-productos',{body:{sede:SEDE}});
+      if(error) throw error;
+      if(!data || !data.ok) throw new Error((data && data.error) || 'sin respuesta');
+      return '';   // el catálogo es trabajo de fondo: no se informa si salió bien
+    }
+  },
+  {
+    nombre: 'ventas',
+    fn: async () => {
+      const {data,error} = await sb.functions.invoke('fudo-sync-ventas',{body:{sede:SEDE}});
+      if(error) throw error;
+      if(!data || !data.ok) throw new Error((data && data.error) || 'sin respuesta');
+      const desc = data.movimientos_generados || 0;
+      const ven  = data.ventas_leidas || 0;
+      if(!ven) return 'sin ventas nuevas';
+      return `${ven} venta${ven===1?'':'s'} · ${desc} descuento${desc===1?'':'s'}`;
+    }
+  },
+];
+
+let actualizando = false;
+async function actualizarTodo(){
+  if(!SEDE || actualizando) return;          // no se pisa a sí mismo
+  actualizando = true;
+  const btn = $('btnActualizar');
+  btn.disabled = true; btn.classList.add('girando');
+  aviso('Actualizando…', 0);
+
+  const logros = [], fallos = [];
+  for(const paso of PASOS_SYNC){
+    try{
+      const r = await paso.fn();
+      if(r) logros.push(r);
+    }catch(e){
+      console.error('Falló la sincronización de ' + paso.nombre, e);
+      fallos.push(paso.nombre);
+    }
   }
-});
-$('btnSyncVentas').addEventListener('click', async()=>{
-  if(!SEDE) return;
-  const btn=$('btnSyncVentas');
-  btn.disabled=true; btn.classList.add('girando');
-  aviso('Actualizando inventario…', 0);
+
+  // La pantalla se relee SIEMPRE, aunque algún paso haya fallado:
+  // puede haber cambios de otros dispositivos igual.
   try{
-    const {data,error}=await sb.functions.invoke('fudo-sync-ventas',{body:{sede:SEDE}});
-    if(error) throw error;
-    if(data&&data.ok) aviso(`✓ ${data.ventas_leidas} ventas · ${data.movimientos_generados} movimientos`);
-    else aviso((data&&data.error) ? '⚠ '+data.error : '⚠ No se pudo actualizar.');
-  }catch(e){ aviso('⚠ Error al actualizar. Revisa la conexión.'); console.error(e); }
-  finally{ btn.disabled=false; btn.classList.remove('girando'); }
-});
+    ultimaRecarga = 0;                       // salta el freno de recargas seguidas
+    await resincronizar();
+    if($('view-recetas').style.display !== 'none') await loadRecetas();
+  }catch(e){ console.error('No se pudo releer la pantalla', e); }
+
+  btn.disabled = false; btn.classList.remove('girando');
+  actualizando = false;
+
+  if(fallos.length === PASOS_SYNC.length){
+    aviso('⚠ No se pudo actualizar. Revisa la conexión.');
+  } else if(fallos.length){
+    aviso('⚠ Falló: ' + fallos.join(', ') + (logros.length ? ' · ' + logros.join(' · ') : ''));
+  } else {
+    aviso('✓ ' + (logros.join(' · ') || 'Todo al día'));
+  }
+}
+$('btnActualizar').addEventListener('click', actualizarTodo);
 $('rec-guardar').addEventListener('click', async()=>{
   const fpid=$('rec-fudo')._getValue();
   if(!fpid){ alert('Elige el producto de Fudo.'); return; }
