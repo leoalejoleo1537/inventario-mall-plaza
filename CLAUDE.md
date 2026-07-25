@@ -129,7 +129,14 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 - [ ] **Push de stock a Fudo** para combos: calcular el mínimo entre insumos y
       empujarlo a Fudo cuando cambie el inventario.
 - [ ] Marcar "para llevar" vs "servir" en el front de Fudo para que el `aplica` sirva.
-- [ ] Depurar recetas a mano tras la primera pasada del auto-emparejador (tarea de Jhon).
+- [ ] **Depurar recetas (PRIORIDAD — va antes del dashboard).** Plan en
+      `docs/auditoria-recetas.md`; informe de solo lectura en
+      `sql/2026-07-auditoria-recetas.sql`. La métrica de avance es el % de
+      cobertura (bloque 9): anotarlo antes y después de cada tanda.
+- [ ] **Dashboard**: lista de análisis posibles en `docs/dashboard-analisis-posibles.md`.
+      NO empezar hasta cerrar la depuración de recetas.
+- [ ] Guardar la fecha REAL de la venta en `fudo_movimientos` (hoy se guarda cuándo
+      corrió la sync, no cuándo se vendió). Bloquea los análisis de demanda.
 - [ ] Confirmar con jefatura que van a usar el sistema (vs. volver al Excel).
 
 ---
