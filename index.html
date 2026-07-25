@@ -126,12 +126,14 @@
   .count{font-size:12px;color:var(--muted);margin:6px 0}
   /* secciones (acordeón) */
   .sec{margin-bottom:8px}
-  .sec-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:15px;font-weight:800;color:var(--text);cursor:pointer;box-shadow:0 1px 2px rgba(15,30,49,0.04);text-align:left}
+  /* Encabezado en naranja: al desplazar, marca dónde termina una sección y
+     empieza la siguiente. Antes era blanco igual que los productos y se perdía. */
+  .sec-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:var(--orange);border:1px solid var(--orange);border-radius:12px;padding:14px;font-size:15px;font-weight:800;color:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(220,68,5,.25);text-align:left}
   .sec.open .sec-btn{border-bottom-left-radius:0;border-bottom-right-radius:0}
   .sec-tags{display:flex;align-items:center;gap:6px;flex-shrink:0}
-  .sec-count{background:var(--gray-bg);color:var(--gray-fg);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800}
-  .sec-crit{background:var(--red-bg);color:var(--red-fg);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800}
-  .sec-arrow{color:var(--muted);font-size:11px;transition:transform .15s}
+  .sec-count{background:rgba(255,255,255,.92);color:var(--orange-dark);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800}
+  .sec-crit{background:#fff;color:var(--red-fg);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800}
+  .sec-arrow{color:#fff;font-size:11px;transition:transform .15s}
   .sec.open .sec-arrow{transform:rotate(180deg)}
   .sec-body{border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:8px;background:var(--bg)}
   .sec-body .row:last-child{margin-bottom:0}
@@ -279,9 +281,6 @@
     </button>
     <h1 id="topTitle">Inventario</h1>
     <div class="top-actions">
-      <button type="button" class="icon-btn" id="btnBuscar" aria-label="Buscar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
-      </button>
       <button type="button" class="icon-btn" id="btnActualizar" aria-label="Actualizar" title="Actualizar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
       </button>
@@ -623,27 +622,9 @@ function aviso(txt, ms=4000){
   if(ms) toastT=setTimeout(()=>t.classList.remove('open'), ms);
 }
 
-/* ---------------- buscador (lupa de la barra) ---------------- */
-/* Cada vista recuerda si su buscador está abierto. En Reparto arranca
-   abierto porque buscar ES la acción principal ahí. */
-const buscadorAbierto = {inv:false, reparto:true, hist:false, recetas:false};
+/* El buscador de cada vista queda SIEMPRE visible: esconderlo tras una lupa
+   sumaba toques y en una pantalla tan blanca ni se notaba que había aparecido. */
 let vistaActual = 'inv';
-function pintarBuscador(){
-  document.querySelectorAll('.busca').forEach(el=>{
-    el.style.display = (el.dataset.busca===vistaActual && buscadorAbierto[vistaActual]) ? '' : 'none';
-  });
-  const hay = document.querySelector(`.busca[data-busca="${vistaActual}"]`);
-  $('btnBuscar').style.visibility = hay ? 'visible' : 'hidden';
-  $('btnBuscar').classList.toggle('on', !!buscadorAbierto[vistaActual] && !!hay);
-}
-$('btnBuscar').addEventListener('click',()=>{
-  buscadorAbierto[vistaActual] = !buscadorAbierto[vistaActual];
-  pintarBuscador();
-  if(buscadorAbierto[vistaActual]){
-    const inp=document.querySelector(`.busca[data-busca="${vistaActual}"] input`);
-    if(inp) inp.focus();
-  }
-});
 
 /* ---------------- selección de sede ---------------- */
 function pickSede(s){
@@ -658,7 +639,7 @@ function pickSede(s){
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
   $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none';
-  vistaActual='inv'; pintarBuscador();
+  vistaActual='inv';
   listEl.innerHTML=''; countEl.textContent='';
   $('gate').classList.add('hidden');
   $('liveText').textContent='conectando…'; $('live').classList.remove('off');
@@ -880,15 +861,18 @@ listEl.addEventListener('click',e=>{
   const info=e.target.closest('[data-open]'); if(!info)return;
   openModal(+info.dataset.open);
 });
-qEl.addEventListener('input',()=>{
-  // El buscador siempre busca en términos generales: al escribir se limpia
-  // el filtro de estado (crítico/en rango/…) para no acotar la búsqueda.
-  if(qEl.value.trim() && filterState){
-    filterState=null;
-    document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
-  }
-  render();
-});
+/* El buscador SIEMPRE busca en todo el inventario. Al tocarlo se sueltan los
+   filtros de crítico / sobre-stock / sin dato: si alguien busca "torta de
+   zanahoria" quiere ver esa torta, no averiguar si además está en sobre-stock.
+   El estado igual se lee en la píldora de color al lado del nombre. */
+function soltarFiltros(){
+  if(!filterState) return false;
+  filterState=null;
+  document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
+  return true;
+}
+qEl.addEventListener('focus',()=>{ if(soltarFiltros()) render(); });
+qEl.addEventListener('input',()=>{ soltarFiltros(); render(); });
 document.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
   const f=c.dataset.f; filterState=filterState===f?null:f;
   document.querySelectorAll('.mcard').forEach(x=>x.classList.toggle('sel',x.dataset.f===filterState));
@@ -1203,7 +1187,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   $('view-reparto').style.display = tab==='reparto'?'block':'none';
   $('view-hist').style.display = tab==='hist'?'block':'none';
   $('view-recetas').style.display = tab==='recetas'?'block':'none';
-  vistaActual=tab; $('topTitle').textContent=TITULOS[tab]||TITULOS.inv; pintarBuscador();
+  vistaActual=tab; $('topTitle').textContent=TITULOS[tab]||TITULOS.inv;
   if(tab==='hist') loadHistorial();
   if(tab==='reparto') refreshPendientes();
   if(tab==='recetas') loadRecetas();
