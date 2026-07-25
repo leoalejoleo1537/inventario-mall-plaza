@@ -136,6 +136,15 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 
 ## 7. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-25** — Cabecera replicando la app de Fudo (de 182 px a 114 px): barra navy
+  con ☰ · título de la vista · lupa · recargar, y debajo las píldoras en franja blanca
+  (activa en naranja). Desaparece la franja naranja: "Actualizar inventario" es ahora
+  el ícono ⟳ y el resultado sale en un aviso transitorio (`aviso()`). El buscador se
+  abre con la lupa (en Reparto arranca abierto). Menú lateral ☰ con sede, en vivo,
+  quién está conectado, salir, y **atajos** a acciones que siguen existiendo en su
+  lugar (agregar producto, actualizar inventario, productos de Fudo); "Cambiar sede"
+  se mudó ahí. Regla: los atajos NO reemplazan a los botones originales.
+
 - **2026-07-25** — Lotes de vencimiento: un producto puede tener VARIAS fechas, cada
   una con su cantidad (9 vencen el 27, 1 vence hoy). Tabla `producto_lotes`; el stock
   del producto es la SUMA de sus lotes (trigger), por eso queda de solo lectura cuando
