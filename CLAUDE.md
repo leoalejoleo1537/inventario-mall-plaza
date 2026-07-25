@@ -86,7 +86,7 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 1. **Catálogo de productos de Fudo** → tabla `fudo_productos` (una copia local).
    Se actualiza con la Edge Function `fudo-sync-productos`. **No es en tiempo real:**
    si crean un producto nuevo en Fudo, hay que correr esta sync para que aparezca.
-   En la app: botón **"↻ Productos de Fudo"** en la vista Recetas.
+   En la app: va incluido en el botón ⟳ de la barra (paso `productos`).
 2. **Recetas** (`recetas` + `receta_items`): cada producto de Fudo se asocia a los
    insumos del inventario que descuenta por unidad vendida.
    - Campo **`aplica`** en cada insumo: `siempre` / `llevar` / `servir`. Permite que
@@ -99,7 +99,8 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
      + `ON CONFLICT`).
    - Respeta el **modo** de cada sede (`fudo_sync.modo`): `prueba` (solo registra,
      no toca stock) o `real` (descuenta de verdad).
-   - En la app: botón **"Actualizar inventario"** (barra naranja fija).
+   - En la app: **un solo botón ⟳** en la barra superior, que corre todos los pasos
+     de `PASOS_SYNC` (catálogo + ventas) y relee la pantalla.
 4. **Casos especiales** resueltos en `emparejador-segunda-pasada.sql`:
    - Bebidas de barra / pulpas / tés de hoja → NO descuentan (no cuantificables).
    - Combo "Llamita KIDS" → descuenta 3 ítems fijos (selladito + mini muffin + juguete).
@@ -142,6 +143,15 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 ---
 
 ## 7. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-25** — **Un solo botón de actualizar.** Había cuatro puntos para dos
+  acciones (⟳ de la barra, botón suelto en Recetas, dos atajos en el menú) y en el
+  mesón generaba fricción. Ahora el ⟳ corre todo en orden: catálogo de Fudo →
+  ventas → relectura de pantalla. Los pasos viven en el registro **`PASOS_SYNC`**:
+  **para agregar una sincronización futura, sumar una entrada ahí y el botón la
+  incluye sola** — no crear botones nuevos. Si un paso falla los demás igual corren,
+  y la pantalla se relee siempre. Se arregló de paso el "+ Nueva" de Recetas, que
+  había quedado dentro de la fila del buscador y se ocultaba con él.
 
 - **2026-07-25** — Cabecera replicando la app de Fudo (de 182 px a 114 px): barra navy
   con ☰ · título de la vista · lupa · recargar, y debajo las píldoras en franja blanca
