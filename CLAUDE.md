@@ -136,6 +136,14 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 
 ## 7. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-25** — Lotes de vencimiento: un producto puede tener VARIAS fechas, cada
+  una con su cantidad (9 vencen el 27, 1 vence hoy). Tabla `producto_lotes`; el stock
+  del producto es la SUMA de sus lotes (trigger), por eso queda de solo lectura cuando
+  hay fechas. Al vender en Fudo se descuenta del lote que vence primero (FIFO,
+  `descontar_lotes()` + motor v3). En la lista se ve el más urgente con su cantidad
+  ("1 vence HOY") y cuántas fechas más hay. SQL en `sql/2026-07-lotes-vencimiento.sql`
+  (correr a mano). Si la tabla no existe, la app sigue con la fecha única de antes.
+
 - **2026-07-24** — Tiempo real completo: crear/renombrar/eliminar productos ahora sí
   se refleja en los otros dispositivos. La conexión en vivo se corta al dejar la app
   de fondo y nadie recuperaba lo perdido (el stock "funcionaba" solo porque se
