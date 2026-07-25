@@ -125,6 +125,12 @@
   .rec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
   .rec-card .rn{font-weight:700;font-size:15px}
   .rec-card .ri{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+  /* ---------- lotes de vencimiento (cantidad + fecha) ---------- */
+  .lote-row{display:grid;grid-template-columns:70px 1fr 38px;gap:8px;align-items:center;margin-bottom:8px}
+  .lote-row input{min-width:0;height:42px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:#fff;color:var(--text);padding:0 10px}
+  .lote-row .lote-cant{text-align:center;font-weight:700}
+  .lote-row .lote-del{width:38px;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--red-fg);cursor:pointer;font-size:15px}
+  .lote-vacio{font-size:13px;color:var(--muted);margin:2px 0 8px}
   .rec-irow{margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
   .rec-ins-ctl{display:grid;grid-template-columns:1fr 74px 38px;gap:8px;align-items:center;margin-top:8px}
   .rec-ins-ctl select{min-width:0}
@@ -148,7 +154,7 @@
   .row .sub-total{color:var(--orange-dark);font-weight:800}
   .row .right{display:flex;align-items:center;gap:8px}
   .pill{font-size:11px;padding:4px 10px;border-radius:999px;white-space:nowrap;font-weight:700}
-  .venc{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:600;background:var(--gray-bg);color:var(--gray-fg)}
+  .venc{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:600;background:var(--gray-bg);color:var(--gray-fg);margin-right:4px;display:inline-block}
   .venc.rojo{background:var(--red-bg);color:var(--red-fg)}
   .venc.ambar{background:var(--amber-bg);color:var(--amber-fg)}
   .row input[type=number]{width:68px;height:40px;text-align:center;border:1px solid var(--border);border-radius:10px;font-size:16px;font-weight:600}
@@ -402,11 +408,12 @@
     </div>
     <label class="chkrow" id="m-perec-row" style="display:none">
       <input type="checkbox" id="m-perec">
-      <span>Producto perecedero<small>Muestra campo de fecha de vencimiento</small></span>
+      <span>Producto perecedero</span>
     </label>
     <div class="field" id="m-venc-field" style="display:none">
-      <label>Fecha de vencimiento</label>
-      <input type="date" id="m-venc">
+      <label>Vencimientos</label>
+      <div id="m-lotes"></div>
+      <button type="button" class="btn btn-outline btn-sm" id="btnAddLote" style="margin-top:8px">+ Agregar fecha</button>
     </div>
     <button type="button" class="btn-del" id="m-eliminar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -505,14 +512,37 @@ const fmt = n => n==null ? '—' : (Math.round(n*100)/100);
 const hoyISO = () => new Date().toLocaleDateString('en-CA');
 const fmtFecha = iso => { const [y,m,d]=iso.split('-'); return `${d}-${m}-${y}`; };
 
+/* lotes de vencimiento por producto: { producto_id: [{id,cantidad,vencimiento}] } */
+let LOTES = {};
+let hasLotes = false;   // true cuando la tabla producto_lotes existe en la base
+const lotesDe = pid => (LOTES[pid]||[]).slice()
+  .sort((a,b)=>String(a.vencimiento||'9999').localeCompare(String(b.vencimiento||'9999')));
+
+/* etiqueta de una fecha: VENCIDO / hoy / mañana / la fecha */
+function etiquetaVenc(iso){
+  const dias = Math.round((new Date(iso+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
+  if (dias < 0)   return {cls:'venc rojo',  txt:'VENCIDO '+fmtFecha(iso)};
+  if (dias === 0) return {cls:'venc rojo',  txt:'vence HOY'};
+  if (dias === 1) return {cls:'venc ambar', txt:'vence mañana'};
+  return {cls:'venc', txt:'vence '+fmtFecha(iso)};
+}
+
+/* Muestra el lote más urgente con su cantidad ("1 vence HOY") y, si hay
+   más fechas, cuántas quedan. Así se ve de un vistazo qué hay que sacar. */
 function vencChip(p){
-  if (!hasVenc || !esPerec(p) || !p.vencimiento) return '';
-  const dias = Math.round((new Date(p.vencimiento+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
-  let cls='venc', txt='vence '+fmtFecha(p.vencimiento);
-  if (dias < 0){ cls='venc rojo'; txt='VENCIDO '+fmtFecha(p.vencimiento); }
-  else if (dias === 0){ cls='venc rojo'; txt='vence HOY'; }
-  else if (dias === 1){ cls='venc ambar'; txt='vence mañana'; }
-  return `<span class="${cls}">${txt}</span>`;
+  if (!esPerec(p)) return '';
+  const ls = lotesDe(p.id).filter(l=>l.vencimiento);
+  if (ls.length){
+    const primero = ls[0];
+    const e = etiquetaVenc(primero.vencimiento);
+    const cant = (+primero.cantidad||0);
+    const mas = ls.length>1 ? `<span class="venc">+${ls.length-1} fecha${ls.length-1===1?'':'s'}</span>` : '';
+    return `<span class="${e.cls}">${fmt(cant)} ${e.txt}</span>${mas}`;
+  }
+  // sin lotes todavía: se respeta la fecha única de antes
+  if (!hasVenc || !p.vencimiento) return '';
+  const e = etiquetaVenc(p.vencimiento);
+  return `<span class="${e.cls}">${e.txt}</span>`;
 }
 
 /* ---------------- saludo según la hora ---------------- */
@@ -633,6 +663,7 @@ function rowHTML(p){
   const e=estado(p),cf=CFG[e];
   const t=totalProducto(p.producto);
   const totalLine = t.multi ? `<div class="sub sub-total">Total: ${fmt(t.total)} · ${t.secciones} secciones</div>` : '';
+  const conLotes = lotesDe(p.id).length>0;   // el stock sale de la suma de fechas
   return `<div class="row" data-row="${p.id}">
     <div class="info" data-open="${p.id}">
       <div class="name">${esc(p.producto)} ${vencChip(p)}</div>
@@ -641,7 +672,7 @@ function rowHTML(p){
     </div>
     <div class="right">
       <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
-      <input type="number" step="0.5" value="${p.stock_actual==null?'':p.stock_actual}" data-id="${p.id}" aria-label="Stock de ${esc(p.producto)}">
+      <input type="number" step="0.5" value="${p.stock_actual==null?'':p.stock_actual}" data-id="${p.id}" aria-label="Stock de ${esc(p.producto)}"${conLotes?' readonly title="Se calcula sumando las fechas"':''}>
     </div>
   </div>`;
 }
@@ -679,8 +710,20 @@ async function loadData(){
   DATA=data;
   hasVenc = DATA.length>0 && ('vencimiento' in DATA[0]);
   hasPerec = DATA.length>0 && ('perecedero' in DATA[0]);
+  await loadLotes();
   metrics(); render();
   $('liveText').textContent='en vivo'; $('live').classList.remove('off');
+}
+/* trae los lotes de vencimiento de los productos de la sede.
+   Si la tabla todavía no existe en la base, la app sigue funcionando igual. */
+async function loadLotes(){
+  LOTES={};
+  const ids=DATA.map(d=>d.id);
+  if(!ids.length) return;
+  const {data,error}=await sb.from('producto_lotes').select('id,producto_id,cantidad,vencimiento').in('producto_id',ids);
+  if(error){ hasLotes=false; return; }
+  hasLotes=true;
+  (data||[]).forEach(l=>{ (LOTES[l.producto_id]=LOTES[l.producto_id]||[]).push(l); });
 }
 /* reintenta una operación de Supabase hasta 3 veces (para señal móvil floja) */
 async function conReintento(fn,intentos=3){
@@ -745,15 +788,62 @@ function openModal(id){
   $('m-max').value=modalProd.stock_max??'';
   $('m-perec-row').style.display = hasPerec ? 'flex' : 'none';
   if(hasPerec) $('m-perec').checked = !!modalProd.perecedero;
-  const conVenc = esPerec(modalProd) && hasVenc;
+  const conVenc = esPerec(modalProd) && (hasLotes || hasVenc);
   $('m-venc-field').style.display = conVenc ? 'block' : 'none';
-  if(conVenc) $('m-venc').value = modalProd.vencimiento ?? '';
+  pintarLotes(conVenc ? lotesDe(modalProd.id) : []);
   $('overlay').classList.add('open');
 }
-/* el checkbox muestra/oculta la fecha al instante */
+
+/* ---------------- lotes de vencimiento en el modal ---------------- */
+function loteRow(cant, venc){
+  const div=document.createElement('div');
+  div.className='lote-row';
+  div.innerHTML = `<input type="number" class="lote-cant" step="0.5" min="0" value="${cant==null?'':cant}" aria-label="Cantidad">`
+    + `<input type="date" class="lote-venc" value="${venc||''}" aria-label="Fecha de vencimiento">`
+    + `<button type="button" class="lote-del" aria-label="Quitar fecha">✕</button>`;
+  return div;
+}
+function pintarLotes(lotes){
+  const box=$('m-lotes'); box.innerHTML='';
+  (lotes||[]).forEach(l=>box.appendChild(loteRow(l.cantidad, l.vencimiento)));
+  actualizarVacio(); sumarLotes();
+}
+function actualizarVacio(){
+  const box=$('m-lotes');
+  const hay=box.querySelectorAll('.lote-row').length>0;
+  let msg=box.querySelector('.lote-vacio');
+  if(!hay && !msg){ msg=document.createElement('div'); msg.className='lote-vacio'; msg.textContent='Sin fechas'; box.appendChild(msg); }
+  if(hay && msg) msg.remove();
+}
+/* con lotes, el stock es la suma de las cantidades: se calcula solo */
+function sumarLotes(){
+  const filas=[...$('m-lotes').querySelectorAll('.lote-row')];
+  const conLotes=filas.length>0;
+  const stock=$('m-stock');
+  stock.readOnly=conLotes;
+  $('m-menos').style.visibility = conLotes?'hidden':'visible';
+  $('m-mas').style.visibility   = conLotes?'hidden':'visible';
+  if(conLotes){
+    stock.value = filas.reduce((t,f)=>t+(+f.querySelector('.lote-cant').value||0),0);
+  }
+}
+$('m-lotes').addEventListener('input',e=>{ if(e.target.closest('.lote-cant')) sumarLotes(); });
+$('m-lotes').addEventListener('click',e=>{
+  const d=e.target.closest('.lote-del'); if(!d) return;
+  d.closest('.lote-row').remove(); actualizarVacio(); sumarLotes();
+});
+$('btnAddLote').addEventListener('click',()=>{
+  const box=$('m-lotes');
+  box.appendChild(loteRow(1, hoyISO()));
+  actualizarVacio(); sumarLotes();
+  box.lastElementChild.querySelector('.lote-venc').focus();
+});
+/* el checkbox muestra/oculta las fechas al instante */
 $('m-perec').addEventListener('change',()=>{
   if(!modalProd) return;
-  $('m-venc-field').style.display = ($('m-perec').checked && hasVenc) ? 'block' : 'none';
+  const ver = $('m-perec').checked && (hasLotes || hasVenc);
+  $('m-venc-field').style.display = ver ? 'block' : 'none';
+  if(!ver){ pintarLotes([]); }
 });
 function closeModal(){ $('overlay').classList.remove('open'); modalProd=null; }
 $('m-cancelar').addEventListener('click',closeModal);
@@ -769,15 +859,47 @@ $('m-guardar').addEventListener('click',async()=>{
   const dup=DATA.find(d=>d.id!==modalProd.id && d.rubro===rubroNuevo && normNombre(d.producto)===normNombre(nombre));
   if(dup){ alert(`"${dup.producto}" ya existe en ${rubroNuevo}.`); return; }
   const num=el=>el.value===''?null:+el.value;
-  const fields={producto:nombre,stock_actual:num($('m-stock')),stock_min:num($('m-min')),stock_max:num($('m-max')),rubro:rubroNuevo};
-  if(hasPerec) fields.perecedero=$('m-perec').checked;
   const quedaPerec = hasPerec ? $('m-perec').checked : modalProd.rubro==='Sándwiches';
-  if(hasVenc) fields.vencimiento = quedaPerec ? ($('m-venc').value||null) : null;
+
+  // fechas de vencimiento (cantidad + fecha)
+  const lotes=[];
+  if(quedaPerec){
+    for(const f of $('m-lotes').querySelectorAll('.lote-row')){
+      const c=+f.querySelector('.lote-cant').value||0;
+      const v=f.querySelector('.lote-venc').value||null;
+      if(!v){ alert('Cada fecha necesita su día. Complétala o quita esa línea.'); return; }
+      if(c<=0){ alert('Cada fecha necesita una cantidad mayor que 0.'); return; }
+      lotes.push({cantidad:c, vencimiento:v});
+    }
+    const fechas=lotes.map(l=>l.vencimiento);
+    if(new Set(fechas).size!==fechas.length){ alert('Hay una fecha repetida. Déjala en una sola línea con la cantidad total.'); return; }
+  }
+
+  const fields={producto:nombre,stock_min:num($('m-min')),stock_max:num($('m-max')),rubro:rubroNuevo};
+  // con fechas, el stock lo calcula la base sumando los lotes
+  if(!lotes.length) fields.stock_actual=num($('m-stock'));
+  if(hasPerec) fields.perecedero=quedaPerec;
+  if(hasVenc) fields.vencimiento = quedaPerec ? (lotes.length?lotes[0].vencimiento:null) : null;
+
   const savedId=modalProd.id;
   Object.assign(modalProd,fields);
+  if(lotes.length) modalProd.stock_actual = lotes.reduce((t,l)=>t+l.cantidad,0);
+  LOTES[savedId]=lotes.map(l=>({...l, producto_id:savedId}));
   metrics(); render(); closeModal();
   await saveFields(savedId, fields);
+  if(hasLotes) await guardarLotes(savedId, lotes);
 });
+/* Reemplaza los lotes del producto por los del modal. El trigger de la base
+   recalcula el stock del producto sumando las cantidades. */
+async function guardarLotes(pid, lotes){
+  const del=await conReintento(()=>sb.from('producto_lotes').delete().eq('producto_id',pid));
+  if(del.error){ console.error(del.error); alert('No se pudieron guardar las fechas.\n\nDetalle: '+del.error.message); return; }
+  if(lotes.length){
+    const ins=await conReintento(()=>sb.from('producto_lotes').insert(lotes.map(l=>({producto_id:pid, cantidad:l.cantidad, vencimiento:l.vencimiento}))));
+    if(ins.error){ console.error(ins.error); alert('No se pudieron guardar las fechas.\n\nDetalle: '+ins.error.message); return; }
+  }
+  await loadLotes(); metrics(); render();
+}
 /* eliminar producto (se desactiva, no se borra de verdad: recuperable si hay error) */
 $('m-eliminar').addEventListener('click', async()=>{
   if(!modalProd) return;
@@ -1284,6 +1406,9 @@ function subscribeRealtime(){
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'fudo_pendientes',filter:'sede=eq.'+SEDE},()=>{
       refreshPendientes();
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'producto_lotes'},async()=>{
+      await loadLotes(); metrics(); render();   // otro dispositivo cambió una fecha
     })
     .subscribe(status=>{
       if(status==='SUBSCRIBED'){
