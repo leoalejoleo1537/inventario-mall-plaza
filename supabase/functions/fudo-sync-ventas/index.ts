@@ -17,7 +17,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const AUTH_URL = "https://auth.fu.do/api";
 const API_BASE = "https://api.fu.do/v1alpha1";
 const PAGE_SIZE = 500;
-const BUFFER_MIN = 120;        // relee las últimas 2 h por si una venta cerró tarde (idempotente)
+// Fudo filtra por createdAt = cuándo se ABRIÓ la mesa, no cuándo se cerró.
+// Una mesa abierta a las 15:00 y cerrada a las 18:00 tiene createdAt de 3 h
+// antes: con una ventana corta quedaba FUERA y no se descontaba nunca.
+// 8 h cubre la jornada completa. Releer de más no cuesta: es idempotente.
+const BUFFER_MIN = 480;
 const PRIMERA_CORRIDA_H = 24;  // en la primera corrida, mira las últimas 24 h
 const CONCURRENCIA = 20;       // ítems procesados en paralelo por tanda
 
@@ -67,14 +71,18 @@ Deno.serve(async (req) => {
     if (!token) return json({ error: "Fudo no devolvió token." }, 502);
 
     // 2) traer ventas CERRADAS de la ventana, con sus ítems y productos
-    const tareas: Array<{ saleId: string; itemId: string; prodId: string | null; prodNom: string | null; cant: number; tipo: string }> = [];
+    const tareas: Array<{ saleId: string; itemId: string; prodId: string | null; prodNom: string | null; cant: number; tipo: string; ventaAt: string | null }> = [];
     let ventasVistas = 0;
     let maxCreatedAt = cursor ? cursor.getTime() : 0;
 
     for (let page = 1; ; page++) {
       const params = new URLSearchParams();
       params.set("filter[saleState]", "in.(CLOSED)");
-      params.set("filter[createdAt]", `and(gte.${isoFudo(desde)},lte.${isoFudo(ahora)})`);
+      // El tope superior se corre una hora hacia adelante: si el reloj de Fudo
+      // va levemente adelantado respecto al nuestro, una venta recién cerrada
+      // quedaba justo afuera del filtro y aparecía recién en la sync siguiente.
+      const tope = new Date(ahora.getTime() + 60 * 60000);
+      params.set("filter[createdAt]", `and(gte.${isoFudo(desde)},lte.${isoFudo(tope)})`);
       params.set("include", "items.product");
       params.set("sort", "createdAt");
       params.set("page[size]", String(PAGE_SIZE));
@@ -116,6 +124,7 @@ Deno.serve(async (req) => {
             prodNom: prod?.attributes?.name ?? null,
             cant,
             tipo,
+            ventaAt: venta.attributes?.createdAt ?? null,   // cuándo se vendió DE VERDAD
           });
         }
       }
@@ -136,6 +145,7 @@ Deno.serve(async (req) => {
           p_fudo_product_nombre: t.prodNom,
           p_cantidad: t.cant,
           p_sale_type: t.tipo,
+          p_venta_at: t.ventaAt,
         })
       ));
       for (const r of res) {
