@@ -474,6 +474,8 @@ let openSecs=new Set();   // secciones desplegadas
 /* Normaliza texto para buscar y comparar: sin tildes, sin mayúsculas y sin
    espacios de más. Así "azucar" encuentra "Azúcar" y al revés. */
 const normNombre = s => (s==null?'':String(s)).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
+/* Escapa texto antes de meterlo en HTML (los nombres los escribe el personal). */
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 /* ---------------- semáforo ---------------- */
 function maxOk(p){ return p.stock_max != null && (p.stock_min == null || p.stock_max > p.stock_min); }
@@ -625,13 +627,13 @@ function rowHTML(p){
   const totalLine = t.multi ? `<div class="sub sub-total">Total: ${fmt(t.total)} · ${t.secciones} secciones</div>` : '';
   return `<div class="row" data-row="${p.id}">
     <div class="info" data-open="${p.id}">
-      <div class="name">${p.producto} ${vencChip(p)}</div>
+      <div class="name">${esc(p.producto)} ${vencChip(p)}</div>
       <div class="sub">mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div>
       ${totalLine}
     </div>
     <div class="right">
       <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
-      <input type="number" step="0.5" value="${p.stock_actual==null?'':p.stock_actual}" data-id="${p.id}" aria-label="Stock de ${p.producto}">
+      <input type="number" step="0.5" value="${p.stock_actual==null?'':p.stock_actual}" data-id="${p.id}" aria-label="Stock de ${esc(p.producto)}">
     </div>
   </div>`;
 }
@@ -655,8 +657,8 @@ function render(){
     const crit=items.reduce((n,p)=>n+(estado(p)==='critico'?1:0),0);
     const abierta=filtrando||openSecs.has(sec);
     return `<div class="sec${abierta?' open':''}">
-      <button type="button" class="sec-btn" data-sec="${sec}">
-        <span>${sec}</span>
+      <button type="button" class="sec-btn" data-sec="${esc(sec)}">
+        <span>${esc(sec)}</span>
         <span class="sec-tags">${crit?`<span class="sec-crit" title="productos en crítico">${crit} crít.</span>`:''}<span class="sec-count">${items.length}</span><span class="sec-arrow">▼</span></span>
       </button>
       ${abierta?`<div class="sec-body">${items.map(rowHTML).join('')}</div>`:''}
@@ -846,7 +848,7 @@ function renderRepartoResults(){
     const totalTxt = t.multi ? ` · <b style="color:var(--orange-dark)">total ${fmt(t.total)}</b>` : '';
     return `
     <div class="rep-result" data-add="${p.id}">
-      <div><div class="rn">${p.producto}</div><div class="rs">${p.rubro} · stock actual ${fmt(p.stock_actual)}${totalTxt}</div></div>
+      <div><div class="rn">${esc(p.producto)}</div><div class="rs">${esc(p.rubro)} · stock actual ${fmt(p.stock_actual)}${totalTxt}</div></div>
       <div class="add">+</div>
     </div>`;
   }).join('');
@@ -865,10 +867,10 @@ function renderCarrito(){
   $('carrito-list').innerHTML = carrito.map((c,i)=>{
     const esUno = (+c.cantidad||0) <= 1;
     return `<div class="cart-row">
-      <div class="cn">${c.producto}</div>
+      <div class="cn">${esc(c.producto)}</div>
       <div class="qty">
         <button type="button" class="qbtn qleft ${esUno?'is-trash':''}" data-left="${i}" aria-label="${esUno?'Quitar':'Restar'}">${esUno?TRASH_SVG:'−'}</button>
-        <input type="number" step="0.5" min="0" value="${c.cantidad}" data-idx="${i}" aria-label="Cantidad de ${c.producto}">
+        <input type="number" step="0.5" min="0" value="${c.cantidad}" data-idx="${i}" aria-label="Cantidad de ${esc(c.producto)}">
         <button type="button" class="qbtn qplus" data-inc="${i}" aria-label="Sumar">+</button>
       </div>
     </div>`;
@@ -929,7 +931,7 @@ async function refreshPendientes(){
   if(!data.length){ $('pend-list').innerHTML='<div class="empty">No hay pendientes. Todo al día 👍</div>'; return; }
   $('pend-list').innerHTML = data.map(p=>`
     <div class="pend-row" data-pend="${p.id}">
-      <div class="pend-main"><div class="pn">${p.producto}</div><div class="pm">${new Date(p.created_at).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>
+      <div class="pend-main"><div class="pn">${esc(p.producto)}</div><div class="pm">${new Date(p.created_at).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>
       <div class="pend-qty"><b>+${fmt(p.cantidad)}</b><small>unid.</small></div>
       <button type="button" class="btn-done" data-done="${p.id}">Ya actualicé</button>
     </div>`).join('');
@@ -961,7 +963,6 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 let FUDOPROD=[];   // productos activos de Fudo de la sede (para el desplegable)
 let RECETAS=[];    // recetas con sus insumos
 let recEditId=null;
-const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 async function loadRecetas(){
   if(!SEDE) return;
@@ -1194,7 +1195,7 @@ async function openHistDetail(fecha){
   $('hist-rows').innerHTML=data.map(p=>{
     const e=estado(p),cf=CFG[e];
     return `<div class="hrow">
-      <div><div class="hn">${p.producto}</div><div class="hs">${p.rubro} · mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div></div>
+      <div><div class="hn">${esc(p.producto)}</div><div class="hs">${esc(p.rubro)} · mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div></div>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
         <span class="hv">${fmt(p.stock_actual)}</span>
@@ -1238,10 +1239,35 @@ $('btnGuardarHoy').addEventListener('click',async()=>{
 });
 
 /* ---------------- tiempo real ---------------- */
+/* Recarga todo desde la base. Se usa al volver a la app o al reconectar:
+   mientras no hubo conexión en vivo, los cambios de otros no llegaron. */
+let ultimaRecarga=0;
+async function resincronizar(){
+  if(!SEDE) return;
+  if(Date.now()-ultimaRecarga < 1500) return;   // evita recargas en ráfaga
+  ultimaRecarga=Date.now();
+  await loadData();
+  refreshPendientes();
+}
+/* La app se duerme al bloquear el teléfono o dejar la pestaña de fondo, y la
+   conexión en vivo se corta sin avisar. Al volver, se recarga para no quedar
+   con datos viejos (productos nuevos, renombrados o eliminados por otros). */
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) resincronizar(); });
+window.addEventListener('focus',resincronizar);
+window.addEventListener('online',resincronizar);
+
+let vecesSuscrito=0;
 function subscribeRealtime(){
   if(channel){ sb.removeChannel(channel); channel=null; }
   channel = sb.channel('sede-'+SEDE)
     .on('postgres_changes',{event:'*',schema:'public',table:'productos',filter:'sede=eq.'+SEDE},payload=>{
+      // borrado real: los datos vienen en payload.old, no en payload.new
+      if(payload.eventType==='DELETE'){
+        const viejoId=payload.old&&payload.old.id;
+        const i=viejoId?DATA.findIndex(d=>d.id===viejoId):-1;
+        if(i>=0){ DATA.splice(i,1); metrics(); render(); }
+        return;
+      }
       const row=payload.new; if(!row||!row.id||row.sede!==SEDE)return;
       const idx=DATA.findIndex(d=>d.id===row.id);
       if(row.activo!=='SÍ'){ if(idx>=0)DATA.splice(idx,1); }   // eliminado por otro usuario
@@ -1252,7 +1278,14 @@ function subscribeRealtime(){
       refreshPendientes();
     })
     .subscribe(status=>{
-      if(status==='SUBSCRIBED'){$('liveText').textContent='en vivo';$('live').classList.remove('off');}
+      if(status==='SUBSCRIBED'){
+        $('liveText').textContent='en vivo'; $('live').classList.remove('off');
+        vecesSuscrito++;
+        // si es una reconexión, recupera lo que pasó mientras no había señal
+        if(vecesSuscrito>1) resincronizar();
+      } else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+        $('liveText').textContent='sin conexión'; $('live').classList.add('off');
+      }
     });
 }
 
