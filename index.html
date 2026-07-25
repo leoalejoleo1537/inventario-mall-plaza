@@ -54,15 +54,12 @@
   @media (max-width:560px){
     .topbar .inner{gap:8px}
     .top-right{gap:8px}
-    .topbar .top-logo{width:40px;height:40px;border-radius:11px}
     .online{max-width:96px;padding:6px 9px;font-size:11.5px}
     .btn-switch{padding:6px 10px;font-size:12px}
   }
   /* ---------- top bar ---------- */
   .topbar{background:var(--navy);color:#fff;padding:12px 16px}
-  .topbar .inner{max-width:900px;margin:0 auto;display:flex;align-items:center;gap:12px}
-  .top-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
-  .top-logo{width:46px;height:46px;border-radius:12px;flex-shrink:0;display:block}
+  .topbar .inner{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
   .topbar h1{font-size:18px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .top-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .btn-switch{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
@@ -72,7 +69,9 @@
   .live.off .dot{background:#e53935}
   /* ---------- barra de sincronización con Fudo (acción destacada, ÚNICA fija al hacer scroll) ---------- */
   .syncbar{background:linear-gradient(135deg,var(--orange),var(--orange-dark));padding:11px 16px;position:sticky;top:0;z-index:20;box-shadow:0 2px 8px rgba(0,0,0,.15)}
-  .syncbar .inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .syncbar .inner{max-width:900px;margin:0 auto;display:flex;flex-direction:column;align-items:stretch;gap:10px}
+  .syncbar .tabs-row{display:flex;gap:7px}
+  .syncbar .sync-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
   .sync-btn{display:flex;align-items:center;gap:8px;background:#fff;color:var(--orange-dark);border:none;border-radius:999px;padding:10px 20px;font-size:14.5px;font-weight:800;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.18);white-space:nowrap;flex-shrink:0}
   .sync-btn:active{transform:scale(.97)}
   .sync-btn:disabled{opacity:.75;cursor:default}
@@ -85,18 +84,15 @@
     .sync-btn{padding:8px 16px;font-size:13px}
     .sync-sub{font-size:11.5px;text-align:left}
   }
-  /* ---------- tabs (FUDO pills) ---------- */
-  .tabs{background:#fff;border-bottom:1px solid var(--border);padding:9px 14px}
-  .tabs .inner{max-width:900px;margin:0 auto;display:flex;gap:7px}
-  .tab{padding:8px 15px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
-  .tab.active{background:var(--orange);border-color:var(--orange);color:#fff}
-  .tab-badge{background:var(--amber-fg);color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:5px}
-  .tab.active .tab-badge{background:#fff;color:var(--orange)}
+  /* ---------- tabs (píldoras dentro de la franja naranja) ---------- */
+  .tab{padding:8px 15px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.15);color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .tab.active{background:#fff;border-color:#fff;color:var(--orange-dark);box-shadow:0 2px 8px rgba(0,0,0,.15)}
+  .tab-badge{background:#fff;color:var(--orange-dark);border-radius:999px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:5px}
+  .tab.active .tab-badge{background:var(--orange);color:#fff}
   .tab-icon{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:8px 13px}
   .tab-icon svg{width:19px;height:19px;display:block}
   @media (max-width:400px){
-    .tabs{padding:8px 10px}
-    .tabs .inner{gap:5px}
+    .syncbar .tabs-row{gap:5px}
     .tab{padding:7px 11px;font-size:12.5px}
     .tab-icon{padding:7px 11px}
   }
@@ -260,36 +256,32 @@
 
 <div class="topbar">
   <div class="inner">
-    <div class="top-main">
-      <h1 id="topTitle">Hola</h1>
-      <div class="top-right">
-        <span class="online" id="online"><span class="odot"></span><span class="onames" id="onames"></span></span>
-        <button class="btn-switch" id="btnCambiar">⇄ Cambiar sede</button>
-        <span class="live" id="live"><span class="dot"></span><span id="liveText">—</span></span>
-      </div>
+    <h1 id="topTitle">Hola</h1>
+    <div class="top-right">
+      <span class="online" id="online"><span class="odot"></span><span class="onames" id="onames"></span></span>
+      <button class="btn-switch" id="btnCambiar">⇄ Cambiar sede</button>
+      <span class="live" id="live"><span class="dot"></span><span id="liveText">—</span></span>
     </div>
-    <img class="top-logo" src="icons/icon-192.png" alt="" aria-hidden="true">
-  </div>
-</div>
-
-<div class="tabs">
-  <div class="inner">
-    <button class="tab tab-icon active" data-tab="inv" aria-label="Inventario" title="Inventario">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v9a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1v-9"></path></svg>
-    </button>
-    <button class="tab" data-tab="reparto">Reparto <span class="tab-badge" id="repBadge" style="display:none"></span></button>
-    <button class="tab" data-tab="hist">Historial</button>
-    <button class="tab" data-tab="recetas">Recetas</button>
   </div>
 </div>
 
 <div class="syncbar">
   <div class="inner">
+    <div class="tabs-row">
+      <button class="tab tab-icon active" data-tab="inv" aria-label="Inventario" title="Inventario">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v9a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1v-9"></path></svg>
+      </button>
+      <button class="tab" data-tab="reparto">Reparto <span class="tab-badge" id="repBadge" style="display:none"></span></button>
+      <button class="tab" data-tab="hist">Historial</button>
+      <button class="tab" data-tab="recetas">Recetas</button>
+    </div>
+    <div class="sync-row">
     <button type="button" class="sync-btn" id="btnSyncVentas">
       <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg></span>
       <span class="sync-label">Actualizar inventario</span>
     </button>
     <span class="sync-sub" id="syncVentasMsg"></span>
+    </div>
   </div>
 </div>
 
