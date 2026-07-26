@@ -5,6 +5,28 @@
 > detente y confírmalo con Jhon antes. Cuando cerremos un cambio importante,
 > **actualiza este archivo** (sección "Bitácora").
 
+## 0. REGLA DURA — comparar Fudo vs. inventario es SIEMPRE de solo lectura
+
+> Se agrega esta regla porque una sesión anterior, al pedirle "compara los
+> productos de Fudo con los del inventario", **creó productos duplicados en
+> vez de mostrar un informe**. No vuelva a pasar.
+
+- **Cualquier pedido de comparar/auditar Fudo vs. inventario es un INFORME, no
+  una edición.** La herramienta ya existe y es de solo lectura:
+  `sql/2026-07-auditoria-recetas.sql` (bloque 0 resumen, bloque 2 Fudo sin
+  receta, bloque 6 inventario huérfano, bloque 7 sugerencias de emparejamiento).
+  **Úsala o adáptala — no reinventes la comparación escribiendo INSERTs.**
+- **Nunca crear, fusionar, renombrar o eliminar productos/recetas como efecto
+  secundario de "revisar" o "comparar".** Eso son acciones que decide Jhon,
+  después de ver el informe — no una consecuencia automática de pedir un análisis.
+- Si al comparar aparece algo que "parece" que hay que arreglar (duplicado,
+  producto sin pareja, nombre que no calza): **mostrarlo en el informe y
+  preguntar**. No corregirlo solo, por muy obvio que parezca — lo obvio para
+  un modelo no siempre es obvio para el negocio (ver sección 7, combos).
+- Esta regla aplica a **cualquier sesión**, incluso una sin el historial de
+  conversación de hoy. Por eso está acá arriba y no en la bitácora: la
+  bitácora se lee después, esto se lee primero.
+
 ---
 
 ## 1. Qué es esto y para quién
