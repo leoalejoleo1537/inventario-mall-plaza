@@ -452,9 +452,10 @@
       <span>Producto perecedero</span>
     </label>
     <div class="field" id="m-venc-field" style="display:none">
-      <label>Vencimientos</label>
+      <label id="m-venc-label">Vencimientos</label>
       <div id="m-lotes"></div>
       <button type="button" class="btn btn-outline btn-sm" id="btnAddLote" style="margin-top:8px">+ Agregar fecha</button>
+      <input type="date" id="m-venc-single" style="display:none">
     </div>
     <button type="button" class="btn-del" id="m-eliminar">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -891,9 +892,20 @@ function openModal(id){
   $('m-max').value=modalProd.stock_max??'';
   $('m-perec-row').style.display = hasPerec ? 'flex' : 'none';
   if(hasPerec) $('m-perec').checked = !!modalProd.perecedero;
-  const conVenc = esPerec(modalProd) && (hasLotes || hasVenc);
+  // Solo se ofrece el editor de VARIAS fechas si la tabla que las guarda
+  // (producto_lotes) existe de verdad en la base. Si no, se cae al campo
+  // de una sola fecha de siempre — nunca se muestra una opción que no
+  // se puede guardar (eso era lo que borraba las fechas al recargar).
+  const puedeLotes = hasLotes && esPerec(modalProd);
+  const puedeSoloFecha = !hasLotes && hasVenc && esPerec(modalProd);
+  const conVenc = puedeLotes || puedeSoloFecha;
   $('m-venc-field').style.display = conVenc ? 'block' : 'none';
-  pintarLotes(conVenc ? lotesDe(modalProd.id) : []);
+  $('m-venc-label').textContent = puedeLotes ? 'Vencimientos' : 'Fecha de vencimiento';
+  $('m-lotes').style.display = puedeLotes ? '' : 'none';
+  $('btnAddLote').style.display = puedeLotes ? '' : 'none';
+  $('m-venc-single').style.display = puedeSoloFecha ? '' : 'none';
+  pintarLotes(puedeLotes ? lotesDe(modalProd.id) : []);
+  if(puedeSoloFecha) $('m-venc-single').value = modalProd.vencimiento ?? '';
   $('overlay').classList.add('open');
 }
 
@@ -944,9 +956,16 @@ $('btnAddLote').addEventListener('click',()=>{
 /* el checkbox muestra/oculta las fechas al instante */
 $('m-perec').addEventListener('change',()=>{
   if(!modalProd) return;
-  const ver = $('m-perec').checked && (hasLotes || hasVenc);
+  const puedeLotes = $('m-perec').checked && hasLotes;
+  const puedeSoloFecha = $('m-perec').checked && !hasLotes && hasVenc;
+  const ver = puedeLotes || puedeSoloFecha;
   $('m-venc-field').style.display = ver ? 'block' : 'none';
-  if(!ver){ pintarLotes([]); }
+  $('m-venc-label').textContent = puedeLotes ? 'Vencimientos' : 'Fecha de vencimiento';
+  $('m-lotes').style.display = puedeLotes ? '' : 'none';
+  $('btnAddLote').style.display = puedeLotes ? '' : 'none';
+  $('m-venc-single').style.display = puedeSoloFecha ? '' : 'none';
+  if(!puedeLotes) pintarLotes([]);
+  if(puedeSoloFecha) $('m-venc-single').value = modalProd.vencimiento ?? '';
 });
 function closeModal(){ $('overlay').classList.remove('open'); modalProd=null; }
 $('m-cancelar').addEventListener('click',closeModal);
@@ -963,10 +982,13 @@ $('m-guardar').addEventListener('click',async()=>{
   if(dup){ alert(`"${dup.producto}" ya existe en ${rubroNuevo}.`); return; }
   const num=el=>el.value===''?null:+el.value;
   const quedaPerec = hasPerec ? $('m-perec').checked : modalProd.rubro==='Sándwiches';
+  // Solo se arma la lista de VARIAS fechas si de verdad se puede guardar
+  // (tabla producto_lotes disponible). Si no, se usa el campo de una sola
+  // fecha — nunca se construye algo que después no se persiste.
+  const usaLotes = quedaPerec && hasLotes;
 
-  // fechas de vencimiento (cantidad + fecha)
   const lotes=[];
-  if(quedaPerec){
+  if(usaLotes){
     for(const f of $('m-lotes').querySelectorAll('.lote-row')){
       const c=+f.querySelector('.lote-cant').value||0;
       const v=f.querySelector('.lote-venc').value||null;
@@ -979,18 +1001,21 @@ $('m-guardar').addEventListener('click',async()=>{
   }
 
   const fields={producto:nombre,stock_min:num($('m-min')),stock_max:num($('m-max')),rubro:rubroNuevo};
-  // con fechas, el stock lo calcula la base sumando los lotes
+  // con varias fechas, el stock lo calcula la base sumando los lotes;
+  // si no, el número del campo de stock se guarda tal cual (como siempre)
   if(!lotes.length) fields.stock_actual=num($('m-stock'));
   if(hasPerec) fields.perecedero=quedaPerec;
-  if(hasVenc) fields.vencimiento = quedaPerec ? (lotes.length?lotes[0].vencimiento:null) : null;
+  if(hasVenc) fields.vencimiento = !quedaPerec ? null
+    : usaLotes ? (lotes.length?lotes[0].vencimiento:null)
+    : ($('m-venc-single').value || null);
 
   const savedId=modalProd.id;
   Object.assign(modalProd,fields);
   if(lotes.length) modalProd.stock_actual = lotes.reduce((t,l)=>t+l.cantidad,0);
-  LOTES[savedId]=lotes.map(l=>({...l, producto_id:savedId}));
+  if(usaLotes) LOTES[savedId]=lotes.map(l=>({...l, producto_id:savedId}));
   metrics(); render(); closeModal();
   await saveFields(savedId, fields);
-  if(hasLotes) await guardarLotes(savedId, lotes);
+  if(usaLotes) await guardarLotes(savedId, lotes);
 });
 /* Reemplaza los lotes del producto por los del modal. El trigger de la base
    recalcula el stock del producto sumando las cantidades. */
