@@ -120,29 +120,165 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 
 **Funcionando:**
 - App instalable (PWA) con ícono real de Jhon.
-- Inventario por sede, secciones, métricas (crítico / en rango / sin dato).
+- Inventario por sede, secciones, métricas (crítico / en rango / sin dato), buscador
+  siempre visible que ignora los filtros.
 - Recetas con buscador (no desplegables gigantes) y campo `aplica`.
-- Sync de ventas y de productos desde botones en la app.
+- Un solo botón ⟳ que sincroniza catálogo + ventas y descuenta el stock.
+- Probado en cafetería real (venta de pizza en Fudo → se descontó en la app).
 
 **Pendiente / en veremos:**
 - [ ] **Cron automático** de `fudo-sync-ventas` cada 15 min (SQL listo en
       `sql/2026-07-cron-automatico-ventas.sql`, falta activarlo en Supabase → Cron).
+      Es lo que de verdad elimina la demora: hoy depende de apretar el botón.
+- [ ] Correr la medición de demora real (bloque de `sql/2026-07-fecha-real-de-venta.sql`)
+      después de unos días de uso, para saber si falta el cron o el retraso viene de Fudo.
 - [ ] **Push de stock a Fudo** para combos: calcular el mínimo entre insumos y
       empujarlo a Fudo cuando cambie el inventario.
 - [ ] Marcar "para llevar" vs "servir" en el front de Fudo para que el `aplica` sirva.
+- [ ] **Combos de elección libre (ej. "3 masitas" a elección del cliente).** Sin
+      resolver. Depende de si Fudo captura QUÉ eligió el cliente (modificadores) o
+      no. Si no lo hace, la única forma de descontar exacto es cambiar el proceso
+      de venta: registrar cada masita por separado en vez de un botón "combo".
+      Ver sección 7 — este problema desaparece solo si migran a un POS propio.
 - [ ] **Depurar recetas (PRIORIDAD — va antes del dashboard).** Plan en
       `docs/auditoria-recetas.md`; informe de solo lectura en
       `sql/2026-07-auditoria-recetas.sql`. La métrica de avance es el % de
       cobertura (bloque 9): anotarlo antes y después de cada tanda.
 - [ ] **Dashboard**: lista de análisis posibles en `docs/dashboard-analisis-posibles.md`.
       NO empezar hasta cerrar la depuración de recetas.
-- [ ] Guardar la fecha REAL de la venta en `fudo_movimientos` (hoy se guarda cuándo
-      corrió la sync, no cuándo se vendió). Bloquea los análisis de demanda.
 - [ ] Confirmar con jefatura que van a usar el sistema (vs. volver al Excel).
+- [ ] **Decisión grande pendiente: ¿avanzar hacia un POS propio?** Ver sección 7.
 
 ---
 
-## 7. Bitácora (cambios importantes, lo más reciente arriba)
+## 7. Visión de expansión — ¿construir un POS propio?
+
+> Esta sección es la más importante para no perder el hilo si se retoma después de
+> un tiempo. Administración vio el inventario funcionando y pidió algo mucho más
+> grande: un clon de Fudo hecho a medida para Café del Desierto (mesas, comandas,
+> cierre de caja, análisis de ventas). Jhon tiene dudas razonables — esto NO se
+> decide solo, es una conversación con administración todavía en curso.
+
+### Postura recomendada (no clonar Fudo entero)
+
+**No construir un clon completo.** Construir la **capa de inteligencia que Fudo no
+tiene** — que es justo lo que ya impresionó a administración: inventario real,
+recetas, vencimientos, análisis a medida. Eso es el ~80% del valor con una fracción
+del riesgo. Fudo se queda con lo aburrido y regulado: vender y cobrar.
+
+Si más adelante SÍ avanzan a un POS propio, la razón de peso no es ahorrar
+suscripciones (Supabase+hosting cuesta parecido a Fudo) — es que **se acaba la
+fricción de sincronizar contra un sistema externo**. Hoy toda la pelea de recetas
+(emparejador, nombres que no calzan, "vendido sin descontar", combos que no capturan
+la elección del cliente) existe SOLO porque Fudo y el inventario son sistemas
+separados. Si el producto vendido y el insumo descontado viven en la misma base,
+esa capa entera desaparece.
+
+### Riesgos que administración debe conocer, y por qué bajaron
+
+Evaluación inicial vs. lo que Jhon confirmó después:
+
+| Riesgo | Evaluación inicial | Lo que se confirmó |
+|---|---|---|
+| Boleta electrónica / SII | El más serio: certificación, folios, contingencia | **No aplica.** Emiten con Mercado Pago, no con Fudo. Se mantiene igual. |
+| Modo sin conexión | Debe seguir vendiendo sin internet | Fudo **ya falla** sin conexión hoy. La vara correcta es "no peor que hoy", no "perfecto". |
+| Pagos / bancos | Integración con Transbank, etc. | **No aplica.** Fudo tampoco se integra a bancos; usan Mercado Pago aparte. Discriminar efectivo/débito es manual al cerrar mesa — un campo de formulario, no una integración. |
+| Arqueo de caja | Riesgo de descuadre | Jhon conoce el proceso a mano, varianza histórica <$1.000. Replicable. |
+| **Impresión a cocina** | Riesgo técnico real | Sigue siendo lo único técnico por validar (ver abajo), pero bajó de riesgo alto a acotado. |
+
+### Hallazgo clave sobre la impresora (confirmado, no solo teoría)
+
+- Modelo real: **Xprinter XP-N160II**, habla **ESC/POS** (estándar de la industria,
+  no propietario) y tiene **puerto ethernet además de USB** — mejor que USB porque
+  evita drivers de Windows.
+- **Fudo no tiene ningún programa instalado en el computador del local.** Corre
+  100% en el navegador. La pestaña de Fudo abierta todo el día **ES** el mecanismo
+  que mantiene la conexión con la nube y manda a imprimir — confirmado por Jhon
+  ("si la cierro, deja de imprimir"). Esto valida el plan: nuestra futura interfaz
+  de Caja, abierta en ese mismo navegador, cumpliría el mismo rol sin instalar nada.
+  Sí es una regla operativa nueva a enseñar: esa pestaña no se cierra.
+- **Antes de prometer nada de POS**, el primer paso técnico es un **prototipo
+  aislado de impresión** (1-2 días): imprimir una comanda de prueba en esa Xprinter
+  desde Supabase, sin tocar la app existente. Si falla, se sabe en 2 días y no en 2
+  meses. Necesita: confirmar Windows en ese equipo, y si el cable de red llega hasta
+  la impresora (si no, hay que sacarle la IP con el truco de FEED al encender).
+
+### Arquitectura si se avanza (la lección de "un cerebro, varias caras")
+
+Jhon notó solo que el Fudo del teléfono del garzón es distinto del Fudo del
+computador de caja — misma base de datos, interfaces separadas por rol. Ese es
+el patrón a seguir:
+
+- **Mismo Supabase** para todo (mesas, ventas, inventario) — comparten datos y sesión.
+- **Páginas separadas**, NO meter todo en `index.html`: `/` inventario (como hoy),
+  `/caja` comandas y cierre, más adelante `/panel` análisis para administración.
+  Cada rol carga solo lo suyo (el garzón no necesita cargar 225 productos de
+  inventario) — esto también resuelve la lentitud que se sintió en el mesón.
+- Si el POS falla, el inventario no debe caerse con él, y viceversa.
+
+### Multi-sede y tiendas de apps (ya resuelto, no requiere trabajo extra)
+
+- **Una sola construcción sirve para 2 o para 10 sedes.** Cada fila lleva su `sede`
+  (como ya pasa con plaza/angamos/bodega); agregar una sede es agregar una fila, no
+  construir otra app. Lo que sí se pone más exigente con más sedes: permisos por
+  sede (hoy cualquiera ve/edita cualquier sede) y configuración por sede (impresora,
+  horario). El verdadero desafío a esa escala es el **soporte**, no el código.
+- **No hace falta publicar en App Store / Play Store.** Es una PWA — ya instalable
+  como hoy, actualizaciones instantáneas (sin revisión de Apple), sin pagar cuentas
+  de desarrollador, un solo código para todo. Se puede empaquetar para tiendas más
+  adelante si administración insiste por imagen, pero no es necesario para operar.
+- Jhon estima ~80-90% de probabilidad de que solo sean **2 sedes propias** (las
+  demás son franquicias con su propio Fudo). Si eso pasa, el **puente con Fudo que
+  ya existe para el inventario seguiría sirviendo** para traer los datos de las
+  franquicias al panel consolidado de administración — no se bota ese trabajo.
+
+### Costos (para la conversación con administración)
+
+- Supabase Pro (~25 USD/mes, necesario para respaldos diarios ANTES de manejar
+  caja real) + hosting. Vercel gratis es solo para uso personal — mover a
+  **Cloudflare Pages** (gratis, permite uso comercial) en vez de pagar Vercel.
+  Total realista: **~25-45 USD/mes para 2 o para 6 sedes** (Supabase cobra por
+  proyecto, no por sede).
+- El argumento correcto para administración NO es "ahorramos vs. Fudo" (el ahorro
+  es marginal y durante meses pagarían las dos cosas en paralelo) — es "esto hace
+  cosas que Fudo no hace". Si el argumento es solo plata, la respuesta honesta es
+  quedarse con Fudo.
+- Sobre cobrar por el trabajo: no cobrar pago único (deja a Jhon dando soporte
+  gratis para siempre). Estructura sugerida: monto por lo ya entregado (inventario)
+  + cuota mensual de mantención. **No cotizar el POS todavía** — falta validar la
+  impresión. Aclarar primero si esto se hace en horario de trabajo (entonces es
+  ajuste de sueldo/bono, no factura externa) o aparte.
+
+### Próximo paso concreto si se decide avanzar
+
+1. Prototipo de impresión aislado (arriba).
+2. Cerrar la depuración de recetas (sirve en los dos escenarios, con o sin POS).
+3. Mesas y comandas en paralelo con Fudo, en una sola sede, sin reemplazar nada.
+4. Cierre de caja, solo después de que las comandas sean confiables.
+5. La boleta sigue saliendo por Mercado Pago — esa línea no se cruza.
+
+---
+
+## 8. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-25** — Buscador siempre visible (se quitó la lupa: sumaba toques y no se
+  notaba que abría) y **suelta los filtros al tocarlo** — buscar "torta de zanahoria"
+  estando en el filtro Sobre-stock no la encontraba, aunque el producto existía. El
+  estado se sigue viendo en la píldora de color junto al nombre. Además, los
+  **encabezados de sección pasan a naranja** (antes blancos, iguales a los productos,
+  y al desplazar se perdía dónde terminaba una sección y empezaba otra).
+
+- **2026-07-25** — Se acorta la demora del descuento y se puede medir. La app no era
+  el problema (un descuento por la conexión en vivo se refleja en ~5 ms sin refrescar,
+  verificado). La demora real estaba en el sincronizador: Fudo filtra por cuándo se
+  ABRIÓ la mesa, no cuándo se cerró — con la ventana de 2h, una mesa abierta horas
+  antes de cerrarse quedaba fuera y **no se descontaba nunca** (no era lenta, se
+  perdía). Ventana ampliada a 8h + tope corrido 1h (por si el reloj de Fudo va
+  adelantado). Se agrega columna `venta_at` (motor v4, `fudo_procesar_item` recibe
+  `p_venta_at`) para guardar CUÁNDO se vendió de verdad, no cuándo corrió la sync —
+  antes estábamos ciegos para medir esto. SQL en `sql/2026-07-fecha-real-de-venta.sql`,
+  trae la consulta para medir la demora real. Probado en cafetería: funcionó con una
+  venta real.
 
 - **2026-07-25** — **Un solo botón de actualizar.** Había cuatro puntos para dos
   acciones (⟳ de la barra, botón suelto en Recetas, dos atajos en el menú) y en el
