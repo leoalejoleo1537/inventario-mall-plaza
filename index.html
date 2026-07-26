@@ -1018,13 +1018,30 @@ $('m-guardar').addEventListener('click',async()=>{
   if(usaLotes) await guardarLotes(savedId, lotes);
 });
 /* Reemplaza los lotes del producto por los del modal. El trigger de la base
-   recalcula el stock del producto sumando las cantidades. */
+   recalcula el stock del producto sumando las cantidades.
+   IMPORTANTE: después de guardar, se vuelve a leer la base para CONFIRMAR
+   que las fechas quedaron — no basta con que Supabase no devuelva error,
+   porque un guardado "silencioso" que no persiste es indistinguible de uno
+   exitoso si no se verifica. */
 async function guardarLotes(pid, lotes){
   const del=await conReintento(()=>sb.from('producto_lotes').delete().eq('producto_id',pid));
   if(del.error){ console.error(del.error); alert('No se pudieron guardar las fechas.\n\nDetalle: '+del.error.message); return; }
   if(lotes.length){
     const ins=await conReintento(()=>sb.from('producto_lotes').insert(lotes.map(l=>({producto_id:pid, cantidad:l.cantidad, vencimiento:l.vencimiento}))));
     if(ins.error){ console.error(ins.error); alert('No se pudieron guardar las fechas.\n\nDetalle: '+ins.error.message); return; }
+  }
+  // Verificación: releer de la base lo que quedó para ESTE producto y
+  // comparar contra lo que se intentó guardar.
+  const chk=await conReintento(()=>sb.from('producto_lotes').select('cantidad,vencimiento').eq('producto_id',pid));
+  if(chk.error){
+    alert('Las fechas se enviaron pero no se pudo confirmar que quedaran guardadas.\n\nDetalle: '+chk.error.message);
+  } else {
+    const enBase=(chk.data||[]).length;
+    if(enBase!==lotes.length){
+      alert(`⚠ Algo no cuadra: se intentó guardar ${lotes.length} fecha${lotes.length===1?'':'s'} y en la base quedaron ${enBase}.\n\nRevisa este producto de nuevo — puede que otro dispositivo haya guardado al mismo tiempo, o que el guardado no se haya completado. No asumas que quedó bien.`);
+    } else {
+      aviso(`✓ ${lotes.length||0} fecha${lotes.length===1?'':'s'} guardada${lotes.length===1?'':'s'}`);
+    }
   }
   await loadLotes(); metrics(); render();
 }
