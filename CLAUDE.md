@@ -27,6 +27,74 @@
   conversación de hoy. Por eso está acá arriba y no en la bitácora: la
   bitácora se lee después, esto se lee primero.
 
+## 0.1 Reglas duras al tocar datos (aprendidas el 2026-07-25)
+
+> Otra sesión de Claude, para una tarea que solo pedía comparar dos listas,
+> terminó creando 5 productos duplicados en producción y reportando bugs
+> que no existían. Jhon pidió el reporte de qué salió mal y estas reglas
+> son ese reporte, verificadas contra el código real antes de guardarlas.
+
+1. **Las recetas van por ID, no por nombre.** `recetas.fudo_product_id` y
+   `receta_items.producto_id` son la unión real (confirmado en
+   `fudo_procesar_item`: el join es `pr.id = ri.producto_id`, el nombre solo
+   se usa para mostrarlo). **Renombrar un producto del inventario no rompe
+   nada** — el descuento sigue funcionando por ID. Los nombres los define el
+   equipo según cómo cuentan en cada sección; no son inconsistencias a
+   corregir. Los `*-emparejador-*.sql` usan nombres solo como heurística para
+   crear recetas la primera vez — una vez creada la receta, el nombre deja de
+   importar. Si algo propone un cambio basado en "este nombre no calza",
+   está resolviendo un problema que no existe.
+
+2. **Los archivos del repo NO son el estado de producción.** El SQL se
+   corre a mano en Supabase: un `.sql` en el repo describe lo que se
+   ejecutó alguna vez, no lo que está ahora. La base cambia sin dejar
+   rastro en git (renombres, altas y reestructuras hechas desde la app).
+   Antes de afirmar algo sobre el estado de los datos, o de proponer un
+   cambio basado en ese estado, **consultarlo con un SELECT** — nunca
+   inferirlo de un archivo del repo.
+
+3. **Analizar ≠ escribir.** Ver sección 0: comparar/auditar es un informe,
+   no un script que modifica la base. Pasar de análisis a escritura
+   necesita que Jhon lo pida explícitamente, y todo script de escritura
+   debe ir precedido de un SELECT que muestre qué va a tocar, decir en una
+   línea qué crea/modifica/borra, y ser reversible o explicar cómo
+   revertirlo. **Nunca crear un producto en `productos` sin antes buscarlo
+   por si ya existe con otro nombre** — un duplicado obliga a las jefas a
+   contar dos veces lo mismo y rompe la confianza en el sistema.
+
+4. **Comparar con criterio, no con `=`.** "Brownie" y "Brownie-solo" son el
+   mismo producto; normalizar texto (sin tildes, minúsculas, espacios) sirve
+   para *proponer* candidatos, nunca para concluir que algo falta o sobra.
+   Si el resultado de una comparación automática es largo, revisarlo con
+   criterio antes de presentarlo.
+
+5. **Verificar antes de anunciar.** No reportar "bug" o "está roto" sin
+   contrastarlo contra la base — un hallazgo sin verificar manda a Jhon a
+   revisar cosas que están bien, y eso cuesta más caro que no encontrarlo.
+   Si algo parece un bug pero no se pudo verificar, decirlo así: *"esto
+   podría estar mal, hay que confirmarlo con esta consulta"*.
+
+6. **Si la evidencia contradice el modelo, PARAR.** Señal concreta: una
+   verificación que falla en masa (ej. la mitad de los nombres no calzan)
+   casi nunca es un problema de los datos — es el modelo mental de Claude
+   el que está mal. Ahí toca detenerse y decirlo, no seguir parchando:
+   un ciclo de "diagnóstico → nuevo error → nuevo diagnóstico" consume el
+   tiempo de Jhon y erosiona la confianza más rápido que el error original.
+
+7. **Lo que decidió el equipo se respeta.** Nombres, rubros, secciones y el
+   `modo` de sync (`fudo_sync.modo`) son decisiones operativas del café. No
+   se proponen cambios ahí salvo que Jhon lo pida — y en particular, **nunca
+   proponer bajar de `real` a `prueba`**: si el sistema ya está descontando
+   en producción, eso es un logro del proyecto, no un riesgo a mitigar.
+
+**Checklist antes de entregar algo que toque datos:**
+- [ ] ¿Verifiqué el estado real con un SELECT, o lo inferí de un archivo?
+- [ ] ¿Lo que me pidieron era analizar o modificar?
+- [ ] Si creo productos: ¿busqué primero si ya existen con otro nombre?
+- [ ] ¿Estoy reportando algo como "bug" sin haberlo confirmado?
+- [ ] ¿Alguna verificación falló en masa? → parar y decirlo.
+- [ ] ¿Estoy proponiendo cambiar algo que el equipo decidió a propósito?
+
 ---
 
 ## 1. Qué es esto y para quién
