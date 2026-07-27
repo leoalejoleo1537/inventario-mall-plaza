@@ -195,12 +195,15 @@
   .row .info{cursor:pointer;min-width:0}
   .row .name{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .row .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
-  .row .sub-total{color:var(--orange-dark);font-weight:800}
   /* el desglose por sección va en gris para que el total siga mandando;
      el número de cada sección en negro, que es lo que se busca al mirar */
-  .row .tot-t{white-space:nowrap}
-  .row .tot-sec{color:var(--muted);font-weight:600;white-space:nowrap}
-  .row .tot-sec::before{content:' · '}
+  /* Cada píldora es indivisible y baja sola de línea: así una sección de
+     nombre largo no puede empujar el texto debajo del recuadro del stock. */
+  .tots{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+  .tot{font-size:10.5px;padding:2px 6px;border-radius:999px;font-weight:600;
+       background:var(--gray-bg);color:var(--gray-fg);white-space:nowrap}
+  .tot b{font-weight:800;color:var(--text)}
+  .tot-all{color:var(--orange-dark);font-weight:800}
   .row .tot-sec b{color:var(--text);font-weight:800;font-variant-numeric:tabular-nums}
   .row .right{display:flex;align-items:center;gap:8px}
   .pill{font-size:11px;padding:4px 10px;border-radius:999px;white-space:nowrap;font-weight:700}
@@ -1069,9 +1072,18 @@ function metrics(){
 function rowHTML(p, conSeccion){
   const e=estado(p),cf=CFG[e];
   const t=totalProducto(p.producto);
-  const totalLine = t.multi ? `<div class="sub sub-total"><span class="tot-t">Total ${fmt(t.total)}</span>`
-    + t.porSeccion.map(s=>`<span class="tot-sec">${esc(s.rubro)} <b>${fmt(s.cant)}</b></span>`).join('')
-    + `</div>` : '';
+  /* La sección donde ESTÁ esta fila no se repite en el desglose: su número ya
+     se ve en el recuadro del stock, a dos centímetros. Repetirlo alargaba la
+     línea hasta meterse debajo de ese mismo recuadro. Se muestra lo que NO se
+     puede ver desde acá: cuánto hay en las otras secciones. */
+  const otras = t.porSeccion.filter(s => s.rubro !== (p.rubro||'Sin sección'));
+  /* Píldoras, no texto corrido: cada una es indivisible y bajan solas de línea.
+     Es el mismo gesto que ya usan las fechas de vencimiento. */
+  const totalLine = t.multi
+    ? `<div class="tots"><span class="tot tot-all">Total ${fmt(t.total)}</span>`
+      + otras.map(s=>`<span class="tot">${esc(s.rubro)} <b>${fmt(s.cant)}</b></span>`).join('')
+      + `</div>`
+    : '';
   const conLotes = lotesDe(p.id).length>0;   // el stock sale de la suma de fechas
   const urg = esUrgente(p) ? '<span class="pill pill-urg">Urgente</span>' : '';
   // fuera de su sección (bloque de urgentes) hay que decir de dónde viene
