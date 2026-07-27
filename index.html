@@ -258,8 +258,12 @@
   .btn-del{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;margin-top:14px;border-radius:10px;border:1.5px solid var(--red-fg);background:var(--red-bg);color:var(--red-fg);font-size:14.5px;font-weight:700;cursor:pointer}
   .btn-del:active{background:#F8D7D3}
   .btn-del svg{width:17px;height:17px}
-  .btn-urg{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;margin-top:14px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit}
-  .btn-urg.on{border-color:var(--amber-fg);background:var(--amber-bg);color:var(--amber-fg)}
+  /* botón de urgente: naranja de la casa. Sin marcar va en contorno (se ve y
+     se entiende que es una acción); marcado queda relleno, como los botones
+     de acción principales. */
+  .btn-urg{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;margin-top:14px;border-radius:10px;border:1.5px solid var(--orange);background:#fff;color:var(--orange);font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn-urg.on{border-color:var(--orange);background:var(--orange);color:#fff}
+  .btn-urg:active{background:var(--orange-dark);border-color:var(--orange-dark);color:#fff}
   .btn-urg svg{width:17px;height:17px}
   .fab{position:fixed;right:18px;bottom:24px;width:58px;height:58px;border-radius:50%;background:var(--orange);color:#fff;border:none;font-size:32px;font-weight:600;line-height:1;box-shadow:0 6px 18px rgba(220,68,5,.45);cursor:pointer;z-index:30;display:flex;align-items:center;justify-content:center}
   .fab:active{background:var(--orange-dark)}
@@ -597,7 +601,10 @@ const fmtCorta = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.sl
 /* lotes de vencimiento por producto: { producto_id: [{id,cantidad,vencimiento}] } */
 let LOTES = {};
 let hasLotes = false;   // true cuando la tabla producto_lotes existe en la base
-const lotesDe = pid => (LOTES[pid]||[]).slice()
+/* Las fechas con cantidad 0 no son fechas: son filas que quedaron vacías al
+   descontar. No se muestran ni se copian — si no, el resumen le avisa a
+   Adriana de un producto que ya no existe ("Selladito 0"). */
+const lotesDe = pid => (LOTES[pid]||[]).filter(l=>(+l.cantidad||0) > 0).slice()
   .sort((a,b)=>String(a.vencimiento||'9999').localeCompare(String(b.vencimiento||'9999')));
 
 /* etiqueta de una fecha: VENCIDO / hoy / mañana + SIEMPRE el día exacto.
