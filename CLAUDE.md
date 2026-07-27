@@ -476,8 +476,11 @@ el patrón a seguir:
      ("corrige el stock en la ficha") en vez de inventar un número. También
      retira el aviso a Fudo que había generado, para que nadie sume en Fudo
      algo que en la app se dio marcha atrás.
-  5. **Varios repartos por día**, cada uno con su ORIGEN (Bodega / Angamos /
-     Proveedor de tortas / Emergencia): al local llegan ~3 distintos.
+  5. **Varios repartos por día**: al local llegan ~3 distintos. Se distinguen
+     por **quién lo envió y a qué hora** ("Jhon · 06:05"). La columna `origen`
+     existe en la base pero NO se pregunta en la app — Jhon lo consideró
+     información irrelevante para el mesón; si alguna vez hace falta, el campo
+     ya está.
   6. **Adriana no edita lo enviado.** Si se le olvidó algo, manda otro reparto.
      El que cierra es el jefe de turno, y solo con todas las líneas resueltas.
   7. El resumen para WhatsApp trae lo que llegó y, al final, **lo que faltó
@@ -568,6 +571,15 @@ el patrón a seguir:
      son el mismo producto — es solo la etiqueta del mensaje, no un renombre.
   Probado en navegador con Supabase simulado: 47 comprobaciones, incluido que
   si el SQL de urgentes no se corre la pantalla queda idéntica a hoy.
+
+- **2026-07-27** — **Los avisos de sí/no dejan de ser los del navegador.**
+  `confirm()` pintaba media pantalla de negro y se leía como si algo se hubiera
+  roto. Ahora hay un aviso propio (`preguntar()`, devuelve una promesa y se usa
+  con `await` igual que `confirm`): fondo desenfocado, confirmar en naranja y
+  cancelar en gris. Se usa en cerrar reparto, eliminar producto, eliminar
+  receta y reemplazar el guardado del día. **Va en z-index 56**, por encima de
+  las demás ventanas: preguntado desde la ficha de un producto quedaba detrás
+  y no se podía tocar.
 
 - **2026-07-27** — **Tope en 0 sin excepción, para todos los productos.**
   Jhon aclaró que la regla del cambio anterior (mismo día) se quedaba corta:

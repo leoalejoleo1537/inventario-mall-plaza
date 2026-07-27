@@ -161,10 +161,14 @@
   .rec-card .rn{font-weight:700;font-size:15px}
   .rec-card .ri{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5}
   /* ---------- lotes de vencimiento (cantidad + fecha) ---------- */
-  .lote-row{display:grid;grid-template-columns:70px 1fr 38px;gap:8px;align-items:center;margin-bottom:8px}
-  .lote-row input{min-width:0;height:42px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:#fff;color:var(--text);padding:0 10px}
+  /* tres columnas con su propio espacio: en iOS el campo de fecha se dibuja
+     más ancho que su caja y se montaba encima de la ✕ */
+  .lote-row{display:grid;grid-template-columns:58px minmax(0,1fr) 42px;gap:10px;align-items:center;margin-bottom:8px}
+  .lote-row input{min-width:0;width:100%;height:42px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:#fff;color:var(--text);padding:0 10px;overflow:hidden}
+  .lote-row input[type=date]{-webkit-appearance:none;appearance:none;padding:0 8px;text-align:center}
+  .lote-row input[type=date]::-webkit-date-and-time-value{text-align:center;margin:0}
   .lote-row .lote-cant{text-align:center;font-weight:700}
-  .lote-row .lote-del{width:38px;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--red-fg);cursor:pointer;font-size:15px}
+  .lote-row .lote-del{width:42px;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--red-fg);cursor:pointer;font-size:15px}
   .lote-vacio{font-size:13px;color:var(--muted);margin:2px 0 8px}
   .rec-irow{margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
   .rec-ins-ctl{display:grid;grid-template-columns:1fr 74px 38px;gap:8px;align-items:center;margin-top:8px}
@@ -222,6 +226,17 @@
   .hrow .hs{font-size:12px;color:var(--muted)}
   .hrow .hv{font-size:16px;font-weight:700}
   .empty{text-align:center;color:var(--muted);font-size:14px;padding:30px 10px}
+  /* aviso propio: el confirm del navegador se ve como un error del sistema */
+  /* va por encima de cualquier otra ventana: si se pregunta desde la ficha de
+     un producto, el aviso tiene que quedar ARRIBA, no detrás */
+  .overlay-blur{background:rgba(15,30,49,.42);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:56}
+  .modal-ask{max-width:340px;text-align:center}
+  .modal-ask h2{margin:2px 0 0}
+  .ask-detalle{font-size:14px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+  .btn-gris{background:var(--gray-bg);color:var(--gray-fg)}
+  .btn-gris:active{background:#E1E3E6}
+  .sec-ico{display:flex;align-items:center;gap:9px;min-width:0}
+  .sec-ico svg{width:19px;height:19px;flex-shrink:0}
   /* ---------- reparto ---------- */
   .rep-result{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:6px;cursor:pointer}
   .rep-result:hover{border-color:var(--orange);background:#FFF7F3}
@@ -280,6 +295,17 @@
   .chkrow input{width:20px;height:20px;accent-color:var(--orange);cursor:pointer}
   .chkrow span{font-size:14.5px;font-weight:600}
   .chkrow small{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:1px}
+  /* aviso propio: el confirm del navegador se ve como un error del sistema */
+  /* va por encima de cualquier otra ventana: si se pregunta desde la ficha de
+     un producto, el aviso tiene que quedar ARRIBA, no detrás */
+  .overlay-blur{background:rgba(15,30,49,.42);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:56}
+  .modal-ask{max-width:340px;text-align:center}
+  .modal-ask h2{margin:2px 0 0}
+  .ask-detalle{font-size:14px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+  .btn-gris{background:var(--gray-bg);color:var(--gray-fg)}
+  .btn-gris:active{background:#E1E3E6}
+  .sec-ico{display:flex;align-items:center;gap:9px;min-width:0}
+  .sec-ico svg{width:19px;height:19px;flex-shrink:0}
   /* ---------- reparto ---------- */
   .rep-fila{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 12px;
             margin-bottom:8px;display:flex;flex-direction:column;gap:9px;box-shadow:0 1px 2px rgba(15,30,49,.04)}
@@ -426,21 +452,11 @@
   <div class="sec" id="sec-armar">
     <div class="sec-head">
       <button type="button" class="sec-btn" data-caja="armar">
-        <span id="armar-titulo">Armar pedido</span>
+        <span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg><span id="armar-titulo">Armar pedido</span></span>
       </button>
     </div>
     <div class="sec-body" id="body-armar" style="display:none">
-      <div class="field" style="margin-top:2px">
-        <label>¿De dónde viene?</label>
-        <input type="text" id="rep-origen" list="origenes-list" placeholder="Bodega">
-        <datalist id="origenes-list">
-          <option value="Bodega"></option>
-          <option value="Angamos"></option>
-          <option value="Proveedor de tortas"></option>
-          <option value="Emergencia"></option>
-        </datalist>
-      </div>
-      <div class="controls busca" data-busca="reparto" style="margin-bottom:8px">
+      <div class="controls busca" data-busca="reparto" style="margin-bottom:8px;margin-top:2px">
         <input type="text" id="rq" placeholder="Buscar producto…">
       </div>
       <div id="reparto-results"></div>
@@ -473,6 +489,18 @@
     </div>
     <div class="sec-body" id="body-fudo" style="display:none">
       <div id="pend-list"><div class="empty">Cargando…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= AVISO DE CONFIRMACIÓN ================= -->
+<div class="overlay overlay-blur" id="overlay-ask">
+  <div class="modal modal-ask">
+    <h2 id="ask-titulo">¿Seguro?</h2>
+    <p class="ask-detalle" id="ask-detalle"></p>
+    <div class="mbtns">
+      <button class="btn btn-gris" id="ask-no">Cancelar</button>
+      <button class="btn btn-orange" id="ask-ok">Sí</button>
     </div>
   </div>
 </div>
@@ -766,6 +794,30 @@ $('drawer').addEventListener('click',e=>{
   if(a==='cambiar-sede')   showGate();
 });
 
+/* Pregunta de sí/no con la cara de la app. El confirm() del navegador pinta
+   media pantalla de negro y se lee como si algo se hubiera roto. */
+function preguntar(titulo, detalle, textoOk){
+  return new Promise(resolver=>{
+    const ov=$('overlay-ask'), ok=$('ask-ok'), no=$('ask-no');
+    $('ask-titulo').textContent = titulo;
+    $('ask-detalle').textContent = detalle||'';
+    $('ask-detalle').style.display = detalle ? '' : 'none';
+    ok.textContent = textoOk || 'Sí';
+    ov.classList.add('open');
+    const salir = v=>{
+      ov.classList.remove('open');
+      ok.removeEventListener('click',siOk); no.removeEventListener('click',noOk);
+      ov.removeEventListener('click',fuera); document.removeEventListener('keydown',tecla);
+      resolver(v);
+    };
+    const siOk=()=>salir(true), noOk=()=>salir(false);
+    const fuera=e=>{ if(e.target===ov) salir(false); };
+    const tecla=e=>{ if(e.key==='Escape') salir(false); };
+    ok.addEventListener('click',siOk); no.addEventListener('click',noOk);
+    ov.addEventListener('click',fuera); document.addEventListener('keydown',tecla);
+  });
+}
+
 /* ---------------- aviso transitorio ---------------- */
 let toastT=null;
 function aviso(txt, ms=4000){
@@ -798,7 +850,7 @@ function pickSede(s){
   $('armar-titulo').textContent = 'Armar pedido' + (NOMBRE ? ', '+NOMBRE : '');
   REPARTOS=[]; cajasAbiertas.clear();
   $('body-armar').style.display='none'; $('body-cerrados').style.display='none'; $('body-fudo').style.display='none';
-  $('repartos-abiertos').innerHTML=''; $('rep-origen').value='';
+  $('repartos-abiertos').innerHTML='';
   loadData();
   loadRepartos();
   subscribeRealtime();
@@ -1361,7 +1413,7 @@ const recienBorrado = id => {
 };
 $('m-eliminar').addEventListener('click', async()=>{
   if(!modalProd) return;
-  if(!confirm(`¿Estás seguro que deseas eliminar "${modalProd.producto}"?\n\nDesaparecerá de la lista del inventario.`)) return;
+  if(!await preguntar('¿Eliminar '+modalProd.producto+'?','Desaparecerá de la lista del inventario.','Eliminar')) return;
   const id=modalProd.id;
   const idx=DATA.findIndex(d=>d.id===id);
   const copia=idx>=0?DATA[idx]:null;
@@ -1498,7 +1550,7 @@ function renderRepartos(){
     return `<div class="sec${abierta?' open':''}" data-repsec="${r.id}">
       <div class="sec-head">
         <button type="button" class="sec-btn" data-caja="rep${r.id}">
-          <span>${esc(r.origen)}${r.creado_por?' · '+esc(r.creado_por):''}</span>
+          <span>${r.creado_por?esc(r.creado_por)+' · ':''}${new Date(r.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})}</span>
           <span class="sec-tags"><span class="sec-count">${hechos} de ${r.items.length}</span></span>
         </button>
         <button type="button" class="sec-copy" data-copiarrep="${r.id}" aria-label="Copiar resumen" title="Copiar resumen">${COPY_SVG}</button>
@@ -1518,7 +1570,7 @@ function renderRepartos(){
     const no = r.items.filter(i=>i.estado==='no_llego').length;
     return `<div class="rep-fila">
       <div class="lin1">
-        <span class="nm">${esc(r.origen)}</span>
+        <span class="nm">${r.creado_por?esc(r.creado_por):'Reparto'}</span>
         <span class="ped">${new Date(r.created_at).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'})}</span>
       </div>
       <div class="rep-sub" style="margin:0">${ok} recibidos${no?' · '+no+' no llegaron':''}</div>
@@ -1592,9 +1644,10 @@ $('repartos-abiertos').addEventListener('click', async e=>{
   }
   const cer = e.target.closest('[data-cerrar]');
   if(cer){
-    if(!confirm('¿Cerrar este reparto?\n\nDespués no se puede seguir confirmando.')) return;
+    const id=+cer.dataset.cerrar;
+    if(!await preguntar('¿Cerrar el reparto?','Después no se puede seguir confirmando.','Cerrar')) return;
     cer.disabled=true;
-    await llamarReparto('reparto_cerrar',{p_reparto_id:+cer.dataset.cerrar, p_quien:NOMBRE},'Reparto cerrado');
+    await llamarReparto('reparto_cerrar',{p_reparto_id:id, p_quien:NOMBRE},'Reparto cerrado');
     return;
   }
   const agr = e.target.closest('[data-agregar]');
@@ -1677,7 +1730,7 @@ $('rec-confirmar').addEventListener('click', async()=>{
 /* ---- resumen para WhatsApp: lo que llegó y, al final, lo que faltó ---- */
 function resumenReparto(r){
   const fecha = new Date(r.created_at).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'});
-  const lin = [`Reparto ${fecha} · ${r.origen}`, ''];
+  const lin = [`Reparto ${fecha}`, ''];
   const llegaron = r.items.filter(i=>i.estado==='recibido');
   const faltaron = r.items.filter(i=>i.estado==='no_llego');
   llegaron.forEach(i=>{
@@ -1759,11 +1812,10 @@ $('carrito-list').addEventListener('click', e=>{
 $('btnRegistrarReparto').addEventListener('click', async()=>{
   const items = carrito.filter(c=>c.cantidad>0);
   if(!items.length){ alert('Agrega una cantidad mayor a 0.'); return; }
-  const origen = ($('rep-origen').value||'').replace(/\s+/g,' ').trim() || 'Bodega';
   const btn=$('btnRegistrarReparto'); btn.disabled=true; btn.textContent='Enviando…';
   try{
     const {data,error} = await conReintento(()=>sb.from('repartos')
-      .insert([{sede:SEDE, origen, creado_por:NOMBRE}]).select());
+      .insert([{sede:SEDE, creado_por:NOMBRE}]).select());
     if(error||!data||!data[0]){
       alert('No se pudo enviar el reparto. Revisa tu señal e inténtalo de nuevo.'); console.error(error); return;
     }
@@ -2062,7 +2114,7 @@ $('rec-guardar').addEventListener('click', async()=>{
 });
 $('rec-eliminar').addEventListener('click', async()=>{
   if(!recEditId) return;
-  if(!confirm('¿Eliminar esta receta? Sus insumos también se borran.')) return;
+  if(!await preguntar('¿Eliminar esta receta?','Sus insumos también se borran.','Eliminar')) return;
   const btn=$('rec-eliminar'); btn.disabled=true;
   const {error}=await conReintento(()=>sb.from('recetas').delete().eq('id',recEditId));
   btn.disabled=false;
@@ -2130,7 +2182,7 @@ $('btnGuardarHoy').addEventListener('click',async()=>{
   try{
     const {data:ex,error:e1}=await conReintento(()=>sb.from('historial').select('id').eq('sede',SEDE).eq('fecha',fecha).limit(1));
     if(e1){alert('No se pudo conectar con la base para guardar. Revisa tu señal e inténtalo de nuevo.');console.error(e1);return;}
-    if(ex.length && !confirm('Ya guardaste el inventario de hoy. ¿Quieres reemplazarlo con los valores actuales?')) return;
+    if(ex.length && !await preguntar('Ya guardaste el inventario de hoy','¿Lo reemplazamos con los valores actuales?','Reemplazar')) return;
     if(ex.length){
       const {error:ed}=await conReintento(()=>sb.from('historial').delete().eq('sede',SEDE).eq('fecha',fecha));
       if(ed){alert('No se pudo actualizar el guardado de hoy (conexión). Inténtalo de nuevo.');console.error(ed);return;}
