@@ -122,6 +122,29 @@
 
 ---
 
+## 0.3 REGLA DURA — las fechas de los sándwiches se muestran TODAS, siempre
+
+> Jhon, 2026-07-27: "los sándwiches son uno de los nervios más críticos de la
+> cafetería... necesito que de un vistazo podamos ver TODAS las fechas de
+> vencimiento de ese pancito. Esto es extremadamente delicado."
+
+- **En la lista del inventario, un producto perecedero muestra una píldora por
+  CADA fecha de vencimiento**, con su cantidad y el día exacto ("5 vencen HOY
+  27/07/26", "6 vencen 29/07/26"). Nunca se resume, nunca se esconde detrás de
+  un "+N fechas" ni de un "ver más" — eso fue justamente lo que hubo que
+  corregir. Si hay 4 fechas, se ven las 4 sin abrir la ficha ni tocar nada.
+- **El día exacto va en todas las píldoras, incluso en "hoy" y "mañana".** El
+  personal necesita leer la fecha tal cual está impresa en el envase, sin
+  tener que traducir mentalmente el "mañana".
+- **El formato de la píldora es el mismo del resumen de WhatsApp** (`27/07/26`):
+  lo que se lee en pantalla tiene que ser idéntico a lo que le llega a Adriana,
+  para que nadie tenga que comparar dos formatos distintos.
+- Si un cambio futuro necesita acortar, agrupar o esconder fechas por razones
+  de espacio, **se pregunta a Jhon primero**. Ahorrar dos líneas de pantalla no
+  justifica que una fecha deje de verse.
+
+---
+
 ## 1. Qué es esto y para quién
 
 Sistema de **inventario multi-sede** para una cadena de cafés ("Café del Desierto"),
@@ -375,6 +398,32 @@ el patrón a seguir:
 ---
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-27** — **Cuatro cambios pedidos desde el local:**
+  1. **Inicio limpia la pantalla.** Tocar el ícono de casa borra la búsqueda,
+     suelta los filtros y cierra las secciones (`irAlInicio()`). Antes había
+     que deshacer cada cosa a mano para volver a ver la lista completa.
+  2. **Turnos AM / PM.** El inventario se cuenta en dos rondas y las secciones
+     ahora van agrupadas en dos bloques con fondo gris, sin más explicación
+     que una etiqueta "AM"/"PM". Qué sección va en cada turno se define en la
+     lista **`SEC_AM`** de `index.html` — mover una sección de turno es
+     agregarla o sacarla de ahí, nada más.
+  3. **Grupo "Urgente".** Cuarta tarjeta junto a Crítico / Sobre-stock / Sin
+     dato. Es una marca MANUAL (botón en la ficha del producto), no un estado
+     calculado: convive con los otros (un producto puede estar crítico y
+     urgente a la vez) y sirve para que el personal le avise a Adriana lo que
+     se está acabando aunque el semáforo no lo marque. Necesita
+     `sql/2026-07-productos-urgentes.sql` (columna `productos.urgente`); si no
+     se corre, la tarjeta y el botón no aparecen y la app se ve igual que antes.
+  4. **Todas las fechas de vencimiento a la vista** — ver regla 0.3, que quedó
+     como regla dura. Antes se mostraba solo la más próxima y un "+1 fecha".
+  5. **Botón de resumen para WhatsApp** en la sección Sándwiches: un ícono en
+     la barra naranja que copia al portapapeles una línea por fecha con su
+     cantidad ("Croasan 5 / Fv. 27/07/26"). Es solo texto, no toca la base.
+     "Mechada" sale como "Plateada" (`NOMBRES_RESUMEN`) porque para el equipo
+     son el mismo producto — es solo la etiqueta del mensaje, no un renombre.
+  Probado en navegador con Supabase simulado: 47 comprobaciones, incluido que
+  si el SQL de urgentes no se corre la pantalla queda idéntica a hoy.
 
 - **2026-07-27** — **Tope en 0 sin excepción, para todos los productos.**
   Jhon aclaró que la regla del cambio anterior (mismo día) se quedaba corta:

@@ -119,17 +119,33 @@
   .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
   input[type=text],select,input[type=date]{flex:1;min-width:150px;height:42px;padding:0 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--card);color:var(--text)}
   .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  /* con la tarjeta de Urgente son cuatro; si la columna no existe en la base,
+     se queda en tres y la pantalla se ve igual que antes */
+  .metrics.con-urg{grid-template-columns:repeat(4,1fr)}
   .mcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;user-select:none}
   .mcard.sel{border:2px solid var(--orange)}
   .mcard .n{font-size:22px;font-weight:700}
   .mcard .l{font-size:11px;color:var(--muted);margin-top:2px}
+  .metrics.con-urg .mcard{padding:10px 3px}
+  .metrics.con-urg .mcard .n{font-size:20px}
+  .metrics.con-urg .mcard .l{font-size:10px}
   .count{font-size:12px;color:var(--muted);margin:6px 0}
+  /* turnos: el inventario de la mañana y el de la tarde son dos rondas
+     distintas. Solo un fondo gris que las agrupa — nada más. */
+  .turno{background:var(--gray-bg);border-radius:14px;padding:10px 10px 2px;margin-bottom:12px}
+  .turno-lbl{font-size:11px;font-weight:800;color:var(--gray-fg);letter-spacing:.7px;padding:0 4px 8px}
   /* secciones (acordeón) */
   .sec{margin-bottom:8px}
   /* Encabezado en naranja: al desplazar, marca dónde termina una sección y
      empieza la siguiente. Antes era blanco igual que los productos y se perdía. */
-  .sec-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;background:var(--orange);border:1px solid var(--orange);border-radius:12px;padding:14px;font-size:15px;font-weight:800;color:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(220,68,5,.25);text-align:left}
-  .sec.open .sec-btn{border-bottom-left-radius:0;border-bottom-right-radius:0}
+  /* la barra naranja es el contenedor; adentro van el botón de abrir/cerrar y,
+     en Sándwiches, el de copiar el resumen (un botón no puede ir dentro de otro) */
+  .sec-head{display:flex;align-items:stretch;background:var(--orange);border:1px solid var(--orange);border-radius:12px;box-shadow:0 1px 3px rgba(220,68,5,.25);overflow:hidden}
+  .sec.open .sec-head{border-bottom-left-radius:0;border-bottom-right-radius:0}
+  .sec-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:1;min-width:0;background:transparent;border:none;padding:14px;font-size:15px;font-weight:800;color:#fff;cursor:pointer;text-align:left;font-family:inherit}
+  .sec-copy{width:48px;flex-shrink:0;border:none;border-left:1px solid rgba(255,255,255,.32);background:transparent;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .sec-copy:active{background:rgba(255,255,255,.18)}
+  .sec-copy svg{width:19px;height:19px;display:block}
   .sec-tags{display:flex;align-items:center;gap:6px;flex-shrink:0}
   .sec-count{background:rgba(255,255,255,.92);color:var(--orange-dark);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800}
   .sec-crit{background:#fff;color:var(--red-fg);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800}
@@ -173,6 +189,12 @@
   .venc{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:600;background:var(--gray-bg);color:var(--gray-fg);margin-right:4px;display:inline-block}
   .venc.rojo{background:var(--red-bg);color:var(--red-fg)}
   .venc.ambar{background:var(--amber-bg);color:var(--amber-fg)}
+  /* TODAS las fechas de un producto, en su propia línea: en los sándwiches hay
+     que ver de un vistazo cuántos vencen y cuándo, sin abrir la ficha */
+  .vencs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+  /* cada fecha entera o en su propia línea: nunca partida a media palabra */
+  .vencs .venc{margin-right:0;white-space:nowrap}
+  .pill-urg{background:var(--amber-bg);color:var(--amber-fg)}
   .row input[type=number]{width:68px;height:40px;text-align:center;border:1px solid var(--border);border-radius:10px;font-size:16px;font-weight:600}
   .saving{opacity:0.5}
   /* ---------- buttons ---------- */
@@ -236,6 +258,9 @@
   .btn-del{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;margin-top:14px;border-radius:10px;border:1.5px solid var(--red-fg);background:var(--red-bg);color:var(--red-fg);font-size:14.5px;font-weight:700;cursor:pointer}
   .btn-del:active{background:#F8D7D3}
   .btn-del svg{width:17px;height:17px}
+  .btn-urg{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;margin-top:14px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn-urg.on{border-color:var(--amber-fg);background:var(--amber-bg);color:var(--amber-fg)}
+  .btn-urg svg{width:17px;height:17px}
   .fab{position:fixed;right:18px;bottom:24px;width:58px;height:58px;border-radius:50%;background:var(--orange);color:#fff;border:none;font-size:32px;font-weight:600;line-height:1;box-shadow:0 6px 18px rgba(220,68,5,.45);cursor:pointer;z-index:30;display:flex;align-items:center;justify-content:center}
   .fab:active{background:var(--orange-dark)}
   .chkrow{display:flex;align-items:center;gap:10px;margin:14px 0;cursor:pointer;user-select:none}
@@ -341,8 +366,9 @@
   <div class="controls busca" data-busca="inv">
     <input type="text" id="q" placeholder="Buscar producto…">
   </div>
-  <div class="metrics">
+  <div class="metrics" id="metrics">
     <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
+    <div class="mcard" data-f="urgente" id="mcard-urgente" style="display:none"><div class="n" id="c-urgente" style="color:var(--amber-fg)">0</div><div class="l">Urgente</div></div>
     <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
     <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
   </div>
@@ -447,6 +473,10 @@
       <div class="field" style="flex:1"><label>Stock mínimo</label><input type="number" step="0.5" min="0" id="m-min"></div>
       <div class="field" style="flex:1"><label>Stock máximo</label><input type="number" step="0.5" min="0" id="m-max"></div>
     </div>
+    <button type="button" class="btn-urg" id="m-urgente" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+      <span id="m-urgente-txt">Marcar urgente</span>
+    </button>
     <label class="chkrow" id="m-perec-row" style="display:none">
       <input type="checkbox" id="m-perec">
       <span>Producto perecedero</span>
@@ -520,11 +550,15 @@ let DATA = [];
 let filterState = null;
 let hasVenc = false;      // true cuando exista la columna vencimiento en la tabla
 let hasPerec = false;     // true cuando exista la columna perecedero
+let hasUrgente = false;   // true cuando exista la columna urgente
 let modalProd = null;
 let carrito = [];         // productos que llegaron, pendientes de registrar
 
 /* ¿este producto es perecedero? (usa la columna si existe; si no, la regla vieja de Sándwiches) */
 function esPerec(p){ return hasPerec ? !!p.perecedero : p.rubro==='Sándwiches'; }
+/* Marcado a mano por el personal para que Adriana lo vea: no es un estado
+   calculado como crítico/sobre-stock, convive con ellos. */
+function esUrgente(p){ return hasUrgente && !!p.urgente; }
 
 const $ = id => document.getElementById(id);
 const qEl=$('q'), listEl=$('list'), countEl=$('count');
@@ -555,6 +589,10 @@ const CFG = {
 const fmt = n => n==null ? '—' : (Math.round(n*100)/100);
 const hoyISO = () => new Date().toLocaleDateString('en-CA');
 const fmtFecha = iso => { const [y,m,d]=iso.split('-'); return `${d}-${m}-${y}`; };
+/* formato corto para el resumen que se manda por WhatsApp: 27/07/26 */
+/* mismo formato en la píldora y en el resumen: lo que se lee en pantalla es
+   idéntico a lo que le llega a Adriana por WhatsApp */
+const fmtCorta = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
 
 /* lotes de vencimiento por producto: { producto_id: [{id,cantidad,vencimiento}] } */
 let LOTES = {};
@@ -562,31 +600,38 @@ let hasLotes = false;   // true cuando la tabla producto_lotes existe en la base
 const lotesDe = pid => (LOTES[pid]||[]).slice()
   .sort((a,b)=>String(a.vencimiento||'9999').localeCompare(String(b.vencimiento||'9999')));
 
-/* etiqueta de una fecha: VENCIDO / hoy / mañana / la fecha */
-function etiquetaVenc(iso){
+/* etiqueta de una fecha: VENCIDO / hoy / mañana + SIEMPRE el día exacto.
+   El día va en todas, incluso en "hoy" y "mañana": las jefas necesitan poder
+   leer la fecha tal cual, sin traducir mentalmente el "mañana". */
+function etiquetaVenc(iso, cant=1){
   const dias = Math.round((new Date(iso+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
-  if (dias < 0)   return {cls:'venc rojo',  txt:'VENCIDO '+fmtFecha(iso)};
-  if (dias === 0) return {cls:'venc rojo',  txt:'vence HOY'};
-  if (dias === 1) return {cls:'venc ambar', txt:'vence mañana'};
-  return {cls:'venc', txt:'vence '+fmtFecha(iso)};
+  const v = (+cant||0) === 1 ? 'vence' : 'vencen';
+  const f = fmtCorta(iso);
+  if (dias < 0)   return {cls:'venc rojo',  txt:`VENCIDO ${f}`};
+  if (dias === 0) return {cls:'venc rojo',  txt:`${v} HOY ${f}`};
+  if (dias === 1) return {cls:'venc ambar', txt:`${v} mañana ${f}`};
+  return {cls:'venc', txt:`${v} ${f}`};
 }
 
-/* Muestra el lote más urgente con su cantidad ("1 vence HOY") y, si hay
-   más fechas, cuántas quedan. Así se ve de un vistazo qué hay que sacar. */
-function vencChip(p){
+/* TODAS las fechas del producto, cada una con su cantidad, en su propia línea.
+   Antes se mostraba solo la más próxima y un "+1 fecha" — pero en los
+   sándwiches hay que ver el detalle completo sin abrir la ficha: cuántos
+   vencen y qué día, para cada fecha. Ver regla 0.3 del archivo madre. */
+function vencsHTML(p){
   if (!esPerec(p)) return '';
   const ls = lotesDe(p.id).filter(l=>l.vencimiento);
   if (ls.length){
-    const primero = ls[0];
-    const e = etiquetaVenc(primero.vencimiento);
-    const cant = (+primero.cantidad||0);
-    const mas = ls.length>1 ? `<span class="venc">+${ls.length-1} fecha${ls.length-1===1?'':'s'}</span>` : '';
-    return `<span class="${e.cls}">${fmt(cant)} ${e.txt}</span>${mas}`;
+    const chips = ls.map(l=>{
+      const cant = (+l.cantidad||0);
+      const e = etiquetaVenc(l.vencimiento, cant);
+      return `<span class="${e.cls}">${fmt(cant)} ${e.txt}</span>`;
+    }).join('');
+    return `<div class="vencs">${chips}</div>`;
   }
   // sin lotes todavía: se respeta la fecha única de antes
   if (!hasVenc || !p.vencimiento) return '';
   const e = etiquetaVenc(p.vencimiento);
-  return `<span class="${e.cls}">${e.txt}</span>`;
+  return `<div class="vencs"><span class="${e.cls}">${e.txt}</span></div>`;
 }
 
 /* ---------------- saludo según la hora ---------------- */
@@ -734,19 +779,29 @@ async function initAuth(){
 /* ---------------- inventario ---------------- */
 /* orden físico de las secciones del café; cualquier otra va al final */
 const SEC_ORDEN=['Vitrina de tortas','Limpieza','Sándwiches','Mesones','Congelador','Té','Vitrina de dulces','Vitrina de bebidas','Mueble de mezclas','Mueble de bolsas','Mueble de caja'];
+/* El inventario se cuenta en dos rondas: estas secciones las cuenta el turno
+   de la mañana, el resto el de la tarde. Para mover una sección de turno,
+   basta sacarla o agregarla a esta lista. */
+const SEC_AM=['Limpieza','Mesones','Té','Mueble de mezclas','Mueble de bolsas','Mueble de caja'];
+const esAM = sec => SEC_AM.some(s=>normNombre(s)===normNombre(sec));
+/* La sección de sándwiches lleva el botón de copiar resumen para Adriana */
+const esSandwiches = sec => normNombre(sec).startsWith('sandwich');
 function metrics(){
   const m={critico:0,ok:0,sobre:0,sindato:0};
   DATA.forEach(p=>m[estado(p)]++);
   for(const k in m){ const el=$('c-'+k); if(el) el.textContent=m[k]; }
+  $('c-urgente').textContent = DATA.filter(esUrgente).length;
 }
 function rowHTML(p){
   const e=estado(p),cf=CFG[e];
   const t=totalProducto(p.producto);
   const totalLine = t.multi ? `<div class="sub sub-total">Total: ${fmt(t.total)} · ${t.secciones} secciones</div>` : '';
   const conLotes = lotesDe(p.id).length>0;   // el stock sale de la suma de fechas
+  const urg = esUrgente(p) ? '<span class="pill pill-urg">Urgente</span>' : '';
   return `<div class="row" data-row="${p.id}">
     <div class="info" data-open="${p.id}">
-      <div class="name">${esc(p.producto)} ${vencChip(p)}</div>
+      <div class="name">${esc(p.producto)} ${urg}</div>
+      ${vencsHTML(p)}
       <div class="sub">mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div>
       ${totalLine}
     </div>
@@ -756,9 +811,15 @@ function rowHTML(p){
     </div>
   </div>`;
 }
+/* el filtro de Urgente no es un estado calculado: convive con crítico/sobre-stock */
+function pasaFiltro(p){
+  if(!filterState) return true;
+  return filterState==='urgente' ? esUrgente(p) : estado(p)===filterState;
+}
+const COPY_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
 function render(){
   const q=normNombre(qEl.value);
-  let rows=DATA.filter(p=>(!q||normNombre(p.producto).includes(q))&&(!filterState||estado(p)===filterState));
+  let rows=DATA.filter(p=>(!q||normNombre(p.producto).includes(q))&&pasaFiltro(p));
   // SIEMPRE alfabético: el orden no depende de cantidades ni estados,
   // así una fila no se mueve cuando cambia su stock.
   rows.sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}));
@@ -771,18 +832,29 @@ function render(){
     return (ia<0?SEC_ORDEN.length:ia)-(ib<0?SEC_ORDEN.length:ib)||a.localeCompare(b,'es');
   });
   const filtrando=!!q||!!filterState;   // al buscar o filtrar, las secciones con resultados se abren solas
-  listEl.innerHTML=orden.map(sec=>{
+  const secHTML=sec=>{
     const items=grupos.get(sec);
     const crit=items.reduce((n,p)=>n+(estado(p)==='critico'?1:0),0);
     const abierta=filtrando||openSecs.has(sec);
+    const copiar=esSandwiches(sec)
+      ? `<button type="button" class="sec-copy" data-copiar="${esc(sec)}" aria-label="Copiar resumen de ${esc(sec)}" title="Copiar resumen">${COPY_SVG}</button>`
+      : '';
     return `<div class="sec${abierta?' open':''}" data-secname="${esc(sec)}">
-      <button type="button" class="sec-btn" data-sec="${esc(sec)}">
-        <span>${esc(sec)}</span>
-        <span class="sec-tags">${crit?`<span class="sec-crit" title="productos en crítico">${crit} crít.</span>`:''}<span class="sec-count">${items.length}</span><span class="sec-arrow">▼</span></span>
-      </button>
+      <div class="sec-head">
+        <button type="button" class="sec-btn" data-sec="${esc(sec)}">
+          <span>${esc(sec)}</span>
+          <span class="sec-tags">${crit?`<span class="sec-crit" title="productos en crítico">${crit} crít.</span>`:''}<span class="sec-count">${items.length}</span><span class="sec-arrow">▼</span></span>
+        </button>
+        ${copiar}
+      </div>
       ${abierta?`<div class="sec-body">${items.map(rowHTML).join('')}</div>`:''}
     </div>`;
-  }).join('')||'<div class="empty">No hay productos que coincidan.</div>';
+  };
+  // dos rondas de conteo: mañana y tarde, separadas solo por el fondo gris
+  const bloque=(lbl,secs)=> secs.length
+    ? `<div class="turno"><div class="turno-lbl">${lbl}</div>${secs.map(secHTML).join('')}</div>` : '';
+  listEl.innerHTML = (bloque('AM', orden.filter(esAM)) + bloque('PM', orden.filter(s=>!esAM(s))))
+    || '<div class="empty">No hay productos que coincidan.</div>';
 }
 async function loadData(){
   const {data,error}=await sb.from('productos').select('*').eq('sede',SEDE).eq('activo','SÍ').order('producto');
@@ -790,6 +862,11 @@ async function loadData(){
   DATA=data;
   hasVenc = DATA.length>0 && ('vencimiento' in DATA[0]);
   hasPerec = DATA.length>0 && ('perecedero' in DATA[0]);
+  // si la columna urgente todavía no existe en la base, la tarjeta y el botón
+  // no aparecen y la pantalla se ve igual que antes
+  hasUrgente = DATA.length>0 && ('urgente' in DATA[0]);
+  $('mcard-urgente').style.display = hasUrgente ? '' : 'none';
+  $('metrics').classList.toggle('con-urg', hasUrgente);
   await loadLotes();
   metrics(); render();
   $('liveText').textContent='en vivo'; $('live').classList.remove('off');
@@ -850,8 +927,65 @@ function deslizarSeccion(sec){
   const limpiar = ()=>{ body.style.overflow=''; };
   anim.onfinish = limpiar; anim.oncancel = limpiar;
 }
+/* ---------------- resumen de sándwiches para WhatsApp ----------------
+   Copia al portapapeles una línea por fecha, con su cantidad:
+     Croasan 5
+     Fv. 27/07/26
+   Es SOLO texto: no toca el inventario ni cambia ningún nombre en la base. */
+/* Para el equipo "Mechada" y "Plateada" son el mismo producto: en el resumen
+   van con un solo nombre (lo pidió Jhon). Afecta únicamente el texto copiado. */
+const NOMBRES_RESUMEN=[[/\bmechada\b/, 'Plateada']];
+function nombreResumen(n){
+  const base=String(n||'').replace(/\s+(vitrina|congelador)\s*$/i,'').trim();
+  for(const [re,lbl] of NOMBRES_RESUMEN){ if(re.test(normNombre(base))) return lbl; }
+  return base;
+}
+function resumenSeccion(sec){
+  const items=DATA.filter(p=>(p.rubro||'Sin sección')===sec)
+    .sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}));
+  const lineas=[];
+  items.forEach(p=>{
+    const nom=nombreResumen(p.producto);
+    const ls=lotesDe(p.id).filter(l=>l.vencimiento);
+    if(ls.length){
+      ls.forEach(l=>{ lineas.push(`${nom} ${fmt(+l.cantidad||0)}`, 'Fv. '+fmtCorta(l.vencimiento)); });
+    } else if(hasVenc && p.vencimiento){
+      lineas.push(`${nom} ${fmt(p.stock_actual)}`, 'Fv. '+fmtCorta(p.vencimiento));
+    } else if((+p.stock_actual||0) > 0){
+      // hay unidades pero nadie les puso fecha: igual tienen que verse
+      lineas.push(`${nom} ${fmt(p.stock_actual)}`, 'Fv. sin fecha');
+    }
+  });
+  return lineas.join('\n');
+}
+/* el portapapeles del navegador falla en algunos WebView de iOS: si no está,
+   se cae al método antiguo con un campo de texto temporal */
+async function copiarTexto(txt){
+  try{
+    if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(txt); return true; }
+  }catch(e){ console.error(e); }
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=txt; ta.setAttribute('readonly','');
+    ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta);
+    ta.select(); ta.setSelectionRange(0,txt.length);
+    const ok=document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){ console.error(e); return false; }
+}
+
 /* abrir/cerrar sección, o abrir ficha de producto */
 listEl.addEventListener('click',e=>{
+  const cop=e.target.closest('[data-copiar]');
+  if(cop){
+    const sec=cop.dataset.copiar;
+    const txt=resumenSeccion(sec);
+    if(!txt){ aviso('No hay nada que copiar en '+sec); return; }
+    copiarTexto(txt).then(ok=>aviso(ok?'✓ Resumen copiado':'No se pudo copiar. Mantén apretado para copiar a mano.'));
+    return;
+  }
   const secBtn=e.target.closest('[data-sec]');
   if(secBtn){
     const s=secBtn.dataset.sec;
@@ -875,6 +1009,16 @@ function soltarFiltros(){
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
   return true;
 }
+/* deja el inventario como recién abierto: sin búsqueda, sin filtros y con
+   todas las secciones cerradas */
+function irAlInicio(){
+  qEl.value='';
+  filterState=null;
+  document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
+  openSecs.clear();
+  render();
+  window.scrollTo({top:0});
+}
 qEl.addEventListener('focus',()=>{ if(soltarFiltros()) render(); });
 qEl.addEventListener('input',()=>{ soltarFiltros(); render(); });
 document.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
@@ -895,6 +1039,8 @@ function openModal(id){
   $('m-max').value=modalProd.stock_max??'';
   $('m-perec-row').style.display = hasPerec ? 'flex' : 'none';
   if(hasPerec) $('m-perec').checked = !!modalProd.perecedero;
+  $('m-urgente').style.display = hasUrgente ? 'flex' : 'none';
+  setUrgente(!!modalProd.urgente);
   // Solo se ofrece el editor de VARIAS fechas si la tabla que las guarda
   // (producto_lotes) existe de verdad en la base. Si no, se cae al campo
   // de una sola fecha de siempre — nunca se muestra una opción que no
@@ -911,6 +1057,15 @@ function openModal(id){
   if(puedeSoloFecha) $('m-venc-single').value = modalProd.vencimiento ?? '';
   $('overlay').classList.add('open');
 }
+
+/* ---------------- urgente (aviso para Adriana) ---------------- */
+let urgenteSel=false;
+function setUrgente(v){
+  urgenteSel=!!v;
+  $('m-urgente').classList.toggle('on',urgenteSel);
+  $('m-urgente-txt').textContent = urgenteSel ? 'Urgente' : 'Marcar urgente';
+}
+$('m-urgente').addEventListener('click',()=>setUrgente(!urgenteSel));
 
 /* ---------------- lotes de vencimiento en el modal ---------------- */
 function loteRow(cant, venc){
@@ -1008,6 +1163,7 @@ $('m-guardar').addEventListener('click',async()=>{
   // si no, el número del campo de stock se guarda tal cual (como siempre)
   if(!lotes.length){ const s=num($('m-stock')); fields.stock_actual = s==null?s:Math.max(0,s); }
   if(hasPerec) fields.perecedero=quedaPerec;
+  if(hasUrgente) fields.urgente=urgenteSel;
   if(hasVenc) fields.vencimiento = !quedaPerec ? null
     : usaLotes ? (lotes.length?lotes[0].vencimiento:null)
     : ($('m-venc-single').value || null);
@@ -1233,6 +1389,9 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   $('view-hist').style.display = tab==='hist'?'block':'none';
   $('view-recetas').style.display = tab==='recetas'?'block':'none';
   vistaActual=tab; $('topTitle').textContent=TITULOS[tab]||TITULOS.inv;
+  // Inicio devuelve la pantalla a como se abre: sin búsqueda, sin filtros y
+  // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
+  if(tab==='inv') irAlInicio();
   if(tab==='hist') loadHistorial();
   if(tab==='reparto') refreshPendientes();
   if(tab==='recetas') loadRecetas();
