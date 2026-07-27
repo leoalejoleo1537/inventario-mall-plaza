@@ -572,6 +572,20 @@ el patrón a seguir:
   Probado en navegador con Supabase simulado: 47 comprobaciones, incluido que
   si el SQL de urgentes no se corre la pantalla queda idéntica a hoy.
 
+- **2026-07-27** — **Modo edición: el nombre y la sección quedan bajo llave.**
+  A un producto le cambiaron el nombre sin querer y nadie se dio cuenta hasta
+  que Jhon lo notó. Ahora la ficha del producto muestra solo lo del día a día
+  (stock, mín/máx, urgente, perecedero); **nombre, sección y eliminar** salen
+  únicamente con el interruptor **"Modo edición"** del menú lateral. Eliminar
+  dejó de ser un botón grande y pasó a un ícono de basurero arriba a la
+  derecha del título — es una acción de la que no se vuelve, no algo que se
+  toca de paso. **El modo NO se guarda entre sesiones**: al abrir la app
+  siempre arranca apagado, así encenderlo es siempre una decisión consciente.
+  Si en el futuro se agrega otra acción peligrosa, va detrás de este mismo
+  interruptor (`setModoEdicion`), no suelta en la ficha.
+  Además, la fila del producto urgente **pierde el reborde naranja** (parecía
+  gráfico de Excel): la píldora naranja rellena ya lo identifica sola.
+
 - **2026-07-27** — **Se acabaron las ventanas del navegador.** No queda ni un
   `alert`, `confirm` ni `prompt` en la app: todos pintaban media pantalla de
   negro y se leían como si algo se hubiera roto. Tres helpers, con el mismo

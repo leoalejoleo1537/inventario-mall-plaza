@@ -207,7 +207,6 @@
   /* mismo lenguaje que el botón "+": naranja relleno y sombra, para que un
      producto urgente salte a la vista dentro de la lista */
   .pill-urg{background:var(--orange);color:#fff;box-shadow:0 3px 10px rgba(220,68,5,.45)}
-  .row.urg{border-color:var(--orange);box-shadow:0 2px 10px rgba(220,68,5,.18)}
   .row input[type=number]{width:68px;height:40px;text-align:center;border:1px solid var(--border);border-radius:10px;font-size:16px;font-weight:600}
   .saving{opacity:0.5}
   /* ---------- buttons ---------- */
@@ -290,6 +289,20 @@
   /* botón de urgente: naranja de la casa. Sin marcar va en contorno (se ve y
      se entiende que es una acción); marcado queda relleno, como los botones
      de acción principales. */
+  .modal-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .modal-top h2{flex:1;min-width:0}
+  .icon-del{width:40px;height:40px;flex-shrink:0;border:none;background:none;color:var(--muted);
+            border-radius:10px;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0}
+  .icon-del.on{display:flex}
+  .icon-del:active{background:var(--red-bg);color:var(--red-fg)}
+  .icon-del svg{width:20px;height:20px;display:block}
+  /* interruptor del modo edición, en el menú lateral */
+  .drawer-item .sw{margin-left:auto;width:38px;height:22px;border-radius:999px;background:var(--border);
+                   position:relative;transition:background .15s;flex-shrink:0}
+  .drawer-item .sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+                          background:#fff;box-shadow:0 1px 3px rgba(15,30,49,.3);transition:transform .15s}
+  .drawer-item.on .sw{background:var(--orange)}
+  .drawer-item.on .sw::after{transform:translateX(16px)}
   .btn-urg{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;margin-top:14px;border-radius:10px;border:1.5px solid var(--orange);background:#fff;color:var(--orange);font-size:14.5px;font-weight:700;cursor:pointer;font-family:inherit}
   .btn-urg.on{border-color:var(--orange);background:var(--orange);color:#fff}
   .btn-urg:active{background:var(--orange-dark);border-color:var(--orange-dark);color:#fff}
@@ -416,6 +429,13 @@
   <button type="button" class="drawer-item" data-accion="actualizar">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
     Actualizar
+  </button>
+
+  <div class="drawer-sec">Productos</div>
+  <button type="button" class="drawer-item" id="itEdicion" data-accion="edicion">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+    Modo edición
+    <span class="sw"></span>
   </button>
 
   <div class="drawer-sec">Sede</div>
@@ -604,14 +624,21 @@
 <!-- ================= MODAL PRODUCTO ================= -->
 <div class="overlay" id="overlay">
   <div class="modal">
-    <h2 id="m-nombre">Producto</h2>
-    <div class="field" style="margin-top:6px">
-      <label>Nombre</label>
-      <input type="text" id="m-producto" autocomplete="off">
+    <div class="modal-top">
+      <h2 id="m-nombre">Producto</h2>
+      <button type="button" class="icon-del" id="m-eliminar" aria-label="Eliminar producto" title="Eliminar producto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      </button>
     </div>
-    <div class="field">
-      <label>Sección</label>
-      <select id="m-seccion"></select>
+    <div id="m-edicion" style="display:none">
+      <div class="field" style="margin-top:6px">
+        <label>Nombre</label>
+        <input type="text" id="m-producto" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Sección</label>
+        <select id="m-seccion"></select>
+      </div>
     </div>
     <div class="field" style="text-align:center;margin-top:0">
       <label style="text-align:center">Stock actual</label>
@@ -639,10 +666,6 @@
       <button type="button" class="btn btn-outline btn-sm" id="btnAddLote" style="margin-top:8px">+ Agregar fecha</button>
       <input type="date" id="m-venc-single" style="display:none">
     </div>
-    <button type="button" class="btn-del" id="m-eliminar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-      Eliminar producto
-    </button>
     <div class="mbtns">
       <button class="btn btn-outline" id="m-cancelar">Cancelar</button>
       <button class="btn btn-orange" id="m-guardar">Guardar</button>
@@ -799,6 +822,19 @@ function saludo(){
   return `${momento}, ${NOMBRE || 'Usuario'}`;
 }
 
+/* Modo edición: el nombre y la sección de un producto quedan bloqueados salvo
+   que se encienda a propósito. Se agregó porque a un producto le cambiaron el
+   nombre sin querer y nadie se dio cuenta hasta que Jhon lo notó. Eliminar
+   entra en el mismo saco: es la otra acción de la que no se vuelve.
+   NO se guarda entre sesiones — al abrir la app siempre arranca apagado. */
+let modoEdicion = false;
+function setModoEdicion(v){
+  modoEdicion = !!v;
+  $('itEdicion').classList.toggle('on', modoEdicion);
+  $('m-edicion').style.display = modoEdicion ? '' : 'none';
+  $('m-eliminar').classList.toggle('on', modoEdicion);
+}
+
 /* ---------------- menú lateral ---------------- */
 function abrirMenu(){
   $('drawerSede').textContent = SEDE ? SEDES[SEDE].label : '—';
@@ -812,6 +848,11 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') cerrarMenu(); });
 $('drawer').addEventListener('click',e=>{
   const it=e.target.closest('[data-accion]'); if(!it) return;
   const a=it.dataset.accion;
+  if(a==='edicion'){                       // el menú queda abierto: se ve el cambio
+    setModoEdicion(!modoEdicion);
+    aviso(modoEdicion ? 'Modo edición activado' : 'Modo edición desactivado');
+    return;
+  }
   cerrarMenu();
   if(a==='nuevo')          $('btnNuevo').click();
   if(a==='actualizar')     actualizarTodo();
@@ -885,7 +926,7 @@ function pickSede(s){
   $('gate').classList.add('hidden');
   $('liveText').textContent='conectando…'; $('live').classList.remove('off');
   $('armar-titulo').textContent = 'Armar pedido' + (NOMBRE ? ', '+NOMBRE : '');
-  REPARTOS=[]; cajasAbiertas.clear();
+  REPARTOS=[]; cajasAbiertas.clear(); setModoEdicion(false);
   $('body-armar').style.display='none'; $('body-cerrados').style.display='none'; $('body-fudo').style.display='none';
   $('repartos-abiertos').innerHTML='';
   loadData();
@@ -1000,7 +1041,7 @@ function rowHTML(p, conSeccion){
   const urg = esUrgente(p) ? '<span class="pill pill-urg">Urgente</span>' : '';
   // fuera de su sección (bloque de urgentes) hay que decir de dónde viene
   const donde = conSeccion ? esc(p.rubro||'Sin sección')+' · ' : '';
-  return `<div class="row${esUrgente(p)?' urg':''}" data-row="${p.id}">
+  return `<div class="row" data-row="${p.id}">
     <div class="info" data-open="${p.id}">
       <div class="name">${esc(p.producto)} ${urg}</div>
       ${vencsHTML(p)}
@@ -1263,6 +1304,7 @@ function openModal(id){
   if(hasPerec) $('m-perec').checked = !!modalProd.perecedero;
   $('m-urgente').style.display = hasUrgente ? 'flex' : 'none';
   setUrgente(!!modalProd.urgente);
+  setModoEdicion(modoEdicion);
   // Solo se ofrece el editor de VARIAS fechas si la tabla que las guarda
   // (producto_lotes) existe de verdad en la base. Si no, se cae al campo
   // de una sola fecha de siempre — nunca se muestra una opción que no
