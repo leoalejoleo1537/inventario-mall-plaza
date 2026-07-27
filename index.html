@@ -24,8 +24,9 @@
     --green-bg:#E6F4E6; --green-fg:#2E7D32;
     --amber-bg:#FFF3E0; --amber-fg:#B26A00;
     --gray-bg:#EDEEF0; --gray-fg:#5F6670;
-    /* color de las cabeceras de sección — lo cambia el selector de abajo */
-    --sec-bg:#DC4405; --sec-tx:#ffffff; --sec-line:rgba(255,255,255,.32);
+    /* cabeceras de sección: azul pizarra. Deja el naranja libre para lo que
+       de verdad es acción o alerta (botones, urgentes, críticos). */
+    --sec-bg:#2F4A6D; --sec-tx:#ffffff; --sec-line:rgba(255,255,255,.32);
   }
   *{box-sizing:border-box}
   html,body{touch-action:manipulation}
@@ -196,7 +197,10 @@
   .vencs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
   /* cada fecha entera o en su propia línea: nunca partida a media palabra */
   .vencs .venc{margin-right:0;white-space:nowrap}
-  .pill-urg{background:var(--amber-bg);color:var(--amber-fg)}
+  /* mismo lenguaje que el botón "+": naranja relleno y sombra, para que un
+     producto urgente salte a la vista dentro de la lista */
+  .pill-urg{background:var(--orange);color:#fff;box-shadow:0 3px 10px rgba(220,68,5,.45)}
+  .row.urg{border-color:var(--orange);box-shadow:0 2px 10px rgba(220,68,5,.18)}
   .row input[type=number]{width:68px;height:40px;text-align:center;border:1px solid var(--border);border-radius:10px;font-size:16px;font-weight:600}
   .saving{opacity:0.5}
   /* ---------- buttons ---------- */
@@ -273,12 +277,6 @@
   .chkrow input{width:20px;height:20px;accent-color:var(--orange);cursor:pointer}
   .chkrow span{font-size:14.5px;font-weight:600}
   .chkrow small{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:1px}
-  /* selector de color provisorio: solo para que Jhon elija la cabecera */
-  .paleta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 2px 0}
-  .paleta-lbl{flex-basis:100%;font-size:11px;font-weight:700;color:var(--muted)}
-  .swatch{width:38px;height:38px;border-radius:10px;border:2px solid transparent;cursor:pointer;
-          font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0}
-  .swatch.sel{border-color:var(--text);box-shadow:0 0 0 2px #fff inset}
   footer{text-align:center;padding:20px;font-size:11px;color:var(--muted)}
   ::placeholder{color:#9aa3ad}
 </style>
@@ -380,12 +378,11 @@
   </div>
   <div class="metrics" id="metrics">
     <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
-    <div class="mcard" data-f="urgente" id="mcard-urgente" style="display:none"><div class="n" id="c-urgente" style="color:var(--amber-fg)">0</div><div class="l">Urgente</div></div>
+    <div class="mcard" data-f="urgente" id="mcard-urgente" style="display:none"><div class="n" id="c-urgente" style="color:var(--orange)">0</div><div class="l">Urgente</div></div>
     <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
     <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
   </div>
   <div id="list"></div>
-  <div class="paleta" id="paleta"></div>
   <button class="fab" id="btnNuevo" title="Agregar producto" aria-label="Agregar producto">+</button>
 </div>
 
@@ -813,10 +810,10 @@ function metrics(){
 function rowHTML(p){
   const e=estado(p),cf=CFG[e];
   const t=totalProducto(p.producto);
-  const totalLine = t.multi ? `<div class="sub sub-total">Total: ${fmt(t.total)} · ${t.secciones} secciones</div>` : '';
+  const totalLine = t.multi ? `<div class="sub sub-total">Total: ${fmt(t.total)} · ${esc(t.secciones)}</div>` : '';
   const conLotes = lotesDe(p.id).length>0;   // el stock sale de la suma de fechas
   const urg = esUrgente(p) ? '<span class="pill pill-urg">Urgente</span>' : '';
-  return `<div class="row" data-row="${p.id}">
+  return `<div class="row${esUrgente(p)?' urg':''}" data-row="${p.id}">
     <div class="info" data-open="${p.id}">
       <div class="name">${esc(p.producto)} ${urg}</div>
       ${vencsHTML(p)}
@@ -829,40 +826,6 @@ function rowHTML(p){
     </div>
   </div>`;
 }
-/* ---------------- selector de color de las cabeceras (PROVISORIO) ----------------
-   Está solo para que Jhon compare y elija. Cuando decida, se fija el color
-   elegido en :root y se borra todo este bloque junto con el div #paleta. */
-const COLORES_SEC=[
-  {n:1, nom:'Naranja (actual)', bg:'#DC4405', tx:'#ffffff'},
-  {n:2, nom:'Navy',             bg:'#0F1E31', tx:'#ffffff'},
-  {n:3, nom:'Azul pizarra',     bg:'#2F4A6D', tx:'#ffffff'},
-  {n:4, nom:'Gris azulado',     bg:'#6B7684', tx:'#ffffff'},
-  {n:5, nom:'Gris claro',       bg:'#E3E5E8', tx:'#1C2733'},
-  {n:6, nom:'Verde',            bg:'#2E7D32', tx:'#ffffff'},
-];
-function aplicarColorSec(n){
-  const c=COLORES_SEC.find(x=>x.n===+n)||COLORES_SEC[0];
-  const r=document.documentElement.style;
-  r.setProperty('--sec-bg',c.bg);
-  r.setProperty('--sec-tx',c.tx);
-  r.setProperty('--sec-line', c.tx==='#ffffff' ? 'rgba(255,255,255,.32)' : 'rgba(0,0,0,.16)');
-  try{ localStorage.setItem('colorSec',String(c.n)); }catch(e){}
-  document.querySelectorAll('.swatch').forEach(s=>s.classList.toggle('sel',+s.dataset.color===c.n));
-}
-function pintarPaleta(){
-  const box=$('paleta'); if(!box) return;
-  box.innerHTML='<span class="paleta-lbl">Color de las secciones</span>'+
-    COLORES_SEC.map(c=>`<button type="button" class="swatch" data-color="${c.n}" title="${c.nom}"
-      style="background:${c.bg};color:${c.tx}">${c.n}</button>`).join('');
-  box.addEventListener('click',e=>{
-    const s=e.target.closest('.swatch'); if(!s) return;
-    aplicarColorSec(s.dataset.color);
-  });
-  let guardado=1; try{ guardado=+localStorage.getItem('colorSec')||1; }catch(e){}
-  aplicarColorSec(guardado);
-}
-pintarPaleta();
-
 /* el filtro de Urgente no es un estado calculado: convive con crítico/sobre-stock */
 function pasaFiltro(p){
   if(!filterState) return true;
@@ -991,6 +954,14 @@ function nombreResumen(n){
   for(const [re,lbl] of NOMBRES_RESUMEN){ if(re.test(normNombre(base))) return lbl; }
   return base;
 }
+/* ⚠️ para lo que hay que resolver HOY: lo que vence hoy y lo que ya venció.
+   Va pegado al nombre porque es lo primero que se lee al bajar el mensaje. */
+const URGE = '\u26A0\uFE0F';
+function marcaUrgencia(iso){
+  if(!iso) return '';
+  const dias = Math.round((new Date(iso+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
+  return dias <= 0 ? ' '+URGE : '';
+}
 function resumenSeccion(sec){
   const items=DATA.filter(p=>(p.rubro||'Sin sección')===sec)
     .sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}));
@@ -999,9 +970,9 @@ function resumenSeccion(sec){
     const nom=nombreResumen(p.producto);
     const ls=lotesDe(p.id).filter(l=>l.vencimiento);
     if(ls.length){
-      ls.forEach(l=>{ lineas.push(`${nom} ${fmt(+l.cantidad||0)}`, 'Fv. '+fmtCorta(l.vencimiento)); });
+      ls.forEach(l=>{ lineas.push(`${nom} ${fmt(+l.cantidad||0)}${marcaUrgencia(l.vencimiento)}`, 'Fv. '+fmtCorta(l.vencimiento)); });
     } else if(hasVenc && p.vencimiento){
-      lineas.push(`${nom} ${fmt(p.stock_actual)}`, 'Fv. '+fmtCorta(p.vencimiento));
+      lineas.push(`${nom} ${fmt(p.stock_actual)}${marcaUrgencia(p.vencimiento)}`, 'Fv. '+fmtCorta(p.vencimiento));
     } else if((+p.stock_actual||0) > 0){
       // hay unidades pero nadie les puso fecha: igual tienen que verse
       lineas.push(`${nom} ${fmt(p.stock_actual)}`, 'Fv. sin fecha');
@@ -1116,7 +1087,17 @@ function setUrgente(v){
   $('m-urgente').classList.toggle('on',urgenteSel);
   $('m-urgente-txt').textContent = urgenteSel ? 'Urgente' : 'Marcar urgente';
 }
-$('m-urgente').addEventListener('click',()=>setUrgente(!urgenteSel));
+/* Marcar urgente se guarda SOLO, al toque: es un aviso para Adriana y no
+   tiene por qué depender de que alguien se acuerde de apretar Guardar. */
+$('m-urgente').addEventListener('click',async()=>{
+  if(!modalProd) return;
+  const id=modalProd.id, valor=!urgenteSel;
+  setUrgente(valor);
+  modalProd.urgente=valor;
+  const p=DATA.find(d=>d.id===id); if(p) p.urgente=valor;
+  metrics(); render();
+  await saveFields(id,{urgente:valor});
+});
 
 /* ---------------- lotes de vencimiento en el modal ---------------- */
 function loteRow(cant, venc){
@@ -1214,7 +1195,6 @@ $('m-guardar').addEventListener('click',async()=>{
   // si no, el número del campo de stock se guarda tal cual (como siempre)
   if(!lotes.length){ const s=num($('m-stock')); fields.stock_actual = s==null?s:Math.max(0,s); }
   if(hasPerec) fields.perecedero=quedaPerec;
-  if(hasUrgente) fields.urgente=urgenteSel;
   if(hasVenc) fields.vencimiento = !quedaPerec ? null
     : usaLotes ? (lotes.length?lotes[0].vencimiento:null)
     : ($('m-venc-single').value || null);
@@ -1255,18 +1235,35 @@ async function guardarLotes(pid, lotes){
   }
   await loadLotes(); metrics(); render();
 }
-/* eliminar producto (se desactiva, no se borra de verdad: recuperable si hay error) */
+/* eliminar producto (se desactiva, no se borra de verdad: recuperable si hay error).
+   El producto se saca de la lista AL TOQUE, sin esperar a la base: si no, la
+   fila se quedaba en pantalla hasta que respondía Supabase. Y se recuerda el
+   id un rato en BORRADOS, porque un evento en vivo rezagado del mismo producto
+   (con activo='SÍ', enviado antes del borrado) lo volvía a insertar solo — eso
+   era lo que hacía "reaparecer" el producto un segundo después. */
+const BORRADOS=new Map();
+const recienBorrado = id => {
+  const t=BORRADOS.get(id);
+  if(t===undefined) return false;
+  if(Date.now()-t > 20000){ BORRADOS.delete(id); return false; }
+  return true;
+};
 $('m-eliminar').addEventListener('click', async()=>{
   if(!modalProd) return;
   if(!confirm(`¿Estás seguro que deseas eliminar "${modalProd.producto}"?\n\nDesaparecerá de la lista del inventario.`)) return;
-  const id=modalProd.id, nombre=modalProd.producto;
-  const btn=$('m-eliminar'); btn.disabled=true;
-  try{
-    const {error}=await conReintento(()=>sb.from('productos').update({activo:'NO',updated_at:new Date().toISOString()}).eq('id',id));
-    if(error){ alert('No se pudo eliminar. Revisa tu señal e inténtalo de nuevo.'); console.error(error); return; }
-    const idx=DATA.findIndex(d=>d.id===id); if(idx>=0)DATA.splice(idx,1);
-    closeModal(); metrics(); render();
-  } finally { btn.disabled=false; }
+  const id=modalProd.id;
+  const idx=DATA.findIndex(d=>d.id===id);
+  const copia=idx>=0?DATA[idx]:null;
+  BORRADOS.set(id, Date.now());
+  if(idx>=0) DATA.splice(idx,1);
+  closeModal(); metrics(); render();
+  const {error}=await conReintento(()=>sb.from('productos').update({activo:'NO',updated_at:new Date().toISOString()}).eq('id',id));
+  if(error){
+    // no se pudo: se devuelve a la lista para no perderlo de vista
+    BORRADOS.delete(id);
+    if(copia && !DATA.some(d=>d.id===id)){ DATA.push(copia); metrics(); render(); }
+    alert('No se pudo eliminar. Revisa tu señal e inténtalo de nuevo.'); console.error(error);
+  }
 });
 
 /* ---------------- nuevo producto ---------------- */
@@ -1290,9 +1287,15 @@ const baseNombre = s => normNombre(s).replace(/\s+(vitrina|congelador)$/,'');
 function totalProducto(nombre){
   const n = baseNombre(nombre);
   const filas = DATA.filter(d => baseNombre(d.producto) === n);
-  const rubros = new Set(filas.map(d => d.rubro || 'Sin sección'));
+  const rubros = [...new Set(filas.map(d => d.rubro || 'Sin sección'))]
+    .sort((a,b)=>a.localeCompare(b,'es'));
   const total = filas.reduce((s,d) => s + (+d.stock_actual || 0), 0);
-  return { total, multi: rubros.size > 1, secciones: rubros.size };
+  return { total, multi: rubros.length > 1, secciones: listaY(rubros) };
+}
+/* "Congelador y Vitrina" / "A, B y C" — decir DÓNDE está, no cuántas son */
+function listaY(xs){
+  if(xs.length <= 1) return xs[0] || '';
+  return xs.slice(0,-1).join(', ') + ' y ' + xs[xs.length-1];
 }
 $('n-guardar').addEventListener('click', async()=>{
   const nombre=$('n-nombre').value.replace(/\s+/g,' ').trim();
@@ -1798,6 +1801,7 @@ function subscribeRealtime(){
         return;
       }
       const row=payload.new; if(!row||!row.id||row.sede!==SEDE)return;
+      if(recienBorrado(row.id)) return;   // lo acabamos de eliminar: ningún evento lo revive
       const idx=DATA.findIndex(d=>d.id===row.id);
       if(row.activo!=='SÍ'){ if(idx>=0)DATA.splice(idx,1); }   // eliminado por otro usuario
       else if(idx>=0)DATA[idx]=row; else DATA.push(row);        // editado o agregado

@@ -205,7 +205,10 @@ stock real de las 3 sedes en tiempo real desde el teléfono.
 
 La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos nuevos.
 
-- **Color primario:** naranja Fudo `--orange:#DC4405` (botones de acción, activos).
+- **Color primario:** naranja Fudo `--orange:#DC4405`. **Se reserva para acción y
+  alerta** (botón +, urgentes, activos). Las cabeceras de sección van en **azul
+  pizarra `--sec-bg:#2F4A6D`**: en naranja competían con las alertas reales y
+  todo se leía como urgente.
 - **Fondo oscuro / topbar:** navy `--navy:#0F1E31`.
 - **Paleta completa** (ya definida en `:root` de `index.html`, NO cambiar sin permiso):
   - Naranja: `#DC4405` / `#B93A04`
@@ -436,18 +439,28 @@ el patrón a seguir:
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
 
-- **2026-07-27** — **Menos ruido en la lista + selector de color provisorio.**
-  Fuera de las cabeceras de sección: el contador de productos ("17", "9") y el
-  triangulito de desplegar — el personal ya sabe que la sección se abre al
-  tocarla. Fuera también la línea "232 de 232 productos". **El aviso de
-  críticos ("1 crít.") se mantiene**: eso no es ruido, es la alerta. La fecha
-  de la píldora pasa a año completo (`5 V 27/07/2026`); el resumen de WhatsApp
-  sigue en año corto, son dos formatos distintos a propósito.
-  **PROVISORIO:** debajo de los bloques AM/PM hay un selector con 6 colores
-  numerados para que Jhon elija el color de las cabeceras (el naranja se veía
-  demasiado urgente y competía con las alertas reales). Cuando decida, se fija
-  el color en `:root` y **se borra el bloque `COLORES_SEC` / `pintarPaleta()`
-  y el div `#paleta`** — no debe quedar en producción.
+- **2026-07-27** — **Jerarquía de color + detalles del local.**
+  Cabeceras de sección en **azul pizarra `#2F4A6D`** (Jhon eligió el color 3 de
+  un selector provisorio que ya se borró): el naranja se leía como demasiado
+  urgente y competía con las alertas. Ahora el naranja queda **solo para acción
+  y urgencia**. Un producto marcado urgente lleva píldora naranja rellena con
+  sombra y borde naranja en la fila, el mismo lenguaje del botón "+".
+  **Marcar urgente se guarda solo al tocarlo** — ya no hay que pasar por
+  "Guardar"; es un aviso para Adriana y no puede depender de que alguien se
+  acuerde. En el resumen de WhatsApp, lo que **vence hoy o ya venció lleva ⚠️**
+  pegado al nombre. La línea de producto en dos secciones dice **dónde** está
+  ("Total: 10 · Congelador y Vitrina de dulces") en vez de "2 secciones".
+  Fuera de las cabeceras: el contador de productos y el triangulito; fuera
+  también "232 de 232 productos". **El aviso "1 crít." se mantiene**: no es
+  ruido, es la alerta. La píldora de fecha pasa a año completo
+  (`5 V 27/07/2026`); el resumen de WhatsApp sigue en año corto, son dos
+  formatos distintos a propósito (`fmtPildora` y `fmtCorta`).
+  **Bug corregido:** al eliminar un producto reaparecía un instante. Eran dos
+  cosas: la fila se quitaba recién después de que respondía Supabase, y un
+  evento en vivo rezagado del mismo producto (con `activo='SÍ'`, emitido antes
+  del borrado) lo volvía a insertar. Ahora se saca al toque y `BORRADOS`
+  ignora cualquier evento de un id recién eliminado durante 20 s; si el
+  borrado falla, la fila vuelve sola.
 
 - **2026-07-27** — **Las fechas ahora viajan en vivo, y se limpió el descuadre.**
   Jhon reportó que el resumen de sándwiches traía datos erróneos. Comparado
