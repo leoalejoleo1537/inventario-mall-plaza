@@ -229,7 +229,12 @@
   /* aviso propio: el confirm del navegador se ve como un error del sistema */
   /* va por encima de cualquier otra ventana: si se pregunta desde la ficha de
      un producto, el aviso tiene que quedar ARRIBA, no detrás */
-  .overlay-blur{background:rgba(15,30,49,.42);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:56}
+  .overlay-blur{z-index:56}
+  .modal-ask.solo-aviso .ask-detalle{font-size:15.5px;color:var(--text);margin-top:0}
+  .modal-ask h2:empty{display:none}
+  /* buscador emergente (agregar algo que llegó fuera de la lista) */
+  .bus-lista{max-height:46vh;overflow-y:auto;margin-top:10px}
+  .bus-vacio{padding:16px 4px;text-align:center;color:var(--muted);font-size:14px}
   .modal-ask{max-width:340px;text-align:center}
   .modal-ask h2{margin:2px 0 0}
   .ask-detalle{font-size:14px;color:var(--muted);margin:10px 0 0;line-height:1.5}
@@ -263,7 +268,7 @@
   .pend-qty small{font-size:9px;font-weight:700;color:var(--amber-fg);opacity:.8;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
   .btn-done{background:var(--green-bg);color:var(--green-fg);border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
   /* ---------- modal (FUDO) ---------- */
-  .overlay{position:fixed;inset:0;background:rgba(10,20,35,0.55);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .overlay{position:fixed;inset:0;background:rgba(15,30,49,.42);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
   .overlay.open{display:flex}
   /* overflow-x:hidden -> la ventana no se desliza de lado (en iOS los campos de
      fecha y los desplegables se dibujan más anchos y la hacían correr) */
@@ -298,7 +303,12 @@
   /* aviso propio: el confirm del navegador se ve como un error del sistema */
   /* va por encima de cualquier otra ventana: si se pregunta desde la ficha de
      un producto, el aviso tiene que quedar ARRIBA, no detrás */
-  .overlay-blur{background:rgba(15,30,49,.42);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:56}
+  .overlay-blur{z-index:56}
+  .modal-ask.solo-aviso .ask-detalle{font-size:15.5px;color:var(--text);margin-top:0}
+  .modal-ask h2:empty{display:none}
+  /* buscador emergente (agregar algo que llegó fuera de la lista) */
+  .bus-lista{max-height:46vh;overflow-y:auto;margin-top:10px}
+  .bus-vacio{padding:16px 4px;text-align:center;color:var(--muted);font-size:14px}
   .modal-ask{max-width:340px;text-align:center}
   .modal-ask h2{margin:2px 0 0}
   .ask-detalle{font-size:14px;color:var(--muted);margin:10px 0 0;line-height:1.5}
@@ -501,6 +511,20 @@
     <div class="mbtns">
       <button class="btn btn-gris" id="ask-no">Cancelar</button>
       <button class="btn btn-orange" id="ask-ok">Sí</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= BUSCADOR EMERGENTE ================= -->
+<div class="overlay overlay-blur" id="overlay-buscar">
+  <div class="modal">
+    <h2 id="bus-titulo">Buscar producto</h2>
+    <div class="field" style="margin-top:12px">
+      <input type="text" id="bus-q" placeholder="Escribe para buscar…" autocomplete="off">
+    </div>
+    <div class="bus-lista" id="bus-lista"></div>
+    <div class="mbtns">
+      <button class="btn btn-gris btn-block" id="bus-cancelar">Cancelar</button>
     </div>
   </div>
 </div>
@@ -796,13 +820,15 @@ $('drawer').addEventListener('click',e=>{
 
 /* Pregunta de sí/no con la cara de la app. El confirm() del navegador pinta
    media pantalla de negro y se lee como si algo se hubiera roto. */
-function preguntar(titulo, detalle, textoOk){
+function preguntar(titulo, detalle, textoOk, soloAviso){
   return new Promise(resolver=>{
     const ov=$('overlay-ask'), ok=$('ask-ok'), no=$('ask-no');
-    $('ask-titulo').textContent = titulo;
+    $('ask-titulo').textContent = titulo||'';
     $('ask-detalle').textContent = detalle||'';
     $('ask-detalle').style.display = detalle ? '' : 'none';
     ok.textContent = textoOk || 'Sí';
+    no.style.display = soloAviso ? 'none' : '';
+    ov.querySelector('.modal-ask').classList.toggle('solo-aviso', !!soloAviso);
     ov.classList.add('open');
     const salir = v=>{
       ov.classList.remove('open');
@@ -816,6 +842,17 @@ function preguntar(titulo, detalle, textoOk){
     ok.addEventListener('click',siOk); no.addEventListener('click',noOk);
     ov.addEventListener('click',fuera); document.addEventListener('keydown',tecla);
   });
+}
+
+/* Un aviso que hay que cerrar, con la cara de la app. Ojo con los nombres:
+   aviso()  = el mensajito que aparece y se va solo (toast)
+   avisar() = esta ventana, que espera a que la cierren (reemplaza a alert) */
+function avisar(texto){
+  const t = String(texto||'');
+  const corte = t.indexOf('\n\n');
+  return corte > 0
+    ? preguntar(t.slice(0,corte), t.slice(corte+2), 'Entendido', true)
+    : preguntar('', t, 'Entendido', true);
 }
 
 /* ---------------- aviso transitorio ---------------- */
@@ -1076,7 +1113,7 @@ async function saveFields(id,fields){
   if(row)row.classList.remove('saving');
   if(error){
     const msg=error.code==='23514'?'El stock no puede quedar negativo.':'No se pudo guardar. La conexión falló varias veces — revisa tu señal e inténtalo de nuevo.';
-    alert(msg);console.error(error);
+    avisar(msg);console.error(error);
   }
 }
 
@@ -1328,11 +1365,11 @@ $('m-mas').addEventListener('click',()=>{const i=$('m-stock');i.value=(+i.value|
 $('m-guardar').addEventListener('click',async()=>{
   if(!modalProd)return;
   const nombre=$('m-producto').value.replace(/\s+/g,' ').trim();
-  if(!nombre){ alert('El producto necesita un nombre.'); $('m-producto').focus(); return; }
+  if(!nombre){ avisar('El producto necesita un nombre.'); $('m-producto').focus(); return; }
   const rubroNuevo=$('m-seccion').value;
   // el mismo producto puede vivir en dos secciones; el choque es dentro de una misma
   const dup=DATA.find(d=>d.id!==modalProd.id && d.rubro===rubroNuevo && normNombre(d.producto)===normNombre(nombre));
-  if(dup){ alert(`"${dup.producto}" ya existe en ${rubroNuevo}.`); return; }
+  if(dup){ avisar(`"${dup.producto}" ya existe en ${rubroNuevo}.`); return; }
   const num=el=>el.value===''?null:+el.value;
   const quedaPerec = hasPerec ? $('m-perec').checked : modalProd.rubro==='Sándwiches';
   // Solo se arma la lista de VARIAS fechas si de verdad se puede guardar
@@ -1345,12 +1382,12 @@ $('m-guardar').addEventListener('click',async()=>{
     for(const f of $('m-lotes').querySelectorAll('.lote-row')){
       const c=+f.querySelector('.lote-cant').value||0;
       const v=f.querySelector('.lote-venc').value||null;
-      if(!v){ alert('Cada fecha necesita su día. Complétala o quita esa línea.'); return; }
-      if(c<=0){ alert('Cada fecha necesita una cantidad mayor que 0.'); return; }
+      if(!v){ avisar('Cada fecha necesita su día. Complétala o quita esa línea.'); return; }
+      if(c<=0){ avisar('Cada fecha necesita una cantidad mayor que 0.'); return; }
       lotes.push({cantidad:c, vencimiento:v});
     }
     const fechas=lotes.map(l=>l.vencimiento);
-    if(new Set(fechas).size!==fechas.length){ alert('Hay una fecha repetida. Déjala en una sola línea con la cantidad total.'); return; }
+    if(new Set(fechas).size!==fechas.length){ avisar('Hay una fecha repetida. Déjala en una sola línea con la cantidad total.'); return; }
   }
 
   const fields={producto:nombre,stock_min:num($('m-min')),stock_max:num($('m-max')),rubro:rubroNuevo};
@@ -1378,20 +1415,20 @@ $('m-guardar').addEventListener('click',async()=>{
    exitoso si no se verifica. */
 async function guardarLotes(pid, lotes){
   const del=await conReintento(()=>sb.from('producto_lotes').delete().eq('producto_id',pid));
-  if(del.error){ console.error(del.error); alert('No se pudieron guardar las fechas.\n\nDetalle: '+del.error.message); return; }
+  if(del.error){ console.error(del.error); avisar('No se pudieron guardar las fechas.\n\nDetalle: '+del.error.message); return; }
   if(lotes.length){
     const ins=await conReintento(()=>sb.from('producto_lotes').insert(lotes.map(l=>({producto_id:pid, cantidad:l.cantidad, vencimiento:l.vencimiento}))));
-    if(ins.error){ console.error(ins.error); alert('No se pudieron guardar las fechas.\n\nDetalle: '+ins.error.message); return; }
+    if(ins.error){ console.error(ins.error); avisar('No se pudieron guardar las fechas.\n\nDetalle: '+ins.error.message); return; }
   }
   // Verificación: releer de la base lo que quedó para ESTE producto y
   // comparar contra lo que se intentó guardar.
   const chk=await conReintento(()=>sb.from('producto_lotes').select('cantidad,vencimiento').eq('producto_id',pid));
   if(chk.error){
-    alert('Las fechas se enviaron pero no se pudo confirmar que quedaran guardadas.\n\nDetalle: '+chk.error.message);
+    avisar('Las fechas se enviaron pero no se pudo confirmar que quedaran guardadas.\n\nDetalle: '+chk.error.message);
   } else {
     const enBase=(chk.data||[]).length;
     if(enBase!==lotes.length){
-      alert(`⚠ Algo no cuadra: se intentó guardar ${lotes.length} fecha${lotes.length===1?'':'s'} y en la base quedaron ${enBase}.\n\nRevisa este producto de nuevo — puede que otro dispositivo haya guardado al mismo tiempo, o que el guardado no se haya completado. No asumas que quedó bien.`);
+      avisar(`⚠ Algo no cuadra: se intentó guardar ${lotes.length} fecha${lotes.length===1?'':'s'} y en la base quedaron ${enBase}.\n\nRevisa este producto de nuevo — puede que otro dispositivo haya guardado al mismo tiempo, o que el guardado no se haya completado. No asumas que quedó bien.`);
     } else {
       aviso(`✓ ${lotes.length||0} fecha${lotes.length===1?'':'s'} guardada${lotes.length===1?'':'s'}`);
     }
@@ -1425,7 +1462,7 @@ $('m-eliminar').addEventListener('click', async()=>{
     // no se pudo: se devuelve a la lista para no perderlo de vista
     BORRADOS.delete(id);
     if(copia && !DATA.some(d=>d.id===id)){ DATA.push(copia); metrics(); render(); }
-    alert('No se pudo eliminar. Revisa tu señal e inténtalo de nuevo.'); console.error(error);
+    avisar('No se pudo eliminar. Revisa tu señal e inténtalo de nuevo.'); console.error(error);
   }
 });
 
@@ -1463,10 +1500,10 @@ function listaY(xs){
 $('n-guardar').addEventListener('click', async()=>{
   const nombre=$('n-nombre').value.replace(/\s+/g,' ').trim();
   const rubro=$('n-rubro').value.replace(/\s+/g,' ').trim();
-  if(!nombre){ alert('Escribe el nombre del producto.'); $('n-nombre').focus(); return; }
-  if(!rubro){ alert('Elige o escribe una sección.'); $('n-rubro').focus(); return; }
+  if(!nombre){ avisar('Escribe el nombre del producto.'); $('n-nombre').focus(); return; }
+  if(!rubro){ avisar('Elige o escribe una sección.'); $('n-rubro').focus(); return; }
   const dup=DATA.find(d=>normNombre(d.producto)===normNombre(nombre));
-  if(dup){ alert(`"${dup.producto}" ya existe en este inventario. Búscalo en la lista para editarlo.`); return; }
+  if(dup){ avisar(`"${dup.producto}" ya existe en este inventario. Búscalo en la lista para editarlo.`); return; }
   const num=el=>el.value===''?null:+el.value;
   const fila={producto:nombre, rubro, stock_actual:num($('n-stock')), stock_min:num($('n-min')), stock_max:num($('n-max')),
     activo:'SÍ', origen:'APP', notas:'', sede:SEDE};
@@ -1475,8 +1512,8 @@ $('n-guardar').addEventListener('click', async()=>{
   try{
     const {data,error}=await conReintento(()=>sb.from('productos').insert([fila]).select());
     if(error){
-      if(error.code==='42501'){ alert('Agregar productos aún no está activado en la base de datos.\nPídele a Claude el SQL para activarlo.'); }
-      else { alert('No se pudo agregar. Revisa tu señal e inténtalo de nuevo.'); }
+      if(error.code==='42501'){ avisar('Agregar productos aún no está activado en la base de datos.\nPídele a Claude el SQL para activarlo.'); }
+      else { avisar('No se pudo agregar. Revisa tu señal e inténtalo de nuevo.'); }
       console.error(error); return;
     }
     if(data && data[0]) DATA.push(data[0]);
@@ -1603,7 +1640,7 @@ async function llamarReparto(fn, args, exito){
   const {data,error} = await sb.rpc(fn, args);
   if(error){
     console.error(error);
-    alert(error.message || 'No se pudo. Revisa tu señal e inténtalo de nuevo.');
+    avisar(error.message || 'No se pudo. Revisa tu señal e inténtalo de nuevo.');
     return false;
   }
   if(exito) aviso(exito);
@@ -1654,22 +1691,59 @@ $('repartos-abiertos').addEventListener('click', async e=>{
   if(agr){ agregarAlReparto(+agr.dataset.agregar); return; }
 });
 
+/* Buscador emergente: se escribe y van saliendo los productos que coinciden.
+   Devuelve el elegido, o null si se cancela. Nada de escribir el nombre
+   completo a ciegas. */
+function elegirProducto(titulo, excluir){
+  return new Promise(resolver=>{
+    const ov=$('overlay-buscar'), q=$('bus-q'), lista=$('bus-lista');
+    const fuera = new Set(excluir||[]);
+    $('bus-titulo').textContent = titulo || 'Buscar producto';
+    q.value=''; lista.innerHTML='';
+    ov.classList.add('open');
+    setTimeout(()=>q.focus(),60);
+
+    const pintar=()=>{
+      const t = normNombre(q.value);
+      if(!t){ lista.innerHTML=''; return; }
+      const rows = DATA.filter(p=>normNombre(p.producto).includes(t) && !fuera.has(p.id)).slice(0,20);
+      lista.innerHTML = rows.length
+        ? rows.map(p=>`<div class="rep-result" data-elegir="${p.id}">
+             <div><div class="rn">${esc(p.producto)}</div><div class="rs">${esc(p.rubro)} · stock ${fmt(p.stock_actual)}</div></div>
+             <div class="add">+</div>
+           </div>`).join('')
+        : '<div class="bus-vacio">No hay ningún producto con ese nombre.</div>';
+    };
+    const salir = v=>{
+      ov.classList.remove('open');
+      q.removeEventListener('input',pintar); lista.removeEventListener('click',tocar);
+      $('bus-cancelar').removeEventListener('click',cancelar);
+      ov.removeEventListener('click',fueraDe); document.removeEventListener('keydown',tecla);
+      resolver(v);
+    };
+    const tocar=e=>{
+      const el=e.target.closest('[data-elegir]'); if(!el) return;
+      salir(DATA.find(d=>d.id===+el.dataset.elegir)||null);
+    };
+    const cancelar=()=>salir(null);
+    const fueraDe=e=>{ if(e.target===ov) salir(null); };
+    const tecla=e=>{ if(e.key==='Escape') salir(null); };
+    q.addEventListener('input',pintar); lista.addEventListener('click',tocar);
+    $('bus-cancelar').addEventListener('click',cancelar);
+    ov.addEventListener('click',fueraDe); document.addEventListener('keydown',tecla);
+  });
+}
+
 /* agregar un producto que llegó sin estar en la lista */
 async function agregarAlReparto(repartoId){
-  const nombre = prompt('¿Qué producto llegó de más?');
-  if(!nombre) return;
-  const q = normNombre(nombre);
-  const cand = DATA.filter(p=>normNombre(p.producto).includes(q));
-  if(!cand.length){ alert('No encontré ese producto en el inventario.'); return; }
-  if(cand.length>1){
-    const exacto = cand.find(p=>normNombre(p.producto)===q);
-    if(!exacto){ alert('Hay '+cand.length+' productos que coinciden. Escribe el nombre completo.'); return; }
-    cand[0]=exacto;
-  }
-  const p=cand[0];
+  const rep = REPARTOS.find(r=>r.id===repartoId);
+  const yaEstan = rep ? rep.items.map(i=>i.producto_id) : [];
+  const p = await elegirProducto('¿Qué llegó de más?', yaEstan);
+  if(!p) return;
   const {error} = await sb.from('reparto_items').insert([{reparto_id:repartoId, producto_id:p.id,
     producto:p.producto, cantidad_pedida:0, extra:true}]);
-  if(error){ alert('No se pudo agregar. Revisa tu señal.'); console.error(error); return; }
+  if(error){ avisar('No se pudo agregar. Revisa tu señal.'); console.error(error); return; }
+  aviso('✓ '+p.producto+' agregado al reparto');
   await loadRepartos();
 }
 
@@ -1713,13 +1787,13 @@ $('rec-confirmar').addEventListener('click', async()=>{
   for(const f of $('rec-lotes').querySelectorAll('.lote-row')){
     const c=+f.querySelector('.lote-cant').value||0;
     const v=f.querySelector('.lote-venc').value||null;
-    if(!v){ alert('Cada fecha necesita su día.'); return; }
-    if(c<=0){ alert('Cada fecha necesita una cantidad mayor que 0.'); return; }
+    if(!v){ avisar('Cada fecha necesita su día.'); return; }
+    if(c<=0){ avisar('Cada fecha necesita una cantidad mayor que 0.'); return; }
     lotes.push({cantidad:c, vencimiento:v});
   }
-  if(!lotes.length){ alert('Este producto lleva fecha de vencimiento: agrega al menos una.'); return; }
+  if(!lotes.length){ avisar('Este producto lleva fecha de vencimiento: agrega al menos una.'); return; }
   const fechas=lotes.map(l=>l.vencimiento);
-  if(new Set(fechas).size!==fechas.length){ alert('Hay una fecha repetida. Déjala en una sola línea con la cantidad total.'); return; }
+  if(new Set(fechas).size!==fechas.length){ avisar('Hay una fecha repetida. Déjala en una sola línea con la cantidad total.'); return; }
   const btn=$('rec-confirmar'); btn.disabled=true;
   const id=recItemId;
   cerrarRecibir();
@@ -1811,20 +1885,20 @@ $('carrito-list').addEventListener('click', e=>{
 /* Enviar NO toca el stock: solo deja la lista esperando a que el local confirme */
 $('btnRegistrarReparto').addEventListener('click', async()=>{
   const items = carrito.filter(c=>c.cantidad>0);
-  if(!items.length){ alert('Agrega una cantidad mayor a 0.'); return; }
+  if(!items.length){ avisar('Agrega una cantidad mayor a 0.'); return; }
   const btn=$('btnRegistrarReparto'); btn.disabled=true; btn.textContent='Enviando…';
   try{
     const {data,error} = await conReintento(()=>sb.from('repartos')
       .insert([{sede:SEDE, creado_por:NOMBRE}]).select());
     if(error||!data||!data[0]){
-      alert('No se pudo enviar el reparto. Revisa tu señal e inténtalo de nuevo.'); console.error(error); return;
+      avisar('No se pudo enviar el reparto. Revisa tu señal e inténtalo de nuevo.'); console.error(error); return;
     }
     const rid=data[0].id;
     const {error:e2} = await conReintento(()=>sb.from('reparto_items').insert(
       items.map(c=>({reparto_id:rid, producto_id:c.id, producto:c.producto, cantidad_pedida:c.cantidad}))));
     if(e2){
       await sb.from('repartos').delete().eq('id',rid);   // no dejar un reparto vacío dando vueltas
-      alert('No se pudo enviar el reparto. Revisa tu señal e inténtalo de nuevo.'); console.error(e2); return;
+      avisar('No se pudo enviar el reparto. Revisa tu señal e inténtalo de nuevo.'); console.error(e2); return;
     }
     carrito=[]; renderCarrito(); renderRepartoResults(); rqEl.value='';
     cajasAbiertas.delete('armar'); $('body-armar').style.display='none';
@@ -1856,7 +1930,7 @@ $('pend-list').addEventListener('click', async e=>{
   const id=+btn.dataset.done;
   btn.disabled=true; btn.textContent='…';
   const {error}=await conReintento(()=>sb.from('fudo_pendientes').delete().eq('id',id));
-  if(error){ alert('No se pudo marcar. Revisa tu señal e inténtalo de nuevo.'); btn.disabled=false; btn.textContent='Ya actualicé'; return; }
+  if(error){ avisar('No se pudo marcar. Revisa tu señal e inténtalo de nuevo.'); btn.disabled=false; btn.textContent='Ya actualicé'; return; }
   refreshPendientes();
 });
 
@@ -1984,7 +2058,7 @@ function openReceta(id){
 }
 function closeRecetaModal(){ $('overlay-receta').classList.remove('open'); recEditId=null; }
 $('btnNuevaReceta').addEventListener('click',()=>{
-  if(!FUDOPROD.length){ alert('Aún no hay productos de Fudo traídos para esta sede.'); return; }
+  if(!FUDOPROD.length){ avisar('Aún no hay productos de Fudo traídos para esta sede.'); return; }
   openReceta(null);
 });
 $('rec-cancelar').addEventListener('click',closeRecetaModal);
@@ -2070,7 +2144,7 @@ async function actualizarTodo(){
 $('btnActualizar').addEventListener('click', actualizarTodo);
 $('rec-guardar').addEventListener('click', async()=>{
   const fpid=$('rec-fudo')._getValue();
-  if(!fpid){ alert('Elige el producto de Fudo.'); return; }
+  if(!fpid){ avisar('Elige el producto de Fudo.'); return; }
   const fp=FUDOPROD.find(p=>p.fudo_product_id===fpid);
   const nombre=fp?fp.nombre:'';
   const items=[];
@@ -2079,13 +2153,13 @@ $('rec-guardar').addEventListener('click', async()=>{
     if(!pid) continue;
     const cv=row.querySelector('.rec-ins-cant').value;
     const cant = cv===''?null:+cv;
-    if(cant==null || cant<=0){ alert('Cada insumo debe tener una cantidad mayor que 0.'); return; }
+    if(cant==null || cant<=0){ avisar('Cada insumo debe tener una cantidad mayor que 0.'); return; }
     const apl=(row.querySelector('.rec-ins-aplica')||{}).value||'siempre';
     items.push({producto_id:pid, cantidad:cant, aplica:apl});
   }
-  if(!items.length){ alert('Agrega al menos un insumo.'); return; }
+  if(!items.length){ avisar('Agrega al menos un insumo.'); return; }
   const idset=items.map(i=>i.producto_id);
-  if(new Set(idset).size!==idset.length){ alert('Hay un insumo repetido. Déjalo en una sola línea con la cantidad total.'); return; }
+  if(new Set(idset).size!==idset.length){ avisar('Hay un insumo repetido. Déjalo en una sola línea con la cantidad total.'); return; }
 
   const btn=$('rec-guardar'); btn.disabled=true; btn.textContent='Guardando…';
   try{
@@ -2107,7 +2181,7 @@ $('rec-guardar').addEventListener('click', async()=>{
     closeRecetaModal(); await loadRecetas();
   }catch(e){
     const detalle = e?.message || e?.error_description || e?.hint || e?.details || (typeof e==='string'?e:JSON.stringify(e));
-    alert('No se pudo guardar la receta.\n\nDetalle: '+detalle);
+    avisar('No se pudo guardar la receta.\n\nDetalle: '+detalle);
     console.error(e);
   }
   finally{ btn.disabled=false; btn.textContent='Guardar'; }
@@ -2118,7 +2192,7 @@ $('rec-eliminar').addEventListener('click', async()=>{
   const btn=$('rec-eliminar'); btn.disabled=true;
   const {error}=await conReintento(()=>sb.from('recetas').delete().eq('id',recEditId));
   btn.disabled=false;
-  if(error){ alert('No se pudo eliminar. Revisa tu señal e inténtalo de nuevo.'); return; }
+  if(error){ avisar('No se pudo eliminar. Revisa tu señal e inténtalo de nuevo.'); return; }
   closeRecetaModal(); loadRecetas();
 });
 
@@ -2147,7 +2221,7 @@ let histRows=[], histFecha='';
 async function openHistDetail(fecha){
   histFecha=fecha;
   const {data,error}=await sb.from('historial').select('*').eq('sede',SEDE).eq('fecha',fecha).order('producto');
-  if(error){alert('No se pudo cargar ese día.');return;}
+  if(error){avisar('No se pudo cargar ese día.');return;}
   histRows=data;
   $('hist-home').style.display='none'; $('hist-detail').style.display='block';
   $('hist-title').textContent='Inventario del '+fmtFecha(fecha);
@@ -2181,18 +2255,18 @@ $('btnGuardarHoy').addEventListener('click',async()=>{
   const btn=$('btnGuardarHoy'); btn.disabled=true; btn.textContent='Guardando…';
   try{
     const {data:ex,error:e1}=await conReintento(()=>sb.from('historial').select('id').eq('sede',SEDE).eq('fecha',fecha).limit(1));
-    if(e1){alert('No se pudo conectar con la base para guardar. Revisa tu señal e inténtalo de nuevo.');console.error(e1);return;}
+    if(e1){avisar('No se pudo conectar con la base para guardar. Revisa tu señal e inténtalo de nuevo.');console.error(e1);return;}
     if(ex.length && !await preguntar('Ya guardaste el inventario de hoy','¿Lo reemplazamos con los valores actuales?','Reemplazar')) return;
     if(ex.length){
       const {error:ed}=await conReintento(()=>sb.from('historial').delete().eq('sede',SEDE).eq('fecha',fecha));
-      if(ed){alert('No se pudo actualizar el guardado de hoy (conexión). Inténtalo de nuevo.');console.error(ed);return;}
+      if(ed){avisar('No se pudo actualizar el guardado de hoy (conexión). Inténtalo de nuevo.');console.error(ed);return;}
     }
     const rows=DATA.map(p=>({fecha,sede:SEDE,producto_id:p.id,producto:p.producto,rubro:p.rubro,
       stock_actual:p.stock_actual,stock_min:p.stock_min,stock_max:p.stock_max,
       vencimiento:(hasVenc?p.vencimiento:null)??null}));
     const {error:e2}=await conReintento(()=>sb.from('historial').insert(rows));
-    if(e2){alert('No se pudo guardar el historial. La conexión falló — revisa tu señal e inténtalo otra vez.');console.error(e2);return;}
-    alert('✓ Inventario del '+fmtFecha(fecha)+' guardado ('+rows.length+' productos).');
+    if(e2){avisar('No se pudo guardar el historial. La conexión falló — revisa tu señal e inténtalo otra vez.');console.error(e2);return;}
+    avisar('✓ Inventario del '+fmtFecha(fecha)+' guardado ('+rows.length+' productos).');
     loadHistorial();
   } finally { btn.disabled=false; btn.textContent='Guardar inventario de hoy'; }
 });

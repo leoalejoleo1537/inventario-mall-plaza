@@ -572,14 +572,22 @@ el patrón a seguir:
   Probado en navegador con Supabase simulado: 47 comprobaciones, incluido que
   si el SQL de urgentes no se corre la pantalla queda idéntica a hoy.
 
-- **2026-07-27** — **Los avisos de sí/no dejan de ser los del navegador.**
-  `confirm()` pintaba media pantalla de negro y se leía como si algo se hubiera
-  roto. Ahora hay un aviso propio (`preguntar()`, devuelve una promesa y se usa
-  con `await` igual que `confirm`): fondo desenfocado, confirmar en naranja y
-  cancelar en gris. Se usa en cerrar reparto, eliminar producto, eliminar
-  receta y reemplazar el guardado del día. **Va en z-index 56**, por encima de
-  las demás ventanas: preguntado desde la ficha de un producto quedaba detrás
-  y no se podía tocar.
+- **2026-07-27** — **Se acabaron las ventanas del navegador.** No queda ni un
+  `alert`, `confirm` ni `prompt` en la app: todos pintaban media pantalla de
+  negro y se leían como si algo se hubiera roto. Tres helpers, con el mismo
+  fondo desenfocado y la paleta de la casa:
+  - `aviso(txt)` — el mensajito que aparece abajo y se va solo (toast). Ya existía.
+  - `avisar(txt)` — ventana que hay que cerrar. **Reemplaza a `alert`** en los
+    40 sitios donde estaba; se llama igual, así que el código no cambió de forma.
+  - `preguntar(titulo, detalle, textoOk)` — sí/no, devuelve promesa y se usa con
+    `await` igual que `confirm`. Confirmar en naranja, cancelar en gris.
+  - `elegirProducto(titulo, excluir)` — buscador emergente que devuelve el
+    producto elegido. **Reemplaza al `prompt`** de "llegó algo que no estaba en
+    la lista": antes había que escribir el nombre completo a ciegas.
+  Las ventanas de aviso van en **z-index 56**, por encima de las demás:
+  preguntado desde la ficha de un producto quedaba detrás y no se podía tocar.
+  El desenfoque se aplicó a `.overlay`, así que TODAS las ventanas de la app
+  (ficha, nuevo producto, receta, fechas del reparto) lo llevan.
 
 - **2026-07-27** — **Tope en 0 sin excepción, para todos los productos.**
   Jhon aclaró que la regla del cambio anterior (mismo día) se quedaba corta:

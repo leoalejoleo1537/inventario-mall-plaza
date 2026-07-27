@@ -274,7 +274,11 @@ begin
   select count(*) into v_pend from public.reparto_items
    where reparto_id = p_reparto_id and estado = 'pendiente';
   if v_pend > 0 then
-    raise exception 'Faltan % producto(s) por confirmar o rechazar.', v_pend;
+    if v_pend = 1 then
+      raise exception 'Todavía queda 1 producto sin confirmar.';
+    else
+      raise exception 'Todavía quedan % productos sin confirmar.', v_pend;
+    end if;
   end if;
 
   update public.repartos set estado='cerrado', cerrado_por=p_quien, cerrado_at=now()
