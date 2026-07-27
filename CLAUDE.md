@@ -129,19 +129,55 @@
 > vencimiento de ese pancito. Esto es extremadamente delicado."
 
 - **En la lista del inventario, un producto perecedero muestra una píldora por
-  CADA fecha de vencimiento**, con su cantidad y el día exacto ("5 vencen HOY
-  27/07/26", "6 vencen 29/07/26"). Nunca se resume, nunca se esconde detrás de
-  un "+N fechas" ni de un "ver más" — eso fue justamente lo que hubo que
-  corregir. Si hay 4 fechas, se ven las 4 sin abrir la ficha ni tocar nada.
-- **El día exacto va en todas las píldoras, incluso en "hoy" y "mañana".** El
-  personal necesita leer la fecha tal cual está impresa en el envase, sin
-  tener que traducir mentalmente el "mañana".
-- **El formato de la píldora es el mismo del resumen de WhatsApp** (`27/07/26`):
-  lo que se lee en pantalla tiene que ser idéntico a lo que le llega a Adriana,
-  para que nadie tenga que comparar dos formatos distintos.
+  CADA fecha de vencimiento**, con su cantidad y el día exacto. Nunca se
+  resume, nunca se esconde detrás de un "+N fechas" ni de un "ver más" — eso
+  fue justamente lo que hubo que corregir. Si hay 4 fechas, se ven las 4 sin
+  abrir la ficha ni tocar nada.
+- **Formato de la píldora: `cantidad V fecha`** → `5 V 27/07/26`. La urgencia
+  la lleva el COLOR, no la palabra (rojo relleno = VENCIDO, rojo claro = vence
+  hoy, ámbar = mañana, gris = más adelante). Se llegó a esto porque
+  "5 vencen mañana 28/07/26" no cabía y el texto se encimaba. **Vencido y
+  "vence hoy" tienen que seguir distinguiéndose de un vistazo** — uno se bota
+  y el otro se vende; por eso vencido es rojo relleno y no comparte estilo.
+- **La fecha va en formato corto (`27/07/26`), igual que el resumen de
+  WhatsApp**: lo que se lee en pantalla tiene que ser idéntico a lo que le
+  llega a Adriana.
 - Si un cambio futuro necesita acortar, agrupar o esconder fechas por razones
   de espacio, **se pregunta a Jhon primero**. Ahorrar dos líneas de pantalla no
   justifica que una fecha deje de verse.
+
+### 0.3.1 Quién manda cuando el stock y las fechas no cuadran
+
+> Jhon, 2026-07-27: "la mejor opción es siempre creerle al stock cero. Si está
+> en stock cero, la fecha sobra. Ahora, hay que tener mucho cuidado, porque
+> cuando tú agregas fechas a un sandwichito son las fechas las que dicen qué
+> cantidad hay."
+
+**La invariante:** en un producto con fechas, `stock_actual` = suma de las
+cantidades de sus lotes (lo mantiene el trigger `sync_stock_desde_lotes`). Si
+alguna vez no cuadra, hay un problema — no es un caso normal.
+
+Las dos direcciones NO son simétricas, y confundirlas rompe el inventario:
+
+| Situación | Quién manda |
+|---|---|
+| Alguien **agrega/edita fechas** en la ficha | **Las fechas.** El stock se calcula sumándolas; el campo de stock queda de solo lectura. Esto no se toca. |
+| El producto quedó en **stock 0** y le sobran fechas | **El stock.** Las fechas se borran (no hay unidades que puedan vencer). |
+
+- Una **fecha con cantidad 0 no es una fecha**: no se muestra en la lista, no
+  se copia en el resumen y se borra de la base. Son filas que quedan vacías al
+  descontar.
+- Limpieza de descuadres:
+  `sql/2026-07-fechas-en-vivo-y-limpieza.sql` (respalda antes de borrar).
+- **`producto_lotes` tiene que estar en la publicación `supabase_realtime`.**
+  No lo estaba, y esa fue la causa de un susto real: al vender, el teléfono
+  recibía el stock nuevo pero seguía mostrando las fechas viejas, así que se
+  veía "Champiñón 0" junto a "1 vence hoy" y el resumen a Adriana salía con
+  cantidades que ya no existían. Si se crea otra tabla que la app lea en vivo,
+  hay que acordarse de publicarla.
+- **Antes de tocar cualquier cosa de sándwiches/fechas: verificar con un
+  SELECT y preguntar.** Es el punto más delicado de la cafetería; un número
+  equivocado acá manda a botar comida buena o a vender comida vencida.
 
 ---
 
@@ -398,6 +434,26 @@ el patrón a seguir:
 ---
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-27** — **Las fechas ahora viajan en vivo, y se limpió el descuadre.**
+  Jhon reportó que el resumen de sándwiches traía datos erróneos. Comparado
+  contra su foto, el texto copiado era **idéntico** a la pantalla: el resumen
+  estaba bien, los datos no. Causa raíz encontrada con el diagnóstico:
+  **`producto_lotes` no estaba en la publicación `supabase_realtime`** (sí
+  `productos`). Al vender, el teléfono recibía el stock nuevo pero conservaba
+  las fechas viejas — por eso "Champiñón 0" aparecía con "1 vence hoy" y el
+  resumen a Adriana anunciaba unidades inexistentes. SQL en
+  `sql/2026-07-fechas-en-vivo-y-limpieza.sql`: publica la tabla y borra las
+  fechas que no representan unidades reales (cantidad 0, o de productos en
+  stock 0), con respaldo previo en `producto_lotes_respaldo_20260727` y vista
+  previa antes de tocar nada. Jerarquía que fijó Jhon, ahora en la sección
+  0.3.1: **si el stock está en 0 manda el stock y la fecha sobra; pero cuando
+  se AGREGAN fechas mandan las fechas** (verificado contra Postgres local: tras
+  limpiar, agregar una fecha nueva vuelve a fijar el stock desde las fechas).
+  Además, la píldora pasa a `cantidad V fecha` (`5 V 27/07/26`) porque
+  "5 vencen mañana 28/07/26" no cabía y se encimaba; la urgencia la lleva el
+  color, y **vencido pasa a rojo relleno** para no confundirse con "vence hoy".
+  Congelador se mueve al turno **AM**.
 
 - **2026-07-27** — **Cuatro cambios pedidos desde el local:**
   1. **Inicio limpia la pantalla.** Tocar el ícono de casa borra la búsqueda,

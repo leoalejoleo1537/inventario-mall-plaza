@@ -189,6 +189,9 @@
   .venc{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:600;background:var(--gray-bg);color:var(--gray-fg);margin-right:4px;display:inline-block}
   .venc.rojo{background:var(--red-bg);color:var(--red-fg)}
   .venc.ambar{background:var(--amber-bg);color:var(--amber-fg)}
+  /* vencido: rojo relleno. Se distingue de "vence hoy" de un vistazo — uno se
+     bota y el otro se vende, y no se puede depender de leer la fecha. */
+  .venc.vencido{background:var(--red-fg);color:#fff}
   /* TODAS las fechas de un producto, en su propia línea: en los sándwiches hay
      que ver de un vistazo cuántos vencen y cuándo, sin abrir la ficha */
   .vencs{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
@@ -607,17 +610,18 @@ let hasLotes = false;   // true cuando la tabla producto_lotes existe en la base
 const lotesDe = pid => (LOTES[pid]||[]).filter(l=>(+l.cantidad||0) > 0).slice()
   .sort((a,b)=>String(a.vencimiento||'9999').localeCompare(String(b.vencimiento||'9999')));
 
-/* etiqueta de una fecha: VENCIDO / hoy / mañana + SIEMPRE el día exacto.
-   El día va en todas, incluso en "hoy" y "mañana": las jefas necesitan poder
-   leer la fecha tal cual, sin traducir mentalmente el "mañana". */
-function etiquetaVenc(iso, cant=1){
+/* La píldora dice lo mínimo: "5 V 26/07/26". La urgencia la lleva el COLOR,
+   no la palabra — con "5 vencen mañana 28/07/26" el texto no cabía y se
+   encimaba, que es justo lo que no puede pasar en los sándwiches.
+     rojo relleno = VENCIDO      rojo claro = vence hoy
+     ámbar        = vence mañana gris       = más adelante            */
+function etiquetaVenc(iso){
   const dias = Math.round((new Date(iso+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
-  const v = (+cant||0) === 1 ? 'vence' : 'vencen';
   const f = fmtCorta(iso);
-  if (dias < 0)   return {cls:'venc rojo',  txt:`VENCIDO ${f}`};
-  if (dias === 0) return {cls:'venc rojo',  txt:`${v} HOY ${f}`};
-  if (dias === 1) return {cls:'venc ambar', txt:`${v} mañana ${f}`};
-  return {cls:'venc', txt:`${v} ${f}`};
+  if (dias < 0)   return {cls:'venc vencido', txt:f};
+  if (dias === 0) return {cls:'venc rojo',    txt:f};
+  if (dias === 1) return {cls:'venc ambar',   txt:f};
+  return {cls:'venc', txt:f};
 }
 
 /* TODAS las fechas del producto, cada una con su cantidad, en su propia línea.
@@ -629,16 +633,15 @@ function vencsHTML(p){
   const ls = lotesDe(p.id).filter(l=>l.vencimiento);
   if (ls.length){
     const chips = ls.map(l=>{
-      const cant = (+l.cantidad||0);
-      const e = etiquetaVenc(l.vencimiento, cant);
-      return `<span class="${e.cls}">${fmt(cant)} ${e.txt}</span>`;
+      const e = etiquetaVenc(l.vencimiento);
+      return `<span class="${e.cls}">${fmt(+l.cantidad||0)} V ${e.txt}</span>`;
     }).join('');
     return `<div class="vencs">${chips}</div>`;
   }
   // sin lotes todavía: se respeta la fecha única de antes
   if (!hasVenc || !p.vencimiento) return '';
   const e = etiquetaVenc(p.vencimiento);
-  return `<div class="vencs"><span class="${e.cls}">${e.txt}</span></div>`;
+  return `<div class="vencs"><span class="${e.cls}">V ${e.txt}</span></div>`;
 }
 
 /* ---------------- saludo según la hora ---------------- */
@@ -789,7 +792,7 @@ const SEC_ORDEN=['Vitrina de tortas','Limpieza','Sándwiches','Mesones','Congela
 /* El inventario se cuenta en dos rondas: estas secciones las cuenta el turno
    de la mañana, el resto el de la tarde. Para mover una sección de turno,
    basta sacarla o agregarla a esta lista. */
-const SEC_AM=['Limpieza','Mesones','Té','Mueble de mezclas','Mueble de bolsas','Mueble de caja'];
+const SEC_AM=['Limpieza','Mesones','Té','Congelador','Mueble de mezclas','Mueble de bolsas','Mueble de caja'];
 const esAM = sec => SEC_AM.some(s=>normNombre(s)===normNombre(sec));
 /* La sección de sándwiches lleva el botón de copiar resumen para Adriana */
 const esSandwiches = sec => normNombre(sec).startsWith('sandwich');
