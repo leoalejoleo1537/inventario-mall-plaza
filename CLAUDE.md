@@ -552,6 +552,31 @@ el patrón a seguir:
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-27** — **La pantalla de Reparto, reordenada por importancia.**
+  Jhon pidió primero una propuesta estética y solo después construirla. Lo que
+  quedó:
+  1. **"Armar pedido, <nombre>" va arriba y siempre abierto**, con el buscador
+     a la vista. Adriana manda ~3 repartos al día: abrir un desplegable cada
+     vez era un toque de más en la acción más frecuente de la pantalla. Por lo
+     mismo **ya no se cierra al enviar** — lo normal es armar el siguiente.
+  2. **El símbolo es el "+" naranja relleno del botón flotante** (`.mas-fab`),
+     no un ícono de línea: Jhon lo eligió porque es el que ya significa "crear"
+     en el resto de la app y llama más la atención.
+  3. **Los repartos por confirmar van bajo un rótulo "POR CONFIRMAR"**, con el
+     mismo fondo gris de los turnos AM/PM. Es la única parte de la pantalla que
+     pide una acción del jefe de turno; el rótulo desaparece cuando no queda
+     ninguno.
+  4. **Los repartos cerrados se despliegan.** Antes solo se veía el encabezado.
+     Ahora cada uno abre y muestra línea por línea qué llegó y con cuánto, lo
+     que no llegó en rojo, y el botón para volver a copiar el resumen. Arranca
+     plegado: es historial, no lo del día.
+  5. **Marca "NUEVO" en la pestaña Reparto**, para que el equipo entre a ver la
+     pantalla nueva. **Se apaga sola** en `FIN_NUEVO` (2026-08-03) — no depende
+     de que alguien se acuerde de sacarla.
+  La consulta de cerrados va **con `order` + `limit(20)`**, aplicando la
+  lección del historial: un `select` sin tope se trunca en 1000 filas sin
+  avisar. 105 comprobaciones de la pantalla de reparto, 113 del inventario.
+
 - **2026-07-27** — **El historial mostraba días viejos.** Jhon guardó el
   inventario del 26 y la lista le ofrecía el 13/07, con cantidades que no
   cuadraban (9 tortas donde había 14). El guardado siempre estuvo bien: lo

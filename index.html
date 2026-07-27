@@ -241,6 +241,15 @@
   .btn-gris:active{background:#E1E3E6}
   .sec-ico{display:flex;align-items:center;gap:9px;min-width:0}
   .sec-ico svg{width:19px;height:19px;flex-shrink:0}
+  /* el "+" de la cabecera de Armar: mismo lenguaje que el botón flotante,
+     para que se lea como "acá se crea algo" y no como un rótulo más */
+  .mas-fab{width:26px;height:26px;flex-shrink:0;border-radius:50%;background:var(--orange);color:#fff;
+           font-size:21px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;
+           box-shadow:0 2px 8px rgba(220,68,5,.55)}
+  .sec-fija{cursor:default}
+  .tab-nuevo{background:var(--orange);color:#fff;border-radius:999px;padding:1px 7px;
+             font-size:9.5px;font-weight:800;letter-spacing:.4px;margin-left:5px;vertical-align:middle}
+  .tab.active .tab-nuevo{background:#fff;color:var(--orange)}
   /* ---------- reparto ---------- */
   .rep-result{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:6px;cursor:pointer}
   .rep-result:hover{border-color:var(--orange);background:#FFF7F3}
@@ -329,6 +338,15 @@
   .btn-gris:active{background:#E1E3E6}
   .sec-ico{display:flex;align-items:center;gap:9px;min-width:0}
   .sec-ico svg{width:19px;height:19px;flex-shrink:0}
+  /* el "+" de la cabecera de Armar: mismo lenguaje que el botón flotante,
+     para que se lea como "acá se crea algo" y no como un rótulo más */
+  .mas-fab{width:26px;height:26px;flex-shrink:0;border-radius:50%;background:var(--orange);color:#fff;
+           font-size:21px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;
+           box-shadow:0 2px 8px rgba(220,68,5,.55)}
+  .sec-fija{cursor:default}
+  .tab-nuevo{background:var(--orange);color:#fff;border-radius:999px;padding:1px 7px;
+             font-size:9.5px;font-weight:800;letter-spacing:.4px;margin-left:5px;vertical-align:middle}
+  .tab.active .tab-nuevo{background:#fff;color:var(--orange)}
   /* ---------- reparto ---------- */
   .rep-fila{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 12px;
             margin-bottom:8px;display:flex;flex-direction:column;gap:9px;box-shadow:0 1px 2px rgba(15,30,49,.04)}
@@ -356,6 +374,21 @@
             border-radius:10px;padding:11px 13px;font-size:14px;font-weight:700;margin-top:12px}
   .suma-rec b{font-size:19px;font-variant-numeric:tabular-nums}
   .rep-sub{font-size:12px;color:var(--muted);margin:-2px 2px 8px}
+  /* repartos cerrados: cada uno se abre y muestra qué llegó */
+  .cerr{margin-bottom:6px}
+  .cerr-cab{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;
+            background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;
+            cursor:pointer;text-align:left;font-family:inherit}
+  .cerr.open .cerr-cab{border-radius:10px 10px 0 0;border-bottom-color:transparent}
+  .cerr-nom{font-size:14px;font-weight:700;color:var(--text)}
+  .cerr-res{font-size:12px;color:var(--muted)}
+  .cerr-body{border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;
+             background:var(--bg);padding:6px 10px 8px}
+  .cerr-lin{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;padding:5px 2px;
+            border-bottom:1px solid var(--border)}
+  .cerr-lin:last-of-type{border-bottom:none}
+  .cerr-lin b{font-variant-numeric:tabular-nums;flex-shrink:0}
+  .cerr-lin.falta{color:var(--red-fg)}
   footer{text-align:center;padding:20px;font-size:11px;color:var(--muted)}
   ::placeholder{color:#9aa3ad}
 </style>
@@ -407,7 +440,7 @@
     <button class="tab tab-icon active" data-tab="inv" aria-label="Inventario" title="Inventario">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v9a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1v-9"></path></svg>
     </button>
-    <button class="tab" data-tab="reparto">Reparto <span class="tab-badge" id="repBadge" style="display:none"></span></button>
+    <button class="tab" data-tab="reparto">Reparto <span class="tab-nuevo" id="tabNuevo" style="display:none">NUEVO</span><span class="tab-badge" id="repBadge" style="display:none"></span></button>
     <button class="tab" data-tab="hist">Historial</button>
     <button class="tab" data-tab="recetas">Recetas</button>
   </div>
@@ -475,17 +508,14 @@
 <!-- ================= REPARTO ================= -->
 <div class="wrap" id="view-reparto" style="display:none">
 
-  <!-- lo que llegó hoy y hay que confirmar -->
-  <div id="repartos-abiertos"></div>
-
-  <!-- armar un envío (la herramienta de Adriana) -->
-  <div class="sec" id="sec-armar">
+  <!-- armar un envío: arriba del todo y siempre abierto -->
+  <div class="sec open" id="sec-armar">
     <div class="sec-head">
-      <button type="button" class="sec-btn" data-caja="armar">
-        <span class="sec-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg><span id="armar-titulo">Armar pedido</span></span>
-      </button>
+      <div class="sec-btn sec-fija">
+        <span class="sec-ico"><span class="mas-fab" aria-hidden="true">+</span><span id="armar-titulo">Armar pedido</span></span>
+      </div>
     </div>
-    <div class="sec-body" id="body-armar" style="display:none">
+    <div class="sec-body" id="body-armar">
       <div class="controls busca" data-busca="reparto" style="margin-bottom:8px;margin-top:2px">
         <input type="text" id="rq" placeholder="Buscar producto…">
       </div>
@@ -497,6 +527,9 @@
       </div>
     </div>
   </div>
+
+  <!-- lo que llegó hoy y hay que confirmar -->
+  <div id="repartos-abiertos"></div>
 
   <!-- repartos ya cerrados -->
   <div class="sec" id="sec-cerrados" style="display:none">
@@ -772,6 +805,15 @@ const fmtFecha = iso => { const [y,m,d]=iso.split('-'); return `${d}-${m}-${y}`;
 const fmtPildora = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
 const fmtCorta   = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
 
+/* La marca NUEVO de la pestaña Reparto es un aviso, no un adorno: sirve para
+   que el equipo entre a ver la pantalla nueva. Se apaga sola en esta fecha
+   (una semana), así nadie tiene que acordarse de sacarla. */
+const FIN_NUEVO = '2026-08-03';
+function marcarNuevo(){
+  const b = $('tabNuevo');
+  if(b) b.style.display = hoyISO() < FIN_NUEVO ? 'inline-block' : 'none';
+}
+
 /* lotes de vencimiento por producto: { producto_id: [{id,cantidad,vencimiento}] } */
 let LOTES = {};
 let hasLotes = false;   // true cuando la tabla producto_lotes existe en la base
@@ -927,8 +969,9 @@ function pickSede(s){
   $('liveText').textContent='conectando…'; $('live').classList.remove('off');
   $('armar-titulo').textContent = 'Armar pedido' + (NOMBRE ? ', '+NOMBRE : '');
   REPARTOS=[]; cajasAbiertas.clear(); setModoEdicion(false);
-  $('body-armar').style.display='none'; $('body-cerrados').style.display='none'; $('body-fudo').style.display='none';
+  $('body-cerrados').style.display='none'; $('body-fudo').style.display='none';
   $('repartos-abiertos').innerHTML='';
+  marcarNuevo();
   loadData();
   loadRepartos();
   subscribeRealtime();
@@ -1575,12 +1618,19 @@ let REPARTOS = [];        // {..., items:[...]}
 let hasRepartos = false;  // false mientras no se corra el SQL
 const cajasAbiertas = new Set();
 
+/* Los abiertos se traen todos (son pocos y ninguno puede quedar escondido);
+   los cerrados, solo los últimos 20. Una lista sin tope se corta sola al
+   llegar al límite de la base y esconde justo lo reciente — la lección del
+   historial (2026-07-27). */
 async function loadRepartos(){
   if(!SEDE) return;
-  const rp = await sb.from('repartos').select('*').eq('sede',SEDE).order('created_at',{ascending:false});
-  if(rp.error){ hasRepartos=false; renderRepartos(); return; }
+  const ab = await sb.from('repartos').select('*').eq('sede',SEDE).eq('estado','abierto')
+    .order('created_at',{ascending:false});
+  if(ab.error){ hasRepartos=false; renderRepartos(); return; }
+  const ce = await sb.from('repartos').select('*').eq('sede',SEDE).eq('estado','cerrado')
+    .order('created_at',{ascending:false}).limit(20);
   hasRepartos=true;
-  const reps = rp.data||[];
+  const reps = (ab.data||[]).concat(ce.data||[]);
   const ids = reps.map(r=>r.id);
   let items=[];
   if(ids.length){
@@ -1623,7 +1673,7 @@ function renderRepartos(){
   const abiertos = REPARTOS.filter(r=>r.estado==='abierto');
   const cerrados = REPARTOS.filter(r=>r.estado==='cerrado');
 
-  cont.innerHTML = abiertos.map(r=>{
+  const htmlAbiertos = abiertos.map(r=>{
     const hechos = r.items.filter(i=>i.estado!=='pendiente').length;
     const abierta = cajasAbiertas.has('rep'+r.id) || abiertos.length===1;
     return `<div class="sec${abierta?' open':''}" data-repsec="${r.id}">
@@ -1641,18 +1691,32 @@ function renderRepartos(){
       </div>`:''}
     </div>`;
   }).join('');
+  // una etiqueta sobre los repartos del día: sin ella, dos bloques azules
+  // seguidos (armar y por confirmar) se confunden entre sí
+  cont.innerHTML = htmlAbiertos
+    ? `<div class="turno"><div class="turno-lbl">POR CONFIRMAR</div>${htmlAbiertos}</div>` : '';
 
+  // Los cerrados se abren y muestran qué llegó: es el historial que le
+  // interesa a jefatura, no solo cuántos hubo.
   $('sec-cerrados').style.display = cerrados.length ? '' : 'none';
   $('cerrados-n').textContent = cerrados.length;
   $('body-cerrados').innerHTML = cerrados.map(r=>{
-    const ok = r.items.filter(i=>i.estado==='recibido').length;
-    const no = r.items.filter(i=>i.estado==='no_llego').length;
-    return `<div class="rep-fila">
-      <div class="lin1">
-        <span class="nm">${r.creado_por?esc(r.creado_por):'Reparto'}</span>
-        <span class="ped">${new Date(r.created_at).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'})}</span>
-      </div>
-      <div class="rep-sub" style="margin:0">${ok} recibidos${no?' · '+no+' no llegaron':''}</div>
+    const rec = r.items.filter(i=>i.estado==='recibido');
+    const no  = r.items.filter(i=>i.estado==='no_llego');
+    const abierta = cajasAbiertas.has('cerr'+r.id);
+    const dia = new Date(r.created_at).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'});
+    return `<div class="cerr${abierta?' open':''}" data-cerr="${r.id}">
+      <button type="button" class="cerr-cab" data-caja="cerr${r.id}">
+        <span class="cerr-nom">${r.creado_por?esc(r.creado_por)+' · ':''}${dia}</span>
+        <span class="cerr-res">${rec.length} recibido${rec.length===1?'':'s'}${no.length?' · '+no.length+' no llegó'+(no.length===1?'':'aron'):''}</span>
+      </button>
+      ${abierta?`<div class="cerr-body">
+        ${r.items.map(i=>`<div class="cerr-lin${i.estado==='no_llego'?' falta':''}">
+            <span>${esc(nombreResumen(i.producto))}</span>
+            <b>${i.estado==='recibido'?fmt(i.cantidad_recibida):'no llegó'}</b>
+          </div>`).join('')}
+        <button type="button" class="rep-add" data-copiarrep="${r.id}">Copiar resumen</button>
+      </div>`:''}
     </div>`;
   }).join('');
 
@@ -1667,7 +1731,7 @@ $('view-reparto').addEventListener('click', e=>{
   if(!cj) return;
   const k = cj.dataset.caja;
   if(cajasAbiertas.has(k)) cajasAbiertas.delete(k); else cajasAbiertas.add(k);
-  if(k==='armar' || k==='cerrados' || k==='fudo'){
+  if(k==='cerrados' || k==='fudo'){
     const body=$('body-'+k);
     body.style.display = cajasAbiertas.has(k) ? '' : 'none';
     cj.closest('.sec').classList.toggle('open', cajasAbiertas.has(k));
@@ -1689,6 +1753,11 @@ async function llamarReparto(fn, args, exito){
   await loadRepartos(); await loadData();
   return true;
 }
+$('body-cerrados').addEventListener('click', e=>{
+  const cop = e.target.closest('[data-copiarrep]'); if(!cop) return;
+  const r = REPARTOS.find(x=>x.id===+cop.dataset.copiarrep); if(!r) return;
+  copiarTexto(resumenReparto(r)).then(ok=>aviso(ok?'✓ Resumen copiado':'No se pudo copiar'));
+});
 $('repartos-abiertos').addEventListener('click', async e=>{
   const cop = e.target.closest('[data-copiarrep]');
   if(cop){
@@ -1950,8 +2019,6 @@ $('btnRegistrarReparto').addEventListener('click', async()=>{
       avisar('No se pudo enviar el reparto. Revisa tu señal e inténtalo de nuevo.'); console.error(e2); return;
     }
     carrito=[]; renderCarrito(); renderRepartoResults(); rqEl.value='';
-    cajasAbiertas.delete('armar'); $('body-armar').style.display='none';
-    $('sec-armar').classList.remove('open');
     aviso('✓ Reparto enviado · '+items.length+' producto'+(items.length===1?'':'s'));
     await loadRepartos();
   } finally { btn.disabled=false; btn.textContent='Enviar reparto'; }
