@@ -95,6 +95,11 @@ grant execute on function public.descontar_con_reposicion(text, bigint, numeric)
 alter table public.fudo_movimientos
   add column if not exists venta_at timestamptz;
 
+-- Se borran TODAS las firmas anteriores, no solo la de 8 argumentos: si en
+-- la base vivía la versión de 7 (motor v3), quedaban las dos conviviendo y
+-- la llamada por la API se volvía ambigua — la sync leía las ventas y no
+-- descontaba ninguna, sin mostrar ningún error (2026-07-27).
+drop function if exists public.fudo_procesar_item(text,text,text,text,text,numeric,text);
 drop function if exists public.fudo_procesar_item(text,text,text,text,text,numeric,text,timestamptz);
 
 create or replace function public.fudo_procesar_item(

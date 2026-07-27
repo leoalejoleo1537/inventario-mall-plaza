@@ -64,6 +64,16 @@
    índice o una función, la crea él mismo con `add column if not exists` /
    `create ... if not exists`, aunque "ya debería estar".
 
+   **Y al reemplazar una función, borrar TODAS sus firmas anteriores.** El
+   mismo día, el motor v5 hacía `drop function ...(...,timestamptz)` — solo
+   la firma de 8 argumentos. En producción vivía la de 7, así que no se
+   borró y quedaron dos `fudo_procesar_item` conviviendo. Llamado desde SQL
+   el motor funcionaba perfecto; pero la Edge Function llama por la API, y
+   ahí el nombre quedaba **ambiguo entre dos candidatas**: la llamada se
+   rechazaba antes de ejecutar nada. La sync informaba "9 ventas · 0
+   descuentos" y ni un error a la vista. Al cambiar la firma de una función
+   que ya está en producción, hay un `drop` por cada firma vieja posible.
+
 3. **Analizar ≠ escribir.** Ver sección 0: comparar/auditar es un informe,
    no un script que modifica la base. Pasar de análisis a escritura
    necesita que Jhon lo pida explícitamente, y todo script de escritura
