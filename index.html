@@ -196,6 +196,12 @@
   .row .name{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .row .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
   .row .sub-total{color:var(--orange-dark);font-weight:800}
+  /* el desglose por sección va en gris para que el total siga mandando;
+     el número de cada sección en negro, que es lo que se busca al mirar */
+  .row .tot-t{white-space:nowrap}
+  .row .tot-sec{color:var(--muted);font-weight:600;white-space:nowrap}
+  .row .tot-sec::before{content:' · '}
+  .row .tot-sec b{color:var(--text);font-weight:800;font-variant-numeric:tabular-nums}
   .row .right{display:flex;align-items:center;gap:8px}
   .pill{font-size:11px;padding:4px 10px;border-radius:999px;white-space:nowrap;font-weight:700}
   .venc{font-size:11px;padding:3px 8px;border-radius:999px;font-weight:600;background:var(--gray-bg);color:var(--gray-fg);margin-right:4px;display:inline-block}
@@ -271,15 +277,6 @@
   .qty .qleft svg{width:18px;height:18px}
   .qty input{width:52px;height:40px;text-align:center;border:none;border-left:1px solid var(--border);border-right:1px solid var(--border);font-size:16px;font-weight:700;background:#fff;-moz-appearance:textfield}
   .qty input::-webkit-outer-spin-button,.qty input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-  .pend-title{font-weight:800;font-size:14px;margin:26px 0 8px;display:flex;align-items:center;gap:8px}
-  .pend-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px}
-  .pend-row .pend-main{flex:1;min-width:0}
-  .pend-row .pn{font-size:14px;font-weight:700}
-  .pend-row .pm{font-size:12px;color:var(--muted);margin-top:2px}
-  .pend-qty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:56px;padding:5px 10px;background:var(--amber-bg);border-radius:10px;line-height:1}
-  .pend-qty b{font-size:22px;font-weight:800;color:var(--amber-fg)}
-  .pend-qty small{font-size:9px;font-weight:700;color:var(--amber-fg);opacity:.8;text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
-  .btn-done{background:var(--green-bg);color:var(--green-fg);border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
   /* ---------- modal (FUDO) ---------- */
   .overlay{position:fixed;inset:0;background:rgba(15,30,49,.42);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
   .overlay.open{display:flex}
@@ -547,18 +544,6 @@
     <div class="sec-body" id="body-cerrados" style="display:none"></div>
   </div>
 
-  <!-- avisar a Fudo (como estaba) -->
-  <div class="sec" id="sec-fudo">
-    <div class="sec-head">
-      <button type="button" class="sec-btn" data-caja="fudo">
-        <span>Actualizar en Fudo</span>
-        <span class="sec-tags"><span class="sec-count" id="pend-count">0</span></span>
-      </button>
-    </div>
-    <div class="sec-body" id="body-fudo" style="display:none">
-      <div id="pend-list"><div class="empty">Cargando…</div></div>
-    </div>
-  </div>
 </div>
 
 <!-- ================= AVISO DE CONFIRMACIÓN ================= -->
@@ -975,13 +960,12 @@ function pickSede(s){
   $('liveText').textContent='conectando…'; $('live').classList.remove('off');
   $('armar-titulo').textContent = 'Armar pedido' + (NOMBRE ? ', '+NOMBRE : '');
   REPARTOS=[]; cajasAbiertas.clear(); setModoEdicion(false);
-  $('body-cerrados').style.display='none'; $('body-fudo').style.display='none';
+  $('body-cerrados').style.display='none';
   $('repartos-abiertos').innerHTML='';
   marcarNuevo();
   loadData();
   loadRepartos();
   subscribeRealtime();
-  refreshPendientes();
   if(presChannel){ try{ presChannel.track({nombre:NOMBRE, sede:SEDE}); }catch(e){} }  // avisa en qué sede estoy
 }
 function showGate(){
@@ -1085,7 +1069,9 @@ function metrics(){
 function rowHTML(p, conSeccion){
   const e=estado(p),cf=CFG[e];
   const t=totalProducto(p.producto);
-  const totalLine = t.multi ? `<div class="sub sub-total">Total: ${fmt(t.total)} · ${esc(t.secciones)}</div>` : '';
+  const totalLine = t.multi ? `<div class="sub sub-total"><span class="tot-t">Total ${fmt(t.total)}</span>`
+    + t.porSeccion.map(s=>`<span class="tot-sec">${esc(s.rubro)} <b>${fmt(s.cant)}</b></span>`).join('')
+    + `</div>` : '';
   const conLotes = lotesDe(p.id).length>0;   // el stock sale de la suma de fechas
   const urg = esUrgente(p) ? '<span class="pill pill-urg">Urgente</span>' : '';
   // fuera de su sección (bloque de urgentes) hay que decir de dónde viene
@@ -1581,7 +1567,15 @@ function totalProducto(nombre){
   const rubros = [...new Set(filas.map(d => d.rubro || 'Sin sección'))]
     .sort((a,b)=>a.localeCompare(b,'es'));
   const total = filas.reduce((s,d) => s + (+d.stock_actual || 0), 0);
-  return { total, multi: rubros.length > 1, secciones: listaY(rubros) };
+  /* Cuánto hay en CADA sección, no solo el total: si el Brownie suma 11,
+     hay que ver de un vistazo que 2 están en Vitrina y 9 en Congelador —
+     esa es la cifra que decide si se baja algo del congelador. */
+  const porSeccion = rubros.map(r => ({
+    rubro: r,
+    cant: filas.filter(d => (d.rubro||'Sin sección') === r)
+               .reduce((s,d) => s + (+d.stock_actual || 0), 0)
+  }));
+  return { total, multi: rubros.length > 1, secciones: listaY(rubros), porSeccion };
 }
 /* "Congelador y Vitrina" / "A, B y C" — decir DÓNDE está, no cuántas son */
 function listaY(xs){
@@ -1745,11 +1739,10 @@ $('view-reparto').addEventListener('click', e=>{
   if(!cj) return;
   const k = cj.dataset.caja;
   if(cajasAbiertas.has(k)) cajasAbiertas.delete(k); else cajasAbiertas.add(k);
-  if(k==='cerrados' || k==='fudo'){
+  if(k==='cerrados'){
     const body=$('body-'+k);
     body.style.display = cajasAbiertas.has(k) ? '' : 'none';
     cj.closest('.sec').classList.toggle('open', cajasAbiertas.has(k));
-    if(k==='fudo' && cajasAbiertas.has(k)) refreshPendientes();
   } else {
     renderRepartos();
   }
@@ -2041,32 +2034,6 @@ $('btnRegistrarReparto').addEventListener('click', async()=>{
   } finally { btn.disabled=false; btn.textContent='Enviar reparto'; }
 });
 
-async function refreshPendientes(){
-  if(!SEDE) return;
-  const {data,error} = await sb.from('fudo_pendientes').select('*').eq('sede',SEDE).order('created_at',{ascending:false});
-  if(error){
-    $('pend-count').textContent='0';
-    $('pend-list').innerHTML='<div class="empty">El aviso a FUDO aún no está activado en la base de datos.</div>';
-    return;
-  }
-  $('pend-count').textContent=data.length;
-  if(!data.length){ $('pend-list').innerHTML='<div class="empty">No hay pendientes. Todo al día 👍</div>'; return; }
-  $('pend-list').innerHTML = data.map(p=>`
-    <div class="pend-row" data-pend="${p.id}">
-      <div class="pend-main"><div class="pn">${esc(p.producto)}</div><div class="pm">${new Date(p.created_at).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div></div>
-      <div class="pend-qty"><b>+${fmt(p.cantidad)}</b><small>unid.</small></div>
-      <button type="button" class="btn-done" data-done="${p.id}">Ya actualicé</button>
-    </div>`).join('');
-}
-$('pend-list').addEventListener('click', async e=>{
-  const btn=e.target.closest('[data-done]'); if(!btn) return;
-  const id=+btn.dataset.done;
-  btn.disabled=true; btn.textContent='…';
-  const {error}=await conReintento(()=>sb.from('fudo_pendientes').delete().eq('id',id));
-  if(error){ avisar('No se pudo marcar. Revisa tu señal e inténtalo de nuevo.'); btn.disabled=false; btn.textContent='Ya actualicé'; return; }
-  refreshPendientes();
-});
-
 /* ---------------- tabs ---------------- */
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   if(!SEDE)return;
@@ -2081,7 +2048,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();
   if(tab==='hist') loadHistorial();
-  if(tab==='reparto'){ loadRepartos(); refreshPendientes(); }
+  if(tab==='reparto') loadRepartos();
   if(tab==='recetas') loadRecetas();
 }));
 
@@ -2448,7 +2415,6 @@ async function resincronizar(){
   ultimaRecarga=Date.now();
   await loadData();
   await loadRepartos();
-  refreshPendientes();
 }
 /* La app se duerme al bloquear el teléfono o dejar la pestaña de fondo, y la
    conexión en vivo se corta sin avisar. Al volver, se recarga para no quedar
@@ -2475,9 +2441,6 @@ function subscribeRealtime(){
       if(row.activo!=='SÍ'){ if(idx>=0)DATA.splice(idx,1); }   // eliminado por otro usuario
       else if(idx>=0)DATA[idx]=row; else DATA.push(row);        // editado o agregado
       metrics(); render();
-    })
-    .on('postgres_changes',{event:'*',schema:'public',table:'fudo_pendientes',filter:'sede=eq.'+SEDE},()=>{
-      refreshPendientes();
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'producto_lotes'},async()=>{
       await loadLotes(); metrics(); render();   // otro dispositivo cambió una fecha
