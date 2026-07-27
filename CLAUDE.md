@@ -333,6 +333,32 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 - **Formas:** esquinas redondeadas (`border-radius` 10–12px en tarjetas, 999px en
   píldoras/botones), sombras muy suaves. Nada de bordes duros ni colores fuera de paleta.
 
+### 2.0 REGLA DURA — que sea bella, no solo que funcione
+
+> Jhon, 2026-07-27: "necesito que no solo sea funcional, sino estéticamente
+> bella para que incentive su uso."
+
+- **La estética no es un extra que se agrega al final: es parte del encargo.**
+  Una pantalla correcta pero fea la gente la usa a regañadientes y termina
+  volviendo al Excel — esa es la vara del proyecto (sección 1). Entregar algo
+  "que ya funciona" con la intención de embellecerlo después es entregarlo a
+  medias.
+- **Toda acción que cambia lo que se ve en pantalla lleva su transición.**
+  Nada aparece o desaparece de golpe. Duraciones cortas (0,15–0,3 s) y curvas
+  suaves; si se nota que "hay una animación", está de más.
+- **La animación tiene que salir de donde ocurrió el gesto.** Al tocar una
+  píldora de tipo, la lista brota *desde esa píldora* (`brotarDesde()` fija el
+  `transform-origin` en la posición real del botón). Una animación centrada en
+  la pantalla se siente desconectada de lo que uno tocó.
+- **El desenfoque de fondo es del proyecto** (`.overlay` lleva `backdrop-filter`).
+  Cualquier ventana nueva lo lleva; ninguna vuelve al negro plano del navegador.
+- **El botón responde al dedo.** Un `:active` que encoge un poco (`scale(.94)`)
+  hace que el toque se sienta; sin eso la pantalla parece trabada en el mesón.
+- **Siempre respetar `prefers-reduced-motion: reduce`**: con eso activado, las
+  animaciones se apagan y la app sigue funcionando igual.
+- Esto NO contradice el texto mínimo (2.1): se cuida la forma, el movimiento y
+  el color — no se agregan palabras.
+
 ### 2.1 Regla del texto mínimo (la que más se me olvida)
 
 > **Si hay que explicarlo con un párrafo, es que la forma o el símbolo no está
@@ -435,6 +461,9 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
       `docs/auditoria-recetas.md`; informe de solo lectura en
       `sql/2026-07-auditoria-recetas.sql`. La métrica de avance es el % de
       cobertura (bloque 9): anotarlo antes y después de cada tanda.
+- [ ] **Terminar de clasificar los tipos**: correr los 3 pasos de
+      `sql/2026-07-tipo-de-producto.sql` y ponerle tipo desde la ficha a los que
+      queden en "— revisar —".
 - [ ] **Dashboard**: lista de análisis posibles en `docs/dashboard-analisis-posibles.md`.
       NO empezar hasta cerrar la depuración de recetas.
 - [ ] Confirmar con jefatura que van a usar el sistema (vs. volver al Excel).
@@ -551,6 +580,36 @@ el patrón a seguir:
 ---
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-27** — **Filtrar por TIPO de producto, y fuera la tarjeta Urgente.**
+  Las secciones dicen **dónde está** un producto; faltaba el otro eje: **qué
+  es**. En el Congelador conviven cinnamon rolls, pulpas y pizzas, así que para
+  ver "todas las tortas" había que buscarlas una por una. Ahora hay una franja
+  de píldoras deslizable entre las tarjetas y la lista.
+  1. **Los tipos los define el equipo llenando `productos.tipo`**, no una lista
+     escrita en el código: la franja muestra los que de verdad existen, con
+     cuántos hay, del más numeroso al menos. Se editan desde la ficha del
+     producto (campo "Tipo", con sugerencias de los que ya existen para no
+     inventar uno nuevo por una tilde).
+  2. **SQL en `sql/2026-07-tipo-de-producto.sql`, en tres pasos.** El 1 crea la
+     columna, el 2 **propone** un tipo para cada producto sin escribir nada, y
+     el 3 escribe esa propuesta — y solo a los que no tienen tipo, así una
+     corrección a mano nunca se pisa al volver a correrlo. Los que el nombre no
+     identifica quedan sin tipo y se arreglan desde la ficha. Probado contra
+     Postgres local, incluida la idempotencia.
+  3. **Se elimina la tarjeta Urgente.** Todo lo urgente ya sale arriba del todo
+     al filtrar por Crítico, así que era un camino repetido. La marca manual,
+     su píldora naranja y el bloque URGENTE **se mantienen**: lo que se fue es
+     la cuarta tarjeta. Las métricas vuelven a 3 columnas.
+  4. **Mirando UN tipo no se separa en AM/PM.** Los turnos son para contar el
+     inventario; al mirar "todas las tortas" no se está contando un turno.
+     Vuelven solos al soltar el tipo.
+  5. **La lista brota desde la píldora que se tocó** — ver regla 2.0.
+  **Bug de paso:** `items.map(rowHTML)` le pasaba el ÍNDICE como segundo
+  argumento, así que toda fila que no fuera la primera de su sección recibía
+  `conSeccion=1` y repetía su propia sección ("Vitrina de tortas · mín 6 · máx
+  20" estando dentro de Vitrina de tortas). Una línea de ruido por fila, en
+  toda la app. 137 comprobaciones del inventario, 114 del reparto.
 
 - **2026-07-27** — **La pantalla de Reparto, reordenada por importancia.**
   Jhon pidió primero una propuesta estética y solo después construirla. Lo que

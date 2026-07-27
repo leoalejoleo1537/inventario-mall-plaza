@@ -124,14 +124,39 @@
   .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
   /* con la tarjeta de Urgente son cuatro; si la columna no existe en la base,
      se queda en tres y la pantalla se ve igual que antes */
-  .metrics.con-urg{grid-template-columns:repeat(4,1fr)}
   .mcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;user-select:none}
   .mcard.sel{border:2px solid var(--orange)}
   .mcard .n{font-size:22px;font-weight:700}
   .mcard .l{font-size:11px;color:var(--muted);margin-top:2px}
-  .metrics.con-urg .mcard{padding:10px 3px}
-  .metrics.con-urg .mcard .n{font-size:20px}
-  .metrics.con-urg .mcard .l{font-size:10px}
+
+  /* ---- franja de tipos: el otro eje del producto ----
+     Las secciones dicen DÓNDE está; el tipo dice QUÉ ES. Una torta está en
+     Vitrina de tortas y es una torta; un cinnamon roll está en Congelador y
+     es bollería. Se desliza con el dedo y se comporta como las tarjetas. */
+  /* position:relative para que offsetLeft de cada píldora se mida DESDE la
+     franja — es lo que ancla la animación al botón que se tocó */
+  .tipos{position:relative;display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding:2px 2px 4px;
+         scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .tipos::-webkit-scrollbar{display:none}
+  .tipo{border:1px solid var(--border);background:var(--card);border-radius:999px;
+        padding:7px 13px;font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--text);
+        flex:none;display:flex;align-items:center;gap:5px;cursor:pointer;font-family:inherit;
+        transition:background .18s ease,color .18s ease,border-color .18s ease,transform .12s ease}
+  .tipo:active{transform:scale(.94)}
+  .tipo .n{font-size:10.5px;font-weight:800;opacity:.5;font-variant-numeric:tabular-nums}
+  .tipo.on{background:var(--sec-bg);border-color:var(--sec-bg);color:#fff;
+           box-shadow:0 2px 10px rgba(47,74,109,.35)}
+  .tipo.on .n{opacity:.75}
+
+  /* La lista brota de la píldora que se tocó: el origen se fija en JS a la
+     posición real del botón, así el gesto y lo que aparece se sienten unidos. */
+  @keyframes brotar{ from{opacity:0;transform:scale(.965) translateY(-8px)} to{opacity:1;transform:none} }
+  #list.brota{animation:brotar .26s cubic-bezier(.22,.8,.3,1)}
+  @media (prefers-reduced-motion: reduce){
+    #list.brota{animation:none}
+    .tipo{transition:none}
+    .tipo:active{transform:none}
+  }
   .count{font-size:12px;color:var(--muted);margin:6px 0}
   /* turnos: el inventario de la mañana y el de la tarde son dos rondas
      distintas. Solo un fondo gris que las agrupa — nada más. */
@@ -502,10 +527,10 @@
   </div>
   <div class="metrics" id="metrics">
     <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
-    <div class="mcard" data-f="urgente" id="mcard-urgente" style="display:none"><div class="n" id="c-urgente" style="color:var(--orange)">0</div><div class="l">Urgente</div></div>
     <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
     <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
   </div>
+  <div class="tipos" id="tipos" style="display:none"></div>
   <div id="list"></div>
   <button class="fab" id="btnNuevo" title="Agregar producto" aria-label="Agregar producto">+</button>
 </div>
@@ -679,6 +704,11 @@
       <div class="field" style="flex:1"><label>Stock mínimo</label><input type="number" step="0.5" min="0" id="m-min"></div>
       <div class="field" style="flex:1"><label>Stock máximo</label><input type="number" step="0.5" min="0" id="m-max"></div>
     </div>
+    <div class="field" id="m-tipo-row" style="display:none">
+      <label>Tipo</label>
+      <input type="text" id="m-tipo" list="lista-tipos" placeholder="Tortas, Bollería, Sándwiches…">
+      <datalist id="lista-tipos"></datalist>
+    </div>
     <button type="button" class="btn-urg" id="m-urgente" style="display:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
       <span id="m-urgente-txt">Marcar urgente</span>
@@ -753,6 +783,8 @@ let filterState = null;
 let hasVenc = false;      // true cuando exista la columna vencimiento en la tabla
 let hasPerec = false;     // true cuando exista la columna perecedero
 let hasUrgente = false;   // true cuando exista la columna urgente
+let hasTipo = false;      // true cuando exista la columna tipo
+let tipoSel = null;       // tipo de producto elegido en la franja
 let modalProd = null;
 let carrito = [];         // productos que llegaron, pendientes de registrar
 
@@ -1067,7 +1099,6 @@ function metrics(){
   const m={critico:0,ok:0,sobre:0,sindato:0};
   DATA.forEach(p=>m[estado(p)]++);
   for(const k in m){ const el=$('c-'+k); if(el) el.textContent=m[k]; }
-  $('c-urgente').textContent = DATA.filter(esUrgente).length;
 }
 function rowHTML(p, conSeccion){
   const e=estado(p),cf=CFG[e];
@@ -1101,20 +1132,45 @@ function rowHTML(p, conSeccion){
     </div>
   </div>`;
 }
-/* el filtro de Urgente no es un estado calculado: convive con crítico/sobre-stock */
 function pasaFiltro(p){
   if(!filterState) return true;
-  if(filterState==='urgente') return esUrgente(p);
   // Adriana arma el pedido para Mall Plaza entrando por Crítico: lo que el
   // equipo marcó a mano tiene que estar ahí también, aunque el semáforo no lo
-  // marque — si no, lo urgente se queda escondido detrás de otra tarjeta.
+  // marque — si no, lo urgente se queda escondido. Ya no hay tarjeta Urgente
+  // aparte justamente porque todo lo urgente sale acá, arriba del todo.
   if(filterState==='critico') return estado(p)==='critico' || esUrgente(p);
   return estado(p)===filterState;
+}
+const tipoDe = p => (p.tipo||'').trim();
+const pasaTipo = p => !tipoSel || tipoDe(p) === tipoSel;
+/* Los tipos los define el equipo llenando la columna, no una lista escrita
+   acá: la franja muestra los que de verdad existen, con cuántos hay en cada
+   uno, del más numeroso al menos. */
+function renderTipos(){
+  const barra = $('tipos');
+  if(!hasTipo){ barra.style.display='none'; barra.innerHTML=''; return; }
+  const cuenta = new Map();
+  DATA.forEach(p=>{ const t=tipoDe(p); if(t) cuenta.set(t,(cuenta.get(t)||0)+1); });
+  if(!cuenta.size){ barra.style.display='none'; barra.innerHTML=''; return; }
+  const tipos = [...cuenta.entries()].sort((a,b)=> b[1]-a[1] || a[0].localeCompare(b[0],'es'));
+  barra.style.display='flex';
+  const scroll = barra.scrollLeft;      // rehacer el HTML lo manda al principio
+  barra.innerHTML = tipos.map(([t,n])=>
+    `<button type="button" class="tipo${t===tipoSel?' on':''}" data-tipo="${esc(t)}">`
+    + `${esc(t)} <span class="n">${n}</span></button>`).join('');
+  barra.scrollLeft = scroll;
+}
+/* Al elegir un tipo NO se rehace la franja: solo cambia cuál está marcada.
+   Rehacerla devolvía la franja al principio, así que tocar un tipo del final
+   lo dejaba fuera de la pantalla justo después de tocarlo. */
+function marcarTipo(){
+  $('tipos').querySelectorAll('.tipo').forEach(b=>
+    b.classList.toggle('on', b.dataset.tipo===tipoSel));
 }
 const COPY_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
 function render(){
   const q=normNombre(qEl.value);
-  let rows=DATA.filter(p=>(!q||normNombre(p.producto).includes(q))&&pasaFiltro(p));
+  let rows=DATA.filter(p=>(!q||normNombre(p.producto).includes(q))&&pasaFiltro(p)&&pasaTipo(p));
   // SIEMPRE alfabético: el orden no depende de cantidades ni estados,
   // así una fila no se mueve cuando cambia su stock.
   rows.sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}));
@@ -1130,7 +1186,7 @@ function render(){
     const ia=SEC_ORDEN.indexOf(a),ib=SEC_ORDEN.indexOf(b);
     return (ia<0?SEC_ORDEN.length:ia)-(ib<0?SEC_ORDEN.length:ib)||a.localeCompare(b,'es');
   });
-  const filtrando=!!q||!!filterState;   // al buscar o filtrar, las secciones con resultados se abren solas
+  const filtrando=!!q||!!filterState||!!tipoSel;   // al buscar o filtrar, las secciones con resultados se abren solas
   const secHTML=sec=>{
     const items=grupos.get(sec);
     const crit=items.reduce((n,p)=>n+(estado(p)==='critico'?1:0),0);
@@ -1146,7 +1202,9 @@ function render(){
         </button>
         ${copiar}
       </div>
-      ${abierta?`<div class="sec-body">${items.map(rowHTML).join('')}</div>`:''}
+      ${/* map le pasa el índice como 2º argumento: sin la flecha, toda fila que
+             no fuera la primera recibía conSeccion=1 y repetía su propia sección */''}
+      ${abierta?`<div class="sec-body">${items.map(p=>rowHTML(p)).join('')}</div>`:''}
     </div>`;
   };
   // dos rondas de conteo: mañana y tarde, separadas solo por el fondo gris
@@ -1155,8 +1213,12 @@ function render(){
   const bloqueUrg = urgentes.length
     ? `<div class="turno turno-urg"><div class="turno-lbl">URGENTE</div>${urgentes.map(p=>rowHTML(p,true)).join('')}</div>`
     : '';
-  listEl.innerHTML = (bloqueUrg + bloque('AM', orden.filter(esAM)) + bloque('PM', orden.filter(s=>!esAM(s))))
-    || '<div class="empty">No hay productos que coincidan.</div>';
+  /* Al mirar UN tipo, AM/PM no significa nada: no se está contando el turno,
+     se está mirando "todas las tortas". Los turnos vuelven al soltar el tipo. */
+  const cuerpo = tipoSel
+    ? bloqueUrg + orden.map(secHTML).join('')
+    : bloqueUrg + bloque('AM', orden.filter(esAM)) + bloque('PM', orden.filter(s=>!esAM(s)));
+  listEl.innerHTML = cuerpo || '<div class="empty">No hay productos que coincidan.</div>';
 }
 async function loadData(){
   const {data,error}=await sb.from('productos').select('*').eq('sede',SEDE).eq('activo','SÍ').order('producto');
@@ -1167,10 +1229,14 @@ async function loadData(){
   // si la columna urgente todavía no existe en la base, la tarjeta y el botón
   // no aparecen y la pantalla se ve igual que antes
   hasUrgente = DATA.length>0 && ('urgente' in DATA[0]);
-  $('mcard-urgente').style.display = hasUrgente ? '' : 'none';
-  $('metrics').classList.toggle('con-urg', hasUrgente);
+  // ídem con el tipo: si la columna no está, la franja no aparece y la
+  // pantalla se ve exactamente como antes
+  hasTipo = DATA.length>0 && ('tipo' in DATA[0]);
+  if(!hasTipo) tipoSel=null;
+  else if(tipoSel && !DATA.some(p=>tipoDe(p)===tipoSel)) tipoSel=null;  // se quedó sin productos
+  $('m-tipo-row').style.display = hasTipo ? 'flex' : 'none';
   await loadLotes();
-  metrics(); render();
+  metrics(); renderTipos(); render();
   $('liveText').textContent='en vivo'; $('live').classList.remove('off');
 }
 /* trae los lotes de vencimiento de los productos de la sede.
@@ -1314,17 +1380,19 @@ listEl.addEventListener('click',e=>{
    zanahoria" quiere ver esa torta, no averiguar si además está en sobre-stock.
    El estado igual se lee en la píldora de color al lado del nombre. */
 function soltarFiltros(){
-  if(!filterState) return false;
-  filterState=null;
+  if(!filterState && !tipoSel) return false;
+  filterState=null; tipoSel=null;
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
+  renderTipos();
   return true;
 }
 /* deja el inventario como recién abierto: sin búsqueda, sin filtros y con
    todas las secciones cerradas */
 function irAlInicio(){
   qEl.value='';
-  filterState=null;
+  filterState=null; tipoSel=null;
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
+  renderTipos();
   openSecs.clear();
   render();
   window.scrollTo({top:0});
@@ -1336,6 +1404,30 @@ document.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
   document.querySelectorAll('.mcard').forEach(x=>x.classList.toggle('sel',x.dataset.f===filterState));
   render();
 }));
+$('tipos').addEventListener('click', e=>{
+  const b=e.target.closest('[data-tipo]'); if(!b) return;
+  const t=b.dataset.tipo;
+  tipoSel = tipoSel===t ? null : t;
+  marcarTipo();
+  render();
+  brotarDesde(b);
+});
+/* La lista crece desde la píldora que se tocó, no desde el centro de la
+   pantalla: el origen de la animación se fija en la posición real del botón.
+   Es lo que hace que el gesto y el resultado se sientan la misma cosa. */
+function brotarDesde(btn){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // offsetLeft/offsetWidth y no getBoundingClientRect: al tocarlo el botón
+  // está encogido por :active y su rectángulo mide de menos.
+  const barra=$('tipos');
+  const centro = btn.offsetLeft + btn.offsetWidth/2 - barra.scrollLeft;
+  const dx = barra.getBoundingClientRect().left - listEl.getBoundingClientRect().left;
+  listEl.style.transformOrigin = `${Math.round(centro + dx)}px top`;
+  listEl.classList.remove('brota');
+  void listEl.offsetWidth;              // reinicia la animación si se toca rápido
+  listEl.classList.add('brota');
+}
+listEl.addEventListener('animationend', ()=>listEl.classList.remove('brota'));
 
 /* ---------------- modal ---------------- */
 function openModal(id){
@@ -1347,6 +1439,13 @@ function openModal(id){
   $('m-stock').value=modalProd.stock_actual??'';
   $('m-min').value=modalProd.stock_min??'';
   $('m-max').value=modalProd.stock_max??'';
+  $('m-tipo-row').style.display = hasTipo ? 'flex' : 'none';
+  if(hasTipo){
+    $('m-tipo').value = modalProd.tipo ?? '';
+    // se ofrecen los tipos que ya existen, para no inventar uno nuevo por una tilde
+    const tipos=[...new Set(DATA.map(tipoDe).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+    $('lista-tipos').innerHTML = tipos.map(t=>`<option value="${esc(t)}">`).join('');
+  }
   $('m-perec-row').style.display = hasPerec ? 'flex' : 'none';
   if(hasPerec) $('m-perec').checked = !!modalProd.perecedero;
   $('m-urgente').style.display = hasUrgente ? 'flex' : 'none';
@@ -1484,6 +1583,7 @@ $('m-guardar').addEventListener('click',async()=>{
   // si no, el número del campo de stock se guarda tal cual (como siempre)
   if(!lotes.length){ const s=num($('m-stock')); fields.stock_actual = s==null?s:Math.max(0,s); }
   if(hasPerec) fields.perecedero=quedaPerec;
+  if(hasTipo) fields.tipo = $('m-tipo').value.replace(/\s+/g,' ').trim() || null;
   if(hasVenc) fields.vencimiento = !quedaPerec ? null
     : usaLotes ? (lotes.length?lotes[0].vencimiento:null)
     : ($('m-venc-single').value || null);
@@ -1492,7 +1592,7 @@ $('m-guardar').addEventListener('click',async()=>{
   Object.assign(modalProd,fields);
   if(lotes.length) modalProd.stock_actual = lotes.reduce((t,l)=>t+l.cantidad,0);
   if(usaLotes) LOTES[savedId]=lotes.map(l=>({...l, producto_id:savedId}));
-  metrics(); render(); closeModal();
+  metrics(); renderTipos(); render(); closeModal();
   await saveFields(savedId, fields);
   if(usaLotes) await guardarLotes(savedId, lotes);
 });
