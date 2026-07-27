@@ -2146,8 +2146,19 @@ const PASOS_SYNC = [
       if(!data || !data.ok) throw new Error((data && data.error) || 'sin respuesta');
       const desc = data.movimientos_generados || 0;
       const ven  = data.ventas_leidas || 0;
+      const err  = data.errores || 0;
+      // Los errores por venta SE MUESTRAN. El 2026-07-27 el motor falló en
+      // todas las ventas durante 15 horas y la app decía "ok" igual, porque
+      // este número se quedaba dentro de la respuesta sin llegar a nadie.
+      if(err && !desc){
+        const e = new Error(`Se leyeron ${ven} venta${ven===1?'':'s'} pero NINGUNA se pudo `
+          + `descontar (${err} con error). El inventario no se está actualizando.`);
+        e.grave = true;   // esto no se avisa con un mensajito que se va solo
+        throw e;
+      }
       if(!ven) return 'sin ventas nuevas';
-      return `${ven} venta${ven===1?'':'s'} · ${desc} descuento${desc===1?'':'s'}`;
+      return `${ven} venta${ven===1?'':'s'} · ${desc} descuento${desc===1?'':'s'}`
+        + (err ? ` · ⚠️ ${err} con error` : '');
     }
   },
 ];
@@ -2160,7 +2171,7 @@ async function actualizarTodo(){
   btn.disabled = true; btn.classList.add('girando');
   aviso('Actualizando…', 0);
 
-  const logros = [], fallos = [];
+  const logros = [], fallos = [], graves = [];
   for(const paso of PASOS_SYNC){
     try{
       const r = await paso.fn();
@@ -2168,6 +2179,9 @@ async function actualizarTodo(){
     }catch(e){
       console.error('Falló la sincronización de ' + paso.nombre, e);
       fallos.push(paso.nombre);
+      // un corte de señal se avisa con un toast; que el motor no descuente
+      // NADA es otra cosa y tiene que detener a quien esté mirando
+      if(e && e.grave) graves.push(e.message);
     }
   }
 
@@ -2182,7 +2196,9 @@ async function actualizarTodo(){
   btn.disabled = false; btn.classList.remove('girando');
   actualizando = false;
 
-  if(fallos.length === PASOS_SYNC.length){
+  if(graves.length){
+    avisar('El inventario no se está descontando\n\n' + graves.join('\n\n'));
+  } else if(fallos.length === PASOS_SYNC.length){
     aviso('⚠ No se pudo actualizar. Revisa la conexión.');
   } else if(fallos.length){
     aviso('⚠ Falló: ' + fallos.join(', ') + (logros.length ? ' · ' + logros.join(' · ') : ''));

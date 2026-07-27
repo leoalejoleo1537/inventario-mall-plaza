@@ -220,6 +220,81 @@ Las dos direcciones NO son simétricas, y confundirlas rompe el inventario:
 
 ---
 
+## 0.5 REGLA DURA — tocar el motor de descuento (la falla del 2026-07-27)
+
+> El sistema estuvo ~15 horas leyendo ventas y descontando NADA, mostrando
+> "ventas actualizadas" en la pantalla. Jhon lo descubrió a mitad de turno
+> vendiendo una medialuna de membrillo. Es la peor falla que ha tenido el
+> proyecto, y la causa no fue una línea mal escrita: fue el método.
+
+### Qué pasó, en orden
+
+1. **Se escribió el motor v5 suponiendo el estado de producción a partir del
+   repo.** El archivo `2026-07-fecha-real-de-venta.sql` estaba en git con la
+   columna `venta_at`, así que se dio por corrido. **Nunca se había
+   corrido.** El motor v5 escribía una columna que no existía → excepción en
+   cada venta.
+2. **El `drop` apuntaba a una sola firma.** El script hacía
+   `drop function ...(...,timestamptz)`, que borra la firma de 8 argumentos.
+   En producción vivía la de **7** (motor v3). No se borró, y el `create`
+   agregó una segunda. Quedaron **dos `fudo_procesar_item` conviviendo**.
+3. **La llamada por la API quedó ambigua.** Desde SQL el motor funcionaba
+   perfecto, porque ahí los argumentos deciden cuál usar. Pero la Edge
+   Function llama por PostgREST, que con dos funciones del mismo nombre no
+   puede elegir y **rechaza la llamada antes de ejecutar nada**.
+4. **El fallo era invisible.** La Edge Function cuenta cada venta fallida en
+   un campo `errores` y devuelve `ok: true` igual. La app solo mostraba
+   "N ventas · M descuentos" y jamás ese número. Nada en pantalla decía que
+   el inventario llevaba horas congelado.
+
+### Por qué las pruebas no lo detectaron (esto es lo importante)
+
+El motor v5 se probó contra un Postgres local con 5 escenarios y todos
+pasaron. **Pero ese Postgres lo construyó Claude desde cero copiando el
+esquema del repo**: tenía `venta_at` porque el repo la tenía, y no tenía
+ninguna función vieja porque era una base recién creada.
+
+Se probó contra un mundo ideal idéntico al repo, no contra el mundo real.
+Las pruebas validaban la LÓGICA del motor —que estaba bien— y no el ENCAJE
+con la base que existe. De ahí la falsa confianza: 5 escenarios en verde
+mientras el cambio era imposible de ejecutar en producción.
+
+**Una prueba contra un esquema que uno mismo construye no valida una
+migración. Solo valida la lógica.**
+
+### Reglas, entonces
+
+- **Antes de escribir un script que toque el motor, MIRAR la base real.**
+  Qué columnas tiene `fudo_movimientos`, qué firmas de `fudo_procesar_item`
+  existen. Son dos consultas y evitan las dos causas de esta falla:
+  ```sql
+  select column_name from information_schema.columns
+   where table_schema='public' and table_name='fudo_movimientos';
+  select p.oid::regprocedure from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+   where n.nspname='public' and p.proname='fudo_procesar_item';
+  ```
+- **El script se basta solo**: crea las columnas que usa
+  (`add column if not exists`) aunque "ya deberían estar".
+- **Al reemplazar una función, un `drop` por cada firma vieja posible.**
+  Nunca solo la firma nueva.
+- **Después de instalar, comprobar que quedó UNA sola firma** y correr el
+  motor a mano una vez antes de darlo por bueno.
+- **Ojo con `begin/rollback` en el editor de Supabase: NO se respeta.** Un
+  diagnóstico "inocuo" con rollback escribió filas y descontó stock de
+  verdad. Si un script prueba algo que escribe, decirlo así y dar la
+  limpieza — no prometer que no deja rastro.
+
+### Y la regla que evita que se repita el silencio
+
+**Un fallo del motor tiene que verse en la pantalla.** Ya está hecho: si la
+sync lee ventas y no descuenta ninguna, la app abre una ventana que dice
+*"El inventario no se está descontando"* con el número de errores, en vez
+del "✓" de siempre. Cualquier cambio futuro al aviso de sincronización
+mantiene esto: **un sistema que falla en silencio es peor que uno que se
+cae**, porque nadie va a buscar lo que parece estar bien.
+
+---
+
 ## 1. Qué es esto y para quién
 
 Sistema de **inventario multi-sede** para una cadena de cafés ("Café del Desierto"),
@@ -476,6 +551,19 @@ el patrón a seguir:
 ---
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-27** — **FALLA GRAVE: 15 horas sin descontar, en silencio.**
+  Ver la regla 0.5, que es el análisis completo. Resumen: el motor v5 se
+  escribió suponiendo el estado de producción desde el repo (faltaba la
+  columna `venta_at`) y su `drop` solo borraba una de las dos firmas, así
+  que quedaron dos `fudo_procesar_item` conviviendo y la llamada por la API
+  se volvió ambigua. Las pruebas contra Postgres local pasaron porque esa
+  base la construí yo copiando el repo — validaban la lógica, no el encaje
+  con la base real. Arreglado con `sql/2026-07-URGENTE-falta-venta-at.sql` y
+  `sql/2026-07-URGENTE-dos-motores.sql`; el archivo del motor v5 ya crea su
+  columna y borra todas las firmas. **La app ahora avisa en ventana cuando
+  lee ventas y no descuenta ninguna**, que es lo que faltaba para que esto
+  no pasara 15 horas invisible.
 
 - **2026-07-27** — **Repartos: la lista de Adriana se confirma en la app.**
   Antes Adriana mandaba la lista por WhatsApp, el local comparaba contra lo
