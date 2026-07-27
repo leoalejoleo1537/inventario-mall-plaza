@@ -2262,19 +2262,35 @@ $('rec-eliminar').addEventListener('click', async()=>{
 });
 
 /* ---------------- historial ---------------- */
+/* Los días se cuentan EN LA BASE, no acá.
+   Antes se pedían todas las filas del historial (≈232 por día) para sacar
+   de ahí las fechas; Supabase corta la respuesta en 1000 filas, así que la
+   lista se quedaba con los primeros ~4 días guardados y los recientes no
+   aparecían nunca. Los datos estaban bien: lo que fallaba era leerlos. */
 async function loadHistorial(){
   $('hist-detail').style.display='none'; $('hist-home').style.display='block';
   const box=$('hist-list');
-  const {data,error}=await sb.from('historial').select('fecha').eq('sede',SEDE);
-  if(error){
-    box.innerHTML='<div class="empty">El historial aún no está activado en la base de datos.<br>Pídele a Claude el SQL para activarlo.</div>';
-    return;
+  let dias=null;
+
+  const rpc = await sb.rpc('historial_dias',{p_sede:SEDE});
+  if(!rpc.error){
+    dias = (rpc.data||[]).map(r=>({fecha:r.fecha, n:r.productos}));
+  } else {
+    // Respaldo por si el SQL todavía no se corrió: al menos trae los días
+    // MÁS RECIENTES en vez de los más antiguos.
+    const {data,error}=await sb.from('historial').select('fecha').eq('sede',SEDE)
+      .order('fecha',{ascending:false}).limit(1000);
+    if(error){
+      box.innerHTML='<div class="empty">El historial aún no está activado en la base de datos.</div>';
+      return;
+    }
+    const counts={}; (data||[]).forEach(r=>counts[r.fecha]=(counts[r.fecha]||0)+1);
+    dias=[...new Set((data||[]).map(r=>r.fecha))].sort().reverse().map(f=>({fecha:f, n:counts[f]}));
   }
-  const fechas=[...new Set(data.map(r=>r.fecha))].sort().reverse();
-  if(!fechas.length){ box.innerHTML='<div class="empty">Todavía no hay días guardados.<br>Usa el botón naranjo para guardar el primero.</div>'; return; }
-  const counts={}; data.forEach(r=>counts[r.fecha]=(counts[r.fecha]||0)+1);
-  box.innerHTML=fechas.map(f=>`<div class="hist-card" data-fecha="${f}">
-    <div><div class="f">${fmtFecha(f)}</div><div class="m">${counts[f]} productos guardados</div></div>
+
+  if(!dias.length){ box.innerHTML='<div class="empty">Todavía no hay días guardados.<br>Usa el botón naranjo para guardar el primero.</div>'; return; }
+  box.innerHTML=dias.map(d=>`<div class="hist-card" data-fecha="${d.fecha}">
+    <div><div class="f">${fmtFecha(d.fecha)}</div><div class="m">${d.n} productos guardados</div></div>
     <div style="color:var(--orange);font-weight:800">Ver ›</div>
   </div>`).join('');
 }
@@ -2288,6 +2304,8 @@ async function openHistDetail(fecha){
   const {data,error}=await sb.from('historial').select('*').eq('sede',SEDE).eq('fecha',fecha).order('producto');
   if(error){avisar('No se pudo cargar ese día.');return;}
   histRows=data;
+  // si el día trae justo el tope de la base, la lista está recortada
+  if(data.length >= 1000) avisar('Este día tiene demasiados productos para mostrarlos todos.\n\nSe están viendo los primeros '+data.length+'.');
   $('hist-home').style.display='none'; $('hist-detail').style.display='block';
   $('hist-title').textContent='Inventario del '+fmtFecha(fecha);
   $('hist-rows').innerHTML=data.map(p=>{

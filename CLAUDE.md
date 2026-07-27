@@ -552,6 +552,23 @@ el patrón a seguir:
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-27** — **El historial mostraba días viejos.** Jhon guardó el
+  inventario del 26 y la lista le ofrecía el 13/07, con cantidades que no
+  cuadraban (9 tortas donde había 14). El guardado siempre estuvo bien: lo
+  que fallaba era LEER. `loadHistorial` pedía todas las filas del historial
+  de la sede para sacar de ahí las fechas — **≈232 por día**, y Supabase
+  corta la respuesta en 1000 filas. Sin un orden pedido, devolvía las
+  primeras insertadas: los días más antiguos. Con más de ~4 días guardados,
+  los recientes desaparecían de la lista.
+  Arreglado con `sql/2026-07-historial-dias.sql`: una función que agrupa por
+  fecha en la base y devuelve **una fila por día**, así la lista no depende
+  de cuántos productos tenga cada uno. Si esa función no está, la app cae a
+  un respaldo que al menos pide los días **más recientes** (`order` +
+  `limit`), no los más viejos. **Lección general: cualquier `select` que
+  pueda devolver más de 1000 filas está truncado sin avisar** — si se
+  necesita un resumen (días, totales, conteos), se agrupa en la base, no en
+  la app.
+
 - **2026-07-27** — **FALLA GRAVE: 15 horas sin descontar, en silencio.**
   Ver la regla 0.5, que es el análisis completo. Resumen: el motor v5 se
   escribió suponiendo el estado de producción desde el repo (faltaba la
