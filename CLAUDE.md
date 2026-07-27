@@ -53,6 +53,17 @@
    cambio basado en ese estado, **consultarlo con un SELECT** — nunca
    inferirlo de un archivo del repo.
 
+   **Corolario, aprendido a la mala el 2026-07-27:** esto vale también para
+   las COLUMNAS y funciones que usa un script nuevo. El motor v5 escribía
+   `fudo_movimientos.venta_at` dando por hecho que la columna existía
+   porque se creaba en otro `.sql` del repo — que nunca se había corrido.
+   Resultado: el motor lanzaba excepción en CADA venta, la Edge Function
+   las contaba como errores pero respondía `ok`, y la app decía "ventas
+   actualizadas" sin descontar nada. A mitad de turno y sin aviso.
+   **Todo script SQL tiene que bastarse solo**: si usa una columna, un
+   índice o una función, la crea él mismo con `add column if not exists` /
+   `create ... if not exists`, aunque "ya debería estar".
+
 3. **Analizar ≠ escribir.** Ver sección 0: comparar/auditar es un informe,
    no un script que modifica la base. Pasar de análisis a escritura
    necesita que Jhon lo pida explícitamente, y todo script de escritura

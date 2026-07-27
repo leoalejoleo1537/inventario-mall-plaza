@@ -87,6 +87,14 @@ grant execute on function public.descontar_con_reposicion(text, bigint, numeric)
 
 -- ---------- 3) Motor v5: usa la reposición para productos SIN lotes ----------
 -- Igual que el motor v4 (con venta_at), solo cambia esta rama.
+--
+-- El motor escribe venta_at, así que la columna TIENE que existir. Se crea
+-- acá para que este archivo se baste solo: darla por hecha porque está en
+-- otro .sql del repo fue lo que dejó el motor lanzando excepción en cada
+-- venta el 2026-07-27 (ver regla 0.1.2 del archivo madre).
+alter table public.fudo_movimientos
+  add column if not exists venta_at timestamptz;
+
 drop function if exists public.fudo_procesar_item(text,text,text,text,text,numeric,text,timestamptz);
 
 create or replace function public.fudo_procesar_item(
