@@ -133,15 +133,16 @@
   resume, nunca se esconde detrás de un "+N fechas" ni de un "ver más" — eso
   fue justamente lo que hubo que corregir. Si hay 4 fechas, se ven las 4 sin
   abrir la ficha ni tocar nada.
-- **Formato de la píldora: `cantidad V fecha`** → `5 V 27/07/26`. La urgencia
+- **Formato de la píldora: `cantidad V fecha`, con año completo** → `5 V 27/07/2026`. La urgencia
   la lleva el COLOR, no la palabra (rojo relleno = VENCIDO, rojo claro = vence
   hoy, ámbar = mañana, gris = más adelante). Se llegó a esto porque
   "5 vencen mañana 28/07/26" no cabía y el texto se encimaba. **Vencido y
   "vence hoy" tienen que seguir distinguiéndose de un vistazo** — uno se bota
   y el otro se vende; por eso vencido es rojo relleno y no comparte estilo.
-- **La fecha va en formato corto (`27/07/26`), igual que el resumen de
-  WhatsApp**: lo que se lee en pantalla tiene que ser idéntico a lo que le
-  llega a Adriana.
+- **Dos formatos de fecha, a propósito** (`fmtPildora` y `fmtCorta`): la
+  píldora de la lista lleva el año completo (`27/07/2026`) para que en pantalla
+  no quede duda del año; el resumen de WhatsApp va en año corto (`27/07/26`),
+  que es como lo pidió Jhon. Cambiar uno no implica cambiar el otro.
 - Si un cambio futuro necesita acortar, agrupar o esconder fechas por razones
   de espacio, **se pregunta a Jhon primero**. Ahorrar dos líneas de pantalla no
   justifica que una fecha deje de verse.
@@ -434,6 +435,19 @@ el patrón a seguir:
 ---
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-27** — **Menos ruido en la lista + selector de color provisorio.**
+  Fuera de las cabeceras de sección: el contador de productos ("17", "9") y el
+  triangulito de desplegar — el personal ya sabe que la sección se abre al
+  tocarla. Fuera también la línea "232 de 232 productos". **El aviso de
+  críticos ("1 crít.") se mantiene**: eso no es ruido, es la alerta. La fecha
+  de la píldora pasa a año completo (`5 V 27/07/2026`); el resumen de WhatsApp
+  sigue en año corto, son dos formatos distintos a propósito.
+  **PROVISORIO:** debajo de los bloques AM/PM hay un selector con 6 colores
+  numerados para que Jhon elija el color de las cabeceras (el naranja se veía
+  demasiado urgente y competía con las alertas reales). Cuando decida, se fija
+  el color en `:root` y **se borra el bloque `COLORES_SEC` / `pintarPaleta()`
+  y el div `#paleta`** — no debe quedar en producción.
 
 - **2026-07-27** — **Las fechas ahora viajan en vivo, y se limpió el descuadre.**
   Jhon reportó que el resumen de sándwiches traía datos erróneos. Comparado

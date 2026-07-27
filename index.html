@@ -24,6 +24,8 @@
     --green-bg:#E6F4E6; --green-fg:#2E7D32;
     --amber-bg:#FFF3E0; --amber-fg:#B26A00;
     --gray-bg:#EDEEF0; --gray-fg:#5F6670;
+    /* color de las cabeceras de sección — lo cambia el selector de abajo */
+    --sec-bg:#DC4405; --sec-tx:#ffffff; --sec-line:rgba(255,255,255,.32);
   }
   *{box-sizing:border-box}
   html,body{touch-action:manipulation}
@@ -140,17 +142,14 @@
      empieza la siguiente. Antes era blanco igual que los productos y se perdía. */
   /* la barra naranja es el contenedor; adentro van el botón de abrir/cerrar y,
      en Sándwiches, el de copiar el resumen (un botón no puede ir dentro de otro) */
-  .sec-head{display:flex;align-items:stretch;background:var(--orange);border:1px solid var(--orange);border-radius:12px;box-shadow:0 1px 3px rgba(220,68,5,.25);overflow:hidden}
+  .sec-head{display:flex;align-items:stretch;background:var(--sec-bg);border:1px solid var(--sec-bg);border-radius:12px;box-shadow:0 1px 3px rgba(15,30,49,.14);overflow:hidden}
   .sec.open .sec-head{border-bottom-left-radius:0;border-bottom-right-radius:0}
-  .sec-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:1;min-width:0;background:transparent;border:none;padding:14px;font-size:15px;font-weight:800;color:#fff;cursor:pointer;text-align:left;font-family:inherit}
-  .sec-copy{width:48px;flex-shrink:0;border:none;border-left:1px solid rgba(255,255,255,.32);background:transparent;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-  .sec-copy:active{background:rgba(255,255,255,.18)}
+  .sec-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:1;min-width:0;background:transparent;border:none;padding:14px;font-size:15px;font-weight:800;color:var(--sec-tx);cursor:pointer;text-align:left;font-family:inherit}
+  .sec-copy{width:48px;flex-shrink:0;border:none;border-left:1px solid var(--sec-line);background:transparent;color:var(--sec-tx);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .sec-copy:active{background:var(--sec-line)}
   .sec-copy svg{width:19px;height:19px;display:block}
   .sec-tags{display:flex;align-items:center;gap:6px;flex-shrink:0}
-  .sec-count{background:rgba(255,255,255,.92);color:var(--orange-dark);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800}
   .sec-crit{background:#fff;color:var(--red-fg);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800}
-  .sec-arrow{color:#fff;font-size:11px;transition:transform .15s}
-  .sec.open .sec-arrow{transform:rotate(180deg)}
   .sec-body{border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:8px;background:var(--bg)}
   .sec-body .row:last-child{margin-bottom:0}
   /* recetas */
@@ -274,6 +273,12 @@
   .chkrow input{width:20px;height:20px;accent-color:var(--orange);cursor:pointer}
   .chkrow span{font-size:14.5px;font-weight:600}
   .chkrow small{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:1px}
+  /* selector de color provisorio: solo para que Jhon elija la cabecera */
+  .paleta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 2px 0}
+  .paleta-lbl{flex-basis:100%;font-size:11px;font-weight:700;color:var(--muted)}
+  .swatch{width:38px;height:38px;border-radius:10px;border:2px solid transparent;cursor:pointer;
+          font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0}
+  .swatch.sel{border-color:var(--text);box-shadow:0 0 0 2px #fff inset}
   footer{text-align:center;padding:20px;font-size:11px;color:var(--muted)}
   ::placeholder{color:#9aa3ad}
 </style>
@@ -379,8 +384,8 @@
     <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
     <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
   </div>
-  <div class="count" id="count"></div>
   <div id="list"></div>
+  <div class="paleta" id="paleta"></div>
   <button class="fab" id="btnNuevo" title="Agregar producto" aria-label="Agregar producto">+</button>
 </div>
 
@@ -568,7 +573,7 @@ function esPerec(p){ return hasPerec ? !!p.perecedero : p.rubro==='Sándwiches';
 function esUrgente(p){ return hasUrgente && !!p.urgente; }
 
 const $ = id => document.getElementById(id);
-const qEl=$('q'), listEl=$('list'), countEl=$('count');
+const qEl=$('q'), listEl=$('list');
 let openSecs=new Set();   // secciones desplegadas
 
 /* Normaliza texto para buscar y comparar: sin tildes, sin mayúsculas y sin
@@ -597,9 +602,12 @@ const fmt = n => n==null ? '—' : (Math.round(n*100)/100);
 const hoyISO = () => new Date().toLocaleDateString('en-CA');
 const fmtFecha = iso => { const [y,m,d]=iso.split('-'); return `${d}-${m}-${y}`; };
 /* formato corto para el resumen que se manda por WhatsApp: 27/07/26 */
-/* mismo formato en la píldora y en el resumen: lo que se lee en pantalla es
-   idéntico a lo que le llega a Adriana por WhatsApp */
-const fmtCorta = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
+/* dos formatos, a propósito:
+   - la píldora de la lista lleva el año completo (27/07/2026), que es como se
+     lee en pantalla sin dudar de qué año se trata;
+   - el resumen de WhatsApp va en año corto (27/07/26), tal como lo pidió Jhon. */
+const fmtPildora = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
+const fmtCorta   = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
 
 /* lotes de vencimiento por producto: { producto_id: [{id,cantidad,vencimiento}] } */
 let LOTES = {};
@@ -617,7 +625,7 @@ const lotesDe = pid => (LOTES[pid]||[]).filter(l=>(+l.cantidad||0) > 0).slice()
      ámbar        = vence mañana gris       = más adelante            */
 function etiquetaVenc(iso){
   const dias = Math.round((new Date(iso+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
-  const f = fmtCorta(iso);
+  const f = fmtPildora(iso);
   if (dias < 0)   return {cls:'venc vencido', txt:f};
   if (dias === 0) return {cls:'venc rojo',    txt:f};
   if (dias === 1) return {cls:'venc ambar',   txt:f};
@@ -696,7 +704,7 @@ function pickSede(s){
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
   $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none';
   vistaActual='inv';
-  listEl.innerHTML=''; countEl.textContent='';
+  listEl.innerHTML='';
   $('gate').classList.add('hidden');
   $('liveText').textContent='conectando…'; $('live').classList.remove('off');
   loadData();
@@ -821,6 +829,40 @@ function rowHTML(p){
     </div>
   </div>`;
 }
+/* ---------------- selector de color de las cabeceras (PROVISORIO) ----------------
+   Está solo para que Jhon compare y elija. Cuando decida, se fija el color
+   elegido en :root y se borra todo este bloque junto con el div #paleta. */
+const COLORES_SEC=[
+  {n:1, nom:'Naranja (actual)', bg:'#DC4405', tx:'#ffffff'},
+  {n:2, nom:'Navy',             bg:'#0F1E31', tx:'#ffffff'},
+  {n:3, nom:'Azul pizarra',     bg:'#2F4A6D', tx:'#ffffff'},
+  {n:4, nom:'Gris azulado',     bg:'#6B7684', tx:'#ffffff'},
+  {n:5, nom:'Gris claro',       bg:'#E3E5E8', tx:'#1C2733'},
+  {n:6, nom:'Verde',            bg:'#2E7D32', tx:'#ffffff'},
+];
+function aplicarColorSec(n){
+  const c=COLORES_SEC.find(x=>x.n===+n)||COLORES_SEC[0];
+  const r=document.documentElement.style;
+  r.setProperty('--sec-bg',c.bg);
+  r.setProperty('--sec-tx',c.tx);
+  r.setProperty('--sec-line', c.tx==='#ffffff' ? 'rgba(255,255,255,.32)' : 'rgba(0,0,0,.16)');
+  try{ localStorage.setItem('colorSec',String(c.n)); }catch(e){}
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.toggle('sel',+s.dataset.color===c.n));
+}
+function pintarPaleta(){
+  const box=$('paleta'); if(!box) return;
+  box.innerHTML='<span class="paleta-lbl">Color de las secciones</span>'+
+    COLORES_SEC.map(c=>`<button type="button" class="swatch" data-color="${c.n}" title="${c.nom}"
+      style="background:${c.bg};color:${c.tx}">${c.n}</button>`).join('');
+  box.addEventListener('click',e=>{
+    const s=e.target.closest('.swatch'); if(!s) return;
+    aplicarColorSec(s.dataset.color);
+  });
+  let guardado=1; try{ guardado=+localStorage.getItem('colorSec')||1; }catch(e){}
+  aplicarColorSec(guardado);
+}
+pintarPaleta();
+
 /* el filtro de Urgente no es un estado calculado: convive con crítico/sobre-stock */
 function pasaFiltro(p){
   if(!filterState) return true;
@@ -833,7 +875,6 @@ function render(){
   // SIEMPRE alfabético: el orden no depende de cantidades ni estados,
   // así una fila no se mueve cuando cambia su stock.
   rows.sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}));
-  countEl.textContent=`${rows.length} de ${DATA.length} productos`;
   // agrupar por sección
   const grupos=new Map();
   rows.forEach(p=>{const s=p.rubro||'Sin sección'; if(!grupos.has(s))grupos.set(s,[]); grupos.get(s).push(p);});
@@ -853,7 +894,7 @@ function render(){
       <div class="sec-head">
         <button type="button" class="sec-btn" data-sec="${esc(sec)}">
           <span>${esc(sec)}</span>
-          <span class="sec-tags">${crit?`<span class="sec-crit" title="productos en crítico">${crit} crít.</span>`:''}<span class="sec-count">${items.length}</span><span class="sec-arrow">▼</span></span>
+          <span class="sec-tags">${crit?`<span class="sec-crit" title="productos en crítico">${crit} crít.</span>`:''}</span>
         </button>
         ${copiar}
       </div>
