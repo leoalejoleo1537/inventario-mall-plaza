@@ -351,6 +351,26 @@ el patrón a seguir:
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-27** — **El stock ya no baja de 0, y Vitrina se repone sola desde
+  Congelador.** Motivo: una venta en Fudo podía dejar, por ejemplo, Cinnamon
+  Roll en -2 en Vitrina — un número que no significa nada en la realidad.
+  Motor v5 de `fudo_procesar_item` (SQL en
+  `sql/2026-07-reposicion-congelador-y-tope-cero.sql`): para productos SIN
+  lotes de vencimiento, si una venta dejaría el stock en 0 o menos, primero
+  se buscan **4 unidades fijas** (o las que haya, si hay menos) en su pareja
+  de Congelador — detectada automáticamente por nombre base, el mismo
+  criterio que ya usa el "Total" (`base_nombre()` en SQL, gemelo de
+  `baseNombre()` en la app) — y se trasladan a Vitrina ANTES de aplicar el
+  descuento. El stock final nunca es negativo, tenga o no pareja
+  (`greatest(0, stock - cantidad)`). Aplica a TODOS los pares Vitrina/Congelador
+  detectados automáticamente (galletas, brownies, volcanes, donas, muffins,
+  cinnamon rolls) — no es una lista curada a mano. Los sándwiches y demás
+  productos con lotes de vencimiento siguen igual, por FIFO de fecha, sin
+  tocar. Probado contra Postgres local: 5 escenarios (traspaso normal, menos
+  de 4 disponibles, sin pareja, perecedero con lotes sin cambios, venta que
+  agota ambos lados sin quedar negativo) + idempotencia + respeta
+  `fudo_sync.modo = 'prueba'`. Falta correr el SQL a mano en Supabase.
+
 - **2026-07-25** — Buscador siempre visible (se quitó la lupa: sumaba toques y no se
   notaba que abría) y **suelta los filtros al tocarlo** — buscar "torta de zanahoria"
   estando en el filtro Sobre-stock no la encontraba, aunque el producto existía. El
