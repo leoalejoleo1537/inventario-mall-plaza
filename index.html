@@ -1843,14 +1843,21 @@ $('rec-confirmar').addEventListener('click', async()=>{
   btn.disabled=false;
 });
 
-/* ---- resumen para WhatsApp: lo que llegó y, al final, lo que faltó ---- */
+/* ---- resumen para WhatsApp ----
+   Sirve en los DOS momentos del reparto, sin que nadie tenga que elegir:
+     * Adriana lo copia apenas envía, ANTES de que el reparto salga —
+       ahí todas las líneas están pendientes y lo que se manda es la lista
+       de lo que va en camino, con las cantidades que ella pidió.
+     * El jefe de turno lo copia al terminar — ahí ya hay cantidades
+       confirmadas, con sus fechas, y al final lo que no llegó.
+   Una línea muestra lo recibido si ya se resolvió, y lo pedido si no. */
 function resumenReparto(r){
-  const fecha = new Date(r.created_at).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'});
+  const fecha = fmtCorta(new Date(r.created_at).toLocaleDateString('en-CA'));
   const lin = [`Reparto ${fecha}`, ''];
-  const llegaron = r.items.filter(i=>i.estado==='recibido');
   const faltaron = r.items.filter(i=>i.estado==='no_llego');
-  llegaron.forEach(i=>{
-    lin.push(`${nombreResumen(i.producto)} ${fmt(i.cantidad_recibida)}`);
+  r.items.filter(i=>i.estado!=='no_llego').forEach(i=>{
+    const cant = i.estado==='recibido' ? i.cantidad_recibida : i.cantidad_pedida;
+    lin.push(`${nombreResumen(i.producto)} ${fmt(cant)}`);
     // SOLO las fechas que entraron en este reparto, no todas las del producto:
     // el resumen habla de lo que llegó hoy, no del inventario completo
     const creados = i.lotes_creados || [];

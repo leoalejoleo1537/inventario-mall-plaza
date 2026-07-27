@@ -483,9 +483,14 @@ el patrón a seguir:
      ya está.
   6. **Adriana no edita lo enviado.** Si se le olvidó algo, manda otro reparto.
      El que cierra es el jefe de turno, y solo con todas las líneas resueltas.
-  7. El resumen para WhatsApp trae lo que llegó y, al final, **lo que faltó
-     con ⚠️**. El desglose de fechas de un sándwich muestra SOLO las que
-     entraron en ese reparto, no todas las del producto.
+  7. **El resumen para WhatsApp sirve en los DOS momentos**, sin que nadie
+     elija nada. Adriana lo copia apenas envía —**antes de que el reparto
+     salga**— y ahí lista lo que va en camino con las cantidades pedidas; el
+     jefe de turno lo copia al terminar y ahí salen las cantidades reales,
+     con sus fechas, y al final **lo que faltó con ⚠️**. Una línea muestra lo
+     recibido si ya se resolvió, y lo pedido si sigue pendiente. El desglose
+     de fechas de un sándwich muestra SOLO las que entraron en ese reparto,
+     no todas las del producto.
   Las dos tablas van a la publicación `supabase_realtime` (está en el SQL):
   sin eso el local no ve lo que Adriana arma hasta refrescar. 50 comprobaciones
   de la pantalla + 14 contra Postgres local.
