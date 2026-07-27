@@ -280,6 +280,33 @@
   .chkrow input{width:20px;height:20px;accent-color:var(--orange);cursor:pointer}
   .chkrow span{font-size:14.5px;font-weight:600}
   .chkrow small{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:1px}
+  /* ---------- reparto ---------- */
+  .rep-fila{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 12px;
+            margin-bottom:8px;display:flex;flex-direction:column;gap:9px;box-shadow:0 1px 2px rgba(15,30,49,.04)}
+  .rep-fila .lin1{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .rep-fila .nm{font-size:14.5px;font-weight:700;min-width:0}
+  .rep-fila .ped{font-size:12.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .rep-acc{display:flex;align-items:center;gap:8px}
+  .rep-bt{height:38px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--text);
+          font-size:14px;font-weight:700;cursor:pointer;flex:1;font-family:inherit}
+  .rep-bt.si{border-color:var(--green-fg);color:var(--green-fg)}
+  .rep-bt.si:active{background:var(--green-bg)}
+  .rep-bt.no{border-color:var(--red-fg);color:var(--red-fg);flex:0 0 54px}
+  .rep-bt.no:active{background:var(--red-bg)}
+  .rep-cant{width:62px;height:38px;text-align:center;border:1.5px solid var(--border);border-radius:10px;
+            font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+  .rep-estado{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;
+              border-radius:999px;padding:4px 11px;align-self:flex-start}
+  .rep-estado.rec{background:var(--green-bg);color:var(--green-fg)}
+  .rep-estado.nol{background:var(--red-bg);color:var(--red-fg)}
+  .rep-deshacer{font-size:12px;color:var(--muted);background:none;border:none;padding:2px;
+                text-decoration:underline;cursor:pointer;align-self:flex-start;font-family:inherit}
+  .rep-add{font-size:13.5px;font-weight:700;color:var(--orange);background:none;border:none;
+           padding:6px 2px;cursor:pointer;font-family:inherit;text-align:left}
+  .suma-rec{display:flex;align-items:center;justify-content:space-between;background:var(--gray-bg);
+            border-radius:10px;padding:11px 13px;font-size:14px;font-weight:700;margin-top:12px}
+  .suma-rec b{font-size:19px;font-variant-numeric:tabular-nums}
+  .rep-sub{font-size:12px;color:var(--muted);margin:-2px 2px 8px}
   footer{text-align:center;padding:20px;font-size:11px;color:var(--muted)}
   ::placeholder{color:#9aa3ad}
 </style>
@@ -391,20 +418,81 @@
 
 <!-- ================= REPARTO ================= -->
 <div class="wrap" id="view-reparto" style="display:none">
-  <div class="controls busca" data-busca="reparto">
-    <input type="text" id="rq" placeholder="Buscar producto que llegó…">
-  </div>
-  <div id="reparto-results"></div>
 
-  <div id="carrito-box" style="display:none">
-    <div class="cart-title">Productos que llegaron</div>
-    <div id="carrito-list"></div>
-    <button class="btn btn-orange btn-block" id="btnRegistrarReparto" style="margin-top:10px">Registrar llegada</button>
-    <p style="font-size:12px;color:var(--muted);margin:8px 2px 0">Suma la cantidad al stock y avisa a Adriana que hay que actualizar FUDO.</p>
+  <!-- lo que llegó hoy y hay que confirmar -->
+  <div id="repartos-abiertos"></div>
+
+  <!-- armar un envío (la herramienta de Adriana) -->
+  <div class="sec" id="sec-armar">
+    <div class="sec-head">
+      <button type="button" class="sec-btn" data-caja="armar">
+        <span id="armar-titulo">Armar pedido</span>
+      </button>
+    </div>
+    <div class="sec-body" id="body-armar" style="display:none">
+      <div class="field" style="margin-top:2px">
+        <label>¿De dónde viene?</label>
+        <input type="text" id="rep-origen" list="origenes-list" placeholder="Bodega">
+        <datalist id="origenes-list">
+          <option value="Bodega"></option>
+          <option value="Angamos"></option>
+          <option value="Proveedor de tortas"></option>
+          <option value="Emergencia"></option>
+        </datalist>
+      </div>
+      <div class="controls busca" data-busca="reparto" style="margin-bottom:8px">
+        <input type="text" id="rq" placeholder="Buscar producto…">
+      </div>
+      <div id="reparto-results"></div>
+      <div id="carrito-box" style="display:none">
+        <div class="cart-title">Va en este reparto</div>
+        <div id="carrito-list"></div>
+        <button class="btn btn-orange btn-block" id="btnRegistrarReparto" style="margin-top:10px">Enviar reparto</button>
+      </div>
+    </div>
   </div>
 
-  <div class="pend-title">Pendientes por actualizar en FUDO <span class="pill" id="pend-count" style="background:var(--amber-bg);color:var(--amber-fg)">0</span></div>
-  <div id="pend-list"><div class="empty">Cargando…</div></div>
+  <!-- repartos ya cerrados -->
+  <div class="sec" id="sec-cerrados" style="display:none">
+    <div class="sec-head">
+      <button type="button" class="sec-btn" data-caja="cerrados">
+        <span>Repartos cerrados</span>
+        <span class="sec-tags"><span class="sec-count" id="cerrados-n">0</span></span>
+      </button>
+    </div>
+    <div class="sec-body" id="body-cerrados" style="display:none"></div>
+  </div>
+
+  <!-- avisar a Fudo (como estaba) -->
+  <div class="sec" id="sec-fudo">
+    <div class="sec-head">
+      <button type="button" class="sec-btn" data-caja="fudo">
+        <span>Actualizar en Fudo</span>
+        <span class="sec-tags"><span class="sec-count" id="pend-count">0</span></span>
+      </button>
+    </div>
+    <div class="sec-body" id="body-fudo" style="display:none">
+      <div id="pend-list"><div class="empty">Cargando…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: CONFIRMAR UN PERECEDERO ================= -->
+<div class="overlay" id="overlay-recibir">
+  <div class="modal">
+    <h2 id="rec-prod">Producto</h2>
+    <p class="mr" id="rec-pedido">—</p>
+    <div class="field" style="margin-top:0">
+      <label>Fechas de vencimiento que llegaron</label>
+      <div id="rec-lotes"></div>
+      <button type="button" class="btn btn-outline btn-sm" id="btnRecAddLote" style="margin-top:8px">+ Agregar fecha</button>
+    </div>
+    <div class="suma-rec"><span>Recibido</span><b id="rec-suma">0</b></div>
+    <div class="mbtns">
+      <button class="btn btn-outline" id="rec-cancelar">Cancelar</button>
+      <button class="btn btn-orange" id="rec-confirmar">Confirmar</button>
+    </div>
+  </div>
 </div>
 
 <!-- ================= HISTORIAL ================= -->
@@ -707,7 +795,12 @@ function pickSede(s){
   listEl.innerHTML='';
   $('gate').classList.add('hidden');
   $('liveText').textContent='conectando…'; $('live').classList.remove('off');
+  $('armar-titulo').textContent = 'Armar pedido' + (NOMBRE ? ', '+NOMBRE : '');
+  REPARTOS=[]; cajasAbiertas.clear();
+  $('body-armar').style.display='none'; $('body-cerrados').style.display='none'; $('body-fudo').style.display='none';
+  $('repartos-abiertos').innerHTML=''; $('rep-origen').value='';
   loadData();
+  loadRepartos();
   subscribeRealtime();
   refreshPendientes();
   if(presChannel){ try{ presChannel.track({nombre:NOMBRE, sede:SEDE}); }catch(e){} }  // avisa en qué sede estoy
@@ -1342,7 +1435,268 @@ $('n-guardar').addEventListener('click', async()=>{
   } finally { btn.disabled=false; btn.textContent='Agregar'; }
 });
 
-/* ---------------- reparto ---------------- */
+/* ---------------- reparto ----------------
+   Adriana arma el envío; el jefe de turno confirma lo que llegó y el stock
+   sube en ese momento. Nadie transcribe nada desde WhatsApp.
+   Toda la suma ocurre en la base (reparto_recibir), no acá: así dos
+   teléfonos tocando "Llegó" a la vez no suman dos veces.               */
+let REPARTOS = [];        // {..., items:[...]}
+let hasRepartos = false;  // false mientras no se corra el SQL
+const cajasAbiertas = new Set();
+
+async function loadRepartos(){
+  if(!SEDE) return;
+  const rp = await sb.from('repartos').select('*').eq('sede',SEDE).order('created_at',{ascending:false});
+  if(rp.error){ hasRepartos=false; renderRepartos(); return; }
+  hasRepartos=true;
+  const reps = rp.data||[];
+  const ids = reps.map(r=>r.id);
+  let items=[];
+  if(ids.length){
+    const ri = await sb.from('reparto_items').select('*').in('reparto_id',ids).order('id');
+    items = ri.data||[];
+  }
+  REPARTOS = reps.map(r=>({...r, items: items.filter(i=>i.reparto_id===r.id)}));
+  renderRepartos();
+}
+
+/* una línea: si está sin resolver muestra los botones; si ya se resolvió,
+   solo su estado. Así no se toca dos veces por descuido. */
+function repItemHTML(it){
+  const p = DATA.find(d=>d.id===it.producto_id);
+  const perec = p ? esPerec(p) : false;
+  if(it.estado==='pendiente'){
+    const btnSi = perec
+      ? `<button type="button" class="rep-bt si" data-fechas="${it.id}">✓ Llegó · fechas</button>`
+      : `<button type="button" class="rep-bt si" data-recibir="${it.id}">✓ Llegó</button>
+         <input type="number" class="rep-cant" step="0.5" min="0" value="${fmt(it.cantidad_pedida)}" data-cant="${it.id}" aria-label="Cantidad recibida">`;
+    return `<div class="rep-fila" data-item="${it.id}">
+      <div class="lin1"><span class="nm">${esc(it.producto)}</span><span class="ped">pidió ${fmt(it.cantidad_pedida)}</span></div>
+      <div class="rep-acc">${btnSi}
+        <button type="button" class="rep-bt no" data-rechazar="${it.id}" aria-label="No llegó">✕</button>
+      </div>
+    </div>`;
+  }
+  const est = it.estado==='recibido'
+    ? `<span class="rep-estado rec">✓ Recibido ${fmt(it.cantidad_recibida)}</span>`
+    : `<span class="rep-estado nol">✕ No llegó</span>`;
+  return `<div class="rep-fila" data-item="${it.id}">
+    <div class="lin1"><span class="nm">${esc(it.producto)}</span><span class="ped">pidió ${fmt(it.cantidad_pedida)}</span></div>
+    ${est}
+    <button type="button" class="rep-deshacer" data-deshacer="${it.id}">Deshacer</button>
+  </div>`;
+}
+
+function renderRepartos(){
+  const cont = $('repartos-abiertos');
+  const abiertos = REPARTOS.filter(r=>r.estado==='abierto');
+  const cerrados = REPARTOS.filter(r=>r.estado==='cerrado');
+
+  cont.innerHTML = abiertos.map(r=>{
+    const hechos = r.items.filter(i=>i.estado!=='pendiente').length;
+    const abierta = cajasAbiertas.has('rep'+r.id) || abiertos.length===1;
+    return `<div class="sec${abierta?' open':''}" data-repsec="${r.id}">
+      <div class="sec-head">
+        <button type="button" class="sec-btn" data-caja="rep${r.id}">
+          <span>${esc(r.origen)}${r.creado_por?' · '+esc(r.creado_por):''}</span>
+          <span class="sec-tags"><span class="sec-count">${hechos} de ${r.items.length}</span></span>
+        </button>
+        <button type="button" class="sec-copy" data-copiarrep="${r.id}" aria-label="Copiar resumen" title="Copiar resumen">${COPY_SVG}</button>
+      </div>
+      ${abierta?`<div class="sec-body">
+        ${r.items.length?r.items.map(repItemHTML).join(''):'<div class="empty">Este reparto quedó vacío.</div>'}
+        <button type="button" class="rep-add" data-agregar="${r.id}">+ Llegó algo que no estaba en la lista</button>
+        <button type="button" class="btn btn-orange btn-block" data-cerrar="${r.id}" style="margin-top:4px">Cerrar reparto</button>
+      </div>`:''}
+    </div>`;
+  }).join('');
+
+  $('sec-cerrados').style.display = cerrados.length ? '' : 'none';
+  $('cerrados-n').textContent = cerrados.length;
+  $('body-cerrados').innerHTML = cerrados.map(r=>{
+    const ok = r.items.filter(i=>i.estado==='recibido').length;
+    const no = r.items.filter(i=>i.estado==='no_llego').length;
+    return `<div class="rep-fila">
+      <div class="lin1">
+        <span class="nm">${esc(r.origen)}</span>
+        <span class="ped">${new Date(r.created_at).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'})}</span>
+      </div>
+      <div class="rep-sub" style="margin:0">${ok} recibidos${no?' · '+no+' no llegaron':''}</div>
+    </div>`;
+  }).join('');
+
+  const badge=$('repBadge');
+  const pend = abiertos.reduce((n,r)=>n+r.items.filter(i=>i.estado==='pendiente').length,0);
+  if(pend){ badge.textContent=pend; badge.style.display='inline-block'; } else { badge.style.display='none'; }
+}
+
+/* cajas plegables de la pestaña Reparto (mismo gesto que las secciones) */
+$('view-reparto').addEventListener('click', e=>{
+  const cj = e.target.closest('[data-caja]');
+  if(!cj) return;
+  const k = cj.dataset.caja;
+  if(cajasAbiertas.has(k)) cajasAbiertas.delete(k); else cajasAbiertas.add(k);
+  if(k==='armar' || k==='cerrados' || k==='fudo'){
+    const body=$('body-'+k);
+    body.style.display = cajasAbiertas.has(k) ? '' : 'none';
+    cj.closest('.sec').classList.toggle('open', cajasAbiertas.has(k));
+    if(k==='fudo' && cajasAbiertas.has(k)) refreshPendientes();
+  } else {
+    renderRepartos();
+  }
+});
+
+/* ---- confirmar / rechazar / deshacer ---- */
+async function llamarReparto(fn, args, exito){
+  const {data,error} = await sb.rpc(fn, args);
+  if(error){
+    console.error(error);
+    alert(error.message || 'No se pudo. Revisa tu señal e inténtalo de nuevo.');
+    return false;
+  }
+  if(exito) aviso(exito);
+  await loadRepartos(); await loadData();
+  return true;
+}
+$('repartos-abiertos').addEventListener('click', async e=>{
+  const cop = e.target.closest('[data-copiarrep]');
+  if(cop){
+    const r = REPARTOS.find(x=>x.id===+cop.dataset.copiarrep); if(!r) return;
+    const txt = resumenReparto(r);
+    copiarTexto(txt).then(ok=>aviso(ok?'✓ Resumen copiado':'No se pudo copiar'));
+    return;
+  }
+  const rec = e.target.closest('[data-recibir]');
+  if(rec){
+    const id=+rec.dataset.recibir;
+    const inp=$('repartos-abiertos').querySelector(`[data-cant="${id}"]`);
+    const cant=inp?Math.max(0,+inp.value||0):null;
+    rec.disabled=true;
+    await llamarReparto('reparto_recibir',{p_item_id:id, p_cantidad:cant, p_lotes:null, p_quien:NOMBRE},'✓ Sumado al inventario');
+    return;
+  }
+  const fec = e.target.closest('[data-fechas]');
+  if(fec){ abrirRecibir(+fec.dataset.fechas); return; }
+
+  const nol = e.target.closest('[data-rechazar]');
+  if(nol){
+    nol.disabled=true;
+    await llamarReparto('reparto_rechazar',{p_item_id:+nol.dataset.rechazar, p_quien:NOMBRE});
+    return;
+  }
+  const des = e.target.closest('[data-deshacer]');
+  if(des){
+    des.disabled=true;
+    await llamarReparto('reparto_deshacer',{p_item_id:+des.dataset.deshacer});
+    return;
+  }
+  const cer = e.target.closest('[data-cerrar]');
+  if(cer){
+    if(!confirm('¿Cerrar este reparto?\n\nDespués no se puede seguir confirmando.')) return;
+    cer.disabled=true;
+    await llamarReparto('reparto_cerrar',{p_reparto_id:+cer.dataset.cerrar, p_quien:NOMBRE},'Reparto cerrado');
+    return;
+  }
+  const agr = e.target.closest('[data-agregar]');
+  if(agr){ agregarAlReparto(+agr.dataset.agregar); return; }
+});
+
+/* agregar un producto que llegó sin estar en la lista */
+async function agregarAlReparto(repartoId){
+  const nombre = prompt('¿Qué producto llegó de más?');
+  if(!nombre) return;
+  const q = normNombre(nombre);
+  const cand = DATA.filter(p=>normNombre(p.producto).includes(q));
+  if(!cand.length){ alert('No encontré ese producto en el inventario.'); return; }
+  if(cand.length>1){
+    const exacto = cand.find(p=>normNombre(p.producto)===q);
+    if(!exacto){ alert('Hay '+cand.length+' productos que coinciden. Escribe el nombre completo.'); return; }
+    cand[0]=exacto;
+  }
+  const p=cand[0];
+  const {error} = await sb.from('reparto_items').insert([{reparto_id:repartoId, producto_id:p.id,
+    producto:p.producto, cantidad_pedida:0, extra:true}]);
+  if(error){ alert('No se pudo agregar. Revisa tu señal.'); console.error(error); return; }
+  await loadRepartos();
+}
+
+/* ---- confirmar un perecedero: entra por FECHAS, nunca por stock ---- */
+let recItemId=null;
+function abrirRecibir(itemId){
+  const it = REPARTOS.flatMap(r=>r.items).find(i=>i.id===itemId); if(!it) return;
+  recItemId=itemId;
+  $('rec-prod').textContent = it.producto;
+  $('rec-pedido').textContent = 'Adriana envió '+fmt(it.cantidad_pedida);
+  $('rec-lotes').innerHTML='';
+  agregarFilaRec(it.cantidad_pedida, hoyISO());
+  $('overlay-recibir').classList.add('open');
+}
+function agregarFilaRec(cant, venc){
+  const div=document.createElement('div');
+  div.className='lote-row';
+  div.innerHTML = `<input type="number" class="lote-cant" step="0.5" min="0" value="${cant==null?'':cant}" aria-label="Cantidad">`
+    + `<input type="date" class="lote-venc" value="${venc||''}" aria-label="Fecha de vencimiento">`
+    + `<button type="button" class="lote-del" aria-label="Quitar fecha">✕</button>`;
+  $('rec-lotes').appendChild(div);
+  sumarRec();
+}
+/* la cantidad recibida NO se escribe: es la suma de las fechas (regla 0.3.1) */
+function sumarRec(){
+  const filas=[...$('rec-lotes').querySelectorAll('.lote-row')];
+  $('rec-suma').textContent = fmt(filas.reduce((t,f)=>t+(+f.querySelector('.lote-cant').value||0),0));
+}
+$('rec-lotes').addEventListener('input', e=>{ if(e.target.closest('.lote-cant')) sumarRec(); });
+$('rec-lotes').addEventListener('click', e=>{
+  const d=e.target.closest('.lote-del'); if(!d) return;
+  d.closest('.lote-row').remove(); sumarRec();
+});
+$('btnRecAddLote').addEventListener('click',()=>{ agregarFilaRec(1, hoyISO()); });
+function cerrarRecibir(){ $('overlay-recibir').classList.remove('open'); recItemId=null; }
+$('rec-cancelar').addEventListener('click', cerrarRecibir);
+$('overlay-recibir').addEventListener('click', e=>{ if(e.target===$('overlay-recibir')) cerrarRecibir(); });
+$('rec-confirmar').addEventListener('click', async()=>{
+  if(!recItemId) return;
+  const lotes=[];
+  for(const f of $('rec-lotes').querySelectorAll('.lote-row')){
+    const c=+f.querySelector('.lote-cant').value||0;
+    const v=f.querySelector('.lote-venc').value||null;
+    if(!v){ alert('Cada fecha necesita su día.'); return; }
+    if(c<=0){ alert('Cada fecha necesita una cantidad mayor que 0.'); return; }
+    lotes.push({cantidad:c, vencimiento:v});
+  }
+  if(!lotes.length){ alert('Este producto lleva fecha de vencimiento: agrega al menos una.'); return; }
+  const fechas=lotes.map(l=>l.vencimiento);
+  if(new Set(fechas).size!==fechas.length){ alert('Hay una fecha repetida. Déjala en una sola línea con la cantidad total.'); return; }
+  const btn=$('rec-confirmar'); btn.disabled=true;
+  const id=recItemId;
+  cerrarRecibir();
+  await llamarReparto('reparto_recibir',{p_item_id:id, p_cantidad:null, p_lotes:lotes, p_quien:NOMBRE},'✓ Sumado al inventario');
+  btn.disabled=false;
+});
+
+/* ---- resumen para WhatsApp: lo que llegó y, al final, lo que faltó ---- */
+function resumenReparto(r){
+  const fecha = new Date(r.created_at).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'});
+  const lin = [`Reparto ${fecha} · ${r.origen}`, ''];
+  const llegaron = r.items.filter(i=>i.estado==='recibido');
+  const faltaron = r.items.filter(i=>i.estado==='no_llego');
+  llegaron.forEach(i=>{
+    lin.push(`${nombreResumen(i.producto)} ${fmt(i.cantidad_recibida)}`);
+    // SOLO las fechas que entraron en este reparto, no todas las del producto:
+    // el resumen habla de lo que llegó hoy, no del inventario completo
+    const creados = i.lotes_creados || [];
+    if(creados.length) lotesDe(i.producto_id)
+      .filter(l=>l.vencimiento && creados.includes(l.id))
+      .forEach(l=>lin.push(`  ${fmt(+l.cantidad||0)} · Fv. ${fmtCorta(l.vencimiento)}`));
+  });
+  if(faltaron.length){
+    lin.push('', 'NO LLEGÓ '+URGE);
+    faltaron.forEach(i=>lin.push(`${nombreResumen(i.producto)} (pidió ${fmt(i.cantidad_pedida)})`));
+  }
+  return lin.join('\n').trim();
+}
+
+/* ---- armar un envío (Adriana) ---- */
 const rqEl = $('rq');
 function renderRepartoResults(){
   const q = normNombre(rqEl.value);
@@ -1401,38 +1755,41 @@ $('carrito-list').addEventListener('click', e=>{
     else { carrito.splice(i,1); renderCarrito(); }
   }
 });
+/* Enviar NO toca el stock: solo deja la lista esperando a que el local confirme */
 $('btnRegistrarReparto').addEventListener('click', async()=>{
   const items = carrito.filter(c=>c.cantidad>0);
   if(!items.length){ alert('Agrega una cantidad mayor a 0.'); return; }
-  const btn=$('btnRegistrarReparto'); btn.disabled=true; btn.textContent='Registrando…';
+  const origen = ($('rep-origen').value||'').replace(/\s+/g,' ').trim() || 'Bodega';
+  const btn=$('btnRegistrarReparto'); btn.disabled=true; btn.textContent='Enviando…';
   try{
-    for(const item of items){
-      const p = DATA.find(d=>d.id===item.id); if(!p) continue;
-      const nuevoStock = (p.stock_actual??0) + item.cantidad;
-      const {error:e1} = await conReintento(()=>sb.from('productos').update({stock_actual:nuevoStock, updated_at:new Date().toISOString()}).eq('id',item.id));
-      if(e1){ alert('No se pudo actualizar "'+item.producto+'". Revisa tu señal e inténtalo de nuevo.'); console.error(e1); return; }
-      p.stock_actual = nuevoStock;
-      const {error:e2} = await conReintento(()=>sb.from('fudo_pendientes').insert([{sede:SEDE, producto_id:item.id, producto:item.producto, rubro:item.rubro, cantidad:item.cantidad}]));
-      if(e2) console.error('No se pudo avisar a FUDO para '+item.producto, e2);
+    const {data,error} = await conReintento(()=>sb.from('repartos')
+      .insert([{sede:SEDE, origen, creado_por:NOMBRE}]).select());
+    if(error||!data||!data[0]){
+      alert('No se pudo enviar el reparto. Revisa tu señal e inténtalo de nuevo.'); console.error(error); return;
     }
-    metrics(); render();
-    alert('✓ Reparto registrado. El stock ya está actualizado.');
-    carrito=[]; renderCarrito(); renderRepartoResults();
-    refreshPendientes();
-  } finally { btn.disabled=false; btn.textContent='Registrar llegada'; }
+    const rid=data[0].id;
+    const {error:e2} = await conReintento(()=>sb.from('reparto_items').insert(
+      items.map(c=>({reparto_id:rid, producto_id:c.id, producto:c.producto, cantidad_pedida:c.cantidad}))));
+    if(e2){
+      await sb.from('repartos').delete().eq('id',rid);   // no dejar un reparto vacío dando vueltas
+      alert('No se pudo enviar el reparto. Revisa tu señal e inténtalo de nuevo.'); console.error(e2); return;
+    }
+    carrito=[]; renderCarrito(); renderRepartoResults(); rqEl.value='';
+    cajasAbiertas.delete('armar'); $('body-armar').style.display='none';
+    $('sec-armar').classList.remove('open');
+    aviso('✓ Reparto enviado · '+items.length+' producto'+(items.length===1?'':'s'));
+    await loadRepartos();
+  } finally { btn.disabled=false; btn.textContent='Enviar reparto'; }
 });
 
 async function refreshPendientes(){
   if(!SEDE) return;
   const {data,error} = await sb.from('fudo_pendientes').select('*').eq('sede',SEDE).order('created_at',{ascending:false});
-  const badge=$('repBadge'), visible=$('view-reparto').style.display!=='none';
   if(error){
-    badge.style.display='none';
-    if(visible){ $('pend-list').innerHTML='<div class="empty">El aviso a FUDO aún no está activado en la base de datos.<br>Pídele a Claude el SQL para activarlo.</div>'; $('pend-count').textContent='0'; }
+    $('pend-count').textContent='0';
+    $('pend-list').innerHTML='<div class="empty">El aviso a FUDO aún no está activado en la base de datos.</div>';
     return;
   }
-  if(data.length){ badge.textContent=data.length; badge.style.display='inline-block'; } else { badge.style.display='none'; }
-  if(!visible) return;
   $('pend-count').textContent=data.length;
   if(!data.length){ $('pend-list').innerHTML='<div class="empty">No hay pendientes. Todo al día 👍</div>'; return; }
   $('pend-list').innerHTML = data.map(p=>`
@@ -1465,7 +1822,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();
   if(tab==='hist') loadHistorial();
-  if(tab==='reparto') refreshPendientes();
+  if(tab==='reparto'){ loadRepartos(); refreshPendientes(); }
   if(tab==='recetas') loadRecetas();
 }));
 
@@ -1797,6 +2154,7 @@ async function resincronizar(){
   if(Date.now()-ultimaRecarga < 1500) return;   // evita recargas en ráfaga
   ultimaRecarga=Date.now();
   await loadData();
+  await loadRepartos();
   refreshPendientes();
 }
 /* La app se duerme al bloquear el teléfono o dejar la pestaña de fondo, y la
@@ -1831,6 +2189,8 @@ function subscribeRealtime(){
     .on('postgres_changes',{event:'*',schema:'public',table:'producto_lotes'},async()=>{
       await loadLotes(); metrics(); render();   // otro dispositivo cambió una fecha
     })
+    .on('postgres_changes',{event:'*',schema:'public',table:'repartos'},()=>{ loadRepartos(); })
+    .on('postgres_changes',{event:'*',schema:'public',table:'reparto_items'},()=>{ loadRepartos(); })
     .subscribe(status=>{
       if(status==='SUBSCRIBED'){
         $('liveText').textContent='en vivo'; $('live').classList.remove('off');

@@ -182,6 +182,23 @@ Las dos direcciones NO son simétricas, y confundirlas rompe el inventario:
 
 ---
 
+## 0.4 REGLA DURA — un perecedero entra al inventario SOLO por fechas
+
+> Vale para el reparto, para la ficha del producto y para cualquier camino
+> futuro que sume stock.
+
+- **Nunca sumar a `productos.stock_actual` de un producto perecedero.** Se
+  insertan filas en `producto_lotes` y el trigger `sync_stock_desde_lotes`
+  recalcula el stock. Si se suma al stock directo, se rompe la invariante de
+  la sección 0.3.1 y vuelve el descuadre de "Champiñón 0 con fecha".
+- `reparto_recibir()` lo hace cumplir **en la base**: si el producto es
+  perecedero (o ya tiene lotes) y no le llegan fechas, lanza un error en vez
+  de sumar. No depende de que la app se acuerde.
+- En la pantalla, un perecedero no tiene campo de cantidad: tiene botón de
+  fechas, y **la cantidad recibida se calcula sumando las fechas**.
+
+---
+
 ## 1. Qué es esto y para quién
 
 Sistema de **inventario multi-sede** para una cadena de cafés ("Café del Desierto"),
@@ -438,6 +455,37 @@ el patrón a seguir:
 ---
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-27** — **Repartos: la lista de Adriana se confirma en la app.**
+  Antes Adriana mandaba la lista por WhatsApp, el local comparaba contra lo
+  que llegaba… y después tenía que TRANSCRIBIRLO a la app. Ese traspaso era
+  el doble trabajo. Ahora Adriana arma el reparto acá (bloque "Armar pedido,
+  <nombre>") y el jefe de turno solo confirma: ✓ Llegó / cantidad distinta /
+  ✕ No llegó. Cada confirmación suma al inventario en el momento.
+  SQL en `sql/2026-07-repartos.sql`: tablas `repartos` + `reparto_items` y las
+  funciones `reparto_recibir` / `reparto_rechazar` / `reparto_deshacer` /
+  `reparto_cerrar`. Puntos de diseño que NO se tocan sin preguntar:
+  1. **La suma ocurre en la base, no en la app.** `reparto_recibir` bloquea la
+     línea (`for update`) y comprueba que siga pendiente antes de sumar: dos
+     teléfonos tocando "Llegó" a la vez no suman dos veces. Mismo patrón que
+     el motor de Fudo.
+  2. **Los perecederos entran por fechas** — ver regla 0.4.
+  3. **Enviar NO toca el stock.** Solo deja la lista esperando; el stock sube
+     recién cuando el local confirma.
+  4. **Deshacer solo si el producto no se movió.** Si ya hubo ventas, avisa
+     ("corrige el stock en la ficha") en vez de inventar un número. También
+     retira el aviso a Fudo que había generado, para que nadie sume en Fudo
+     algo que en la app se dio marcha atrás.
+  5. **Varios repartos por día**, cada uno con su ORIGEN (Bodega / Angamos /
+     Proveedor de tortas / Emergencia): al local llegan ~3 distintos.
+  6. **Adriana no edita lo enviado.** Si se le olvidó algo, manda otro reparto.
+     El que cierra es el jefe de turno, y solo con todas las líneas resueltas.
+  7. El resumen para WhatsApp trae lo que llegó y, al final, **lo que faltó
+     con ⚠️**. El desglose de fechas de un sándwich muestra SOLO las que
+     entraron en ese reparto, no todas las del producto.
+  Las dos tablas van a la publicación `supabase_realtime` (está en el SQL):
+  sin eso el local no ve lo que Adriana arma hasta refrescar. 50 comprobaciones
+  de la pantalla + 14 contra Postgres local.
 
 - **2026-07-27** — **Al filtrar por Crítico, lo urgente va arriba del todo.**
   Adriana arma la lista de pedido para Mall Plaza entrando por la tarjeta
