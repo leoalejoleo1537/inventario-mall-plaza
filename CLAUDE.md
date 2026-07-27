@@ -97,6 +97,31 @@
 
 ---
 
+## 0.2 REGLA DURA — el stock nunca puede ser negativo, sin excepción
+
+> Jhon, 2026-07-27: "es absurdo, no podemos tener números negativos en el
+> inventario... esta regla se aplica a todos los productos sin excepción."
+
+- **Ningún producto, en ningún camino, puede quedar con stock negativo.**
+  No solo los que tienen pareja Vitrina/Congelador (`sql/2026-07-reposicion-
+  congelador-y-tope-cero.sql`) — **también** los productos con lotes de
+  vencimiento (sándwiches, etc.): si se vende más de lo que hay, el sobrante
+  ya NO se refleja en negativo, el stock se queda en 0
+  (`sql/2026-07-tope-cero-sin-excepcion.sql`, corrige `descontar_lotes()`).
+- **Respaldo a nivel de base de datos:** `productos.stock_actual >= 0` y
+  `producto_lotes.cantidad >= 0` son restricciones CHECK reales en la tabla
+  (no solo lógica en el motor). Esto es intencional: si en el futuro se
+  agrega un motor nuevo, una edición manual, o cualquier otro camino que
+  intente dejar un número negativo, la base lo rechaza sola, sin depender
+  de que alguien se acuerde de esta regla.
+- **Si algún cambio futuro a `fudo_procesar_item`, `descontar_lotes()`,
+  `descontar_con_reposicion()`, o a la edición manual de stock en la app
+  necesita "permitir" un negativo por algún motivo** (ej. para "ver cuánto
+  faltó"), eso es una decisión que se pregunta a Jhon explícitamente — no
+  se asume. La regla por defecto es tope duro en 0.
+
+---
+
 ## 1. Qué es esto y para quién
 
 Sistema de **inventario multi-sede** para una cadena de cafés ("Café del Desierto"),
@@ -350,6 +375,28 @@ el patrón a seguir:
 ---
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-27** — **Tope en 0 sin excepción, para todos los productos.**
+  Jhon aclaró que la regla del cambio anterior (mismo día) se quedaba corta:
+  no debe haber negativos en NINGÚN producto, tenga o no pareja de
+  Congelador. Quedaba un hueco: los productos con lotes de vencimiento
+  (sándwiches) — `descontar_lotes()` dejaba a propósito el sobrante en
+  negativo en el lote más próximo si se vendía más de lo que había. SQL en
+  `sql/2026-07-tope-cero-sin-excepcion.sql`: 1) `descontar_lotes()` ya no
+  deja sobrante negativo, se queda en 0; 2) se agregan restricciones CHECK
+  reales (`productos.stock_actual >= 0`, `producto_lotes.cantidad >= 0`)
+  como respaldo final — así ningún camino futuro (motor nuevo, edición
+  manual, bug) puede dejar un negativo, aunque nadie se acuerde de esta
+  regla. También en la app: los campos de stock editables a mano ahora
+  tienen `min="0"` y se clampean en JS antes de guardar, y si de todas
+  formas la base rechaza un negativo, el aviso dice "El stock no puede
+  quedar negativo" en vez del mensaje genérico de conexión. Probado contra
+  Postgres local: venta que excede el lote disponible (queda en 0, sin fila
+  fantasma negativa), venta exacta seguida de otra venta con stock ya en 0
+  (no falla, se queda en 0), e intento directo de forzar un stock_actual
+  negativo por UPDATE (rechazado por el CHECK). Regla ahora está en la
+  sección 0.2 del archivo madre. Falta correr el SQL a mano en Supabase
+  (después del de reposición-congelador, si aún no se corrió).
 
 - **2026-07-27** — **El stock ya no baja de 0, y Vitrina se repone sola desde
   Congelador.** Motivo: una venta en Fudo podía dejar, por ejemplo, Cinnamon

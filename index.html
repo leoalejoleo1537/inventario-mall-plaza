@@ -439,13 +439,13 @@
       <label style="text-align:center">Stock actual</label>
       <div class="stepper">
         <button type="button" id="m-menos">−</button>
-        <input type="number" step="0.5" id="m-stock">
+        <input type="number" step="0.5" min="0" id="m-stock">
         <button type="button" id="m-mas">+</button>
       </div>
     </div>
     <div style="display:flex;gap:10px">
-      <div class="field" style="flex:1"><label>Stock mínimo</label><input type="number" step="0.5" id="m-min"></div>
-      <div class="field" style="flex:1"><label>Stock máximo</label><input type="number" step="0.5" id="m-max"></div>
+      <div class="field" style="flex:1"><label>Stock mínimo</label><input type="number" step="0.5" min="0" id="m-min"></div>
+      <div class="field" style="flex:1"><label>Stock máximo</label><input type="number" step="0.5" min="0" id="m-max"></div>
     </div>
     <label class="chkrow" id="m-perec-row" style="display:none">
       <input type="checkbox" id="m-perec">
@@ -752,7 +752,7 @@ function rowHTML(p){
     </div>
     <div class="right">
       <span class="pill" style="background:${cf.bg};color:${cf.fg}">${cf.t}</span>
-      <input type="number" step="0.5" value="${p.stock_actual==null?'':p.stock_actual}" data-id="${p.id}" aria-label="Stock de ${esc(p.producto)}"${conLotes?' readonly title="Se calcula sumando las fechas"':''}>
+      <input type="number" step="0.5" min="0" value="${p.stock_actual==null?'':p.stock_actual}" data-id="${p.id}" aria-label="Stock de ${esc(p.producto)}"${conLotes?' readonly title="Se calcula sumando las fechas"':''}>
     </div>
   </div>`;
 }
@@ -820,13 +820,16 @@ async function saveFields(id,fields){
   if(row)row.classList.add('saving');
   const {error}=await conReintento(()=>sb.from('productos').update({...fields,updated_at:new Date().toISOString()}).eq('id',id));
   if(row)row.classList.remove('saving');
-  if(error){alert('No se pudo guardar. La conexión falló varias veces — revisa tu señal e inténtalo de nuevo.');console.error(error);}
+  if(error){
+    const msg=error.code==='23514'?'El stock no puede quedar negativo.':'No se pudo guardar. La conexión falló varias veces — revisa tu señal e inténtalo de nuevo.';
+    alert(msg);console.error(error);
+  }
 }
 
 /* edición rápida (input de la fila) */
 listEl.addEventListener('change',e=>{
   const inp=e.target.closest('input[data-id]'); if(!inp)return;
-  const id=+inp.dataset.id, val=inp.value===''?null:+inp.value;
+  const id=+inp.dataset.id, val=inp.value===''?null:Math.max(0,+inp.value);
   const p=DATA.find(d=>d.id===id); p.stock_actual=val;
   metrics(); render(); saveFields(id,{stock_actual:val});
 });
@@ -1003,7 +1006,7 @@ $('m-guardar').addEventListener('click',async()=>{
   const fields={producto:nombre,stock_min:num($('m-min')),stock_max:num($('m-max')),rubro:rubroNuevo};
   // con varias fechas, el stock lo calcula la base sumando los lotes;
   // si no, el número del campo de stock se guarda tal cual (como siempre)
-  if(!lotes.length) fields.stock_actual=num($('m-stock'));
+  if(!lotes.length){ const s=num($('m-stock')); fields.stock_actual = s==null?s:Math.max(0,s); }
   if(hasPerec) fields.perecedero=quedaPerec;
   if(hasVenc) fields.vencimiento = !quedaPerec ? null
     : usaLotes ? (lotes.length?lotes[0].vencimiento:null)
