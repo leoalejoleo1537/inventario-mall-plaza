@@ -168,6 +168,11 @@
   .lote-row input[type=date]{-webkit-appearance:none;appearance:none;padding:0 8px;text-align:center}
   .lote-row input[type=date]::-webkit-date-and-time-value{text-align:center;margin:0}
   .lote-row .lote-cant{text-align:center;font-weight:700}
+  /* rótulo de columna: sin él, el campo de la izquierda no se lee como
+     "cantidad" y el jefe de turno cree que no puede corregirla */
+  .lote-cab{display:grid;grid-template-columns:58px minmax(0,1fr) 42px;gap:10px;margin-bottom:6px;
+            font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.4px}
+  .lote-cab span{text-align:center}
   .lote-row .lote-del{width:42px;height:42px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--red-fg);cursor:pointer;font-size:15px}
   .lote-vacio{font-size:13px;color:var(--muted);margin:2px 0 8px}
   .rec-irow{margin-bottom:8px;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
@@ -588,7 +593,8 @@
     <h2 id="rec-prod">Producto</h2>
     <p class="mr" id="rec-pedido">—</p>
     <div class="field" style="margin-top:0">
-      <label>Fechas de vencimiento que llegaron</label>
+      <label>Cuánto llegó, por fecha</label>
+      <div class="lote-cab"><span>Cantidad</span><span>Vence</span></div>
       <div id="rec-lotes"></div>
       <button type="button" class="btn btn-outline btn-sm" id="btnRecAddLote" style="margin-top:8px">+ Agregar fecha</button>
     </div>
@@ -1643,6 +1649,14 @@ async function loadRepartos(){
 
 /* una línea: si está sin resolver muestra los botones; si ya se resolvió,
    solo su estado. Así no se toca dos veces por descuido. */
+/* Un producto agregado por el local no lo pidió nadie: decir "pidió 0" no
+   significa nada y hace dudar de si el reparto venía mal armado. */
+const pedidoTxt = it => (+it.cantidad_pedida||0) > 0
+  ? `pidió ${fmt(it.cantidad_pedida)}` : 'llegó de más';
+/* y por lo mismo la cantidad no puede arrancar en 0: si arranca en 0, tocar
+   "Llegó" registra un cero, o la ventana de fechas se niega a confirmar. */
+const cantInicial = it => (+it.cantidad_pedida||0) > 0 ? +it.cantidad_pedida : 1;
+
 function repItemHTML(it){
   const p = DATA.find(d=>d.id===it.producto_id);
   const perec = p ? esPerec(p) : false;
@@ -1650,9 +1664,9 @@ function repItemHTML(it){
     const btnSi = perec
       ? `<button type="button" class="rep-bt si" data-fechas="${it.id}">✓ Llegó · fechas</button>`
       : `<button type="button" class="rep-bt si" data-recibir="${it.id}">✓ Llegó</button>
-         <input type="number" class="rep-cant" step="0.5" min="0" value="${fmt(it.cantidad_pedida)}" data-cant="${it.id}" aria-label="Cantidad recibida">`;
+         <input type="number" class="rep-cant" step="0.5" min="0" value="${fmt(cantInicial(it))}" data-cant="${it.id}" aria-label="Cantidad recibida">`;
     return `<div class="rep-fila" data-item="${it.id}">
-      <div class="lin1"><span class="nm">${esc(it.producto)}</span><span class="ped">pidió ${fmt(it.cantidad_pedida)}</span></div>
+      <div class="lin1"><span class="nm">${esc(it.producto)}</span><span class="ped">${pedidoTxt(it)}</span></div>
       <div class="rep-acc">${btnSi}
         <button type="button" class="rep-bt no" data-rechazar="${it.id}" aria-label="No llegó">✕</button>
       </div>
@@ -1662,7 +1676,7 @@ function repItemHTML(it){
     ? `<span class="rep-estado rec">✓ Recibido ${fmt(it.cantidad_recibida)}</span>`
     : `<span class="rep-estado nol">✕ No llegó</span>`;
   return `<div class="rep-fila" data-item="${it.id}">
-    <div class="lin1"><span class="nm">${esc(it.producto)}</span><span class="ped">pidió ${fmt(it.cantidad_pedida)}</span></div>
+    <div class="lin1"><span class="nm">${esc(it.producto)}</span><span class="ped">${pedidoTxt(it)}</span></div>
     ${est}
     <button type="button" class="rep-deshacer" data-deshacer="${it.id}">Deshacer</button>
   </div>`;
@@ -1861,12 +1875,15 @@ async function agregarAlReparto(repartoId){
 /* ---- confirmar un perecedero: entra por FECHAS, nunca por stock ---- */
 let recItemId=null;
 function abrirRecibir(itemId){
-  const it = REPARTOS.flatMap(r=>r.items).find(i=>i.id===itemId); if(!it) return;
+  const rep = REPARTOS.find(r=>r.items.some(i=>i.id===itemId));
+  const it = rep && rep.items.find(i=>i.id===itemId); if(!it) return;
   recItemId=itemId;
   $('rec-prod').textContent = it.producto;
-  $('rec-pedido').textContent = 'Adriana envió '+fmt(it.cantidad_pedida);
+  $('rec-pedido').textContent = (+it.cantidad_pedida||0) > 0
+    ? `${rep.creado_por||'Adriana'} envió ${fmt(it.cantidad_pedida)}`
+    : 'Llegó de más, no estaba en la lista';
   $('rec-lotes').innerHTML='';
-  agregarFilaRec(it.cantidad_pedida, hoyISO());
+  agregarFilaRec(cantInicial(it), hoyISO());
   $('overlay-recibir').classList.add('open');
 }
 function agregarFilaRec(cant, venc){
