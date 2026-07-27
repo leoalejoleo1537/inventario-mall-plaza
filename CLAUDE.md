@@ -439,6 +439,19 @@ el patrón a seguir:
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-27** — **Al filtrar por Crítico, lo urgente va arriba del todo.**
+  Adriana arma la lista de pedido para Mall Plaza entrando por la tarjeta
+  **Crítico**, así que ese filtro ahora trae también los productos marcados a
+  mano como urgentes, en un bloque propio rotulado "URGENTE" **antes** de los
+  bloques AM/PM. Sube incluso un producto que el semáforo NO marca como
+  crítico (ej. uno en sobre-stock que igual se está acabando) — ese es
+  justamente el caso que la marca manual existe para cubrir. Un urgente sale
+  **una sola vez**: arriba, no repetido abajo en su sección. Como quedan fuera
+  del contexto de su sección, esas filas muestran de dónde vienen
+  ("Mueble de bolsas · mín 10 · máx 30"). Las tarjetas de arriba siguen
+  contando lo suyo (Crítico cuenta críticos, Urgente cuenta urgentes): son el
+  diagnóstico, el filtro es la lista de trabajo.
+
 - **2026-07-27** — **Jerarquía de color + detalles del local.**
   Cabeceras de sección en **azul pizarra `#2F4A6D`** (Jhon eligió el color 3 de
   un selector provisorio que ya se borró): el naranja se leía como demasiado
