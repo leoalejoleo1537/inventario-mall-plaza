@@ -449,8 +449,16 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
       Es lo que de verdad elimina la demora: hoy depende de apretar el botón.
 - [ ] Correr la medición de demora real (bloque de `sql/2026-07-fecha-real-de-venta.sql`)
       después de unos días de uso, para saber si falta el cron o el retraso viene de Fudo.
-- [ ] **Push de stock a Fudo** para combos: calcular el mínimo entre insumos y
-      empujarlo a Fudo cuando cambie el inventario.
+- [x] ~~**Push de stock a Fudo**~~ — hecho el 2026-07-28 (ver bitácora). Falta:
+      el botón en la app, el deshacer, y las tandas 2 y 3.
+- [ ] **Deshacer un empuje a Fudo.** `fudo_stock_push` guarda el valor anterior,
+      así que es reconstruible, pero NO existe el botón ni el script. Si un
+      empuje sale mal hay que armarlo en el momento.
+- [ ] **Recetas cruzadas detectadas y sin corregir**: `Cheesecake maracuyá`
+      descuenta `T. Cheesecake Mora`. Y revisar `Cinnamon Roll Vegano`, que
+      descuenta `Cinnamon rolls vitrina` (el normal): si son pancitos distintos,
+      Fudo dejaría vender veganos que no existen — el único caso donde el error
+      es vender de MÁS.
 - [ ] Marcar "para llevar" vs "servir" en el front de Fudo para que el `aplica` sirva.
 - [ ] **Combos de elección libre (ej. "3 masitas" a elección del cliente).** Sin
       resolver. Depende de si Fudo captura QUÉ eligió el cliente (modificadores) o
@@ -599,6 +607,36 @@ el patrón a seguir:
 ---
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-28** — **HITO: el inventario ya le escribe a Fudo.** 58 productos
+  actualizados en producción, 0 errores. Es la primera vez que la información
+  viaja del inventario hacia Fudo y no al revés.
+  **Cómo se llegó, que es lo que vale:** primero un prototipo aislado
+  (`fudo-probar-escritura`) que tocaba UN producto y lo dejaba como estaba —
+  la lección de la impresora, sección 7. Recién con esa respuesta se construyó
+  el resto. Confirmado: **`PATCH /products/{id}` con formato JSON:API**
+  (`{data:{type:"Product",id,attributes:{stock}}}`).
+  Piezas: `sql/2026-07-stock-para-fudo-v2-CORTO.sql` (el cálculo) y la Edge
+  Function `fudo-empujar-stock`.
+  **Decisiones que NO se cambian sin preguntar:**
+  1. **El cálculo vive en la base** (`fudo_stock_calculado`), no en la Edge
+     Function — mismo criterio que el motor de descuento: se revisa con un
+     SELECT sin desplegar nada.
+  2. **Siempre valor ABSOLUTO, nunca una diferencia.** Fudo descuenta su
+     propio stock al vender; un "+3" restaría dos veces.
+  3. **Los envases NO limitan la venta.** Un delivery gasta bandeja y bolsa, y
+     se siguen descontando — pero quedarse sin bandejas no es quedarse sin
+     torta. Se excluyen por `productos.tipo = 'Envases'`. Sin esto, "Torta
+     amor Pedidos Ya" quedaba en 0 con 8 trozos disponibles.
+  4. **Tres tandas, no una.** Por defecto solo se mandan los productos que
+     Fudo YA controlaba: `incluir_ceros` (los que quedarían en 0 y dejarían de
+     venderse) e `incluir_nuevos` (los que Fudo nunca controló, hoy se venden
+     sin límite) se piden aparte y avisados.
+  5. **Se comprueba releyendo** lo que Fudo devuelve, no se confía en el 200.
+     Y todo queda en `fudo_stock_push` con el valor anterior.
+  **Ojo:** es un empujón manual, NO una sincronización continua. Al segundo
+  siguiente los dos sistemas vuelven a separarse.
+  **Pendiente:** el botón en la app, el deshacer, y las tandas 2 y 3.
 
 - **2026-07-28** — **Adriana ya no tiene que salirse de Reparto para armar el
   pedido.** Ella lo reportó así: *"tengo que salirme de reparto, ir a ver qué
