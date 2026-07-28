@@ -32,8 +32,6 @@
 //   FUDO_STOCK_ADMINS = correos separados por coma, los ÚNICOS que
 //                       pueden llamar a esto. Ej: jhon@ejemplo.com
 // ================================================================
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const AUTH_URL = "https://auth.fu.do/api";
 const API_BASE = "https://api.fu.do/v1alpha1";
 
@@ -69,13 +67,49 @@ Deno.serve(async (req) => {
     const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
     if (!jwt) return json({ error: "Falta la sesión. Entra a la app antes de probar." }, 401);
 
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-    const { data: userData, error: userErr } = await admin.auth.getUser(jwt);
-    const correo = userData?.user?.email?.toLowerCase() ?? null;
-    if (userErr || !correo) return json({ error: "Sesión no válida." }, 401);
+    const SB_URL = Deno.env.get("SUPABASE_URL");
+    if (!SB_URL) return json({ error: "Falta SUPABASE_URL en el entorno." }, 500);
+
+    /* Supabase cambió el sistema de claves: los proyectos nuevos usan
+       sb_publishable_/sb_secret_ en vez de las anon/service_role de antes,
+       y la variable inyectada NO siempre se llama igual. Se prueban los
+       nombres conocidos y se informa cuál se encontró — nunca su valor. */
+    const NOMBRES_CLAVE = [
+      "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY",
+      "SUPABASE_ANON_KEY", "SUPABASE_PUBLISHABLE_KEY",
+    ];
+    const encontradas = NOMBRES_CLAVE.filter((n) => !!Deno.env.get(n));
+    const apikey = encontradas.length ? Deno.env.get(encontradas[0])! : null;
+    if (!apikey) {
+      return json({
+        error: "No se encontró ninguna clave de Supabase en el entorno.",
+        nombres_probados: NOMBRES_CLAVE,
+        como_arreglarlo: "Agrega un secret llamado SUPABASE_SECRET_KEY con tu clave secreta "
+                       + "(Project Settings → API Keys). Nunca la clave publishable.",
+      }, 500);
+    }
+
+    /* Se pregunta directo a la API de Auth en vez de armar un cliente:
+       así no depende de cómo la librería combine las cabeceras, que es
+       justo lo que estaba fallando. */
+    const uRes = await fetch(`${SB_URL}/auth/v1/user`, {
+      headers: { "Authorization": `Bearer ${jwt}`, "apikey": apikey },
+    });
+    const uTxt = await uRes.text();
+    let uJson: any = null; try { uJson = JSON.parse(uTxt); } catch { /* no-JSON */ }
+    const correo = uJson?.email?.toLowerCase() ?? null;
+    if (!uRes.ok || !correo) {
+      return json({
+        error: "Sesión no válida.",
+        // pistas para saber POR QUÉ, sin exponer ninguna clave
+        diagnostico: {
+          status_de_auth: uRes.status,
+          respuesta_de_auth: uTxt.slice(0, 300),
+          clave_usada: encontradas[0],
+          claves_disponibles: encontradas,
+        },
+      }, 401);
+    }
 
     const permitidos = (Deno.env.get("FUDO_STOCK_ADMINS") ?? "")
       .split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
