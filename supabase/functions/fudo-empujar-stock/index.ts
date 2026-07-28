@@ -21,6 +21,12 @@
 //                       receta mal armada ahí no descuadra un número:
 //                       hace que Fudo deje de vender algo que sí está
 //                       en la vitrina. Para mandarlos hay que pedirlo.
+//   incluir_nuevos   -> por defecto FALSE. Los productos que en Fudo
+//                       tienen el stock en null NUNCA se han controlado
+//                       por stock: hoy se venden sin límite. Ponerles un
+//                       número los empieza a bloquear al llegar a 0, y
+//                       eso es un cambio de comportamiento en el mesón.
+//                       Se deja para una tanda aparte, avisada.
 //
 // SIEMPRE manda el número ABSOLUTO, nunca una diferencia. Fudo
 // descuenta su propio stock al vender, así que mandar "+3" restaría
@@ -86,6 +92,7 @@ Deno.serve(async (req) => {
     const productoId = body?.producto_id != null ? Number(body.producto_id) : null;
     const unoDeFudo = body?.fudo_product_id ? String(body.fudo_product_id) : null;
     const incluirCeros = body?.incluir_ceros === true;
+    const incluirNuevos = body?.incluir_nuevos === true;
 
     // ---------- El cálculo lo hace la base ----------
     const cRes = await fetch(`${SB_URL}/rest/v1/rpc/fudo_stock_calculado`, {
@@ -102,14 +109,18 @@ Deno.serve(async (req) => {
     // Los que ya están iguales no se tocan: menos llamadas y menos ruido.
     const yaIguales = filas.filter((f) => Number(f.stock_en_fudo) === Number(f.stock_calculado));
     const enCero = filas.filter((f) => f.deja_en_cero);
+    // Fudo nunca les ha llevado stock: hoy se venden sin límite
+    const nuevos = filas.filter((f) => f.stock_en_fudo === null);
     let porHacer = filas.filter((f) => Number(f.stock_en_fudo) !== Number(f.stock_calculado));
-    if (!incluirCeros) porHacer = porHacer.filter((f) => !f.deja_en_cero);
+    if (!incluirCeros)  porHacer = porHacer.filter((f) => !f.deja_en_cero);
+    if (!incluirNuevos) porHacer = porHacer.filter((f) => f.stock_en_fudo !== null);
 
     const resumen = {
       sede, modo, quien: correo,
       se_actualizarian: porHacer.length,
       ya_estaban_iguales: yaIguales.length,
       saltados_por_quedar_en_cero: incluirCeros ? 0 : enCero.length,
+      saltados_por_ser_nuevos: incluirNuevos ? 0 : nuevos.length,
     };
 
     // ---------- Simular: no toca Fudo ----------
@@ -128,6 +139,10 @@ Deno.serve(async (req) => {
         quedarian_en_cero: enCero.map((f) => ({
           producto: f.producto_fudo, tiene_en_fudo: f.stock_en_fudo,
           limita: f.insumo_que_limita, receta: f.insumos,
+        })),
+        empezarian_a_controlarse: nuevos.map((f) => ({
+          producto: f.producto_fudo, quedaria_en: f.stock_calculado,
+          limita: f.insumo_que_limita,
         })),
       });
     }
