@@ -43,7 +43,9 @@ const CORS = {
 type Fila = {
   fudo_product_id: string; producto_fudo: string;
   stock_en_fudo: number | null; stock_calculado: number;
-  insumo_que_limita: string; insumos: string; deja_en_cero: boolean;
+  insumo_que_limita: string; insumos: string;
+  ignorados: string | null;   // envases, que no limitan la venta
+  deja_en_cero: boolean;
 };
 
 Deno.serve(async (req) => {
@@ -121,6 +123,7 @@ Deno.serve(async (req) => {
         cambios: porHacer.map((f) => ({
           producto: f.producto_fudo, de: f.stock_en_fudo, a: f.stock_calculado,
           limita: f.insumo_que_limita,
+          ...(f.ignorados ? { envases_ignorados: f.ignorados } : {}),
         })),
         quedarian_en_cero: enCero.map((f) => ({
           producto: f.producto_fudo, tiene_en_fudo: f.stock_en_fudo,
