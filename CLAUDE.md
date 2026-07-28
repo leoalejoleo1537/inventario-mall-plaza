@@ -464,6 +464,25 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 - [ ] **Terminar de clasificar los tipos**: correr los 3 pasos de
       `sql/2026-07-tipo-de-producto.sql` y ponerle tipo desde la ficha a los que
       queden en "— revisar —".
+- [ ] **RIESGO ABIERTO — `supabase-js` sin versión fija.** `index.html` carga
+      `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2`, o sea **la última
+      2.x que publiquen**. Un cambio de la librería puede romper la app sin que
+      nadie toque el código y sin aviso — la misma clase de sorpresa que el
+      motor v5, pero desde afuera. Al 2026-07-27 la última era **2.110.9**, que
+      es la que está corriendo hoy; fijarla a esa versión no cambia nada del
+      comportamiento actual y cierra el hueco. **Antes de cambiarla hay que
+      comprobar que la URL fijada de verdad sirve la librería** (abrirla en el
+      navegador y ver que baja el archivo): si se escribe mal, la app deja de
+      cargar entera. Jhon lo pidió expresamente el 2026-07-27.
+- [ ] **RIESGO ABIERTO — la sesión se muere sola.** Al probar la escritura en
+      Fudo apareció `session_not_found`: el navegador guardaba un token bien
+      firmado cuya sesión ya no existía en el servidor. Hubo que salir y volver
+      a entrar. Hipótesis a confirmar: el equipo comparte una cuenta y cada
+      inicio de sesión mata el anterior. Hoy no rompe nada visible (leer el
+      inventario va con permisos de `anon`, sin sesión), pero **rompe cualquier
+      cosa que dependa de quién eres** — justo lo que necesita el control de
+      stock de Fudo. Confirmar si hay límite de una sesión por usuario, y
+      decidir si cada persona lleva su propia cuenta.
 - [ ] **Dashboard**: lista de análisis posibles en `docs/dashboard-analisis-posibles.md`.
       NO empezar hasta cerrar la depuración de recetas.
 - [ ] Confirmar con jefatura que van a usar el sistema (vs. volver al Excel).
