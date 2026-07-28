@@ -600,6 +600,26 @@ el patrón a seguir:
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-28** — **Adriana ya no tiene que salirse de Reparto para armar el
+  pedido.** Ella lo reportó así: *"tengo que salirme de reparto, ir a ver qué
+  falta y sus cantidades, luego volver"*. El stock **sí** aparecía al buscar,
+  pero desaparecía justo cuando importa: al agregarlo al pedido, la fila solo
+  mostraba el nombre — y ese es el momento en que se decide cuánto mandar.
+  1. **El buscador** muestra el número en una píldora con el **color de su
+     estado** (rojo crítico / verde en rango), más mín y máx. Cuánto hay y
+     cómo está, en un gesto.
+  2. **La fila del pedido** conserva `hay N · máx M`, y se **relee de DATA en
+     cada pintada**: si alguien vende mientras ella arma el pedido, el número
+     se corrige solo.
+  3. **Atajo "llenar N"**: la cantidad que falta para el máximo, a un toque.
+     Es la decisión que ella toma decenas de veces al día.
+  **Cuidado con las unidades** (error que cometí y corregí): el "hay" del
+  buscador es el TOTAL entre secciones (así lo pidió Jhon, para guiar el
+  pedido), pero **`máx` es por sección**. Al calcular "llenar" contra el total
+  daba 0 en un congelador vacío solo porque la vitrina estaba llena. En la
+  fila del pedido manda el stock de ESA sección — que es a donde va el
+  reparto — y el total se muestra aparte. 125 comprobaciones de reparto.
+
 - **2026-07-27** — **Filtrar por TIPO de producto, y fuera la tarjeta Urgente.**
   Las secciones dicen **dónde está** un producto; faltaba el otro eje: **qué
   es**. En el Congelador conviven cinnamon rolls, pulpas y pizzas, así que para
