@@ -216,7 +216,22 @@
   .pick-sub{color:var(--muted);font-size:12px;margin-left:auto;flex-shrink:0}
   .pick-empty{padding:11px 12px;color:var(--muted);font-size:14px}
   /* ---------- product rows (FUDO cards) ---------- */
-  .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
+  .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(15,30,49,0.04);
+       position:relative;touch-action:pan-y}
+  /* Deslizar la fila hacia el lado la manda al reparto. touch-action:pan-y deja
+     que el dedo siga desplazando la lista hacia arriba y abajo sin pelear. */
+  .row.desliza{transition:none;z-index:2}
+  .row.vuelve{transition:transform .22s cubic-bezier(.22,.8,.3,1)}
+  .row.al-reparto{border-color:var(--orange);box-shadow:0 0 0 1px var(--orange), 0 2px 12px rgba(220,68,5,.25)}
+  /* pista que aparece bajo el dedo mientras se desliza */
+  .row .swipe-pista{position:absolute;top:0;bottom:0;display:flex;align-items:center;
+    font-size:12px;font-weight:800;color:var(--orange);letter-spacing:.3px;
+    opacity:0;pointer-events:none;white-space:nowrap}
+  .row .swipe-pista.izq{left:14px} .row .swipe-pista.der{right:14px}
+  /* ya está en el reparto: para no agregarlo dos veces sin darse cuenta */
+  .pill-rep{background:var(--orange);color:#fff;font-size:10px;font-weight:800;
+    border-radius:999px;padding:2px 7px;letter-spacing:.3px;white-space:nowrap}
+  @media (prefers-reduced-motion: reduce){ .row.vuelve{transition:none} }
   .row .info{cursor:pointer;min-width:0}
   .row .name{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .row .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
@@ -1130,11 +1145,14 @@ function rowHTML(p, conSeccion){
     : '';
   const conLotes = lotesDe(p.id).length>0;   // el stock sale de la suma de fechas
   const urg = esUrgente(p) ? '<span class="pill pill-urg">Urgente</span>' : '';
+  // si ya lo mandó al reparto, que se vea: evita agregarlo dos veces
+  const enRep = carrito.some(c=>c.id===p.id) ? '<span class="pill-rep">En reparto</span>' : '';
   // fuera de su sección (bloque de urgentes) hay que decir de dónde viene
   const donde = conSeccion ? esc(p.rubro||'Sin sección')+' · ' : '';
   return `<div class="row" data-row="${p.id}">
+    <span class="swipe-pista izq">+ Reparto</span><span class="swipe-pista der">+ Reparto</span>
     <div class="info" data-open="${p.id}">
-      <div class="name">${esc(p.producto)} ${urg}</div>
+      <div class="name">${esc(p.producto)} ${urg} ${enRep}</div>
       ${vencsHTML(p)}
       <div class="sub">${donde}mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div>
       ${totalLine}
@@ -1441,6 +1459,68 @@ function brotarDesde(btn){
   listEl.classList.add('brota');
 }
 listEl.addEventListener('animationend', ()=>listEl.classList.remove('brota'));
+
+/* ---------------- deslizar una fila para mandarla al reparto ----------------
+   Adriana entra por Crítico, ve lo que falta y lo va agregando sin cambiar de
+   pantalla: antes tenía que trabajar con dos pantallas a la vez. Sirve para
+   cualquier lado (izquierda o derecha) porque no hay una segunda acción que
+   confundir, y así no hay que acordarse de para dónde. */
+const SWIPE_MIN = 72;      // cuánto hay que arrastrar para que cuente
+let swRow=null, swX0=0, swY0=0, swDx=0, swEje=null;   // swEje: 'x' | 'y' | null
+
+function swipeFin(pasa){
+  if(!swRow) return;
+  const row=swRow, id=+row.dataset.row;
+  row.classList.remove('desliza','al-reparto');
+  row.classList.add('vuelve');
+  row.style.transform='';
+  row.querySelectorAll('.swipe-pista').forEach(s=>{ s.style.opacity=''; s.style.transform=''; });
+  setTimeout(()=>row.classList.remove('vuelve'), 240);
+  swRow=null; swDx=0; swEje=null;
+  if(pasa) mandarAlReparto(id);
+}
+function mandarAlReparto(id){
+  const p=DATA.find(d=>d.id===id); if(!p) return;
+  if(carrito.some(c=>c.id===id)){ aviso(p.producto+' ya está en el reparto'); return; }
+  carrito.push({id:p.id, producto:p.producto, rubro:p.rubro, cantidad:1});
+  renderCarrito();
+  render();                                   // para que aparezca "En reparto"
+  aviso('✓ '+p.producto+' · '+carrito.length+' en el reparto');
+}
+listEl.addEventListener('touchstart', e=>{
+  if(e.touches.length!==1) return;
+  const row=e.target.closest('.row'); if(!row) return;
+  swRow=row; swX0=e.touches[0].clientX; swY0=e.touches[0].clientY; swDx=0; swEje=null;
+}, {passive:true});
+listEl.addEventListener('touchmove', e=>{
+  if(!swRow || e.touches.length!==1) return;
+  const dx=e.touches[0].clientX-swX0, dy=e.touches[0].clientY-swY0;
+  // primero se decide si el gesto es horizontal o vertical, y no se cambia:
+  // si no, desplazar la lista con el dedo torcido arrastraría filas sin querer
+  if(!swEje){
+    if(Math.abs(dx)<8 && Math.abs(dy)<8) return;
+    swEje = Math.abs(dx) > Math.abs(dy)*1.4 ? 'x' : 'y';
+    if(swEje==='y'){ swRow=null; return; }
+    swRow.classList.add('desliza');
+  }
+  if(swEje!=='x') return;
+  e.preventDefault();                          // el gesto es nuestro
+  swDx = dx;
+  const tope = Math.max(-140, Math.min(140, dx));
+  swRow.style.transform = `translateX(${tope}px)`;
+  const pasa = Math.abs(dx) >= SWIPE_MIN;
+  swRow.classList.toggle('al-reparto', pasa);
+  const pista = swRow.querySelector(dx>0 ? '.swipe-pista.izq' : '.swipe-pista.der');
+  swRow.querySelectorAll('.swipe-pista').forEach(s=>{ s.style.opacity='0'; s.style.transform=''; });
+  if(pista){
+    // se mueve al revés que la fila para quedarse quieto en pantalla: así
+    // brota en el hueco que se abre, en vez de encimarse sobre el nombre
+    pista.style.transform = `translateX(${-tope}px)`;
+    pista.style.opacity = String(Math.min(1, Math.abs(dx)/SWIPE_MIN));
+  }
+}, {passive:false});
+listEl.addEventListener('touchend', ()=>{ if(swRow) swipeFin(Math.abs(swDx)>=SWIPE_MIN); }, {passive:true});
+listEl.addEventListener('touchcancel', ()=>{ if(swRow) swipeFin(false); }, {passive:true});
 
 /* ---------------- modal ---------------- */
 function openModal(id){
@@ -2192,6 +2272,7 @@ $('btnRegistrarReparto').addEventListener('click', async()=>{
       avisar('No se pudo enviar el reparto. Revisa tu señal e inténtalo de nuevo.'); console.error(e2); return;
     }
     carrito=[]; renderCarrito(); renderRepartoResults(); rqEl.value='';
+    render();   // se van las marcas "En reparto" de la lista del inventario
     aviso('✓ Reparto enviado · '+items.length+' producto'+(items.length===1?'':'s'));
     await loadRepartos();
   } finally { btn.disabled=false; btn.textContent='Enviar reparto'; }

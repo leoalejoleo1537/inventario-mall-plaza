@@ -608,6 +608,23 @@ el patrón a seguir:
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-28** — **Deslizar una fila la manda al reparto.** Adriana lo pidió
+  así: *"literal tengo que hacer esto con dos pantallas"* — entraba a Crítico,
+  anotaba qué faltaba, y se cambiaba a Reparto a escribirlo. Ahora entra a
+  Crítico y va deslizando; después, en Reparto, solo pone las cantidades.
+  1. **Sirve para los dos lados.** No hay una segunda acción que confundir, así
+     que no hay que acordarse de para dónde: izquierda o derecha, da igual.
+  2. **El eje se decide una vez y no cambia** (`swEje`): si el gesto arranca
+     vertical, la fila no se mueve. Sin eso, desplazar la lista con el dedo
+     torcido arrastraba filas sin querer.
+  3. **El rótulo "+ Reparto" se contra-mueve** (`translateX(-tope)`) para
+     quedarse quieto en pantalla y brotar en el hueco que se abre. Sin eso
+     viajaba con la fila y se encimaba sobre el nombre y las fechas.
+  4. **La fila queda marcada "En reparto"** hasta que se envía, para no
+     agregarla dos veces; deslizarla de nuevo avisa en vez de duplicar.
+  `touch-action:pan-y` en `.row` deja que el desplazamiento vertical siga
+  funcionando. 14 comprobaciones del gesto, con toques simulados de verdad.
+
 - **2026-07-28** — **HITO: el inventario ya le escribe a Fudo.** 58 productos
   actualizados en producción, 0 errores. Es la primera vez que la información
   viaja del inventario hacia Fudo y no al revés.
