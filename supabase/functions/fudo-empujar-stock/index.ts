@@ -32,9 +32,12 @@
 // descuenta su propio stock al vender, así que mandar "+3" restaría
 // dos veces; mandando el total, cada envío corrige la deriva solo.
 //
+// Quién puede: solo los correos con puede_fudo en public.app_permisos.
+// Para agregar o quitar gente se edita esa tabla —está explicado dentro
+// de sql/2026-07-permisos-y-deshacer.sql—, NO este archivo.
+//
 // Secrets necesarios:
 //   FUDO_<SEDE>_APIKEY / FUDO_<SEDE>_APISECRET
-//   FUDO_STOCK_ADMINS  -> correos autorizados, separados por coma
 // ================================================================
 
 const AUTH_URL = "https://auth.fu.do/api";
@@ -78,10 +81,13 @@ Deno.serve(async (req) => {
         diagnostico: { status_de_auth: uRes.status, respuesta: uTxt.slice(0, 200) },
       }, 401);
     }
-    const permitidos = (Deno.env.get("FUDO_STOCK_ADMINS") ?? "")
-      .split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
-    if (!permitidos.length) return json({ error: "Falta configurar FUDO_STOCK_ADMINS." }, 500);
-    if (!permitidos.includes(correo)) {
+    // La lista de autorizados vive en la base, no en un secret: así se
+    // agrega o quita gente con una línea de SQL, sin tocar esta función.
+    const pRes = await fetch(
+      `${SB_URL}/rest/v1/app_permisos?correo=eq.${encodeURIComponent(correo)}&select=puede_fudo`,
+      { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
+    const permisos = pRes.ok ? await pRes.json() : [];
+    if (!permisos?.[0]?.puede_fudo) {
       return json({ error: "Esta cuenta no puede actualizar el stock de Fudo." }, 403);
     }
 
@@ -163,6 +169,8 @@ Deno.serve(async (req) => {
     const token = (await authRes.json())?.token;
     if (!token) return json({ error: "Fudo no devolvió un token." }, 502);
 
+    // un código por envío: es lo que después permite deshacer "el último"
+    const lote = crypto.randomUUID();
     const hechos: unknown[] = [], fallados: unknown[] = [], bitacora: unknown[] = [];
     for (const f of porHacer) {
       const valor = Number(f.stock_calculado);
@@ -192,7 +200,7 @@ Deno.serve(async (req) => {
       const fila = { producto: f.producto_fudo, de: f.stock_en_fudo, a: valor, ...(ok ? {} : { error: detalle }) };
       (ok ? hechos : fallados).push(fila);
       bitacora.push({
-        sede, fudo_product_id: f.fudo_product_id, producto_fudo: f.producto_fudo,
+        sede, lote, fudo_product_id: f.fudo_product_id, producto_fudo: f.producto_fudo,
         stock_anterior: f.stock_en_fudo, stock_enviado: valor, ok, detalle: detalle || null, quien: correo,
       });
     }
