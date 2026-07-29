@@ -220,18 +220,36 @@
        position:relative;touch-action:pan-y}
   /* Deslizar la fila hacia el lado la manda al reparto. touch-action:pan-y deja
      que el dedo siga desplazando la lista hacia arriba y abajo sin pelear. */
-  .row.desliza{transition:none;z-index:2}
-  .row.vuelve{transition:transform .22s cubic-bezier(.22,.8,.3,1)}
-  .row.al-reparto{border-color:var(--orange);box-shadow:0 0 0 1px var(--orange), 0 2px 12px rgba(220,68,5,.25)}
-  /* pista que aparece bajo el dedo mientras se desliza */
-  .row .swipe-pista{position:absolute;top:0;bottom:0;display:flex;align-items:center;
-    font-size:12px;font-weight:800;color:var(--orange);letter-spacing:.3px;
-    opacity:0;pointer-events:none;white-space:nowrap}
-  .row .swipe-pista.izq{left:14px} .row .swipe-pista.der{right:14px}
+  .row.desliza{transition:none;z-index:3}
+  /* Vuelve como un resorte: la curva pasa de largo y regresa, en vez de
+     aparecer de golpe en su sitio. Sin esto el gesto se siente cortado. */
+  .row.vuelve{transition:transform .42s cubic-bezier(.18,1.5,.42,1), box-shadow .3s ease;z-index:3}
+  /* Luz naranja que sale de ATRÁS, no un reborde: el borde se leía como
+     gráfico de Excel. Fuerte durante el gesto, suave al quedar agregado. */
+  .row.al-reparto{box-shadow:0 0 22px 2px rgba(220,68,5,.55), 0 0 0 1px rgba(220,68,5,.25)}
+  .row.en-reparto{box-shadow:0 0 14px rgba(220,68,5,.30)}
+
+  /* El símbolo que asoma DETRÁS de la fila y crece con el gesto, como el
+     archivar de Gmail. Va fijo en la pantalla y por debajo de la fila, así
+     la fila lo destapa al correrse en vez de encimársele. */
+  #swipe-icono{position:fixed;z-index:1;display:none;align-items:center;justify-content:center;
+    width:56px;height:56px;border-radius:50%;background:var(--orange);color:#fff;
+    font-size:30px;font-weight:600;line-height:1;pointer-events:none;
+    box-shadow:0 4px 18px rgba(220,68,5,.5)}
+  #swipe-icono.ver{display:flex}
   /* ya está en el reparto: para no agregarlo dos veces sin darse cuenta */
+  /* el único botón rojo fuera de la zona de administración: escribe en Fudo */
+  .btn-fudo{display:block;width:100%;margin:10px 0 0;padding:11px;border-radius:10px;
+    border:1.5px solid var(--red-fg);background:#FEF7F6;color:var(--red-fg);
+    font-size:13.5px;font-weight:800;font-family:inherit;cursor:pointer;
+    transition:transform .12s ease}
+  .btn-fudo:active{transform:scale(.97)}
   .pill-rep{background:var(--orange);color:#fff;font-size:10px;font-weight:800;
     border-radius:999px;padding:2px 7px;letter-spacing:.3px;white-space:nowrap}
-  @media (prefers-reduced-motion: reduce){ .row.vuelve{transition:none} }
+  @media (prefers-reduced-motion: reduce){
+    .row.vuelve{transition:transform .15s ease}
+    #swipe-icono{transition:none}
+  }
   .row .info{cursor:pointer;min-width:0}
   .row .name{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .row .sub{font-size:12.5px;color:var(--muted);margin-top:3px}
@@ -637,6 +655,7 @@
 </aside>
 
 <div class="toast" id="toast"></div>
+<div id="swipe-icono" aria-hidden="true">+</div>
 
 <!-- ================= ZONA DE ADMINISTRACIÓN =================
      Acá vive lo que sale del inventario y toca Fudo, más lo que puede
@@ -908,6 +927,12 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
       <span id="m-urgente-txt">Marcar urgente</span>
     </button>
+    <!-- Solo administración. Un producto del inventario puede afectar a
+         VARIOS de Fudo (un selladito está en el combo KIDS y se vende solo),
+         así que el botón muestra cuáles antes de escribir nada. -->
+    <button type="button" class="btn-fudo" id="m-fudo" style="display:none">
+      🚨 Actualizar en Fudo
+    </button>
     <label class="chkrow" id="m-perec-row" style="display:none">
       <input type="checkbox" id="m-perec">
       <span>Producto perecedero</span>
@@ -1122,6 +1147,9 @@ function aplicarPermisos(){
   $('bloqueAdmin').style.display = admin ? '' : 'none';
   // crear productos pasa a ser cosa de administración
   $('btnNuevo').style.display = PERMISOS.puede_editar ? '' : 'none';
+  // también acá y no solo al abrir la ficha: si el permiso cambia con la
+  // ficha abierta, el botón tiene que irse en el momento
+  $('m-fudo').style.display = PERMISOS.puede_fudo ? '' : 'none';
   if(!PERMISOS.puede_editar) setModoEdicion(false);
 }
 
@@ -1339,8 +1367,7 @@ function rowHTML(p, conSeccion){
   const enRep = carrito.some(c=>c.id===p.id) ? '<span class="pill-rep">En reparto</span>' : '';
   // fuera de su sección (bloque de urgentes) hay que decir de dónde viene
   const donde = conSeccion ? esc(p.rubro||'Sin sección')+' · ' : '';
-  return `<div class="row" data-row="${p.id}">
-    <span class="swipe-pista izq">+ Reparto</span><span class="swipe-pista der">+ Reparto</span>
+  return `<div class="row${enRep?' en-reparto':''}" data-row="${p.id}">
     <div class="info" data-open="${p.id}">
       <div class="name">${esc(p.producto)} ${urg} ${enRep}</div>
       ${vencsHTML(p)}
@@ -1455,6 +1482,7 @@ async function loadData(){
   hasTipo = DATA.length>0 && ('tipo' in DATA[0]);
   if(!hasTipo) tipoSel=null;
   else if(tipoSel && !DATA.some(p=>tipoDe(p)===tipoSel)) tipoSel=null;  // se quedó sin productos
+  $('m-fudo').style.display = PERMISOS.puede_fudo ? '' : 'none';
   $('m-tipo-row').style.display = hasTipo ? 'flex' : 'none';
   await loadLotes();
   metrics(); renderTipos(); render();
@@ -1657,16 +1685,18 @@ listEl.addEventListener('animationend', ()=>listEl.classList.remove('brota'));
    confundir, y así no hay que acordarse de para dónde. */
 const SWIPE_MIN = 72;      // cuánto hay que arrastrar para que cuente
 let swRow=null, swX0=0, swY0=0, swDx=0, swEje=null;   // swEje: 'x' | 'y' | null
+let swRect=null;   // dónde estaba la fila ANTES de moverse
 
+const swIco = () => $('swipe-icono');
 function swipeFin(pasa){
   if(!swRow) return;
   const row=swRow, id=+row.dataset.row;
   row.classList.remove('desliza','al-reparto');
-  row.classList.add('vuelve');
+  row.classList.add('vuelve');       // vuelve con resorte, no de golpe
   row.style.transform='';
-  row.querySelectorAll('.swipe-pista').forEach(s=>{ s.style.opacity=''; s.style.transform=''; });
-  setTimeout(()=>row.classList.remove('vuelve'), 240);
-  swRow=null; swDx=0; swEje=null;
+  swIco().classList.remove('ver');
+  setTimeout(()=>row.classList.remove('vuelve'), 450);
+  swRow=null; swDx=0; swEje=null; swRect=null;
   if(pasa) mandarAlReparto(id);
 }
 function mandarAlReparto(id){
@@ -1681,6 +1711,9 @@ listEl.addEventListener('touchstart', e=>{
   if(e.touches.length!==1) return;
   const row=e.target.closest('.row'); if(!row) return;
   swRow=row; swX0=e.touches[0].clientX; swY0=e.touches[0].clientY; swDx=0; swEje=null;
+  // se mide ANTES de moverla: getBoundingClientRect() incluye el transform,
+  // así que medir después hacía que el símbolo viajara con la fila
+  swRect=row.getBoundingClientRect();
 }, {passive:true});
 listEl.addEventListener('touchmove', e=>{
   if(!swRow || e.touches.length!==1) return;
@@ -1700,14 +1733,17 @@ listEl.addEventListener('touchmove', e=>{
   swRow.style.transform = `translateX(${tope}px)`;
   const pasa = Math.abs(dx) >= SWIPE_MIN;
   swRow.classList.toggle('al-reparto', pasa);
-  const pista = swRow.querySelector(dx>0 ? '.swipe-pista.izq' : '.swipe-pista.der');
-  swRow.querySelectorAll('.swipe-pista').forEach(s=>{ s.style.opacity='0'; s.style.transform=''; });
-  if(pista){
-    // se mueve al revés que la fila para quedarse quieto en pantalla: así
-    // brota en el hueco que se abre, en vez de encimarse sobre el nombre
-    pista.style.transform = `translateX(${-tope}px)`;
-    pista.style.opacity = String(Math.min(1, Math.abs(dx)/SWIPE_MIN));
-  }
+  /* El símbolo crece con el gesto y asoma en el hueco que se abre, por
+     DEBAJO de la fila. Va en position:fixed, así no viaja con ella. */
+  const r = swRect;
+  const ico = swIco(), avance = Math.min(1, Math.abs(dx)/SWIPE_MIN);
+  const lado = dx > 0 ? r.left + 8 : r.right - 64;
+  ico.classList.add('ver');
+  ico.style.top  = Math.round(r.top + r.height/2 - 28) + 'px';
+  ico.style.left = Math.round(lado) + 'px';
+  // arranca chico y llega a tamaño completo justo al cruzar el tope
+  ico.style.transform = `scale(${(0.35 + avance*0.65).toFixed(3)})`;
+  ico.style.opacity   = avance.toFixed(2);
 }, {passive:false});
 listEl.addEventListener('touchend', ()=>{ if(swRow) swipeFin(Math.abs(swDx)>=SWIPE_MIN); }, {passive:true});
 listEl.addEventListener('touchcancel', ()=>{ if(swRow) swipeFin(false); }, {passive:true});
@@ -1789,7 +1825,8 @@ async function cargarHistorialFudo(){
 }
 
 /* ---- la pantalla de revisión: acá TODAVÍA no pasó nada ---- */
-let fudoAccion = null;   // 'empujar' | 'deshacer'
+let fudoAccion = null;        // 'empujar' | 'empujar-uno' | 'deshacer'
+let fudoProductoId = null;    // cuando se empuja un producto puntual
 const tablaCambios = (cambios, titulo) => {
   if(!cambios.length) return '';
   const filas = cambios.slice(0,60).map(c=>{
@@ -1859,9 +1896,11 @@ $('fudo-cerrar').addEventListener('click',   ()=>$('overlay-fudo').classList.rem
 
 $('fudo-confirmar').addEventListener('click', async()=>{
   const fn = fudoAccion==='deshacer' ? 'fudo-deshacer-stock' : 'fudo-empujar-stock';
+  const cuerpo = {sede:SEDE, modo:'aplicar'};
+  if(fudoAccion==='empujar-uno') cuerpo.producto_id = fudoProductoId;
   $('overlay-fudo').classList.remove('open');
   trabajando(fudoAccion==='deshacer' ? 'Devolviendo Fudo…' : 'Actualizando Fudo…');
-  const {data,error} = await llamarFudo(fn, {sede:SEDE, modo:'aplicar'});
+  const {data,error} = await llamarFudo(fn, cuerpo);
   listo();
   if(error){ avisar(error); return; }
   const n = data.actualizados ?? data.devueltos ?? 0;
@@ -1874,6 +1913,42 @@ $('fudo-confirmar').addEventListener('click', async()=>{
     aviso(`✓ ${n} producto${n===1?'':'s'} ${fudoAccion==='deshacer'?'devuelto':'actualizado'}${n===1?'':'s'} en Fudo`);
   }
   cargarHistorialFudo();
+});
+
+/* Actualizar en Fudo UN producto del inventario. Puede tocar VARIOS de
+   Fudo, así que la revisión los lista todos antes de escribir. */
+$('m-fudo').addEventListener('click', async()=>{
+  if(!modalProd) return;
+  const nombre = modalProd.producto, pid = modalProd.id;
+  trabajando('Calculando…');
+  const {data,error} = await llamarFudo('fudo-empujar-stock',
+    {sede:SEDE, modo:'simular', producto_id:pid});
+  listo();
+  if(error){ avisar(error); return; }
+  const cambios = data.cambios || [];
+  const enCero  = data.quedarian_en_cero || [];
+  if(!cambios.length){
+    avisar(enCero.length
+      ? `"${nombre}" dejaría en 0 a ${enCero.map(c=>c.producto).join(', ')}, `
+        + 'así que no se manda. Revisa que su receta esté bien.'
+      : (data.ya_estaban_iguales
+          ? `Fudo ya está al día con "${nombre}".`
+          : `"${nombre}" no tiene receta, así que no se controla desde Fudo.`));
+    return;
+  }
+  fudoAccion = 'empujar-uno'; fudoProductoId = pid;
+  $('fudo-titulo').textContent = 'Antes de actualizar';
+  $('fudo-cuerpo').innerHTML = `
+    <div class="adm-card rojo">
+      <h4>🚨 Esto va a escribir en Fudo</h4>
+      <p class="adm-d" style="margin:0">${esc(nombre)} afecta a
+        <b>${cambios.length} producto${cambios.length===1?'':'s'} de Fudo</b>.
+        Los cambios se aplican al momento.</p>
+    </div>
+    ${tablaCambios(cambios, cambios.length===1?'El cambio':'Los cambios')}`;
+  $('fudo-confirmar').textContent =
+    `🚨 Sí, actualizar ${cambios.length} producto${cambios.length===1?'':'s'}`;
+  $('overlay-fudo').classList.add('open');
 });
 
 $('adm-nuevo').addEventListener('click', ()=>{

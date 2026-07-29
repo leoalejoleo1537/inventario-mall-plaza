@@ -608,6 +608,30 @@ el patrón a seguir:
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-28** — **El gesto de deslizar, rehecho; y el botón de Fudo por
+  producto.** Jhon: *"es demasiado poco profesional y estéticamente feo"*.
+  1. **Un símbolo que asoma DETRÁS y crece con el gesto**, como el archivar de
+     Gmail. Va en `position:fixed` con `z-index` por debajo de la fila, así la
+     fila lo destapa al correrse. Antes era un texto dentro de la fila que se
+     encimaba sobre la píldora — el bug de la foto.
+     **Ojo:** la posición se mide en el `touchstart`, ANTES de mover la fila.
+     `getBoundingClientRect()` incluye el `transform`, así que medir durante el
+     gesto hacía que el símbolo viajara con la fila en vez de quedarse quieto.
+  2. **Luz naranja de atrás, no reborde** (`box-shadow`, sin `border-color`).
+     Jhon: *"los rebordes no me gustan"* — se leía como gráfico de Excel.
+     Fuerte al cruzar el tope, suave y permanente en lo ya agregado.
+  3. **Vuelve con resorte**: `cubic-bezier(.18,1.5,.42,1)` pasa de largo y
+     regresa. Antes aparecía de golpe en su sitio y el gesto se sentía cortado.
+  4. **Botón "🚨 Actualizar en Fudo" en la ficha del producto**, solo para
+     `puede_fudo`. Un producto del inventario puede afectar a VARIOS de Fudo,
+     así que la revisión los lista todos antes de escribir; al aplicar manda
+     `producto_id` y no empuja el resto.
+  **Sobre crear productos sin par en Fudo** (preocupación de Jhon): un producto
+  sin receta **no puede escribir nada en Fudo** — `fudo_stock_calculado()` sale
+  DESDE `recetas`, así que sin receta nunca aparece en la lista. El riesgo real
+  es el contrario: Fudo lo sigue vendiendo sin límite. Es falta de cobertura,
+  no un dato corrupto. Diagnóstico en `sql/2026-07-pares-vitrina-congelador.sql`.
+
 - **2026-07-28** — **Zona de administración: el botón para escribir en Fudo.**
   Adriana perdía horas cada día actualizando el stock de Fudo a mano, producto
   por producto — por eso ponía 1.000 unidades de todo. Ahora es un botón.
