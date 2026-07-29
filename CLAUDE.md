@@ -443,56 +443,92 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 - Un solo botón ⟳ que sincroniza catálogo + ventas y descuenta el stock.
 - Probado en cafetería real (venta de pizza en Fudo → se descontó en la app).
 
-**Pendiente / en veremos:**
-- [ ] **Cron automático** de `fudo-sync-ventas` cada 15 min (SQL listo en
-      `sql/2026-07-cron-automatico-ventas.sql`, falta activarlo en Supabase → Cron).
-      Es lo que de verdad elimina la demora: hoy depende de apretar el botón.
-- [ ] Correr la medición de demora real (bloque de `sql/2026-07-fecha-real-de-venta.sql`)
-      después de unos días de uso, para saber si falta el cron o el retraso viene de Fudo.
-- [x] ~~**Push de stock a Fudo**~~ — hecho el 2026-07-28 (ver bitácora). Falta:
-      el botón en la app, el deshacer, y las tandas 2 y 3.
-- [ ] **Deshacer un empuje a Fudo.** `fudo_stock_push` guarda el valor anterior,
-      así que es reconstruible, pero NO existe el botón ni el script. Si un
-      empuje sale mal hay que armarlo en el momento.
+**Pendiente — ordenado por lo que de verdad importa.**
+
+Los tres primeros bloques son los que deciden si esto es estable y seguro.
+Lo demás es mejora, no riesgo.
+
+### 🔴 A. Seguridad y estabilidad — antes de que lo use más gente
+
+- [ ] **Revisar quién puede escribir en la base.** La clave que usa la app va
+      escrita en `index.html` y **cualquiera la puede leer con F12** — eso es
+      normal y no es el problema. Lo que decide qué puede hacer alguien con
+      ella son las políticas RLS de cada tabla. Correr
+      `sql/2026-07-revision-seguridad.sql` (solo lectura): la consulta 2
+      marca con ⚠️ toda escritura abierta a `anon`, o sea a cualquiera que
+      abra la URL sin iniciar sesión. Puede estar bien —es un inventario de
+      café, no un banco— pero **tiene que ser una decisión tomada, no un
+      descuido**. Ojo: cerrar `anon` a lo bruto rompe la app, porque hoy
+      lee y escribe sin sesión.
+- [ ] **RIESGO ABIERTO — las cuentas de administración se desloguean solas.**
+      Apareció `session_not_found`: el navegador guarda un token bien firmado
+      cuya sesión ya no existe en el servidor. Hipótesis a confirmar: hay
+      límite de una sesión por usuario y, al ser cuentas compartidas, cada
+      inicio de sesión mata el anterior. **Con 5 personas de administración
+      esto va a pasar seguido**, y ahí el botón de Fudo simplemente no
+      funciona (avisa "Tu sesión se cerró", que ya es claro, pero igual
+      bloquea). Qué revisar: Supabase → Authentication → Sessions, si hay
+      "single session per user"; y decidir si cada persona lleva su propia
+      cuenta en vez de compartir.
+- [ ] **RIESGO ABIERTO — `supabase-js` sin versión fija.** `index.html` carga
+      `@supabase/supabase-js@2`, o sea **la última 2.x que publiquen**. Un
+      cambio de la librería puede romper la app sin que nadie toque el código
+      — la misma clase de sorpresa que el motor v5, pero desde afuera. Al
+      2026-07-27 la última era **2.110.9**, la que corre hoy; fijarla ahí no
+      cambia nada. **Antes de cambiarla, comprobar que la URL fijada de verdad
+      sirve la librería** (abrirla en el navegador): si se escribe mal, la app
+      deja de cargar entera.
+- [ ] **Respaldos de la base.** Revisar en Supabase → Settings → Database →
+      Backups. En el plan gratuito **no hay punto de restauración**: si algo
+      borra datos, no se recuperan. Antes de que esto maneje más cosas —o de
+      cualquier idea de POS— conviene el plan Pro (~25 USD/mes), que trae
+      respaldo diario.
+- [ ] **Un solo camino puede dejar el inventario congelado sin avisar.** Ya se
+      arregló el caso del motor (la app abre una ventana si lee ventas y no
+      descuenta ninguna). Falta lo mismo para el **cron**, cuando se active:
+      si deja de correr, hoy nadie se entera.
+
+### 🟠 B. Correcciones de datos pendientes
+
 - [ ] **Recetas cruzadas detectadas y sin corregir**: `Cheesecake maracuyá`
       descuenta `T. Cheesecake Mora`. Y revisar `Cinnamon Roll Vegano`, que
       descuenta `Cinnamon rolls vitrina` (el normal): si son pancitos distintos,
       Fudo dejaría vender veganos que no existen — el único caso donde el error
       es vender de MÁS.
-- [ ] Marcar "para llevar" vs "servir" en el front de Fudo para que el `aplica` sirva.
-- [ ] **Combos de elección libre (ej. "3 masitas" a elección del cliente).** Sin
-      resolver. Depende de si Fudo captura QUÉ eligió el cliente (modificadores) o
-      no. Si no lo hace, la única forma de descontar exacto es cambiar el proceso
-      de venta: registrar cada masita por separado en vez de un botón "combo".
-      Ver sección 7 — este problema desaparece solo si migran a un POS propio.
-- [ ] **Depurar recetas (PRIORIDAD — va antes del dashboard).** Plan en
-      `docs/auditoria-recetas.md`; informe de solo lectura en
-      `sql/2026-07-auditoria-recetas.sql`. La métrica de avance es el % de
-      cobertura (bloque 9): anotarlo antes y después de cada tanda.
+- [ ] **Terminar de emparejar vitrina/congelador.** Van 12 pares sumando
+      (2026-07-29). Correr `sql/2026-07-emparejar-vitrina-congelador.sql` de
+      nuevo cada tanto: la consulta 3 muestra los del congelador que todavía no
+      tienen pareja en vitrina.
+- [ ] **Depurar recetas.** Plan en `docs/auditoria-recetas.md`; informe de solo
+      lectura en `sql/2026-07-auditoria-recetas.sql`. La métrica de avance es
+      el % de cobertura (bloque 9).
 - [ ] **Terminar de clasificar los tipos**: correr los 3 pasos de
       `sql/2026-07-tipo-de-producto.sql` y ponerle tipo desde la ficha a los que
       queden en "— revisar —".
-- [ ] **RIESGO ABIERTO — `supabase-js` sin versión fija.** `index.html` carga
-      `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2`, o sea **la última
-      2.x que publiquen**. Un cambio de la librería puede romper la app sin que
-      nadie toque el código y sin aviso — la misma clase de sorpresa que el
-      motor v5, pero desde afuera. Al 2026-07-27 la última era **2.110.9**, que
-      es la que está corriendo hoy; fijarla a esa versión no cambia nada del
-      comportamiento actual y cierra el hueco. **Antes de cambiarla hay que
-      comprobar que la URL fijada de verdad sirve la librería** (abrirla en el
-      navegador y ver que baja el archivo): si se escribe mal, la app deja de
-      cargar entera. Jhon lo pidió expresamente el 2026-07-27.
-- [ ] **RIESGO ABIERTO — la sesión se muere sola.** Al probar la escritura en
-      Fudo apareció `session_not_found`: el navegador guardaba un token bien
-      firmado cuya sesión ya no existía en el servidor. Hubo que salir y volver
-      a entrar. Hipótesis a confirmar: el equipo comparte una cuenta y cada
-      inicio de sesión mata el anterior. Hoy no rompe nada visible (leer el
-      inventario va con permisos de `anon`, sin sesión), pero **rompe cualquier
-      cosa que dependa de quién eres** — justo lo que necesita el control de
-      stock de Fudo. Confirmar si hay límite de una sesión por usuario, y
-      decidir si cada persona lleva su propia cuenta.
-- [ ] **Dashboard**: lista de análisis posibles en `docs/dashboard-analisis-posibles.md`.
-      NO empezar hasta cerrar la depuración de recetas.
+- [ ] **Las tandas 2 y 3 del empuje a Fudo**: los ~40 combos que hoy no se
+      controlan por stock (cambian de comportamiento en el mesón, hay que
+      avisar), y los ~10 que quedarían en 0 (revisar receta por receta antes).
+
+### 🟡 C. Mejoras que ya están desbloqueadas
+
+- [ ] **Que el cálculo para Fudo use el TOTAL del par vitrina+congelador.**
+      Hoy usa solo el producto que está en la receta: por eso Fudo se
+      actualizaba con 2 alfajores cuando había 17. Ya se puede hacer, porque
+      los pares quedaron emparejados. Es la misma idea de `base_nombre()` que
+      ya usa el motor de descuento para reponer desde el congelador.
+- [ ] **Cron automático** de `fudo-sync-ventas` cada 15 min (SQL listo en
+      `sql/2026-07-cron-automatico-ventas.sql`, falta activarlo en Supabase →
+      Cron). Es lo que elimina la demora: hoy depende de apretar el botón.
+- [ ] Correr la medición de demora real (bloque de `sql/2026-07-fecha-real-de-venta.sql`).
+- [ ] **Al crear un producto, poder enlazarlo con uno de Fudo.** Hoy se crea
+      suelto. No es peligroso —sin receta no puede escribir nada en Fudo— pero
+      queda fuera del control y Fudo lo sigue vendiendo sin límite.
+- [ ] Marcar "para llevar" vs "servir" en el front de Fudo para que el `aplica` sirva.
+- [ ] **Combos de elección libre (ej. "3 masitas").** Sin resolver. Depende de
+      si Fudo captura QUÉ eligió el cliente. Ver sección 7 — desaparece solo si
+      migran a un POS propio.
+- [ ] **Dashboard**: `docs/dashboard-analisis-posibles.md`. NO empezar hasta
+      cerrar la depuración de recetas.
 - [ ] Confirmar con jefatura que van a usar el sistema (vs. volver al Excel).
 - [ ] **Decisión grande pendiente: ¿avanzar hacia un POS propio?** Ver sección 7.
 
