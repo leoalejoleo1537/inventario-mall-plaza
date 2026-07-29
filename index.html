@@ -364,6 +364,98 @@
   .icon-del:active{background:var(--red-bg);color:var(--red-fg)}
   .icon-del svg{width:20px;height:20px;display:block}
   /* interruptor del modo edición, en el menú lateral */
+  /* ============ ZONA DE ADMINISTRACIÓN ============
+     Rojo, no naranja: el naranja de la casa significa "acción" y está en
+     todas partes. El rojo se reserva para lo crítico, y acá es el único
+     lugar de la app donde manda. */
+  .item-admin{color:var(--red-fg);font-weight:800}
+  .item-admin .adm-ico{font-size:19px;width:21px;text-align:center;flex-shrink:0}
+  .modal-admin{padding:0;overflow:hidden;max-height:88vh;display:flex;flex-direction:column}
+  /* franja a rayas: el lenguaje de "zona restringida", antes de leer nada */
+  .adm-barra{height:6px;flex-shrink:0;
+    background:repeating-linear-gradient(45deg,#C0392B 0 10px,#8E2A20 10px 20px)}
+  .adm-head{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;flex-shrink:0}
+  .adm-head h2{margin:0;flex:1;font-size:18px}
+  .adm-x{border:none;background:var(--gray-bg);color:var(--muted);width:32px;height:32px;
+    border-radius:50%;font-size:15px;cursor:pointer;flex-shrink:0;font-family:inherit;
+    transition:transform .12s ease}
+  .adm-x:active{transform:scale(.9)}
+  .adm-body{padding:0 16px 16px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .adm-pie{padding:12px 16px 16px;border-top:1px solid var(--border);flex-shrink:0;
+    display:flex;flex-direction:column;gap:8px}
+
+  .adm-sec{margin-bottom:14px}
+  .adm-sec-cab{display:flex;align-items:center;gap:10px;background:var(--red-fg);color:#fff;
+    padding:11px 13px;border-radius:11px 11px 0 0}
+  .adm-sec-cab.azul{background:var(--sec-bg)}
+  .adm-sec-cab span{font-size:19px;flex-shrink:0}
+  .adm-sec-cab b{display:block;font-size:14.5px;font-weight:800}
+  .adm-sec-cab i{display:block;font-size:11px;opacity:.8;font-style:normal;margin-top:1px}
+  .adm-sec-cuerpo{background:var(--card);border:1px solid var(--border);border-top:none;
+    border-radius:0 0 11px 11px;padding:11px}
+
+  .adm-card{display:block;width:100%;text-align:left;font-family:inherit;
+    border:1px solid var(--border);border-radius:10px;padding:11px;margin-bottom:9px;
+    background:var(--card);color:var(--text)}
+  .adm-card:last-child{margin-bottom:0}
+  .adm-card.rojo{border-color:#F0C4BF;background:#FEF7F6}
+  .adm-card h4{margin:0 0 3px;font-size:14px;font-weight:800}
+  .adm-card .adm-d{font-size:12px;color:var(--muted);margin:0 0 10px}
+  .adm-card .adm-d b{color:var(--text)}
+  .adm-fila{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;
+    transition:transform .12s ease}
+  .adm-fila:active{transform:scale(.985)}
+  .adm-fila .sw{width:42px;height:25px;border-radius:999px;background:var(--border);
+    position:relative;flex-shrink:0;transition:background .18s ease}
+  .adm-fila .sw::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;
+    border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .18s ease}
+  .adm-fila.on .sw{background:var(--orange)}
+  .adm-fila.on .sw::after{transform:translateX(17px)}
+
+  .adm-btn{display:block;width:100%;border:none;border-radius:10px;padding:12px;
+    font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;text-align:center;
+    transition:transform .12s ease}
+  .adm-btn:active{transform:scale(.97)}
+  .adm-btn:disabled{opacity:.5;cursor:default;transform:none}
+  .adm-btn.peligro{background:var(--red-fg);color:#fff;box-shadow:0 2px 10px rgba(192,57,43,.35)}
+  .adm-btn.fantasma{background:transparent;color:var(--red-fg);border:1.5px solid var(--red-fg)}
+  .adm-btn.gris{background:var(--gray-bg);color:var(--text)}
+
+  /* resumen de lo que va a pasar */
+  .adm-res{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin:10px 0}
+  .adm-res div{border:1px solid var(--border);border-radius:9px;padding:8px;text-align:center;background:var(--bg)}
+  .adm-res b{display:block;font-size:20px;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}
+  .adm-res span{font-size:9.5px;color:var(--muted);font-weight:700;letter-spacing:.2px}
+  .adm-tabla{width:100%;border-collapse:collapse;font-size:12.5px}
+  .adm-tabla th{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+    text-align:left;padding:4px;font-weight:800;border-bottom:1px solid var(--border)}
+  .adm-tabla td{padding:5px 4px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+  .adm-tabla td:first-child{font-weight:600}
+  .adm-tabla .baja{color:var(--red-fg);font-weight:800;text-align:right}
+  .adm-tabla .sube{color:var(--green-fg);font-weight:800;text-align:right}
+  .adm-tabla .de{text-align:right;color:var(--muted)}
+  .adm-scroll{overflow-x:auto}
+
+  .adm-hist-fila{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;
+    padding:8px 2px;border-bottom:1px solid var(--border)}
+  .adm-hist-fila:last-child{border-bottom:none}
+  .adm-hist-fila .qn{font-weight:700}
+  .adm-hist-fila .cd{color:var(--muted);white-space:nowrap}
+  .adm-hist-fila.vuelta .qn::before{content:"↩️ "}
+
+  /* trabajando: bloquea la pantalla mientras se escribe en Fudo */
+  .cargando-caja{background:var(--card);border-radius:16px;padding:26px 30px;text-align:center;
+    box-shadow:0 18px 50px rgba(15,30,49,.3)}
+  .rueda{width:38px;height:38px;margin:0 auto 14px;border-radius:50%;
+    border:3.5px solid var(--gray-bg);border-top-color:var(--red-fg);animation:girar .8s linear infinite}
+  @keyframes girar{to{transform:rotate(360deg)}}
+  .cargando-txt{font-size:15px;font-weight:800;color:var(--text)}
+  .cargando-sub{font-size:12px;color:var(--muted);margin-top:3px}
+  @media (prefers-reduced-motion: reduce){
+    .rueda{animation-duration:2s}
+    .adm-btn:active,.adm-fila:active,.adm-x:active{transform:none}
+  }
+
   .drawer-item .sw{margin-left:auto;width:38px;height:22px;border-radius:999px;background:var(--border);
                    position:relative;transition:background .15s;flex-shrink:0}
   .drawer-item .sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
@@ -513,21 +605,19 @@
   </div>
 
   <div class="drawer-sec">Atajos</div>
-  <button type="button" class="drawer-item" data-accion="nuevo">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
-    Agregar producto
-  </button>
   <button type="button" class="drawer-item" data-accion="actualizar">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
     Actualizar
   </button>
 
-  <div class="drawer-sec">Productos</div>
-  <button type="button" class="drawer-item" id="itEdicion" data-accion="edicion">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
-    Modo edición
-    <span class="sw"></span>
-  </button>
+  <!-- Solo para las cuentas con permiso. Un jefe de turno no ve nada de esto. -->
+  <div id="bloqueAdmin" style="display:none">
+    <div class="drawer-sec">Solo administración</div>
+    <button type="button" class="drawer-item item-admin" data-accion="admin">
+      <span class="adm-ico">🚨</span>
+      Zona de administración
+    </button>
+  </div>
 
   <div class="drawer-sec">Sede</div>
   <button type="button" class="drawer-item" data-accion="cambiar-sede">
@@ -547,6 +637,83 @@
 </aside>
 
 <div class="toast" id="toast"></div>
+
+<!-- ================= ZONA DE ADMINISTRACIÓN =================
+     Acá vive lo que sale del inventario y toca Fudo, más lo que puede
+     romper productos. Se ve distinta a propósito. -->
+<div class="overlay overlay-blur" id="overlay-admin">
+  <div class="modal modal-admin">
+    <div class="adm-barra"></div>
+    <div class="adm-head">
+      <h2>Administración</h2>
+      <button type="button" class="adm-x" id="adm-cerrar" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="adm-body">
+
+      <div class="adm-sec peligro">
+        <div class="adm-sec-cab"><span>🚨</span><div><b>Actualizar Fudo</b><i>Escribe en el sistema de ventas</i></div></div>
+        <div class="adm-sec-cuerpo">
+          <div class="adm-card rojo">
+            <h4>⚠️ Empujar todo el inventario</h4>
+            <p class="adm-d" id="adm-ultimo">—</p>
+            <button type="button" class="adm-btn peligro" id="adm-empujar">Revisar antes de actualizar</button>
+          </div>
+          <div class="adm-card">
+            <h4>↩️ Deshacer el último empuje</h4>
+            <p class="adm-d" id="adm-desc-deshacer">—</p>
+            <button type="button" class="adm-btn fantasma" id="adm-deshacer">Revisar y deshacer</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="adm-sec">
+        <div class="adm-sec-cab azul"><span>🕗</span><div><b>Historial</b><i>Quién actualizó qué, y cuándo</i></div></div>
+        <div class="adm-sec-cuerpo"><div id="adm-hist"><div class="empty">Cargando…</div></div></div>
+      </div>
+
+      <div class="adm-sec">
+        <div class="adm-sec-cab azul"><span>✏️</span><div><b>Productos</b><i>Crear, renombrar y eliminar</i></div></div>
+        <div class="adm-sec-cuerpo">
+          <button type="button" class="adm-card adm-fila" id="adm-nuevo">
+            <div><h4 style="margin:0">＋ Agregar producto</h4>
+                 <p class="adm-d" style="margin:2px 0 0">Crea un producto nuevo en el inventario</p></div>
+          </button>
+          <button type="button" class="adm-card adm-fila" id="adm-edicion">
+            <div><h4 style="margin:0">Modo edición</h4>
+                 <p class="adm-d" style="margin:2px 0 0">Permite renombrar y eliminar. Se apaga al salir.</p></div>
+            <span class="sw"></span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ---- revisión antes de escribir en Fudo: acá todavía no pasó nada ---- -->
+<div class="overlay overlay-blur" id="overlay-fudo">
+  <div class="modal modal-admin">
+    <div class="adm-barra"></div>
+    <div class="adm-head">
+      <h2 id="fudo-titulo">Antes de actualizar</h2>
+      <button type="button" class="adm-x" id="fudo-cerrar" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="adm-body" id="fudo-cuerpo"></div>
+    <div class="adm-pie">
+      <button type="button" class="adm-btn peligro" id="fudo-confirmar">Confirmar</button>
+      <button type="button" class="adm-btn gris" id="fudo-cancelar">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ---- trabajando: mientras se escribe en Fudo no se puede tocar nada ---- -->
+<div class="overlay overlay-blur" id="overlay-cargando">
+  <div class="cargando-caja">
+    <div class="rueda"></div>
+    <div class="cargando-txt" id="cargando-txt">Actualizando Fudo…</div>
+    <div class="cargando-sub">No cierres la app</div>
+  </div>
+</div>
 
 <!-- ================= INVENTARIO ================= -->
 <div class="wrap" id="view-inv">
@@ -925,10 +1092,37 @@ function saludo(){
    NO se guarda entre sesiones — al abrir la app siempre arranca apagado. */
 let modoEdicion = false;
 function setModoEdicion(v){
-  modoEdicion = !!v;
-  $('itEdicion').classList.toggle('on', modoEdicion);
+  modoEdicion = !!v && PERMISOS.puede_editar;
+  $('adm-edicion').classList.toggle('on', modoEdicion);
   $('m-edicion').style.display = modoEdicion ? '' : 'none';
   $('m-eliminar').classList.toggle('on', modoEdicion);
+}
+
+/* ---------------- permisos ----------------
+   Quién puede tocar Fudo y quién puede crear/renombrar/eliminar productos.
+   La app lo lee para MOSTRAR u ocultar; el candado de verdad está en las
+   Edge Functions, que lo vuelven a comprobar en el servidor antes de
+   escribir. Esconder un botón nunca es seguridad. */
+let PERMISOS = { puede_fudo:false, puede_editar:false, correo:null };
+async function cargarPermisos(){
+  PERMISOS = { puede_fudo:false, puede_editar:false, correo:null };
+  try{
+    const {data:{session}} = await sb.auth.getSession();
+    const correo = session?.user?.email?.toLowerCase() || null;
+    PERMISOS.correo = correo;
+    if(correo){
+      const {data} = await sb.from('app_permisos').select('*').eq('correo',correo).maybeSingle();
+      if(data){ PERMISOS.puede_fudo = !!data.puede_fudo; PERMISOS.puede_editar = !!data.puede_editar; }
+    }
+  }catch(e){ console.error(e); }   // si la tabla no existe todavía, nadie ve nada nuevo
+  aplicarPermisos();
+}
+function aplicarPermisos(){
+  const admin = PERMISOS.puede_fudo || PERMISOS.puede_editar;
+  $('bloqueAdmin').style.display = admin ? '' : 'none';
+  // crear productos pasa a ser cosa de administración
+  $('btnNuevo').style.display = PERMISOS.puede_editar ? '' : 'none';
+  if(!PERMISOS.puede_editar) setModoEdicion(false);
 }
 
 /* ---------------- menú lateral ---------------- */
@@ -944,15 +1138,10 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') cerrarMenu(); });
 $('drawer').addEventListener('click',e=>{
   const it=e.target.closest('[data-accion]'); if(!it) return;
   const a=it.dataset.accion;
-  if(a==='edicion'){                       // el menú queda abierto: se ve el cambio
-    setModoEdicion(!modoEdicion);
-    aviso(modoEdicion ? 'Modo edición activado' : 'Modo edición desactivado');
-    return;
-  }
   cerrarMenu();
-  if(a==='nuevo')          $('btnNuevo').click();
   if(a==='actualizar')     actualizarTodo();
   if(a==='cambiar-sede')   showGate();
+  if(a==='admin')          abrirAdmin();
 });
 
 /* Pregunta de sí/no con la cara de la app. El confirm() del navegador pinta
@@ -1026,6 +1215,7 @@ function pickSede(s){
   $('body-cerrados').style.display='none';
   $('repartos-abiertos').innerHTML='';
   marcarNuevo();
+  cargarPermisos();
   loadData();
   loadRepartos();
   subscribeRealtime();
@@ -1521,6 +1711,179 @@ listEl.addEventListener('touchmove', e=>{
 }, {passive:false});
 listEl.addEventListener('touchend', ()=>{ if(swRow) swipeFin(Math.abs(swDx)>=SWIPE_MIN); }, {passive:true});
 listEl.addEventListener('touchcancel', ()=>{ if(swRow) swipeFin(false); }, {passive:true});
+
+/* ================= ZONA DE ADMINISTRACIÓN =================
+   Todo lo que sale del inventario y toca Fudo. Ninguna acción de acá se
+   ejecuta de un toque: primero se muestra qué va a pasar. */
+
+function trabajando(txt){
+  $('cargando-txt').textContent = txt || 'Actualizando Fudo…';
+  $('overlay-cargando').classList.add('open');
+}
+function listo(){ $('overlay-cargando').classList.remove('open'); }
+
+/* Llama a una Edge Function con la sesión del usuario. Si la sesión se
+   murió (pasa con la cuenta compartida), lo dice con esas palabras en vez
+   de un error críptico. */
+async function llamarFudo(fn, body){
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session) return {error:'Tu sesión se cerró. Sal y vuelve a entrar a la app.'};
+  const r = await sb.functions.invoke(fn, {
+    body, headers:{ Authorization:`Bearer ${session.access_token}` },
+  });
+  if(r.error){
+    let msg = 'No se pudo conectar. Revisa tu señal.';
+    try{ msg = JSON.parse(await r.error.context.text())?.error || msg; }catch(e){}
+    return {error: msg};
+  }
+  return {data: r.data};
+}
+
+const fmtFechaHora = iso => {
+  const d = new Date(iso);
+  const hoy = new Date().toDateString() === d.toDateString();
+  const h = d.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  return hoy ? 'hoy '+h : d.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'})+' '+h;
+};
+
+async function abrirAdmin(){
+  $('overlay-admin').classList.add('open');
+  $('adm-edicion').classList.toggle('on', modoEdicion);
+  $('adm-nuevo').style.display = PERMISOS.puede_editar ? '' : 'none';
+  $('adm-edicion').style.display = PERMISOS.puede_editar ? '' : 'none';
+  cargarHistorialFudo();
+}
+$('adm-cerrar').addEventListener('click', ()=>$('overlay-admin').classList.remove('open'));
+$('overlay-admin').addEventListener('click', e=>{
+  if(e.target===$('overlay-admin')) $('overlay-admin').classList.remove('open');
+});
+
+/* El historial responde la pregunta que evita la mitad de los empujes de
+   más: ¿alguien ya lo hizo hace un rato? */
+async function cargarHistorialFudo(){
+  const cont = $('adm-hist');
+  const {data,error} = await sb.from('fudo_stock_push')
+    .select('*').eq('sede',SEDE).order('created_at',{ascending:false}).limit(200);
+  if(error || !data){ cont.innerHTML='<div class="empty">No se pudo leer el historial.</div>';
+                      $('adm-ultimo').textContent='—'; return; }
+  // se agrupa por lote: cada envío es una línea, no 58
+  const lotes = new Map();
+  data.forEach(r=>{
+    const k = r.lote || r.created_at;
+    if(!lotes.has(k)) lotes.set(k, {quien:r.quien, cuando:r.created_at, n:0, vuelta:/^deshacer/.test(r.detalle||'')});
+    lotes.get(k).n++;
+  });
+  const filas = [...lotes.values()].sort((a,b)=>b.cuando.localeCompare(a.cuando));
+  cont.innerHTML = filas.length
+    ? filas.slice(0,12).map(l=>`<div class="adm-hist-fila${l.vuelta?' vuelta':''}">
+        <span><span class="qn">${esc((l.quien||'').split('@')[0])}</span> · ${l.n} producto${l.n===1?'':'s'}</span>
+        <span class="cd">${fmtFechaHora(l.cuando)}</span></div>`).join('')
+    : '<div class="empty">Todavía no se ha actualizado Fudo.</div>';
+  const u = filas[0];
+  $('adm-ultimo').innerHTML = u
+    ? `Última vez: <b>${fmtFechaHora(u.cuando)}</b> · ${esc((u.quien||'').split('@')[0])} · ${u.n} productos`
+    : 'Nunca se ha actualizado desde acá.';
+  $('adm-desc-deshacer').textContent = u && !u.vuelta
+    ? `Devuelve ${u.n} productos a como estaban`
+    : 'No hay ningún empuje reciente que deshacer';
+}
+
+/* ---- la pantalla de revisión: acá TODAVÍA no pasó nada ---- */
+let fudoAccion = null;   // 'empujar' | 'deshacer'
+const tablaCambios = (cambios, titulo) => {
+  if(!cambios.length) return '';
+  const filas = cambios.slice(0,60).map(c=>{
+    const sube = Number(c.a) > Number(c.de ?? 0);
+    return `<tr><td>${esc(c.producto)}</td><td class="de">${c.de==null?'—':fmt(c.de)}</td>`
+         + `<td class="${sube?'sube':'baja'}">${fmt(c.a)}</td></tr>`;
+  }).join('');
+  const mas = cambios.length>60 ? `<tr><td style="color:var(--muted)">…y ${cambios.length-60} más</td><td></td><td></td></tr>` : '';
+  return `<div class="adm-card"><h4>${titulo}</h4><div class="adm-scroll"><table class="adm-tabla">
+      <thead><tr><th>Producto</th><th style="text-align:right">Hoy</th><th style="text-align:right">Queda</th></tr></thead>
+      <tbody>${filas}${mas}</tbody></table></div></div>`;
+};
+
+async function revisarEmpuje(){
+  trabajando('Calculando…');
+  const {data,error} = await llamarFudo('fudo-empujar-stock', {sede:SEDE, modo:'simular'});
+  listo();
+  if(error){ avisar(error); return; }
+  const cambios = data.cambios || [];
+  if(!cambios.length){ avisar('Fudo ya está al día. No hay nada que actualizar.'); return; }
+  fudoAccion = 'empujar';
+  $('fudo-titulo').textContent = 'Antes de actualizar';
+  $('fudo-cuerpo').innerHTML = `
+    <div class="adm-card rojo">
+      <h4>🚨 Esto va a escribir en Fudo</h4>
+      <p class="adm-d">Los cambios se aplican al momento. Se puede deshacer después.</p>
+      <div class="adm-res">
+        <div><b style="color:var(--orange-dark)">${data.se_actualizarian}</b><span>SE ACTUALIZAN</span></div>
+        <div><b style="color:var(--red-fg)">${data.saltados_por_quedar_en_cero}</b><span>QUEDARÍAN EN 0</span></div>
+        <div><b style="color:var(--amber-fg)">${data.saltados_por_ser_nuevos}</b><span>NUEVOS</span></div>
+        <div><b style="color:var(--muted)">${data.ya_estaban_iguales}</b><span>YA IGUALES</span></div>
+      </div>
+      <p class="adm-d" style="margin:0">Los que quedarían en 0 y los nuevos <b>no se mandan</b>: cada tanda se decide aparte.</p>
+    </div>
+    ${tablaCambios(cambios, `Los ${cambios.length} cambios`)}`;
+  $('fudo-confirmar').textContent = `🚨 Sí, actualizar ${cambios.length} producto${cambios.length===1?'':'s'}`;
+  $('overlay-fudo').classList.add('open');
+}
+
+async function revisarDeshacer(){
+  trabajando('Buscando el último empuje…');
+  const {data,error} = await llamarFudo('fudo-deshacer-stock', {sede:SEDE, modo:'simular'});
+  listo();
+  if(error){ avisar(error); return; }
+  if(!data.hay_algo_que_deshacer){ avisar(data.mensaje || 'No hay nada que deshacer.'); return; }
+  const cambios = data.cambios || [];
+  if(!cambios.length){ avisar('No hay nada que devolver de ese empuje.'); return; }
+  fudoAccion = 'deshacer';
+  $('fudo-titulo').textContent = 'Antes de deshacer';
+  const saltados = (data.sin_valor_anterior||[]).length;
+  $('fudo-cuerpo').innerHTML = `
+    <div class="adm-card rojo">
+      <h4>↩️ Devolver Fudo a como estaba</h4>
+      <p class="adm-d">Deshace el empuje de <b>${fmtFechaHora(data.empuje_del)}</b>${
+        data.lo_hizo?' de '+esc(data.lo_hizo.split('@')[0]):''}.</p>
+      ${saltados?`<p class="adm-d" style="margin:0">${saltados} producto${saltados===1?'':'s'} no se devuelve${saltados===1?'':'n'}: Fudo no les llevaba stock antes, y dejarlos en 0 los sacaría de venta.</p>`:''}
+    </div>
+    ${tablaCambios(cambios, `Los ${cambios.length} que vuelven atrás`)}`;
+  $('fudo-confirmar').textContent = `↩️ Devolver ${cambios.length} producto${cambios.length===1?'':'s'}`;
+  $('overlay-fudo').classList.add('open');
+}
+
+$('adm-empujar').addEventListener('click', revisarEmpuje);
+$('adm-deshacer').addEventListener('click', revisarDeshacer);
+$('fudo-cancelar').addEventListener('click', ()=>$('overlay-fudo').classList.remove('open'));
+$('fudo-cerrar').addEventListener('click',   ()=>$('overlay-fudo').classList.remove('open'));
+
+$('fudo-confirmar').addEventListener('click', async()=>{
+  const fn = fudoAccion==='deshacer' ? 'fudo-deshacer-stock' : 'fudo-empujar-stock';
+  $('overlay-fudo').classList.remove('open');
+  trabajando(fudoAccion==='deshacer' ? 'Devolviendo Fudo…' : 'Actualizando Fudo…');
+  const {data,error} = await llamarFudo(fn, {sede:SEDE, modo:'aplicar'});
+  listo();
+  if(error){ avisar(error); return; }
+  const n = data.actualizados ?? data.devueltos ?? 0;
+  const malos = data.con_error || 0;
+  if(malos){
+    avisar(`Se ${fudoAccion==='deshacer'?'devolvieron':'actualizaron'} ${n} productos, `
+         + `pero ${malos} falló${malos===1?'':'aron'}.\n\n`
+         + (data.errores||[]).slice(0,5).map(e=>`• ${e.producto}: ${e.error}`).join('\n'));
+  } else {
+    aviso(`✓ ${n} producto${n===1?'':'s'} ${fudoAccion==='deshacer'?'devuelto':'actualizado'}${n===1?'':'s'} en Fudo`);
+  }
+  cargarHistorialFudo();
+});
+
+$('adm-nuevo').addEventListener('click', ()=>{
+  $('overlay-admin').classList.remove('open');
+  $('btnNuevo').click();
+});
+$('adm-edicion').addEventListener('click', ()=>{
+  setModoEdicion(!modoEdicion);
+  aviso(modoEdicion ? 'Modo edición activado' : 'Modo edición desactivado');
+});
 
 /* ---------------- modal ---------------- */
 function openModal(id){

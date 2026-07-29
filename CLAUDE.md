@@ -608,6 +608,31 @@ el patrón a seguir:
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-07-28** — **Zona de administración: el botón para escribir en Fudo.**
+  Adriana perdía horas cada día actualizando el stock de Fudo a mano, producto
+  por producto — por eso ponía 1.000 unidades de todo. Ahora es un botón.
+  Vive en el menú ☰, bajo el rótulo "Solo administración", y **solo la ven las
+  cuentas de `app_permisos`**.
+  1. **Rojo, no naranja.** El naranja de la casa significa "acción" y está en
+     todas partes; el rojo se reserva para lo crítico y **este es el único
+     lugar de la app donde manda**. Franja a rayas arriba de cada ventana.
+  2. **Nada se escribe de un toque.** El botón rojo abre la revisión (llama en
+     modo `simular`, que no toca Fudo): resumen en números, tabla con verde
+     para lo que sube y rojo para lo que baja. El botón que aplica **dice el
+     número** — "Sí, actualizar 58 productos", no "Confirmar" — y **Cancelar va
+     abajo y en gris**: el camino peligroso no es el más cómodo.
+  3. **Ventana de "trabajando"** con fondo desenfocado mientras escribe, para
+     que nadie apriete dos veces ni cierre la app a medias.
+  4. **"Última vez: hace 2 h · Valentina · 58 productos"** en el propio botón.
+     Con cinco personas con permiso, alguien iba a apretar por las dudas.
+  5. **El historial agrupa por lote**, así un envío es una línea y no 58.
+  6. **Se mudan acá `Modo edición` y `Agregar producto`.** Ya no están sueltos
+     en el menú: crear, renombrar y eliminar productos pasa a ser cosa de
+     administración (`puede_editar`).
+  **El candado está en el servidor.** Las Edge Functions vuelven a comprobar el
+  permiso contra `app_permisos` antes de tocar Fudo; esconder el botón es
+  comodidad, no seguridad. 34 comprobaciones de la zona, 138 del inventario.
+
 - **2026-07-28** — **Deslizar una fila la manda al reparto.** Adriana lo pidió
   así: *"literal tengo que hacer esto con dos pantallas"* — entraba a Crítico,
   anotaba qué faltaba, y se cambiaba a Reparto a escribirlo. Ahora entra a
