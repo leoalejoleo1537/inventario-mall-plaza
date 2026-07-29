@@ -1840,7 +1840,23 @@ const tablaCambios = (cambios, titulo) => {
       <tbody>${filas}${mas}</tbody></table></div></div>`;
 };
 
+/* El "stock en Fudo" con el que comparamos NO se lee de Fudo en vivo: sale de
+   fudo_productos, que es una copia local que solo refresca la sync de catálogo.
+   Sin refrescarla, la revisión compara contra una foto vieja y puede decir
+   "ya está al día" cuando no lo está. Se refresca SIEMPRE antes de revisar. */
+async function refrescarEspejoFudo(){
+  try{
+    const {data:{session}} = await sb.auth.getSession();
+    await sb.functions.invoke('fudo-sync-productos', {
+      body:{sede:SEDE},
+      headers: session ? {Authorization:`Bearer ${session.access_token}`} : undefined,
+    });
+  }catch(e){ console.error(e); }   // si falla, se sigue: mejor comparar con lo viejo que no dejar revisar
+}
+
 async function revisarEmpuje(){
+  trabajando('Leyendo Fudo…');
+  await refrescarEspejoFudo();
   trabajando('Calculando…');
   const {data,error} = await llamarFudo('fudo-empujar-stock', {sede:SEDE, modo:'simular'});
   listo();
@@ -1920,6 +1936,8 @@ $('fudo-confirmar').addEventListener('click', async()=>{
 $('m-fudo').addEventListener('click', async()=>{
   if(!modalProd) return;
   const nombre = modalProd.producto, pid = modalProd.id;
+  trabajando('Leyendo Fudo…');
+  await refrescarEspejoFudo();
   trabajando('Calculando…');
   const {data,error} = await llamarFudo('fudo-empujar-stock',
     {sede:SEDE, modo:'simular', producto_id:pid});
