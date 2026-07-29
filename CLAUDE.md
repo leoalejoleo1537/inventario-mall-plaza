@@ -511,11 +511,10 @@ Lo demás es mejora, no riesgo.
 
 ### 🟡 C. Mejoras que ya están desbloqueadas
 
-- [ ] **Que el cálculo para Fudo use el TOTAL del par vitrina+congelador.**
-      Hoy usa solo el producto que está en la receta: por eso Fudo se
-      actualizaba con 2 alfajores cuando había 17. Ya se puede hacer, porque
-      los pares quedaron emparejados. Es la misma idea de `base_nombre()` que
-      ya usa el motor de descuento para reponer desde el congelador.
+- [x] ~~**Que el cálculo para Fudo use el TOTAL del par vitrina+congelador.**~~
+      Hecho el 2026-07-29 (`sql/2026-07-stock-para-fudo-v3-suma-el-par.sql`).
+      Al vender se sigue descontando del producto de la receta: lo que cambió
+      es solo cuánto se dice que se PUEDE vender.
 - [ ] **Cron automático** de `fudo-sync-ventas` cada 15 min (SQL listo en
       `sql/2026-07-cron-automatico-ventas.sql`, falta activarlo en Supabase →
       Cron). Es lo que elimina la demora: hoy depende de apretar el botón.
@@ -643,6 +642,29 @@ el patrón a seguir:
 ---
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-29** — **Fudo ya recibe el total del par, no solo la vitrina.**
+  Jhon lo detectó con el alfajor: 2 en vitrina, 15 en congelador, y a Fudo le
+  llegaba **2**. La receta apunta a UN producto, y ese producto era el de
+  vitrina.
+  Ahora, para calcular cuánto se puede vender, el stock de un insumo es la
+  **suma de todos los productos con su mismo nombre base** — igual que el
+  "Total" de la lista y que la reposición del motor de descuento. El alfajor
+  pasa a **17**.
+  1. **No cambia el descuento.** Al vender se sigue descontando del producto
+     que dice la receta, y si la vitrina llega a 0 el motor baja del
+     congelador como siempre. Lo único que cambió es cuánto se dice que se
+     PUEDE vender.
+  2. **`base_nombre()` se crea solo si no existe.** El motor de descuento ya
+     la usa; redefinirla podría cambiarle el comportamiento sin querer.
+     Probado: si ya está, el script no la toca.
+  3. **Tocar el producto del congelador mueve lo mismo que tocar el de
+     vitrina.** Para Fudo son el mismo producto, así que el botón de la ficha
+     busca la receta por nombre base y no por id.
+  4. **Los envases siguen sin limitar**, y la respuesta muestra de dónde sale
+     cada suma (`sumados`), para que el número no sea un acto de fe.
+  **Depende de que los nombres calcen**: correr antes
+  `sql/2026-07-emparejar-vitrina-congelador.sql`. Van 12 pares.
 
 - **2026-07-28** — **El gesto de deslizar, rehecho; y el botón de Fudo por
   producto.** Jhon: *"es demasiado poco profesional y estéticamente feo"*.

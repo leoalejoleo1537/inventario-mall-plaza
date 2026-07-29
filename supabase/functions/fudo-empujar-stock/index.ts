@@ -54,6 +54,7 @@ type Fila = {
   stock_en_fudo: number | null; stock_calculado: number;
   insumo_que_limita: string; insumos: string;
   ignorados: string | null;   // envases, que no limitan la venta
+  sumados: string | null;     // pares vitrina+congelador que se sumaron
   deja_en_cero: boolean;
 };
 
@@ -141,6 +142,7 @@ Deno.serve(async (req) => {
           producto: f.producto_fudo, de: f.stock_en_fudo, a: f.stock_calculado,
           limita: f.insumo_que_limita,
           ...(f.ignorados ? { envases_ignorados: f.ignorados } : {}),
+          ...(f.sumados ? { suma_vitrina_y_congelador: f.sumados } : {}),
         })),
         quedarian_en_cero: enCero.map((f) => ({
           producto: f.producto_fudo, tiene_en_fudo: f.stock_en_fudo,
