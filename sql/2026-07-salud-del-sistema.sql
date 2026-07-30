@@ -24,8 +24,14 @@
 -- ================================================================
 -- 0) RESUMEN EN UNA SOLA CORRIDA  ←  EMPEZAR POR ACÁ
 --
--- Seleccionar TODO este bloque 0 (desde el "with" hasta el ";") y darle
--- Run. Devuelve UNA tabla de 10 filas con el estado de todo.
+-- Seleccionar TODO este bloque 0 (desde el primer "select" hasta el
+-- "order by 1;") y darle Run. Devuelve UNA tabla de 10 filas.
+--
+-- ⚠️ Escrito a propósito SIN comillas de dólar ($$) y en sentencias
+-- cortas: la primera versión usaba SQL dinámico con $q$ y el editor de
+-- Supabase respondía "No se pudo obtener" sin llegar a ejecutarla. Si
+-- se vuelve a tocar, mantenerlo corto y sin $$ — el editor es el
+-- límite real, no Postgres.
 --
 -- La columna que importa es "¿Hay que hacer algo?":
 --   ok          → nada que hacer
@@ -39,84 +45,94 @@
 -- Los bloques 1 al 10 siguen estando: son el detalle de cada línea de
 -- este resumen. No hace falta correrlos si todo sale "ok".
 -- ================================================================
-with q(orden, bloque, sql) as (values
+select 1 as "#", 'Tope de 1000 filas' as "Que se reviso",
+  case when max(n)>=1000 then 'REVISAR YA' when max(n)>=700 then 'MIRAR' else 'ok' end as "Hay que hacer algo",
+  string_agg(t||' '||n, ' · ' order by n desc) as "Detalle"
+from (select 'productos' t, count(*) n from productos
+ union all select 'receta_items', count(*) from receta_items
+ union all select 'recetas', count(*) from recetas
+ union all select 'producto_lotes', count(*) from producto_lotes
+ union all select 'fudo_productos', count(*) from fudo_productos
+ union all select 'repartos', count(*) from repartos
+ union all select 'reparto_items', count(*) from reparto_items
+ union all select 'historial', count(*) from historial) z
 
- (1, 'Tope de 1000 filas',
-  $q$select (case when max(x.n)>=1000 then 'REVISAR YA' when max(x.n)>=700 then 'MIRAR' else 'ok' end)||'|'||coalesce(string_agg(x.t||' '||x.n, ' · ' order by x.n desc),'-') as c
-     from (select t.tabla as t,
-                  (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from public.%I', t.tabla), false,true,'')))[1]::text::bigint as n
-           from unnest(array['productos','producto_lotes','recetas','receta_items','fudo_productos','repartos','reparto_items','historial']) as t(tabla)
-           where to_regclass('public.'||t.tabla) is not null) x$q$),
+union all
+select 2, 'Funciones duplicadas',
+  case when count(*)>0 then 'REVISAR YA' else 'ok' end,
+  coalesce(string_agg(proname||' ('||n||' firmas)', ' · '), 'ninguna')
+from (select p.proname, count(*) n from pg_proc p, pg_namespace s
+      where s.oid=p.pronamespace and s.nspname='public'
+        and p.proname in ('fudo_procesar_item','fudo_stock_calculado','descontar_lotes',
+            'descontar_con_reposicion','base_nombre','reparto_recibir','reparto_rechazar',
+            'reparto_deshacer','reparto_cerrar','fudo_ultimo_empuje','historial_dias')
+      group by p.proname having count(*)>1) f
 
- (2, 'Funciones duplicadas',
-  $q$select (case when count(*)>0 then 'REVISAR YA' else 'ok' end)||'|'||coalesce(string_agg(f.proname||' ('||f.n||' firmas)', ' · '), 'ninguna duplicada') as c
-     from (select p.proname, count(*) as n from pg_proc p join pg_namespace ns on ns.oid=p.pronamespace
-           where ns.nspname='public' and p.proname in ('fudo_procesar_item','fudo_stock_calculado','descontar_lotes',
-                 'descontar_con_reposicion','base_nombre','reparto_recibir','reparto_rechazar','reparto_deshacer',
-                 'reparto_cerrar','fudo_ultimo_empuje','historial_dias')
-           group by p.proname having count(*)>1) f$q$),
+union all
+select 3, 'Tablas sin actualizacion en vivo',
+  case when count(*)>0 then 'MIRAR' else 'ok' end,
+  coalesce(string_agg(t, ' · '), 'todas publicadas')
+from unnest(array['productos','producto_lotes','repartos','reparto_items']) t
+where not exists (select 1 from pg_publication_tables
+                  where pubname='supabase_realtime' and schemaname='public' and tablename=t)
 
- (3, 'Tablas sin actualizacion en vivo',
-  $q$select (case when count(*)>0 then 'MIRAR' else 'ok' end)||'|'||coalesce(string_agg(t.tabla, ' · '), 'todas publicadas') as c
-     from unnest(array['productos','producto_lotes','repartos','reparto_items']) as t(tabla)
-     where to_regclass('public.'||t.tabla) is not null
-       and not exists (select 1 from pg_publication_tables pt
-                       where pt.pubname='supabase_realtime' and pt.schemaname='public' and pt.tablename=t.tabla)$q$),
+union all
+select 4, 'Columnas que el motor da por sentadas',
+  case when count(*)>0 then 'REVISAR YA' else 'ok' end,
+  coalesce(string_agg(tb||'.'||co, ' · '), 'todas presentes')
+from (values ('fudo_movimientos','venta_at'),('productos','urgente'),('productos','tipo'),
+             ('fudo_stock_push','lote'),('fudo_sync','modo')) v(tb,co)
+where not exists (select 1 from information_schema.columns
+                  where table_schema='public' and table_name=tb and column_name=co)
 
- (4, 'Columnas que el motor da por sentadas',
-  $q$select (case when count(*)>0 then 'REVISAR YA' else 'ok' end)||'|'||coalesce(string_agg(v.tabla||'.'||v.columna, ' · '), 'todas presentes') as c
-     from (values ('fudo_movimientos','venta_at'),('productos','urgente'),('productos','tipo'),
-                  ('fudo_stock_push','lote'),('fudo_sync','modo')) as v(tabla,columna)
-     where to_regclass('public.'||v.tabla) is not null
-       and not exists (select 1 from information_schema.columns ic
-                       where ic.table_schema='public' and ic.table_name=v.tabla and ic.column_name=v.columna)$q$),
+union all
+select 5, 'Stock que no cuadra con las fechas',
+  case when count(*)=0 then 'ok' else 'MIRAR' end,
+  case when count(*)=0 then 'todo cuadra' else count(*)||' producto(s) descuadrado(s)' end
+from (select p.id from productos p join producto_lotes l on l.producto_id=p.id
+      where p.activo='SÍ' group by p.id, p.stock_actual
+      having p.stock_actual <> coalesce(sum(l.cantidad),0)) d
 
- (5, 'Stock que no cuadra con las fechas',
-  case when to_regclass('public.producto_lotes') is null then $q$select 'ok|sin tabla de fechas' as c$q$ else
-  $q$select (case when count(*)=0 then 'ok' else 'MIRAR' end)||'|'||(case when count(*)=0 then 'todo cuadra' else count(*)||' producto(s) descuadrado(s)' end) as c
-     from (select p.id from public.productos p join public.producto_lotes l on l.producto_id=p.id
-           where p.activo='SÍ' group by p.id, p.stock_actual
-           having p.stock_actual <> coalesce(sum(l.cantidad),0)) d$q$ end),
+union all
+select 6, 'Fechas en cantidad cero',
+  case when count(*)=0 then 'ok' else 'MIRAR' end,
+  case when count(*)=0 then 'ninguna' else count(*)||' fecha(s) vacia(s)' end
+from producto_lotes where cantidad<=0
 
- (6, 'Fechas en cantidad cero',
-  case when to_regclass('public.producto_lotes') is null then $q$select 'ok|sin tabla de fechas' as c$q$ else
-  $q$select (case when count(*)=0 then 'ok' else 'MIRAR' end)||'|'||(case when count(*)=0 then 'ninguna' else count(*)||' fecha(s) vacia(s)' end) as c
-     from public.producto_lotes where cantidad <= 0$q$ end),
+union all
+select 7, 'Stock negativo',
+  case when count(*)=0 then 'ok' else 'REVISAR YA' end,
+  case when count(*)=0 then 'ninguno' else count(*)||' fila(s) en negativo' end
+from (select 1 from productos where coalesce(stock_actual,0)<0
+      union all select 1 from producto_lotes where coalesce(cantidad,0)<0) g
 
- (7, 'Stock negativo',
-  $q$select case when (select count(*) from public.productos where coalesce(stock_actual,0)<0)
-                    + (select count(*) from public.producto_lotes where coalesce(cantidad,0)<0) = 0
-                 then 'ok|ninguno' else 'REVISAR YA|hay stock negativo' end as c$q$),
+union all
+select 8, 'El motor descuenta (ultimos 7 dias)',
+  case when count(*)=0 then 'ok'
+       when count(*) filter (where coalesce(descontado,false))=0 then 'REVISAR YA'
+       when count(*) filter (where coalesce(descontado,false))*2 < count(*) then 'MIRAR'
+       else 'ok' end,
+  case when count(*)=0 then 'no hubo ventas'
+       else count(*) filter (where coalesce(descontado,false))||' de '||count(*)||' descontadas' end
+from fudo_movimientos where coalesce(venta_at, created_at) > now() - interval '7 days'
 
- (8, 'El motor descuenta (ultimos 7 dias)',
-  case when to_regclass('public.fudo_movimientos') is null then $q$select 'ok|sin tabla de movimientos' as c$q$ else
-  $q$select case when count(*)=0 then 'ok|no hubo ventas'
-                 when count(*) filter (where coalesce(descontado,false))=0 then 'REVISAR YA|leyo '||count(*)||' ventas y no desconto ninguna'
-                 when count(*) filter (where coalesce(descontado,false))*2 < count(*) then 'MIRAR|solo '||count(*) filter (where coalesce(descontado,false))||' de '||count(*)||' descontadas'
-                 else 'ok|'||count(*) filter (where coalesce(descontado,false))||' de '||count(*)||' descontadas' end as c
-     from public.fudo_movimientos where coalesce(venta_at, created_at) > now() - interval '7 days'$q$ end),
+union all
+select 9, 'Cobertura de recetas', 'info',
+  coalesce(string_agg(sede||' '||pct||'%', ' · '), 'sin productos de Fudo')
+from (select fp.sede, round(100.0*count(*) filter (where r.id is not null)/nullif(count(*),0),0) pct
+      from fudo_productos fp
+      left join recetas r on r.fudo_product_id=fp.fudo_product_id and r.sede=fp.sede and r.activo
+      where fp.activo group by fp.sede) s
 
- (9, 'Cobertura de recetas',
-  $q$select 'info|'||coalesce(string_agg(s.sede||' '||s.pct||'%', ' · '), 'sin productos de Fudo') as c
-     from (select fp.sede, round(100.0*count(*) filter (where r.id is not null)/nullif(count(*),0),0) as pct
-           from public.fudo_productos fp
-           left join public.recetas r on r.fudo_product_id=fp.fudo_product_id and r.sede=fp.sede and r.activo
-           where fp.activo group by fp.sede) s$q$),
+union all
+select 10, 'Recetas que apuntan al vacio',
+  case when count(*)=0 then 'ok' else 'MIRAR' end,
+  case when count(*)=0 then 'ninguna' else count(*)||' insumo(s) inexistente(s)' end
+from recetas r join receta_items ri on ri.receta_id=r.id
+left join productos p on p.id=ri.producto_id and p.activo='SÍ'
+where r.activo and p.id is null
 
- (10,'Recetas que apuntan al vacio',
-  $q$select (case when count(*)=0 then 'ok' else 'MIRAR' end)||'|'||(case when count(*)=0 then 'ninguna' else count(*)||' insumo(s) inexistente(s)' end) as c
-     from public.recetas r join public.receta_items ri on ri.receta_id=r.id
-     left join public.productos p on p.id=ri.producto_id and p.activo='SÍ'
-     where r.activo and p.id is null$q$)
-)
-select r.orden as "#",
-       r.bloque as "Qué se revisó",
-       split_part(r.res, '|', 1) as "¿Hay que hacer algo?",
-       split_part(r.res, '|', 2) as "Detalle"
-from (select q.orden, q.bloque,
-             (xpath('/row/c/text()', query_to_xml(q.sql, false, true, '')))[1]::text as res
-      from q) r
-order by r.orden;
+order by 1;
 
 
 -- ================================================================
@@ -130,26 +146,24 @@ order by r.orden;
 -- importa no es el número de hoy, es la distancia: una tabla en 850
 -- filas funciona perfecto y se rompe sola el mes que viene.
 -- ================================================================
-select t.tabla,
-       (xpath('/row/c/text()',
-              query_to_xml(format('select count(*) as c from public.%I', t.tabla),
-                           false, true, '')))[1]::text::bigint as filas,
-       case
-         when (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from public.%I', t.tabla),
-                                                   false,true,'')))[1]::text::bigint >= 1000
-           then '🔴 YA CORTADA — la app está viendo datos incompletos'
-         when (xpath('/row/c/text()', query_to_xml(format('select count(*) as c from public.%I', t.tabla),
-                                                   false,true,'')))[1]::text::bigint >= 700
-           then '⚠️ cerca del tope — ponerle limit antes de que llegue'
-         else 'ok'
-       end as veredicto
-from unnest(array[
-       'productos','producto_lotes','recetas','receta_items',
-       'fudo_productos','repartos','reparto_items','historial',
-       'fudo_movimientos','fudo_stock_push'
-     ]) as t(tabla)
-where to_regclass('public.'||t.tabla) is not null
-order by 2 desc;
+select tabla, filas,
+       case when filas >= 1000 then '🔴 YA CORTADA — la app ve datos incompletos'
+            when filas >=  700 then '⚠️ cerca del tope — ponerle limit antes de que llegue'
+            else 'ok' end as veredicto,
+       1000 - filas as le_faltan_para_el_tope
+from (
+  select 'productos' as tabla, count(*) as filas from productos
+  union all select 'producto_lotes',  count(*) from producto_lotes
+  union all select 'recetas',         count(*) from recetas
+  union all select 'receta_items',    count(*) from receta_items
+  union all select 'fudo_productos',  count(*) from fudo_productos
+  union all select 'repartos',        count(*) from repartos
+  union all select 'reparto_items',   count(*) from reparto_items
+  union all select 'historial',       count(*) from historial
+  union all select 'fudo_movimientos',count(*) from fudo_movimientos
+  union all select 'fudo_stock_push', count(*) from fudo_stock_push
+) z
+order by filas desc;
 
 
 -- ================================================================
