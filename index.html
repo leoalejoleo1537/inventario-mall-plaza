@@ -12,7 +12,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Llamita">
 <!-- multi-sede: Cafe Mall Plaza + Parque Angamos + Bodega -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Versión FIJA a propósito. Con "@2" suelto la app tomaba la última 2.x que
+     publicaran: entre el 27 y el 28 de julio cambió sola de 2.110.9 a 2.111.0
+     sin que nadie tocara el repo. La 2.111.0 es la que corre hoy y con la que
+     se probó el empuje a Fudo, así que fijarla no cambia nada — solo impide
+     que cambie sin aviso. Para subirla: cambiar el número acá, ABRIR LA URL EN
+     EL NAVEGADOR para comprobar que sirve la librería, y recién entonces subir. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.111.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
   :root{

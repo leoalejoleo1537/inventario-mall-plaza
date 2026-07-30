@@ -108,6 +108,39 @@
    proponer bajar de `real` a `prueba`**: si el sistema ya está descontando
    en producción, eso es un logro del proyecto, no un riesgo a mitigar.
 
+8. **Un nombre que no calza NO es una receta mal enlazada. Preguntar.**
+   *(regla nueva el 2026-07-30, y es la regla 1 de esta misma sección
+   incumplida — vale la pena dejar el caso escrito.)*
+
+   Durante semanas el archivo madre arrastró dos "recetas cruzadas
+   detectadas y sin corregir", y en el informe de estabilidad las subí a
+   **el hallazgo más grave de todos**, con el argumento de que desde que el
+   inventario le escribe a Fudo ese error haría vender producto inexistente.
+   Jhon las revisó y **ninguna de las dos existía**:
+
+   | Lo que yo reporté | Lo que es de verdad |
+   |---|---|
+   | `Cheesecake maracuyá` descuenta `T. Cheesecake Mora` → producto equivocado | **No hay cheesecake de mora en la carta.** Hay de frambuesa y de maracuyá. `Mora` es casi seguro `Mara`, abreviatura de maracuyá, mal tipeada. La receta apunta al producto correcto con el nombre mal escrito. |
+   | `Cinnamon Roll Vegano` descuenta el cinnamon normal → dos productos distintos | **Es un solo producto.** No hay dos tipos de cinnamon roll: el único que se vende es el vegano. La receta está bien. |
+
+   Las dos veces el razonamiento fue el mismo: *los nombres no coinciden,
+   entonces la receta está mal*. Y la regla 1 de esta sección ya decía, en
+   estas palabras, que eso resuelve un problema que no existe. Lo que faltó
+   no fue una consulta SQL — ninguna consulta habría dicho que en la carta
+   no hay cheesecake de mora. **Faltó preguntar.**
+
+   Entonces:
+   - **Un nombre raro es una pregunta para el equipo, no un hallazgo.** La
+     carta del café no está en la base de datos; está en la cabeza de la
+     gente que la vende.
+   - **Un nombre mal escrito no rompe nada** (regla 1: la unión es por ID).
+     Como mucho es un renombre cosmético, y lo decide Jhon.
+   - **Cuidado especial al subir algo de categoría.** Escalar un hallazgo
+     viejo a "lo más grave" es fácil de hacer y caro de deshacer: le da
+     autoridad a algo que nunca se verificó, solo porque cambió el contexto
+     alrededor. Antes de escalar, verificar la base del hallazgo — no solo
+     el argumento nuevo.
+
 **Checklist antes de entregar algo que toque datos:**
 - [ ] ¿Verifiqué el estado real con un SELECT, o lo inferí de un archivo?
 - [ ] ¿Lo que me pidieron era analizar o modificar?
@@ -115,6 +148,7 @@
 - [ ] ¿Estoy reportando algo como "bug" sin haberlo confirmado?
 - [ ] ¿Alguna verificación falló en masa? → parar y decirlo.
 - [ ] ¿Estoy proponiendo cambiar algo que el equipo decidió a propósito?
+- [ ] ¿Mi hallazgo se apoya en que "dos nombres no calzan"? → preguntar, no reportar.
 
 ---
 
@@ -462,15 +496,8 @@ riesgo.
 
 ### 🔴 A. Fallas calladas — la app no avisa, el daño se acumula
 
-- [ ] **Las recetas cruzadas ya no son un número mal contado: deciden qué se
-      vende.** `Cheesecake maracuyá` descuenta `T. Cheesecake Mora`, y
-      `Cinnamon Roll Vegano` descuenta `Cinnamon rolls vitrina` (el normal).
-      Hasta el 2026-07-28 eso era contabilidad interna. **Desde que el
-      inventario le ESCRIBE a Fudo, ese mismo error es el que le dice a Fudo
-      cuánto puede vender**: un vegano mal enlazado hace que Fudo ofrezca
-      veganos que no existen — el único caso donde el error es vender de MÁS.
-      Corregir estas dos ANTES de la siguiente tanda de empuje. Este ítem no
-      cambió porque cambiaran las recetas: cambió lo que cuelga de ellas.
+- [x] ~~**Las recetas cruzadas.**~~ **NO EXISTÍAN.** Ver 0.1.8 — las dos
+      estaban bien y el error era del análisis, no de los datos.
 - [ ] **El tope de 1000 filas, en quince lecturas.** Supabase corta cualquier
       respuesta en 1000 filas **y no avisa**: la app pide 1400, recibe 1000 y
       sigue como si tuviera todo. En `index.html` hay 19 `.select()` y solo 4
@@ -532,27 +559,20 @@ riesgo.
 
 ### 🟠 B. Fallas ruidosas — se ven, molestan, no mienten
 
-- [ ] **Revisar quién puede escribir en la base.** La clave que usa la app va
-      escrita en `index.html` y **cualquiera la puede leer con F12** — eso es
-      normal y no es el problema. Lo que decide qué puede hacer alguien con
-      ella son las políticas RLS de cada tabla. Correr
-      `sql/2026-07-revision-seguridad.sql` (solo lectura): la consulta 2
-      marca con ⚠️ toda escritura abierta a `anon`, o sea a cualquiera que
-      abra la URL sin iniciar sesión. Puede estar bien —es un inventario de
-      café, no un banco— pero **tiene que ser una decisión tomada, no un
-      descuido**. Ojo: cerrar `anon` a lo bruto rompe la app, porque hoy
-      lee y escribe sin sesión.
-- [ ] **RIESGO ABIERTO — las cuentas de administración se desloguean solas.**
-      Apareció `session_not_found`: el navegador guarda un token bien firmado
-      cuya sesión ya no existe en el servidor. Hipótesis a confirmar: hay
-      límite de una sesión por usuario y, al ser cuentas compartidas, cada
-      inicio de sesión mata el anterior. **Con 5 personas de administración
-      esto va a pasar seguido**, y ahí el botón de Fudo simplemente no
-      funciona (avisa "Tu sesión se cerró", que ya es claro, pero igual
-      bloquea). Qué revisar: Supabase → Authentication → Sessions, si hay
-      "single session per user"; y decidir si cada persona lleva su propia
-      cuenta en vez de compartir. **Con cuentas propias se arregla esto y, de
-      paso, la bitácora de quién empujó a Fudo pasa a servir de verdad.**
+- [x] ~~**Revisar quién puede escribir en la base.**~~ **DECIDIDO por Jhon el
+      2026-07-30: la seguridad se mantiene en mínimos.** Ver 6.1 — no volver
+      a proponerlo.
+- [ ] **Las cuentas de administración se desloguean solas** (`session_not_found`:
+      el navegador guarda un token bien firmado cuya sesión ya no existe en el
+      servidor). **La hipótesis de las cuentas compartidas quedó descartada**:
+      Jhon confirmó el 2026-07-30 que los 5 administradores ya tienen cada uno
+      su cuenta propia, y que solo la de él estuvo abierta en más de dos
+      dispositivos. Así que esto **no es la falla frecuente que yo anticipaba**
+      — pasó una vez, en la cuenta con más dispositivos abiertos. Queda
+      anotado, no priorizado: si vuelve a pasar, mirar Supabase →
+      Authentication → Sessions (límite de sesiones por usuario) y anotar en
+      cuántos dispositivos estaba abierta esa cuenta. El aviso "Tu sesión se
+      cerró" ya es claro; el arreglo es salir y volver a entrar.
 
 ### 🟡 C. Correcciones de datos pendientes
 
@@ -625,6 +645,31 @@ riesgo.
       cerrar la depuración de recetas.
 - [ ] Confirmar con jefatura que van a usar el sistema (vs. volver al Excel).
 - [ ] **Decisión grande pendiente: ¿avanzar hacia un POS propio?** Ver sección 7.
+
+### 6.1 DECISIÓN TOMADA — la seguridad se mantiene en mínimos
+
+> Jhon, 2026-07-30: "al ser esto un inventario para una cafetería, lo mejor es
+> que mantengamos la seguridad en mínimos."
+
+Esto **no es un pendiente ni un descuido: es una decisión del dueño del
+proyecto**, y por eso está acá arriba y no en la lista de arriba. Aplica la
+regla 0.1.7.
+
+- **La app lee y escribe sin sesión iniciada, y así se queda.** La clave
+  publicable va en `index.html` y cualquiera la puede ver con F12 — eso es
+  normal y no cambia.
+- **No proponer cerrar `anon`, ni activar RLS restrictivo, ni pedir login
+  obligatorio** para el inventario. Ya se evaluó y se decidió que no. Cerrarlo
+  a lo bruto además rompe la app entera, porque hoy funciona sin sesión.
+- **La zona de administración es la excepción, y ya está resuelta.** Escribir
+  en Fudo sí exige sesión y sí se comprueba contra `app_permisos` **en el
+  servidor** (las Edge Functions lo revalidan; esconder el botón es comodidad,
+  no seguridad). Eso se mantiene: lo que toca un sistema externo lleva
+  candado, lo que toca el inventario interno no.
+- Lo que cambiaría esta decisión: que el sistema pase a manejar caja o datos
+  de personas. Mientras sea stock de una cafetería, la respuesta es esta.
+- `sql/2026-07-revision-seguridad.sql` se mantiene en el repo como diagnóstico
+  de solo lectura — sirve para *saber* cómo está, no para cambiarlo.
 
 ### ✅ Lo que NO está en riesgo
 
@@ -756,7 +801,119 @@ el patrón a seguir:
 
 ---
 
-## 8. Bitácora (cambios importantes, lo más reciente arriba)
+## 8. Catálogo de soluciones aplicadas
+
+> Jhon pidió esto el 2026-07-30: *"quiero un catálogo de las soluciones que se
+> han corregido"*.
+
+**Para qué sirve y en qué se diferencia de la bitácora.** La bitácora (sección
+9) cuenta *cómo se llegó* a cada cambio, en orden de tiempo — se lee para
+entender por qué algo está hecho así. Este catálogo se lee al revés: **se busca
+un problema y se ve si ya está resuelto y dónde**. Es lo primero que hay que
+mirar antes de "arreglar" algo, para no volver a resolver lo mismo ni deshacer
+una solución que ya está en producción.
+
+**Cómo leer la columna "Dónde vive":** un `.sql` que se corre a mano en
+Supabase, un `.ts` que se pega en el panel de Edge Functions, o `index.html`
+que sale por Vercel al fusionar a `master`. Recordar la regla 0.1.2: **que el
+archivo esté en el repo no significa que esté aplicado en producción.**
+
+### Motor de descuento y puente con Fudo
+
+| Qué fallaba | Cómo se resolvió | Dónde vive | Fecha |
+|---|---|---|---|
+| Las ventas de Fudo no descontaban nada del inventario | Motor SQL `fudo_procesar_item()` con receta + `saleType`, idempotente | `fudo-sync-ventas` + motor en la base | 2026-07 |
+| Ventas que se cerraban horas después de abrir la mesa **no se descontaban nunca** (Fudo filtra por apertura, no por cierre) | Ventana ampliada a 8 h + tope corrido 1 h, y columna `venta_at` para poder medirlo | `2026-07-fecha-real-de-venta.sql` | 07-25 |
+| El motor lanzaba excepción en cada venta por una columna que no existía | El script crea sus propias columnas con `add column if not exists` | `2026-07-URGENTE-falta-venta-at.sql` | 07-27 |
+| Dos `fudo_procesar_item` conviviendo dejaban la llamada por API ambigua — **15 h sin descontar** | Se borró la firma vieja; desde entonces todo script lleva un `drop` por cada firma posible | `2026-07-URGENTE-dos-motores.sql` | 07-27 |
+| Ese fallo era **invisible**: la app decía "✓" igual | Si la sync lee ventas y no descuenta ninguna, se abre una ventana que lo dice | `index.html` (`PASOS_SYNC`, paso `ventas`) | 07-27 |
+| El stock quedaba negativo al vender más de lo que había | Tope duro en 0 en el motor **y** restricciones `CHECK` en la tabla | `2026-07-tope-cero-sin-excepcion.sql` | 07-27 |
+| Vitrina en 0 con el congelador lleno | Reposición automática de 4 unidades desde la pareja, antes de descontar | `2026-07-reposicion-congelador-y-tope-cero.sql` | 07-27 |
+| Adriana tardaba horas actualizando el stock de Fudo a mano (ponía 1.000 de todo) | Cálculo en la base + Edge Function que escribe por `PATCH` JSON:API, siempre valor absoluto | `2026-07-stock-para-fudo-v2-CORTO.sql` + `fudo-empujar-stock` | 07-28 |
+| Los envases (bolsas, bandejas) limitaban la venta: "Torta Pedidos Ya" quedaba en 0 con 8 trozos | Se excluyen del `min()` por `productos.tipo = 'Envases'` | `2026-07-stock-para-fudo-v2-envases.sql` | 07-28 |
+| A Fudo le llegaba solo el stock de vitrina (alfajor 2 en vez de 17) | El stock de un insumo pasa a ser la **suma de su nombre base** | `2026-07-stock-para-fudo-v3-suma-el-par.sql` | 07-29 |
+| "Ya está al día" cuando no lo estaba: el espejo local de Fudo estaba viejo | Se corre la sync de catálogo **antes** de cada revisión | `index.html` (`refrescarEspejoFudo`) | 07-29 |
+| Un empuje equivocado no dejaba rastro ni se podía revertir | Bitácora `fudo_stock_push` con valor anterior, agrupada por lote, y deshacer del último | `2026-07-permisos-y-deshacer.sql` + `fudo-deshacer-stock` | 07-28 |
+
+### Datos y lecturas
+
+| Qué fallaba | Cómo se resolvió | Dónde vive | Fecha |
+|---|---|---|---|
+| El historial ofrecía días viejos: se pedían **todas** las filas y Supabase cortaba en 1000 sin avisar | Función que agrupa por fecha en la base y devuelve una fila por día (con respaldo `order`+`limit`) | `2026-07-historial-dias.sql` | 07-27 |
+| Al vender, el teléfono mostraba el stock nuevo con las fechas viejas ("Champiñón 0" + "1 vence hoy") | `producto_lotes` agregada a la publicación `supabase_realtime` | `2026-07-fechas-en-vivo-y-limpieza.sql` | 07-27 |
+| Fechas fantasma: lotes en cantidad 0 que igual se mostraban y se copiaban al resumen | Se borran, con respaldo previo; y quedó la jerarquía stock/fechas de la regla 0.3.1 | mismo archivo | 07-27 |
+| Buscar "azucar" no encontraba "Azúcar" | `normNombre()` — sin tildes, minúsculas, espacios de más — en los tres buscadores | `index.html` | 07-24 |
+| Un producto en 2 secciones mostraba cantidades sueltas, sin el total | `totalProducto()` agrupando por `baseNombre()` | `index.html` | 07-24 |
+| Vitrina y congelador no sumaban porque los nombres no calzaban | Emparejador con **dos claves**: una para encontrar candidatos, otra para decidir si suman | `2026-07-emparejar-vitrina-congelador.sql` | 07-29 |
+| Al eliminar un producto, reaparecía un instante | Se quita la fila al toque y se ignoran 20 s los eventos en vivo de un id recién borrado | `index.html` (`BORRADOS`) | 07-27 |
+| Crear/renombrar/eliminar no se reflejaba en otros dispositivos | Se recarga al volver del fondo (`visibilitychange`, focus, online) y se maneja el DELETE real | `index.html` | 07-24 |
+
+### Interfaz y trabajo del mesón
+
+| Qué fallaba | Cómo se resolvió | Dónde vive | Fecha |
+|---|---|---|---|
+| Las ventanas del navegador (`alert`/`confirm`/`prompt`) parecían un error del sistema | `avisar()`, `preguntar()`, `elegirProducto()` — misma paleta, fondo desenfocado | `index.html` | 07-27 |
+| A un producto le cambiaron el nombre sin querer | Nombre, sección y eliminar quedan detrás del interruptor **Modo edición**, que arranca apagado siempre | `index.html` (`setModoEdicion`) | 07-27 |
+| Cuatro botones para dos acciones de sincronizar | Un solo ⟳ que corre el registro `PASOS_SYNC` en orden | `index.html` | 07-25 |
+| Adriana necesitaba dos pantallas: veía en Crítico, anotaba en Reparto | Deslizar la fila la manda al reparto, en cualquier dirección | `index.html` | 07-28 |
+| Adriana mandaba la lista por WhatsApp y el local la **transcribía** a la app | Repartos en la app: ella arma, el local confirma ✓/cantidad/✕, y la suma ocurre en la base | `2026-07-repartos.sql` | 07-27 |
+| Al armar el pedido no se veía cuánto había ni cuánto faltaba | Píldora con el estado, `hay N · máx M` releído en cada pintada, y atajo "llenar N" | `index.html` (`infoReparto`) | 07-28 |
+| Los sándwiches escondían fechas detrás de "+N fechas" | Una píldora por cada fecha, siempre, con la urgencia en el color | `index.html` (regla 0.3) | 07-27 |
+| Cada fila repetía su propia sección — `items.map(rowHTML)` pasaba el índice como `conSeccion` | `items.map(p => rowHTML(p))` | `index.html` | 07-27 |
+| Las secciones decían *dónde* está algo, pero no *qué es* | Franja de tipos deslizable, alimentada por `productos.tipo` | `2026-07-tipo-de-producto.sql` + `index.html` | 07-27 |
+| El naranja de las cabeceras competía con las alertas: todo se leía urgente | Cabeceras en azul pizarra `#2F4A6D`; el naranja queda solo para acción y urgencia | `index.html` (`:root`) | 07-27 |
+| Un perecedero podía entrar al inventario sumando stock directo, rompiendo la invariante | `reparto_recibir()` lanza error si no llegan fechas — el candado está en la base | `2026-07-repartos.sql` (regla 0.4) | 07-27 |
+
+### Prevención — lo que existe para que no vuelva a pasar
+
+| Riesgo | Qué lo cubre hoy | Dónde vive |
+|---|---|---|
+| Instalar un motor suponiendo el estado de producción | Chequeo de salud de 10 bloques, solo lectura | `2026-07-salud-del-sistema.sql` |
+| Perder datos sin punto de restauración | Respaldo de `productos`/`recetas`/`receta_items`/`producto_lotes`, probado restaurando | `2026-07-respaldo-para-guardar.sql` + `respaldos/` |
+| Que la librería cambie sola y rompa la app | Versión fija `@2.111.0` | `index.html:15` |
+| Que alguien sin permiso escriba en Fudo | Comprobación contra `app_permisos` **en el servidor**, no solo esconder el botón | las Edge Functions de Fudo |
+| Recetas que apuntan al vacío o cobertura incompleta | Informe de solo lectura + bloques 9 y 10 del chequeo | `2026-07-auditoria-recetas.sql` |
+| Revisar cómo están los permisos sin cambiarlos | Diagnóstico de solo lectura (ver 6.1: la decisión ya está tomada) | `2026-07-revision-seguridad.sql` |
+
+---
+
+## 9. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-30 (tarde)** — **Jhon corrigió el informe, y el hallazgo más grave
+  resultó no existir.** Las tres correcciones y lo que se hizo con ellas:
+  1. **Las "recetas cruzadas" estaban bien.** No hay cheesecake de mora en la
+     carta (hay de frambuesa y de maracuyá): `Mora` es `Mara` mal tipeado. Y no
+     hay dos cinnamon rolls — el único que se vende es el vegano. Yo las había
+     subido a "lo más grave del informe" razonando que los nombres no calzaban,
+     que es **exactamente lo que la regla 0.1.1 dice que no se haga**. Ninguna
+     consulta SQL lo habría atrapado: la carta del café no está en la base.
+     Quedó como **regla 0.1.8**, con el caso completo — incluida la advertencia
+     de que subir de categoría un hallazgo viejo exige verificar su base, no
+     solo el argumento nuevo.
+  2. **El respaldo se hace ahora, antes de pedir los 25 USD/mes.**
+     `sql/2026-07-respaldo-para-guardar.sql` + carpeta `respaldos/`. Genera los
+     4 CSV y, opcionalmente, un `.sql` de restauración. **Probado de verdad**:
+     se respaldó, se vaciaron las tablas, se restauró, y quedó todo igual —
+     nombres con tildes/comillas/`$$`, los enlaces receta→producto por id, y el
+     contador entregando ids nuevos sin chocar. Las filas se guardan como JSON
+     y se restauran con `json_populate_record`, así las columnas se toman por
+     nombre desde la tabla real en vez de depender del orden que yo suponga.
+  3. **Los 5 administradores ya tienen cuenta propia.** La hipótesis de las
+     cuentas compartidas queda descartada; el `session_not_found` pasó en la
+     cuenta de Jhon, la única abierta en más de dos dispositivos. Baja de
+     "riesgo abierto" a "anotado".
+  4. **La seguridad se mantiene en mínimos, por decisión de Jhon** → nueva
+     sección 6.1. No es un pendiente: es una decisión, y no se vuelve a
+     proponer cerrarla.
+  5. **`supabase-js` fijado — y la comprobación cambió el número.** Al mirar el
+     registro de npm apareció que la **2.111.0 se publicó el 28 de julio**: la
+     app ya había cambiado sola de versión desde que anoté "hoy corre la
+     2.110.9". O sea que el riesgo no era teórico, ya había ocurrido. Se fijó
+     en **2.111.0**, que es la que corre hoy y con la que se probó el empuje a
+     Fudo; fijar la 2.110.9 habría sido *revertir* la librería, no congelarla.
+  6. **Catálogo de soluciones aplicadas** → nueva sección 8. La bitácora cuenta
+     cómo se llegó a cada cambio; el catálogo se lee al revés, buscando un
+     problema para ver si ya está resuelto y dónde.
 
 - **2026-07-30** — **Informe de estabilidad, y un chequeo que se corre solo.**
   Jhon pidió el mapa completo de por dónde se puede caer esto. Nada de código
@@ -773,12 +930,13 @@ el patrón a seguir:
      fallas sembradas a propósito** — eso valida que los detectores disparan,
      no el estado de la base real (regla 0.5: una prueba contra un esquema que
      uno mismo construye no valida una migración).
-  2. **Las recetas cruzadas suben de categoría, y no porque cambiaran.**
-     Hasta el 28 de julio `Cinnamon Roll Vegano` descontando el cinnamon
-     normal era un número mal contado. Desde que el inventario le ESCRIBE a
-     Fudo, ese mismo error decide cuánto se puede vender. Cambió lo que cuelga
-     de ellas, no ellas. **Cuando se conecta una salida nueva, hay que volver
-     a mirar los errores conocidos: alguno cambió de consecuencia.**
+  2. ~~**Las recetas cruzadas suben de categoría.**~~ **ESTO ESTABA MAL** —
+     Jhon lo corrigió ese mismo día: las dos recetas estaban bien. Ver la
+     entrada de más arriba y la regla 0.1.8. Se deja tachado y no borrado
+     porque el error de método es la parte útil. Lo único que sí se sostiene
+     de este punto es la idea general: **cuando se conecta una salida nueva
+     hay que volver a mirar los errores conocidos, porque alguno cambió de
+     consecuencia** — pero antes de escalar uno, hay que verificar que exista.
   3. **La alarma del motor solo suena si falla el 100% de las ventas**
      (`index.html:2903`, `if(err && !desc)`). Un fallo parcial —8 de 9— sale
      en un aviso que se va solo. Es la falla de julio en versión chica y por
