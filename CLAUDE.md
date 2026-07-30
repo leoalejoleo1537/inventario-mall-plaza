@@ -429,6 +429,14 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
    pegada en una versión vieja. Los datos viven en Supabase, no en el dispositivo.
 4. **iOS cachea el ícono** al momento de "Agregar a pantalla de inicio". Para ver un
    ícono nuevo hay que borrar el acceso directo y volver a agregarlo.
+5. **Jhon NO trabaja con una copia del repositorio en su computador.** Trabaja
+   en el panel de Supabase, en Notion y en el teléfono. Entonces: **nunca
+   entregar una instrucción que suponga `git`, una terminal o una carpeta
+   local** ("guarda el archivo en `respaldos/`" fue un consejo mal calibrado el
+   2026-07-30, y por eso no encontraba la carpeta). Lo que él tiene que hacer
+   siempre tiene que ser: copiar un texto, pegarlo en Supabase, apretar Run, y
+   guardar el resultado donde ya guarda las cosas. Si algo hay que dejarlo en
+   el repo, lo hace Claude en un commit — no él.
 
 ---
 
@@ -868,8 +876,8 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 
 | Riesgo | Qué lo cubre hoy | Dónde vive |
 |---|---|---|
-| Instalar un motor suponiendo el estado de producción | Chequeo de salud de 10 bloques, solo lectura | `2026-07-salud-del-sistema.sql` |
-| Perder datos sin punto de restauración | Respaldo de `productos`/`recetas`/`receta_items`/`producto_lotes`, probado restaurando | `2026-07-respaldo-para-guardar.sql` + `respaldos/` |
+| Instalar un motor suponiendo el estado de producción | Chequeo de salud: **bloque 0 da el resumen de 10 filas en una sola corrida**; los bloques 1-10 son el detalle | `2026-07-salud-del-sistema.sql` |
+| Perder datos sin punto de restauración | Respaldo de `productos`/`recetas`/`receta_items`/`producto_lotes`, probado restaurando. **Los archivos se guardan en Notion**, no en el repo (ver `respaldos/README.md`) | `2026-07-respaldo-para-guardar.sql` |
 | Que la librería cambie sola y rompa la app | Versión fija `@2.111.0` | `index.html:15` |
 | Que alguien sin permiso escriba en Fudo | Comprobación contra `app_permisos` **en el servidor**, no solo esconder el botón | las Edge Functions de Fudo |
 | Recetas que apuntan al vacío o cobertura incompleta | Informe de solo lectura + bloques 9 y 10 del chequeo | `2026-07-auditoria-recetas.sql` |

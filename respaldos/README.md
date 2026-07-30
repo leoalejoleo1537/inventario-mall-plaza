@@ -12,18 +12,34 @@ marcha atrás.
 Esto **no reemplaza** al respaldo diario del plan Pro. Es el piso: si un día se
 pierde todo, en vez de partir de cero se parte de acá.
 
+## Dónde se guardan de verdad
+
+**En Notion, en la página del proyecto.** Esta carpeta del repositorio existe
+como espejo opcional, no como el lugar principal.
+
+La razón es práctica: Jhon trabaja en Notion y en el panel de Supabase, no con
+una copia del repositorio en su computador. Un respaldo que hay que subir a
+GitHub para guardarlo es un respaldo que no se va a hacer todos los meses, y
+uno que se hace en Notion sí. Para lo que tiene que cumplir un respaldo —estar
+fuera de Supabase, tener fecha, y poder encontrarlo dentro de seis meses—
+Notion cumple igual.
+
+Si algún día el proyecto pasa a trabajarse desde un clon local, subirlos acá
+también es mejor, porque quedan junto a las instrucciones de restauración y con
+historial de versiones.
+
 ## Cómo se hace uno
 
 Correr `sql/2026-07-respaldo-para-guardar.sql` en Supabase → SQL Editor. Está
 todo explicado adentro, paso por paso. Son unos 5 minutos.
 
-Salen 4 archivos, que se guardan acá con la fecha en el nombre:
+Salen 4 archivos, que se guardan con la fecha en el nombre:
 
 ```
-respaldos/productos-2026-07-30.csv
-respaldos/recetas-2026-07-30.csv
-respaldos/receta-items-2026-07-30.csv
-respaldos/producto-lotes-2026-07-30.csv
+productos-2026-07-30.csv
+recetas-2026-07-30.csv
+receta-items-2026-07-30.csv
+producto-lotes-2026-07-30.csv
 ```
 
 El bloque 6 del mismo archivo da, además, un `restaurar-AAAA-MM-DD.sql` con
