@@ -443,12 +443,94 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 - Un solo botón ⟳ que sincroniza catálogo + ventas y descuenta el stock.
 - Probado en cafetería real (venta de pizza en Fudo → se descontó en la app).
 
-**Pendiente — ordenado por lo que de verdad importa.**
+**Pendiente — ordenado por CÓMO SE ANUNCIA LA FALLA, no por lo grave que suena.**
 
-Los tres primeros bloques son los que deciden si esto es estable y seguro.
-Lo demás es mejora, no riesgo.
+Esto sale de la regla 0.5: *un sistema que falla en silencio es peor que uno
+que se cae*. El bloque **A son las fallas calladas** —la app sigue diciendo "✓"
+mientras el daño se acumula— y por eso van primero aunque algunas suenen
+menores. El **B son fallas ruidosas**: molestan y bloquean, pero se ven y nadie
+toma una decisión equivocada por culpa de ellas. **C** son datos por corregir,
+**D** velocidad y estructura, **E** mejoras. De la C en adelante es trabajo, no
+riesgo.
 
-### 🔴 A. Seguridad y estabilidad — antes de que lo use más gente
+> **Antes de tocar nada, correr `sql/2026-07-salud-del-sistema.sql`** (solo
+> lectura, 10 bloques). Contesta con datos casi todo lo que acá está marcado
+> como "por verificar": a cuánto está cada tabla del tope de las 1000 filas,
+> si hay funciones duplicadas, si el motor descontó algo esta semana, si el
+> stock cuadra con las fechas, qué recetas apuntan al vacío. Se corre una vez
+> al mes y SIEMPRE antes y después de instalar un motor o un cálculo nuevo.
+
+### 🔴 A. Fallas calladas — la app no avisa, el daño se acumula
+
+- [ ] **Las recetas cruzadas ya no son un número mal contado: deciden qué se
+      vende.** `Cheesecake maracuyá` descuenta `T. Cheesecake Mora`, y
+      `Cinnamon Roll Vegano` descuenta `Cinnamon rolls vitrina` (el normal).
+      Hasta el 2026-07-28 eso era contabilidad interna. **Desde que el
+      inventario le ESCRIBE a Fudo, ese mismo error es el que le dice a Fudo
+      cuánto puede vender**: un vegano mal enlazado hace que Fudo ofrezca
+      veganos que no existen — el único caso donde el error es vender de MÁS.
+      Corregir estas dos ANTES de la siguiente tanda de empuje. Este ítem no
+      cambió porque cambiaran las recetas: cambió lo que cuelga de ellas.
+- [ ] **El tope de 1000 filas, en quince lecturas.** Supabase corta cualquier
+      respuesta en 1000 filas **y no avisa**: la app pide 1400, recibe 1000 y
+      sigue como si tuviera todo. En `index.html` hay 19 `.select()` y solo 4
+      con `.limit()`. Ya costó una vez (el historial mostrando días viejos,
+      2026-07-27). La que va a cruzar primero es **`receta_items`**, que crece
+      con cada receta por sus insumos — justo lo que la depuración empuja hacia
+      arriba; el día que pase de 1000, la pantalla de Recetas muestra recetas
+      incompletas y nadie tiene motivo para sospechar. El bloque 1 del chequeo
+      dice a cuánto está cada tabla. **Regla general: cualquier `select` que
+      pueda devolver más de 1000 filas está truncado sin avisar** — si lo que
+      se necesita es un resumen, se agrupa en la base.
+- [ ] **La alarma del motor solo suena si falla el 100% de las ventas.**
+      `index.html:2903` marca grave con `if(err && !desc)`. Si de 9 ventas
+      fallan 8 y pasa 1, la condición no se cumple: sale un aviso que se va
+      solo con un `⚠️ 8 con error` al final, y la app se ve normal. Es la falla
+      de julio en versión pequeña, y por eso **más difícil de notar**: un fallo
+      total llama la atención en una tarde, uno parcial descuadra el inventario
+      durante semanas. Dos cosas: (a) que la alarma se dispare por proporción,
+      no por cero absoluto; (b) que el estado de la última corrida quede en la
+      BASE, para que la pantalla lo muestre sin depender de quién apretó ⟳.
+      **(b) es requisito para activar el cron** — automatizar la sync sin esto
+      quita al único testigo que hay.
+- [ ] **Respaldos de la base.** Revisar en Supabase → Settings → Database →
+      Backups. En el plan gratuito **no hay punto de restauración**. Y el modo
+      de trabajo del proyecto es copiar `update` generados y pegarlos a mano:
+      un `where` que se quedó fuera al copiar cambia 200 nombres de una vez y
+      no hay marcha atrás. **Es el único riesgo de la lista que no se puede
+      reparar después de que ocurra.** Plan Pro (~25 USD/mes) trae respaldo
+      diario; mientras tanto, exportar `productos`, `recetas` y `receta_items`
+      a CSV antes de cada tanda de renombres.
+- [ ] **`supabase-js` sin versión fija.** `index.html:15` carga
+      `@supabase/supabase-js@2`, o sea **la última 2.x que publiquen**. Un
+      cambio de la librería puede romper la app sin que nadie toque el código
+      — la misma clase de sorpresa que el motor v5, pero desde afuera y sin un
+      commit al cual mirar. Al 2026-07-27 la última era **2.110.9**, la que
+      corre hoy; fijarla ahí no cambia nada. **Antes de cambiarla, comprobar
+      que la URL fijada de verdad sirve la librería** (abrirla en el navegador):
+      si se escribe mal, la app deja de cargar entera.
+- [ ] **Registro de lo que se aplicó de verdad.** Hay 40 archivos en `sql/` y
+      ninguna forma de saber cuáles se corrieron; 5 Edge Functions y ninguna
+      forma de saber qué versión está desplegada. La regla 0.1.2 ya dice
+      "consultarlo con un SELECT", y funciona — pero **depende de que alguien
+      se acuerde**, que es exactamente lo que falló en julio. Mismo criterio
+      que el stock negativo: ahí la solución no fue acordarse, fue un `CHECK`
+      en la base. Acá el equivalente son dos cosas chicas:
+      (a) tabla `migraciones_aplicadas` (archivo, fecha, quién, nota) y una
+      línea al final de cada script que se registre sola;
+      (b) que cada Edge Function devuelva su versión en la respuesta, para
+      poder ver qué está vivo sin entrar al panel.
+- [ ] **Cero pruebas guardadas en el repo.** Cada cambio se probó —reparto,
+      deslizador, tipos, motor— pero ninguna prueba quedó: se escribieron, se
+      corrieron y se borraron con la sesión. El costo no es teórico: el bug de
+      `items.map(rowHTML)` (cada fila repitiendo su propia sección) vivió
+      semanas en producción, en toda la app, y se encontró de casualidad.
+      Guardar en el repo las pruebas que ya se escriben igual, contra el
+      Supabase simulado. No hace falta automatizarlas: basta con que estén.
+- [ ] **El cron, cuando se active.** Si deja de correr, hoy nadie se entera.
+      Mismo patrón que todo este bloque.
+
+### 🟠 B. Fallas ruidosas — se ven, molestan, no mienten
 
 - [ ] **Revisar quién puede escribir en la base.** La clave que usa la app va
       escrita en `index.html` y **cualquiera la puede leer con F12** — eso es
@@ -469,32 +551,11 @@ Lo demás es mejora, no riesgo.
       funciona (avisa "Tu sesión se cerró", que ya es claro, pero igual
       bloquea). Qué revisar: Supabase → Authentication → Sessions, si hay
       "single session per user"; y decidir si cada persona lleva su propia
-      cuenta en vez de compartir.
-- [ ] **RIESGO ABIERTO — `supabase-js` sin versión fija.** `index.html` carga
-      `@supabase/supabase-js@2`, o sea **la última 2.x que publiquen**. Un
-      cambio de la librería puede romper la app sin que nadie toque el código
-      — la misma clase de sorpresa que el motor v5, pero desde afuera. Al
-      2026-07-27 la última era **2.110.9**, la que corre hoy; fijarla ahí no
-      cambia nada. **Antes de cambiarla, comprobar que la URL fijada de verdad
-      sirve la librería** (abrirla en el navegador): si se escribe mal, la app
-      deja de cargar entera.
-- [ ] **Respaldos de la base.** Revisar en Supabase → Settings → Database →
-      Backups. En el plan gratuito **no hay punto de restauración**: si algo
-      borra datos, no se recuperan. Antes de que esto maneje más cosas —o de
-      cualquier idea de POS— conviene el plan Pro (~25 USD/mes), que trae
-      respaldo diario.
-- [ ] **Un solo camino puede dejar el inventario congelado sin avisar.** Ya se
-      arregló el caso del motor (la app abre una ventana si lee ventas y no
-      descuenta ninguna). Falta lo mismo para el **cron**, cuando se active:
-      si deja de correr, hoy nadie se entera.
+      cuenta en vez de compartir. **Con cuentas propias se arregla esto y, de
+      paso, la bitácora de quién empujó a Fudo pasa a servir de verdad.**
 
-### 🟠 B. Correcciones de datos pendientes
+### 🟡 C. Correcciones de datos pendientes
 
-- [ ] **Recetas cruzadas detectadas y sin corregir**: `Cheesecake maracuyá`
-      descuenta `T. Cheesecake Mora`. Y revisar `Cinnamon Roll Vegano`, que
-      descuenta `Cinnamon rolls vitrina` (el normal): si son pancitos distintos,
-      Fudo dejaría vender veganos que no existen — el único caso donde el error
-      es vender de MÁS.
 - [ ] **Terminar de emparejar vitrina/congelador.** Van 12 pares sumando
       (2026-07-29). Correr `sql/2026-07-emparejar-vitrina-congelador.sql` de
       nuevo cada tanto: la consulta 3 muestra los del congelador que todavía no
@@ -509,7 +570,41 @@ Lo demás es mejora, no riesgo.
       controlan por stock (cambian de comportamiento en el mesón, hay que
       avisar), y los ~10 que quedarían en 0 (revisar receta por receta antes).
 
-### 🟡 C. Mejoras que ya están desbloqueadas
+### 🔵 D. Velocidad y estructura — no urge, pero se pone caro solo
+
+> Medido el 2026-07-30 en el navegador, inventario sintético, todas las
+> secciones abiertas. Con 232 productos la app va bien; el problema es **cómo
+> crece**, no el número de hoy.
+
+| Productos | Pintado |
+|---|---|
+| 10 | 7 ms |
+| **232** (tamaño real hoy) | **146 ms** |
+| 500 | 168 ms |
+| 1000 | 583 ms |
+
+- [ ] **El pintado crece al cuadrado, y la causa está aislada.** En UNA pintada
+      de 232 productos la app recorre la lista completa **233 veces**, porque
+      `totalProducto()` filtra todo `DATA` una vez por fila para calcular el
+      total del par vitrina+congelador. De los 42 ms que toma pintar,
+      **28 ms (67%) son eso**. El arreglo es calcular los totales por nombre
+      base **una vez por carga** en un índice (un `Map`), no una vez por fila:
+      cambio interno, misma pantalla, mismos números, misma regla de que el
+      total suma vitrina y congelador.
+- [ ] **`.in('producto_id', …)` con 232 identificadores.** Las fechas de
+      vencimiento se piden metiendo la lista entera de ids en la dirección
+      (`index.html:1497`). Funciona hoy y **falla de golpe** —no de a poco—
+      cuando la URL se pasa de largo, en torno al doble o triple del inventario
+      actual. Se resuelve pidiendo por sede en vez de por lista de ids.
+- [ ] **`index.html` son 3169 líneas / 172 KB en un solo archivo**, con
+      inventario, reparto, historial, recetas y zona de administración juntos:
+      un barista carga todo el código de administración para mirar el stock.
+      La separación por rol ya está prevista en la sección 7 (`/` inventario,
+      `/caja`, `/panel`). **No empezar a separar antes de tener pruebas
+      guardadas** (bloque A) — partir un archivo de 3000 líneas sin red es
+      cómo se introducen bugs invisibles.
+
+### 🟢 E. Mejoras que ya están desbloqueadas
 
 - [x] ~~**Que el cálculo para Fudo use el TOTAL del par vitrina+congelador.**~~
       Hecho el 2026-07-29 (`sql/2026-07-stock-para-fudo-v3-suma-el-par.sql`).
@@ -530,6 +625,26 @@ Lo demás es mejora, no riesgo.
       cerrar la depuración de recetas.
 - [ ] Confirmar con jefatura que van a usar el sistema (vs. volver al Excel).
 - [ ] **Decisión grande pendiente: ¿avanzar hacia un POS propio?** Ver sección 7.
+
+### ✅ Lo que NO está en riesgo
+
+Vale dejarlo escrito, porque una lista de vulnerabilidades da la impresión de
+que todo está frágil, y **una sesión futura que lea solo el bloque A puede
+"arreglar" cosas que ya están bien** (ver regla 0.1.7).
+
+- **El stock negativo está cerrado de verdad.** No es lógica del motor que
+  alguien pueda olvidar: son restricciones `CHECK` en la tabla. Cualquier
+  camino futuro que intente dejar un negativo lo rechaza la base sola.
+- **Renombrar productos no rompe recetas.** La unión es por ID, no por nombre.
+  Todos los renombres de vitrina/congelador que faltan son seguros.
+- **El descuento no se duplica.** Aunque se relea una venta, el buffer de
+  tiempo y el `on conflict` lo impiden.
+- **Un producto sin receta no puede escribir nada en Fudo.** El cálculo sale
+  DESDE `recetas`; crear productos sueltos no corrompe nada — es falta de
+  cobertura, no un dato malo.
+- **El empuje a Fudo manda valor absoluto y se comprueba releyendo** lo que
+  Fudo devuelve, no el 200. Cada envío queda con su valor anterior.
+- **Multi-sede ya está resuelto.** Agregar una sede es agregar filas.
 
 ---
 
@@ -642,6 +757,39 @@ el patrón a seguir:
 ---
 
 ## 8. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-30** — **Informe de estabilidad, y un chequeo que se corre solo.**
+  Jhon pidió el mapa completo de por dónde se puede caer esto. Nada de código
+  cambió: lo que cambió es qué se está mirando. La sección 6 quedó reordenada
+  **por cómo se anuncia la falla**, no por lo grave que suena — bloque A las
+  calladas, B las ruidosas — porque esa es la lección de la regla 0.5 aplicada
+  a la lista de pendientes y no solo al motor.
+  1. **`sql/2026-07-salud-del-sistema.sql`**, solo lectura, 10 bloques. Junta
+     en una corrida los números que anunciaban las dos fallas más caras del
+     proyecto y que nadie estaba mirando: distancia al tope de las 1000 filas,
+     funciones con firma duplicada, tablas fuera de `supabase_realtime`,
+     columnas que un motor da por sentadas, stock que no cuadra con las
+     fechas, ventas leídas sin descontar. **Probado contra Postgres local con
+     fallas sembradas a propósito** — eso valida que los detectores disparan,
+     no el estado de la base real (regla 0.5: una prueba contra un esquema que
+     uno mismo construye no valida una migración).
+  2. **Las recetas cruzadas suben de categoría, y no porque cambiaran.**
+     Hasta el 28 de julio `Cinnamon Roll Vegano` descontando el cinnamon
+     normal era un número mal contado. Desde que el inventario le ESCRIBE a
+     Fudo, ese mismo error decide cuánto se puede vender. Cambió lo que cuelga
+     de ellas, no ellas. **Cuando se conecta una salida nueva, hay que volver
+     a mirar los errores conocidos: alguno cambió de consecuencia.**
+  3. **La alarma del motor solo suena si falla el 100% de las ventas**
+     (`index.html:2903`, `if(err && !desc)`). Un fallo parcial —8 de 9— sale
+     en un aviso que se va solo. Es la falla de julio en versión chica y por
+     eso peor: la grande se nota en una tarde, la chica dura semanas.
+     Verificado leyendo el código, no supuesto.
+  4. **Medido**: pintar 232 productos toma 146 ms y 1000 toma 583 ms — crece
+     al cuadrado porque `totalProducto()` recorre `DATA` entero una vez por
+     fila (**233 recorridos por pintada, 67% del tiempo**). Detalle y arreglo
+     en el bloque D.
+  5. **Lo que NO está en riesgo quedó escrito** al final de la sección 6. Una
+     lista de vulnerabilidades invita a "arreglar" cosas que ya están bien.
 
 - **2026-07-29** — **Fudo ya recibe el total del par, no solo la vitrina.**
   Jhon lo detectó con el alfajor: 2 en vitrina, 15 en congelador, y a Fudo le
