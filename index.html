@@ -2885,6 +2885,46 @@ $('rec-q').addEventListener('input',renderRecetas);
    Si un paso falla, los demás igual se ejecutan: una caída de la
    sincronización de productos no debe impedir que se descuenten
    las ventas. */
+/* ---------------- ¿la sincronización de ventas salió bien? ----------------
+   Decide si lo que devolvió el motor es una falla que tiene que DETENER a
+   quien esté mirando, o un resumen que se puede leer al pasar.
+
+   Hasta el 2026-07-30 la alarma solo sonaba si fallaba el 100% de los ítems
+   (`err && !desc`). Un fallo de 8 de 9 salía en un mensajito que se va solo y
+   la pantalla se veía normal. Es la falla de julio en versión chica, y por eso
+   PEOR: la grande se nota en una tarde, la chica descuadra el inventario
+   durante semanas sin que nadie sospeche. Ahora se mide por proporción.
+
+   Ojo con los números que manda la Edge Function:
+     ventas_leidas         → ventas (mesas), no ítems
+     items_procesados      → ítems que el motor sí pudo procesar
+     errores               → ítems que fallaron  ← el denominador es proc+err
+     movimientos_generados → filas escritas; incluye las de "(sin receta)"
+   `movimientos_generados = 0` SIN errores es normal: pasa al releer ventas ya
+   procesadas, que el motor ignora a propósito para no descontar dos veces. */
+const UMBRAL_GRAVE = 0.10;          // 10% de los ítems fallando ya es grave
+
+function juzgarVentas(d){
+  d = d || {};
+  const ven  = d.ventas_leidas || 0;
+  const err  = d.errores || 0;
+  const desc = d.movimientos_generados || 0;
+  const intentos = (d.items_procesados || 0) + err;
+
+  if(err && !desc)
+    return {grave:true, texto:`Se leyeron ${ven} venta${ven===1?'':'s'} y NINGUNA se pudo `
+      + `descontar (${err} ítem${err===1?'':'s'} con error). El inventario no se está actualizando.`};
+
+  if(err && intentos && err >= intentos * UMBRAL_GRAVE)
+    return {grave:true, texto:`${err} de ${intentos} ítems vendidos no se descontaron `
+      + `(${Math.round(100*err/intentos)}%). El inventario se está quedando corto.`};
+
+  if(!ven) return {grave:false, texto:'sin ventas nuevas'};
+
+  return {grave:false, texto:`${ven} venta${ven===1?'':'s'} · ${desc} descuento${desc===1?'':'s'}`
+    + (err ? ` · ⚠️ ${err} con error` : '')};
+}
+
 const PASOS_SYNC = [
   {
     nombre: 'productos',
@@ -2901,21 +2941,9 @@ const PASOS_SYNC = [
       const {data,error} = await sb.functions.invoke('fudo-sync-ventas',{body:{sede:SEDE}});
       if(error) throw error;
       if(!data || !data.ok) throw new Error((data && data.error) || 'sin respuesta');
-      const desc = data.movimientos_generados || 0;
-      const ven  = data.ventas_leidas || 0;
-      const err  = data.errores || 0;
-      // Los errores por venta SE MUESTRAN. El 2026-07-27 el motor falló en
-      // todas las ventas durante 15 horas y la app decía "ok" igual, porque
-      // este número se quedaba dentro de la respuesta sin llegar a nadie.
-      if(err && !desc){
-        const e = new Error(`Se leyeron ${ven} venta${ven===1?'':'s'} pero NINGUNA se pudo `
-          + `descontar (${err} con error). El inventario no se está actualizando.`);
-        e.grave = true;   // esto no se avisa con un mensajito que se va solo
-        throw e;
-      }
-      if(!ven) return 'sin ventas nuevas';
-      return `${ven} venta${ven===1?'':'s'} · ${desc} descuento${desc===1?'':'s'}`
-        + (err ? ` · ⚠️ ${err} con error` : '');
+      const v = juzgarVentas(data);
+      if(v.grave){ const e = new Error(v.texto); e.grave = true; throw e; }
+      return v.texto;
     }
   },
 ];

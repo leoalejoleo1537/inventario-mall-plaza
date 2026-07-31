@@ -64,17 +64,7 @@ on conflict (archivo) do update
 
 
 -- ================================================================
--- BLOQUE 3 — LA PREGUNTA QUE ESTE CUADERNO VIENE A CONTESTAR
---
--- "¿Se corrió tal archivo?" Ahora se responde mirando acá.
--- ================================================================
-select archivo, aplicado_at::date as se_corrio_el, quien, como_se_supo, nota
-from public.migraciones_aplicadas
-order by aplicado_at desc, archivo;
-
-
--- ================================================================
--- BLOQUE 4 — LA LÍNEA QUE VA AL FINAL DE CADA SCRIPT DE AHORA EN MÁS
+-- BLOQUE 3 — LA LÍNEA QUE VA AL FINAL DE CADA SCRIPT DE AHORA EN MÁS
 --
 -- Esto NO se corre ahora. Es el molde. De aquí en adelante, todo script
 -- que Claude te entregue va a traer estas líneas pegadas al final, ya
@@ -97,3 +87,17 @@ values ('2026-07-registro-de-migraciones.sql', 'Jhon', 'lo corrió Jhon',
         'Creó el cuaderno de migraciones y anotó lo verificado el 30-07')
 on conflict (archivo) do update
   set aplicado_at = now(), nota = excluded.nota;
+
+
+-- ================================================================
+-- BLOQUE 4 — CÓMO QUEDÓ EL CUADERNO
+--
+-- Va al FINAL a propósito: el editor de Supabase muestra el resultado
+-- de la ÚLTIMA consulta, así que si esto va antes del registro de más
+-- arriba, la foto sale con una fila de menos y confunde.
+--
+-- Tienen que salir 13 filas.
+-- ================================================================
+select archivo, aplicado_at::date as se_corrio_el, quien, como_se_supo, nota
+from public.migraciones_aplicadas
+order by aplicado_at desc, archivo;

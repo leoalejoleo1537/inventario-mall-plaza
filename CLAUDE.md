@@ -601,8 +601,9 @@ paso a paso, porque no es técnico. El estado:
 | 1 | Correr el chequeo de salud | ✅ **hecho el 2026-07-30** — resultados abajo |
 | 2 | Sacar el primer respaldo y guardarlo en Notion | ✅ hecho el 2026-07-30 — los 4 CSV quedaron guardados |
 | 3 | Fijar `supabase-js` | ✅ hecho y en producción (2.111.0) |
-| 4 | **Cuaderno de migraciones** (`migraciones_aplicadas`) | ⏳ **acá vamos** — `2026-07-registro-de-migraciones.sql` |
-| 5 | Que la alarma del motor suene por proporción | ⏳ requisito antes del cron |
+| 4 | Cuaderno de migraciones (`migraciones_aplicadas`) | ✅ hecho el 2026-07-31 — 13 archivos anotados |
+| 5 | Que la alarma del motor suene por proporción | ✅ hecho el 2026-07-31 — `juzgarVentas()` + prueba guardada |
+| 6 | Estado del motor en la BASE (no solo en el botón ⟳) | ⏳ **acá vamos** — requisito para el cron |
 
 **Decisión de Jhon (2026-07-31): la estabilidad primero, Angamos después.**
 *"Quiero que el modelo sea bastante sólido antes de pasar a Angamos."*
@@ -685,17 +686,19 @@ riesgo.
       dice a cuánto está cada tabla. **Regla general: cualquier `select` que
       pueda devolver más de 1000 filas está truncado sin avisar** — si lo que
       se necesita es un resumen, se agrupa en la base.
-- [ ] **La alarma del motor solo suena si falla el 100% de las ventas.**
-      `index.html:2903` marca grave con `if(err && !desc)`. Si de 9 ventas
-      fallan 8 y pasa 1, la condición no se cumple: sale un aviso que se va
-      solo con un `⚠️ 8 con error` al final, y la app se ve normal. Es la falla
-      de julio en versión pequeña, y por eso **más difícil de notar**: un fallo
-      total llama la atención en una tarde, uno parcial descuadra el inventario
-      durante semanas. Dos cosas: (a) que la alarma se dispare por proporción,
-      no por cero absoluto; (b) que el estado de la última corrida quede en la
-      BASE, para que la pantalla lo muestre sin depender de quién apretó ⟳.
-      **(b) es requisito para activar el cron** — automatizar la sync sin esto
-      quita al único testigo que hay.
+- [x] ~~**La alarma del motor solo suena si falla el 100% de las ventas.**~~
+      **Hecho el 2026-07-31**: `juzgarVentas()` en `index.html` mide por
+      proporción — 10% de los ítems fallando ya abre la ventana. Con prueba
+      guardada en `pruebas/alarma-de-ventas.mjs`, que cubre las dos
+      direcciones: que suene cuando debe **y que no suene cuando no** (el caso
+      real de 1685 ítems sin errores, y el de releer ventas ya procesadas, que
+      da 0 movimientos y es normal).
+- [ ] **Falta la otra mitad: el estado del motor tiene que vivir en la BASE.**
+      Hoy la alarma solo existe dentro del botón ⟳: si nadie lo aprieta, nadie
+      se entera. **Es requisito para activar el cron** — automatizar la sync sin
+      esto le quita al sistema su único testigo. Lo que falta: que
+      `fudo-sync-ventas` deje su resultado en una fila (cuándo corrió, cuántos
+      ítems, cuántos errores) y que la pantalla lo lea.
 - [ ] **Respaldos de la base.** Revisar en Supabase → Settings → Database →
       Backups. En el plan gratuito **no hay punto de restauración**. Y el modo
       de trabajo del proyecto es copiar `update` generados y pegarlos a mano:
@@ -723,13 +726,12 @@ riesgo.
       línea al final de cada script que se registre sola;
       (b) que cada Edge Function devuelva su versión en la respuesta, para
       poder ver qué está vivo sin entrar al panel.
-- [ ] **Cero pruebas guardadas en el repo.** Cada cambio se probó —reparto,
-      deslizador, tipos, motor— pero ninguna prueba quedó: se escribieron, se
-      corrieron y se borraron con la sesión. El costo no es teórico: el bug de
-      `items.map(rowHTML)` (cada fila repitiendo su propia sección) vivió
-      semanas en producción, en toda la app, y se encontró de casualidad.
-      Guardar en el repo las pruebas que ya se escriben igual, contra el
-      Supabase simulado. No hace falta automatizarlas: basta con que estén.
+- [ ] **Pruebas guardadas: empezado el 2026-07-31.** Existe `pruebas/` con la
+      primera (`alarma-de-ventas.mjs`, 9 casos, corre con `node` y sin
+      dependencias). **La regla que la hace servir: lee el código de verdad**,
+      extrayendo la función de `index.html` en vez de copiarla — una prueba
+      contra una copia no prueba el código que corre. Falta cubrir la pantalla,
+      y eso hay que tenerlo **antes** de partir `index.html` en varias páginas.
 - [ ] **El cron, cuando se active.** Si deja de correr, hoy nadie se entera.
       Mismo patrón que todo este bloque.
 
