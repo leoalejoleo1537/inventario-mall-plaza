@@ -21,7 +21,8 @@ Son ~1500 líneas. Este es el orden en que conviene usarlas:
 | Saber si un problema ya está resuelto | **§8, el catálogo** — se busca el problema y dice dónde vive la solución |
 | Saber qué falta por hacer | §6, ordenado por si la falla avisa o no |
 | Encender una sede nueva | **§9** — el caso Angamos, paso a paso |
-| Entender por qué algo está hecho así | §10, la bitácora |
+| Poner recetas a insumos a granel (té, café, naranja) | **§10** — el marco y los datos ya medidos |
+| Entender por qué algo está hecho así | §11, la bitácora |
 
 **Las tres cosas que más caro han costado**, para no repetirlas:
 
@@ -1010,7 +1011,7 @@ el patrón a seguir:
 > han corregido"*.
 
 **Para qué sirve y en qué se diferencia de la bitácora.** La bitácora (sección
-10) cuenta *cómo se llegó* a cada cambio, en orden de tiempo — se lee para
+11) cuenta *cómo se llegó* a cada cambio, en orden de tiempo — se lee para
 entender por qué algo está hecho así. Este catálogo se lee al revés: **se busca
 un problema y se ve si ya está resuelto y dónde**. Es lo primero que hay que
 mirar antes de "arreglar" algo, para no volver a resolver lo mismo ni deshacer
@@ -1128,16 +1129,32 @@ estaba anticipado en §7 y se confirma acá.
    select rubro, count(*), sum(case when activo='SÍ' then 1 else 0 end) as activos
    from public.productos where sede='angamos' group by rubro order by 2 desc;
    ```
-6. **Rehacer las recetas para angamos.** Esta es la parte cara, y la razón está
-   en el punto 1: **el catálogo de Fudo de Angamos es otra cuenta, así que los
-   `fudo_product_id` son distintos.** Las recetas de plaza NO sirven tal cual —
-   no se pueden copiar cambiando la sede.
+6. **Trasladar las recetas de plaza a angamos.** ⚠️ **Esto cambió el
+   2026-07-31, y para mejor.** Jhon confirmó que **las dos sedes tienen la
+   MISMA carta**: mismos productos, mismos precios, y no hay nada en Angamos
+   que no esté en Mall Plaza.
+
+   Sigue siendo cierto que **no se puede copiar la fila tal cual** — el
+   catálogo de Fudo de Angamos es otra cuenta y los `fudo_product_id` son
+   distintos, así que una copia literal apuntaría al vacío. Pero **sí se puede
+   trasladar la ESTRUCTURA emparejando por nombre**, en dos saltos:
+
+   ```
+   Fudo plaza "Cappuccino"   →  Fudo angamos "Cappuccino"    (por nombre)
+      ↓ sus receta_items
+   producto plaza "Leche"    →  producto angamos "Leche"     (por nombre)
+   ```
+
+   Con la regla 0.1.4 intacta: **el emparejamiento por nombre PROPONE, no
+   concluye.** El script tiene que sacar la lista de "esto haría", Jhon la
+   revisa, y recién ahí se escribe. Lo que no calce queda a mano.
+
+   Esto convierte el paso más caro de la migración en un rato de revisión.
+   Antes de escribirlo, correr el emparejador contra los dos catálogos y
+   mirar cuántos productos calzan de verdad.
    **Confirmado el 2026-07-30: angamos tiene 0 recetas** (plaza tiene 168, que
-   cubren el 48% de su catálogo). O sea, este paso está entero por delante, y
-   es el que define cuánto va a demorar la migración.
-   Lo que sí se puede: emparejar por nombre para *proponer* recetas, igual que
-   se hizo en plaza (`emparejador-segunda-pasada.sql`). Y aplica la regla
-   0.1.4: el emparejamiento por nombre **propone candidatos, no concluye**.
+   cubren el 48% de su catálogo). El emparejador que ya existe
+   (`emparejador-segunda-pasada.sql`) es el punto de partida.
 7. **Comprobar en `prueba` durante unos días**, mirando `fudo_movimientos` de
    angamos: qué se leyó, qué se habría descontado, qué quedó sin receta.
 8. **Recién ahí, `modo = 'real'`.**
@@ -1175,7 +1192,75 @@ métrica de avance es esa. Los bloques 5, 7 y 8 sirven igual para las dos sedes.
 
 ---
 
-## 10. Bitácora (cambios importantes, lo más reciente arriba)
+## 10. Insumos que no se cuentan de a uno (té, café, naranja, limpieza)
+
+> Conversado con Jhon el 2026-07-31. **Todavía no hay nada construido** — esto
+> es el marco acordado y la tarea de medición que él está haciendo en el local.
+
+**El problema:** la mitad de lo que se vende en plaza no descuenta nada (48% de
+cobertura). Buena parte de ese hueco son insumos a granel: no se sabe cuántas
+naranjas lleva un zumo ni cuántos gramos de café un cappuccino.
+
+**Cómo se resuelve, y NO es con un modelo probabilístico.** Es el estándar de
+la industria — *inventario teórico contra inventario real* — y son tres piezas:
+
+1. **Rendimiento**: cuánto rinde la unidad de compra. Pura división
+   (gramos del paquete ÷ gramos por uso).
+2. **Descuento fraccionario por venta**: la receta descuenta `0,018` kg, no 1.
+   **Ya está soportado**: `receta_items.cantidad` es `numeric` y
+   `productos.stock_actual/min/max` son `double precision` (verificado en
+   producción el 2026-07-31). No hace falta migrar nada.
+3. **Conteo periódico que corrige la deriva.** Ya existe: es el `historial`.
+   La diferencia entre lo teórico y lo contado **es la merma**, y es
+   información útil, no un fallo del cálculo.
+
+**Decisiones tomadas en esa conversación:**
+
+- **NO descontar "un poquito cada día".** Jhon lo propuso y se descartó con
+  razón: un descuento diario fijo tira a la basura el dato que ya se tiene
+  (cuánto se vendió) y acumula error sin avisar. La excepción son los productos
+  de **limpieza**, que no los empuja ninguna venta — ahí lo honesto es mín/máx
+  y conteo a ojo, sin automatizar nada.
+- **Empezar por el té**, no por el café. Cálculo simple y error barato. El café
+  mueve la plata y va después.
+- **Un producto a la vez.** Si el método falla, que falle en el té.
+
+**Dónde sí entra la estadística, y es el caso de la naranja.** Cuando un insumo
+lo consumen varios productos y no se sabe el reparto, queda:
+
+```
+naranjas del día = a·(zumos) + b·(desayunos) + c·(orange coffees) + merma
+```
+
+Con varios días de datos se resuelve por **mínimos cuadrados**. **La condición
+que hay que respetar: la mezcla de ventas tiene que VARIAR entre días.** Si
+zumos y desayunos se venden siempre en la misma proporción, es matemáticamente
+imposible separarlos (colinealidad) — no es un problema de programación y no se
+arregla con más datos del mismo tipo.
+
+**Datos que ya dio Jhon (2026-07-31):**
+
+| Insumo | Dato |
+|---|---|
+| Café | Bulto de **60 kg**; **18 g** por espresso doble (o dos simples) |
+| Café | → **3.333 dosis por bulto**; ~2.800-3.200 vendibles con 5-15% de merma |
+| Naranja | Una caja dura **1 a 1,5 días** |
+| Naranja | La usan zumo, desayunos y orange coffee |
+
+**Lo que falta y lo está midiendo Jhon** (artefacto "Tarea para la casa",
+2026-07-31): gramos por tetera de té, cuántas dosis lleva cada bebida de la
+carta, shots botados por día, naranjas por caja, ml por naranja y por vaso, y
+un registro de **cajas abiertas por día durante dos semanas** — solo eso, porque
+las ventas de esos días ya las tiene el sistema.
+
+**Falta una pieza en la base:** no hay columna de **unidad de medida** en
+`productos`. Hoy "Café en grano 8" no dice si son 8 bultos, 8 kilos u 8
+paquetes. Para lo discreto da igual; para esto es imprescindible, porque quien
+cuenta en el mesón necesita saber qué está contando.
+
+---
+
+## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
 - **2026-07-30 (noche)** — **El archivo madre, reforzado para el salto a
   Angamos.** Jhon va a abrir un chat nuevo (las skills que instaló no cargan en
