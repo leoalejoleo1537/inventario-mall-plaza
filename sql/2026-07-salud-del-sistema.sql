@@ -110,11 +110,14 @@ union all
 select 8, 'El motor descuenta (ultimos 7 dias)',
   case when count(*)=0 then 'ok'
        when (select modo from fudo_sync where sede='plaza') <> 'real' then 'MIRAR'
+       when count(*) filter (where producto_nombre<>'(sin receta)')=0 then 'MIRAR'
        when count(*) filter (where aplicado)=0 then 'REVISAR YA'
-       when count(*) filter (where aplicado)*2 < count(*) then 'MIRAR'
+       when count(*) filter (where aplicado)*10
+            < count(*) filter (where producto_nombre<>'(sin receta)')*9 then 'MIRAR'
        else 'ok' end,
   case when count(*)=0 then 'no hubo ventas'
-       else count(*) filter (where aplicado)||' de '||count(*)||' aplicadas'
+       else count(*) filter (where aplicado)||' aplicadas de '
+            ||count(*) filter (where producto_nombre<>'(sin receta)')||' con receta'
             ||' · '||count(*) filter (where producto_nombre='(sin receta)')||' sin receta'
             ||' · modo '||coalesce((select modo from fudo_sync where sede='plaza'),'?') end
 from fudo_movimientos
