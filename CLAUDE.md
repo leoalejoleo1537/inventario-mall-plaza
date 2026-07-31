@@ -604,7 +604,7 @@ paso a paso, porque no es técnico. El estado:
 | 4 | Cuaderno de migraciones (`migraciones_aplicadas`) | ✅ hecho el 2026-07-31 — 13 archivos anotados |
 | 5 | Que la alarma del motor suene por proporción | ✅ hecho el 2026-07-31 — `juzgarVentas()` + prueba guardada |
 | 6 | Estado del motor en la BASE (no solo en el botón ⟳) | ✅ hecho el 2026-07-31 — falta que Jhon corra el SQL y pegue la Edge Function |
-| 7 | Encender el cron (`cron_activo = true`) | ⏳ ya desbloqueado |
+| 7 | Encender el cron | ⏳ **acá vamos** — `2026-07-cron-automatico-ventas.sql`, en 3 pasos con espera |
 
 **Decisión de Jhon (2026-07-31): la estabilidad primero, Angamos después.**
 *"Quiero que el modelo sea bastante sólido antes de pasar a Angamos."*
@@ -817,9 +817,14 @@ riesgo.
       Hecho el 2026-07-29 (`sql/2026-07-stock-para-fudo-v3-suma-el-par.sql`).
       Al vender se sigue descontando del producto de la receta: lo que cambió
       es solo cuánto se dice que se PUEDE vender.
-- [ ] **Cron automático** de `fudo-sync-ventas` cada 15 min (SQL listo en
-      `sql/2026-07-cron-automatico-ventas.sql`, falta activarlo en Supabase →
-      Cron). Es lo que elimina la demora: hoy depende de apretar el botón.
+- [ ] **Cron automático** de `fudo-sync-ventas` cada 15 min. Reescrito el
+      2026-07-31: sin `$$`, con la URL y la clave publicable **ya rellenadas**
+      (nada que reemplazar a mano), y en **3 pasos con espera en el medio** —
+      agendar, comprobar a los 20 min que `ultima_corrida_por` diga `cron`, y
+      recién ahí encender `cron_activo`. Ese orden importa: encender el aviso
+      antes de que el cron haya corrido pone la app en rojo sin motivo.
+      **Ojo con el malentendido**: crear la columna `cron_activo` NO enciende
+      nada — es el interruptor, y nace apagado.
 - [ ] Correr la medición de demora real (bloque de `sql/2026-07-fecha-real-de-venta.sql`).
 - [ ] **Al crear un producto, poder enlazarlo con uno de Fudo.** Hoy se crea
       suelto. No es peligroso —sin receta no puede escribir nada en Fudo— pero
