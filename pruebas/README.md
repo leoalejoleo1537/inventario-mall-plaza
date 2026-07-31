@@ -26,6 +26,8 @@ dice qué caso falló.
 | Archivo | Qué protege |
 |---|---|
 | `alarma-de-ventas.mjs` | Que la alarma del motor suene cuando tiene que sonar, y **que no suene cuando no** — que es la mitad que suele no probarse. Incluye el caso real de Mall Plaza (1685 ítems, cero errores) y el de releer ventas ya procesadas, que da 0 movimientos y es normal. |
+| `aviso-del-motor.mjs` | La franja que avisa sin que nadie apriete ⟳. Cubre las dos reglas anti-falsa-alarma: sin cron, "hace 5 horas" es normal; y una sede que nunca corrió está recién encendida, no rota. |
+| `pantalla-sana.mjs` | Que no haya dos elementos con el mismo `id` y que todo `$('algo')` apunte a algo que existe. Sale del bug de `rec-cancelar` duplicado: el Cancelar del editor de recetas se quedó sin manejador, no dio error en ninguna parte, y simplemente no cerraba. |
 
 ## La regla que hace que esto sirva
 

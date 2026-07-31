@@ -36,6 +36,8 @@
   }
   *{box-sizing:border-box}
   html,body{touch-action:manipulation}
+  /* mientras se arrastra una fila con el mouse, que no se pinte texto */
+  body.sin-seleccion{user-select:none;-webkit-user-select:none}
   body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
   /* ---------- pantalla de selección (gate, estilo FUDO) ---------- */
   .gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
@@ -108,6 +110,45 @@
          padding:11px 18px;border-radius:999px;font-size:13.5px;font-weight:600;z-index:70;max-width:88%;
          text-align:center;box-shadow:0 6px 22px rgba(15,30,49,.3);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
   .toast.open{opacity:1;transform:translate(-50%,0)}
+  /* Cuando la sync descontó algo, el aviso se puede tocar para ver QUÉ se
+     descontó. El puntito naranja es la única señal de que hay algo detrás:
+     un texto tipo "toca para ver" sobraría (regla del texto mínimo). */
+  .toast.hay-detalle{pointer-events:auto;cursor:pointer;padding-right:34px}
+  .toast.hay-detalle::after{content:"";position:absolute;right:15px;top:50%;
+    width:7px;height:7px;margin-top:-3.5px;border-radius:50%;background:var(--orange);
+    box-shadow:0 0 0 0 rgba(220,68,5,.55);animation:latir 2s ease-out infinite}
+  @keyframes latir{0%{box-shadow:0 0 0 0 rgba(220,68,5,.5)}
+                   70%{box-shadow:0 0 0 7px rgba(220,68,5,0)}
+                   100%{box-shadow:0 0 0 0 rgba(220,68,5,0)}}
+  .toast.hay-detalle:active{transform:translate(-50%,0) scale(.96)}
+  /* Con la burbuja abierta el aviso sube por ENCIMA del desenfoque: es el
+     punto del que brota, y verlo borroso detrás rompe esa lectura. */
+  .toast.encima{z-index:72}
+
+  /* ---------- la burbuja del detalle ----------
+     Brota DESDE el aviso, no del centro de la pantalla: el origen está abajo
+     y al medio, que es donde está el dedo cuando se toca. */
+  .burbuja-fondo{position:fixed;inset:0;background:rgba(15,30,49,.42);
+    backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:71;
+    display:none;align-items:flex-end;justify-content:center;padding:0 14px 84px}
+  .burbuja-fondo.open{display:flex}
+  .burbuja{background:#fff;border-radius:18px;width:100%;max-width:420px;
+    max-height:62vh;display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 14px 44px rgba(15,30,49,.34);
+    transform-origin:bottom center;animation:brotarBurbuja .26s cubic-bezier(.2,.9,.3,1.06)}
+  @keyframes brotarBurbuja{from{opacity:0;transform:scale(.5) translateY(26px)}
+                           to{opacity:1;transform:none}}
+  .burbuja-cab{padding:15px 18px 12px;border-bottom:1px solid var(--border);
+    display:flex;align-items:baseline;gap:9px}
+  .burbuja-cab b{font-size:16px;font-weight:800}
+  .burbuja-cab span{font-size:12.5px;color:var(--muted);margin-left:auto;white-space:nowrap}
+  .burbuja-lista{overflow-y:auto;overscroll-behavior:contain;padding:6px 0}
+  .burbuja-lista .li{display:flex;align-items:center;gap:10px;padding:9px 18px;font-size:14.5px}
+  .burbuja-lista .li + .li{border-top:1px solid var(--border)}
+  .burbuja-lista .li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .burbuja-lista .li .c{font-weight:800;color:var(--orange);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .burbuja-lista .vacio{padding:18px;text-align:center;color:var(--muted);font-size:14px}
+  @media (prefers-reduced-motion: reduce){ .burbuja{animation:none} .toast.hay-detalle::after{animation:none} }
   /* ---------- tabs (píldoras, estilo Fudo) ---------- */
   .tabs{background:#fff;border-bottom:1px solid var(--border);padding:9px 14px;position:sticky;top:0;z-index:20}
   /* ---------- aviso del motor ----------
@@ -680,6 +721,13 @@
 </aside>
 
 <div class="toast" id="toast"></div>
+
+<div class="burbuja-fondo" id="detalleFondo">
+  <div class="burbuja" id="detalleBurbuja">
+    <div class="burbuja-cab"><b>Se descontó</b><span id="detalleCuantos"></span></div>
+    <div class="burbuja-lista" id="detalleLista"></div>
+  </div>
+</div>
 <div id="swipe-icono" aria-hidden="true">+</div>
 
 <!-- ================= ZONA DE ADMINISTRACIÓN =================
@@ -906,7 +954,7 @@
       Eliminar receta
     </button>
     <div class="mbtns">
-      <button class="btn btn-outline" id="rec-cancelar">Cancelar</button>
+      <button class="btn btn-outline" id="receta-cancelar">Cancelar</button>
       <button class="btn btn-orange" id="rec-guardar">Guardar</button>
     </div>
   </div>
@@ -986,8 +1034,11 @@
     </div>
     <div class="field">
       <label>Sección</label>
-      <input type="text" id="n-rubro" list="rubros-list" placeholder="Elige una o escribe una nueva">
-      <datalist id="rubros-list"></datalist>
+      <!-- Desplegable, no texto libre: escribiendo a mano se creaban secciones
+           nuevas por una tilde o un plural ("Mesones" y "mesón"), y un producto
+           en una sección inventada no aparece en ninguna parte de la lista.
+           Mismo control que usa la ficha del producto (m-seccion). -->
+      <select id="n-rubro"></select>
     </div>
     <label class="chkrow">
       <input type="checkbox" id="n-perec">
@@ -1238,8 +1289,63 @@ function avisar(texto){
 let toastT=null;
 function aviso(txt, ms=4000){
   const t=$('toast'); t.textContent=txt; t.classList.add('open');
+  t.classList.remove('hay-detalle');     // un aviso nuevo no hereda el detalle del anterior
+  DETALLE=null;
   clearTimeout(toastT);
   if(ms) toastT=setTimeout(()=>t.classList.remove('open'), ms);
+}
+
+/* ---------------- el detalle de lo que se descontó ----------------
+   El aviso de abajo decía "9 ventas · 14 descuentos" y ahí moría: para saber
+   QUÉ se descontó había que ir a mirar producto por producto. Ahora, cuando
+   hubo descuentos, el aviso se puede tocar y sale la lista. */
+let DETALLE = null;
+
+async function traerDescuentos(desdeISO){
+  try{
+    const {data,error} = await sb.from('fudo_movimientos')
+      .select('producto_nombre,descuento')
+      .eq('sede',SEDE).eq('aplicado',true)
+      .gte('created_at',desdeISO)
+      .order('created_at',{ascending:false})
+      .limit(400);
+    if(error || !data || !data.length) return null;
+    // un mismo insumo puede venir de varias ventas: se suma y se muestra una vez
+    const suma = new Map();
+    for(const m of data){
+      const n = m.producto_nombre || '—';
+      if(n === '(sin receta)') continue;            // esos no descontaron nada
+      suma.set(n, (suma.get(n)||0) + (+m.descuento || 0));
+    }
+    if(!suma.size) return null;
+    return [...suma].map(([producto,cantidad])=>({producto,cantidad}))
+                    .sort((a,b)=>b.cantidad-a.cantidad);
+  }catch(e){ return null; }                          // sin señal no se promete nada
+}
+
+function ofrecerDetalle(lista){
+  if(!lista || !lista.length) return;
+  DETALLE = lista;
+  const t=$('toast');
+  t.classList.add('hay-detalle');
+  clearTimeout(toastT);                              // más tiempo para alcanzar a tocarlo
+  toastT=setTimeout(()=>t.classList.remove('open'), 15000);
+}
+
+function abrirDetalle(){
+  if(!DETALLE) return;
+  const total = DETALLE.reduce((s,d)=>s+d.cantidad,0);
+  $('detalleCuantos').textContent =
+    DETALLE.length + (DETALLE.length===1?' producto':' productos');
+  $('detalleLista').innerHTML = DETALLE.map(d=>
+    `<div class="li"><span class="n">${esc(d.producto)}</span><span class="c">−${fmt(d.cantidad)}</span></div>`
+  ).join('') || '<div class="vacio">No se descontó nada.</div>';
+  $('detalleFondo').classList.add('open');
+  $('toast').classList.add('encima');
+}
+function cerrarDetalle(){
+  $('detalleFondo').classList.remove('open');
+  $('toast').classList.remove('encima');
 }
 
 /* El buscador de cada vista queda SIEMPRE visible: esconderlo tras una lupa
@@ -1712,6 +1818,7 @@ listEl.addEventListener('animationend', ()=>listEl.classList.remove('brota'));
 const SWIPE_MIN = 72;      // cuánto hay que arrastrar para que cuente
 let swRow=null, swX0=0, swY0=0, swDx=0, swEje=null;   // swEje: 'x' | 'y' | null
 let swRect=null;   // dónde estaba la fila ANTES de moverse
+let swArrastro=false, swPid=null;  // hubo arrastre de verdad · qué puntero lo hace
 
 const swIco = () => $('swipe-icono');
 function swipeFin(pasa){
@@ -1722,7 +1829,8 @@ function swipeFin(pasa){
   row.style.transform='';
   swIco().classList.remove('ver');
   setTimeout(()=>row.classList.remove('vuelve'), 450);
-  swRow=null; swDx=0; swEje=null; swRect=null;
+  document.body.classList.remove('sin-seleccion');
+  swRow=null; swDx=0; swEje=null; swRect=null; swPid=null;
   if(pasa) mandarAlReparto(id);
 }
 function mandarAlReparto(id){
@@ -1733,17 +1841,25 @@ function mandarAlReparto(id){
   render();                                   // para que aparezca "En reparto"
   aviso('✓ '+p.producto+' · '+carrito.length+' en el reparto');
 }
-listEl.addEventListener('touchstart', e=>{
-  if(e.touches.length!==1) return;
+/* Se usan eventos de PUNTERO y no de tacto. Es el mismo gesto para dedo,
+   mouse y lápiz: en el computador Adriana arrastra la fila con el mouse
+   exactamente igual que en el teléfono, sin agregar un botón nuevo.
+   El desplazamiento vertical sigue funcionando porque .row lleva
+   touch-action:pan-y — eso lo resuelve el CSS, no este código. */
+listEl.addEventListener('pointerdown', e=>{
+  if(!e.isPrimary || e.button !== 0) return;      // solo el botón principal
   const row=e.target.closest('.row'); if(!row) return;
-  swRow=row; swX0=e.touches[0].clientX; swY0=e.touches[0].clientY; swDx=0; swEje=null;
+  // sobre un campo o un botón el gesto no aplica: ahí se escribe o se toca
+  if(e.target.closest('input,select,textarea,button,a')) return;
+  swRow=row; swX0=e.clientX; swY0=e.clientY; swDx=0; swEje=null;
+  swArrastro=false; swPid=e.pointerId;
   // se mide ANTES de moverla: getBoundingClientRect() incluye el transform,
   // así que medir después hacía que el símbolo viajara con la fila
   swRect=row.getBoundingClientRect();
-}, {passive:true});
-listEl.addEventListener('touchmove', e=>{
-  if(!swRow || e.touches.length!==1) return;
-  const dx=e.touches[0].clientX-swX0, dy=e.touches[0].clientY-swY0;
+});
+listEl.addEventListener('pointermove', e=>{
+  if(!swRow || e.pointerId !== swPid) return;
+  const dx=e.clientX-swX0, dy=e.clientY-swY0;
   // primero se decide si el gesto es horizontal o vertical, y no se cambia:
   // si no, desplazar la lista con el dedo torcido arrastraría filas sin querer
   if(!swEje){
@@ -1751,10 +1867,12 @@ listEl.addEventListener('touchmove', e=>{
     swEje = Math.abs(dx) > Math.abs(dy)*1.4 ? 'x' : 'y';
     if(swEje==='y'){ swRow=null; return; }
     swRow.classList.add('desliza');
+    document.body.classList.add('sin-seleccion');   // que el mouse no pinte texto
+    try{ swRow.setPointerCapture(swPid); }catch(err){}  // seguir aunque salga de la fila
   }
   if(swEje!=='x') return;
   e.preventDefault();                          // el gesto es nuestro
-  swDx = dx;
+  swDx = dx; swArrastro = true;
   const tope = Math.max(-140, Math.min(140, dx));
   swRow.style.transform = `translateX(${tope}px)`;
   const pasa = Math.abs(dx) >= SWIPE_MIN;
@@ -1771,8 +1889,16 @@ listEl.addEventListener('touchmove', e=>{
   ico.style.transform = `scale(${(0.35 + avance*0.65).toFixed(3)})`;
   ico.style.opacity   = avance.toFixed(2);
 }, {passive:false});
-listEl.addEventListener('touchend', ()=>{ if(swRow) swipeFin(Math.abs(swDx)>=SWIPE_MIN); }, {passive:true});
-listEl.addEventListener('touchcancel', ()=>{ if(swRow) swipeFin(false); }, {passive:true});
+listEl.addEventListener('pointerup',    e=>{ if(swRow && e.pointerId===swPid) swipeFin(Math.abs(swDx)>=SWIPE_MIN); });
+listEl.addEventListener('pointercancel',e=>{ if(swRow && e.pointerId===swPid) swipeFin(false); });
+
+/* Después de arrastrar, el navegador manda un click igual. Sin esto, soltar
+   la fila abriría la ficha del producto encima del reparto recién agregado. */
+listEl.addEventListener('click', e=>{
+  if(!swArrastro) return;
+  swArrastro=false;
+  e.stopPropagation(); e.preventDefault();
+}, true);
 
 /* ================= ZONA DE ADMINISTRACIÓN =================
    Todo lo que sale del inventario y toca Fudo. Ninguna acción de acá se
@@ -2233,9 +2359,13 @@ $('m-eliminar').addEventListener('click', async()=>{
 /* ---------------- nuevo producto ---------------- */
 $('btnNuevo').addEventListener('click',()=>{
   $('n-sede-label').textContent = 'Se agregará a ' + SEDES[SEDE].label;
-  $('n-nombre').value=''; $('n-rubro').value=''; $('n-perec').checked=false;
+  $('n-nombre').value=''; $('n-perec').checked=false;   // n-rubro se rearma abajo
   $('n-stock').value=''; $('n-min').value=''; $('n-max').value='';
-  $('rubros-list').innerHTML=[...new Set([...SEC_ORDEN,...DATA.map(d=>d.rubro)])].map(r=>`<option value="${r}">`).join('');
+  /* Solo secciones que existen: las del orden fijo más las que ya usa algún
+     producto de esta sede. Sin opción vacía, para que nunca se guarde sin sección. */
+  const secciones=[...new Set([...SEC_ORDEN,...DATA.map(d=>d.rubro)])].filter(Boolean)
+    .sort((a,b)=>a.localeCompare(b,'es'));
+  $('n-rubro').innerHTML=secciones.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
   $('overlay-nuevo').classList.add('open');
   setTimeout(()=>$('n-nombre').focus(),50);
 });
@@ -2273,7 +2403,7 @@ $('n-guardar').addEventListener('click', async()=>{
   const nombre=$('n-nombre').value.replace(/\s+/g,' ').trim();
   const rubro=$('n-rubro').value.replace(/\s+/g,' ').trim();
   if(!nombre){ avisar('Escribe el nombre del producto.'); $('n-nombre').focus(); return; }
-  if(!rubro){ avisar('Elige o escribe una sección.'); $('n-rubro').focus(); return; }
+  if(!rubro){ avisar('Elige una sección.'); $('n-rubro').focus(); return; }
   const dup=DATA.find(d=>normNombre(d.producto)===normNombre(nombre));
   if(dup){ avisar(`"${dup.producto}" ya existe en este inventario. Búscalo en la lista para editarlo.`); return; }
   const num=el=>el.value===''?null:+el.value;
@@ -2887,7 +3017,11 @@ $('btnNuevaReceta').addEventListener('click',()=>{
   if(!FUDOPROD.length){ avisar('Aún no hay productos de Fudo traídos para esta sede.'); return; }
   openReceta(null);
 });
-$('rec-cancelar').addEventListener('click',closeRecetaModal);
+/* Antes este botón se llamaba igual que el de la ventana de reparto, y como
+   getElementById devuelve SOLO el primero, los dos addEventListener caían en
+   el mismo elemento: el Cancelar del editor de recetas se quedaba sin nada y
+   no cerraba. */
+$('receta-cancelar').addEventListener('click',closeRecetaModal);
 $('overlay-receta').addEventListener('click',e=>{ if(e.target===$('overlay-receta')) closeRecetaModal(); });
 $('btnAddInsumo').addEventListener('click',()=>addInsumoRow());
 $('rec-insumos').addEventListener('click',e=>{ const d=e.target.closest('.rec-ins-del'); if(d) d.closest('.rec-irow').remove(); });
@@ -3037,6 +3171,7 @@ async function actualizarTodo(){
   aviso('Actualizando…', 0);
 
   const logros = [], fallos = [], graves = [];
+  const t0 = new Date(Date.now() - 5000).toISOString();   // 5 s de holgura por el reloj
   for(const paso of PASOS_SYNC){
     try{
       const r = await paso.fn();
@@ -3069,9 +3204,16 @@ async function actualizarTodo(){
     aviso('⚠ Falló: ' + fallos.join(', ') + (logros.length ? ' · ' + logros.join(' · ') : ''));
   } else {
     aviso('✓ ' + (logros.join(' · ') || 'Todo al día'));
+    /* Se pregunta DESPUÉS del aviso, porque tarda: primero se ve el "✓" y el
+       puntito naranja aparece un instante después si hubo algo que descontar. */
+    ofrecerDetalle(await traerDescuentos(t0));
   }
 }
 $('btnActualizar').addEventListener('click', actualizarTodo);
+$('toast').addEventListener('click', abrirDetalle);
+/* Se cierra tocando fuera, como el resto de las ventanas de la app. */
+$('detalleFondo').addEventListener('click', e=>{ if(e.target===$('detalleFondo')) cerrarDetalle(); });
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') cerrarDetalle(); });
 $('rec-guardar').addEventListener('click', async()=>{
   const fpid=$('rec-fudo')._getValue();
   if(!fpid){ avisar('Elige el producto de Fudo.'); return; }
