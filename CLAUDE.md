@@ -175,6 +175,47 @@ commitea Claude.
      alrededor. Antes de escalar, verificar la base del hallazgo — no solo
      el argumento nuevo.
 
+9. **Un nombre de columna inventado rompe el script entero. Copiarlo del DDL,
+   no recordarlo.** *(2026-07-30, y es la regla 0.5 incumplida en su forma más
+   simple.)*
+
+   El chequeo de salud usaba `fudo_movimientos.descontado`. Esa columna **no
+   existe**: se llama **`aplicado`**. El script falló entero —Postgres analiza
+   toda la sentencia antes de ejecutar, así que los 10 bloques murieron por
+   una palabra— y Jhon perdió dos vueltas.
+
+   Cómo se coló: probé contra un Postgres local cuyo esquema **escribí yo**, y
+   ahí puse `descontado` porque me pareció el nombre natural. La prueba pasó
+   en verde validando mi propia invención. Es exactamente lo que dice §0.5:
+   *una prueba contra un esquema que uno mismo construye no valida nada.*
+
+   Entonces, al escribir cualquier consulta:
+   - **El DDL real del repo es la fuente**, no la memoria. `fudo_movimientos`
+     y `fudo_sync` están definidas en `2026-07-fase1-recetas-modo-prueba.sql`.
+     Copiar los nombres de ahí, literal.
+   - **Si se arma una base local para probar, su esquema se copia del DDL del
+     repo**, no se escribe a mano. Un esquema inventado convierte la prueba en
+     una tautología.
+   - Y aun así el repo no es producción: por eso el patrón bueno es el del
+     bloque 4 del chequeo, que **pregunta por `information_schema` si la
+     columna existe** en vez de asumirlo. Ese bloque no puede fallar por un
+     nombre equivocado — reporta.
+
+   **Columnas que se confunden fácil, escritas acá para no volver a errar:**
+
+   | Tabla | Es | NO es |
+   |---|---|---|
+   | `fudo_movimientos` | `aplicado` (boolean) | ~~`descontado`~~ |
+   | `fudo_movimientos` | `producto_nombre = '(sin receta)'` marca los ítems sin receta | — |
+   | `fudo_sync` | `modo` ∈ `prueba` / `real` | — |
+   | `productos` | `activo` es **texto** `'SÍ'`, no boolean | ~~`activo = true`~~ |
+
+   **Y un matiz de lógica, no de nombres:** en `modo = 'prueba'` tener
+   `aplicado = false` en todo es lo NORMAL —el motor registra sin tocar el
+   stock—, así que un diagnóstico que grite "no descuenta nada" sin mirar el
+   modo va a dar una falsa alarma cada vez que una sede esté en prueba. Es
+   justo lo que va a pasar con Angamos (§9), que arranca en `prueba`.
+
 **Checklist antes de entregar algo que toque datos:**
 - [ ] ¿Verifiqué el estado real con un SELECT, o lo inferí de un archivo?
 - [ ] ¿Lo que me pidieron era analizar o modificar?
@@ -183,6 +224,8 @@ commitea Claude.
 - [ ] ¿Alguna verificación falló en masa? → parar y decirlo.
 - [ ] ¿Estoy proponiendo cambiar algo que el equipo decidió a propósito?
 - [ ] ¿Mi hallazgo se apoya en que "dos nombres no calzan"? → preguntar, no reportar.
+- [ ] ¿Copié los nombres de columna del DDL del repo, o los escribí de memoria?
+- [ ] Si armé una base local: ¿su esquema salió del DDL del repo o lo inventé yo?
 
 ---
 

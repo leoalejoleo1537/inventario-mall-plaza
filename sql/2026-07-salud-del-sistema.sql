@@ -109,12 +109,16 @@ from (select 1 from productos where coalesce(stock_actual,0)<0
 union all
 select 8, 'El motor descuenta (ultimos 7 dias)',
   case when count(*)=0 then 'ok'
-       when count(*) filter (where coalesce(descontado,false))=0 then 'REVISAR YA'
-       when count(*) filter (where coalesce(descontado,false))*2 < count(*) then 'MIRAR'
+       when (select modo from fudo_sync where sede='plaza') <> 'real' then 'MIRAR'
+       when count(*) filter (where aplicado)=0 then 'REVISAR YA'
+       when count(*) filter (where aplicado)*2 < count(*) then 'MIRAR'
        else 'ok' end,
   case when count(*)=0 then 'no hubo ventas'
-       else count(*) filter (where coalesce(descontado,false))||' de '||count(*)||' descontadas' end
-from fudo_movimientos where coalesce(venta_at, created_at) > now() - interval '7 days'
+       else count(*) filter (where aplicado)||' de '||count(*)||' aplicadas'
+            ||' · '||count(*) filter (where producto_nombre='(sin receta)')||' sin receta'
+            ||' · modo '||coalesce((select modo from fudo_sync where sede='plaza'),'?') end
+from fudo_movimientos
+where sede='plaza' and coalesce(venta_at, created_at) > now() - interval '7 days'
 
 union all
 select 9, 'Cobertura de recetas', 'info',
@@ -292,21 +296,30 @@ from public.producto_lotes where coalesce(cantidad,0) < 0;
 -- ================================================================
 -- 8) ¿EL MOTOR ESTÁ DESCONTANDO?
 --
--- Un sistema que falla en silencio es peor que uno que se cae. Si en
--- los últimos 7 días hubo ventas y CERO descuentos, el inventario
--- lleva días congelado aunque la pantalla diga "✓".
+-- Un sistema que falla en silencio es peor que uno que se cae.
+--
+-- ⚠️ La columna se llama `aplicado`, NO `descontado`. Y en modo 'prueba'
+-- `aplicado=false` es lo NORMAL (el motor registra pero no toca el
+-- stock), así que ahí un cero no es una falla. Por eso el veredicto
+-- mira el modo antes de gritar.
 -- ================================================================
 select date_trunc('day', coalesce(m.venta_at, m.created_at))::date as dia,
-       count(*)                                                    as items_leidos,
-       count(*) filter (where coalesce(m.descontado, false))        as items_descontados,
-       case when count(*) > 0
-             and count(*) filter (where coalesce(m.descontado,false)) = 0
-            then '🔴 leyó ventas y no descontó NADA'
-            else 'ok' end                                          as veredicto
+       m.sede,
+       count(*)                                                as items_leidos,
+       count(*) filter (where m.aplicado)                       as items_aplicados,
+       count(*) filter (where m.producto_nombre = '(sin receta)') as sin_receta,
+       (select modo from public.fudo_sync s where s.sede = m.sede) as modo,
+       case when (select modo from public.fudo_sync s where s.sede = m.sede) <> 'real'
+              then 'modo prueba — no descuenta a propósito'
+            when count(*) filter (where m.aplicado) = 0
+              then '🔴 leyó ventas y no aplicó NINGUNA'
+            when count(*) filter (where m.aplicado) * 2 < count(*)
+              then '⚠️ falló más de la mitad'
+            else 'ok' end                                       as veredicto
 from public.fudo_movimientos m
 where coalesce(m.venta_at, m.created_at) > now() - interval '7 days'
-group by 1
-order by 1 desc;
+group by 1, 2
+order by 1 desc, 2;
 
 
 -- ================================================================
