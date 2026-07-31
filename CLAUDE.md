@@ -5,6 +5,40 @@
 > detente y confírmalo con Jhon antes. Cuando cerremos un cambio importante,
 > **actualiza este archivo** (sección "Bitácora").
 
+---
+
+## EMPIEZA POR ACÁ (mapa de este archivo)
+
+Son ~1500 líneas. Este es el orden en que conviene usarlas:
+
+| Si vas a… | Lee primero |
+|---|---|
+| **Cualquier cosa** | Las reglas 0 a 0.5. Son duras, salen de fallas reales y no se negocian |
+| Comparar / auditar / revisar algo | §0 — es un INFORME, nunca una edición |
+| Tocar productos, recetas o stock | §0.1 — el checklist del final es obligatorio |
+| Tocar el motor de descuento o cualquier función SQL | §0.5 — la falla de 15 horas está ahí |
+| Tocar la pantalla | §2 y §2.0 — la estética es parte del encargo, no un extra |
+| Saber si un problema ya está resuelto | **§8, el catálogo** — se busca el problema y dice dónde vive la solución |
+| Saber qué falta por hacer | §6, ordenado por si la falla avisa o no |
+| Encender una sede nueva | **§9** — el caso Angamos, paso a paso |
+| Entender por qué algo está hecho así | §10, la bitácora |
+
+**Las tres cosas que más caro han costado**, para no repetirlas:
+
+1. **Suponer el estado de producción leyendo el repo.** Un `.sql` en git dice
+   lo que se corrió alguna vez, no lo que está ahora. Se consulta con un
+   SELECT, siempre. (§0.1.2 · costó 15 horas sin descontar)
+2. **Concluir que algo está mal porque dos nombres no calzan.** Las recetas se
+   unen por ID; un nombre raro es una pregunta para el equipo, no un hallazgo.
+   (§0.1.8 · costó un informe entero mal priorizado)
+3. **Entregar algo que falla en silencio.** Si un camino puede romperse sin
+   que la pantalla lo diga, eso es peor que si se cayera. (§0.5)
+
+**Cómo trabaja Jhon** (§3.5): no tiene el repositorio en su computador, no usa
+terminal ni git. Todo lo que él haga tiene que ser: copiar un texto, pegarlo en
+Supabase, apretar Run, y guardar el resultado en Notion. Lo que va al repo lo
+commitea Claude.
+
 ## 0. REGLA DURA — comparar Fudo vs. inventario es SIEMPRE de solo lectura
 
 > Se agrega esta regla porque una sesión anterior, al pedirle "compara los
@@ -429,7 +463,27 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
    pegada en una versión vieja. Los datos viven en Supabase, no en el dispositivo.
 4. **iOS cachea el ícono** al momento de "Agregar a pantalla de inicio". Para ver un
    ícono nuevo hay que borrar el acceso directo y volver a agregarlo.
-5. **Jhon NO trabaja con una copia del repositorio en su computador.** Trabaja
+5. **El editor SQL de Supabase es el límite real, no Postgres.** Un script
+   puede ser perfectamente válido y aun así el panel responde
+   **"No se pudo obtener"** (`Failed to fetch`) sin llegar a ejecutarlo. Pasó
+   dos veces: con `2026-07-stock-para-fudo.sql` (hubo que partirlo en `-CORTO`
+   y `-COMPROBAR`) y con el bloque 0 del chequeo de salud el 2026-07-30. Las
+   dos causas conocidas:
+   - **Comillas de dólar** (`$$`, `$q$`) — confunden al separador de sentencias
+     del editor. En SQL dinámico son casi inevitables; entonces ese script hay
+     que entregarlo corto, o reescribirlo sin SQL dinámico.
+   - **Largo**: por encima de ~5.000 caracteres en UNA sola sentencia empieza
+     a fallar. Sentencias cortas encadenadas aguantan más que una larga.
+
+   Cómo se reconoce: **el error nombra la API de Supabase, no habla de sintaxis
+   ni de tablas.** Si dijera "relation does not exist" sería SQL; si dice "no
+   se pudo obtener", es el editor. No hay que rediagnosticar el SQL.
+
+   Entonces: **todo script que se le entregue a Jhon va corto y sin `$$`**, y
+   si no hay más remedio, se entrega ya partido en dos con las dos mitades
+   listas para pegar — no se le pide a él que lo parta.
+
+6. **Jhon NO trabaja con una copia del repositorio en su computador.** Trabaja
    en el panel de Supabase, en Notion y en el teléfono. Entonces: **nunca
    entregar una instrucción que suponga `git`, una terminal o una carpeta
    local** ("guarda el archivo en `respaldos/`" fue un consejo mal calibrado el
@@ -476,6 +530,35 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 ---
 
 ## 6. Estado actual y pendientes
+
+### 6.0 DÓNDE QUEDAMOS — al 2026-07-30, fin del día
+
+> Esto es lo que un chat nuevo necesita saber antes que nada. **Actualizar
+> esta sección cada vez que se cierre una etapa**, y borrar lo que ya no
+> aplique — si envejece, engaña.
+
+**En curso: el plan de estabilidad, en etapas.** Jhon pidió ir de a una y con
+paso a paso, porque no es técnico. El estado:
+
+| Etapa | Qué es | Estado |
+|---|---|---|
+| 1 | Correr el chequeo de salud | **⏳ pendiente** — falló con "No se pudo obtener", se reescribió corto y sin `$$`; falta que Jhon lo corra |
+| 2 | Sacar el primer respaldo y guardarlo en Notion | ⏳ pendiente, después de la 1 |
+| 3 | Fijar `supabase-js` | ✅ **hecho y en producción** (2.111.0, fusionado a `master`) |
+
+**Lo que se cerró el 2026-07-30:**
+- Informe de estabilidad completo (§6 reordenada por si la falla avisa o no).
+- Chequeo de salud (`sql/2026-07-salud-del-sistema.sql`) — correr **solo el
+  bloque 0**, que da las 10 filas de resumen.
+- Respaldo (`sql/2026-07-respaldo-para-guardar.sql`) — probado restaurando.
+- Catálogo de soluciones (§8) y regla 0.1.8 (el hallazgo que no existía).
+- Decisión: seguridad en mínimos (§6.1). No se vuelve a proponer.
+
+**Lo siguiente que pidió Jhon:** llevar el sistema a **Parque Angamos** → §9.
+
+**Cómo entregarle algo a Jhon** (§3.5 y §3.6): un texto corto para copiar y
+pegar en Supabase, sin `$$`, y si es largo ya partido en dos. Nada que suponga
+git, terminal ni carpeta local.
 
 **Funcionando:**
 - App instalable (PWA) con ícono real de Jhon.
@@ -815,7 +898,7 @@ el patrón a seguir:
 > han corregido"*.
 
 **Para qué sirve y en qué se diferencia de la bitácora.** La bitácora (sección
-9) cuenta *cómo se llegó* a cada cambio, en orden de tiempo — se lee para
+10) cuenta *cómo se llegó* a cada cambio, en orden de tiempo — se lee para
 entender por qué algo está hecho así. Este catálogo se lee al revés: **se busca
 un problema y se ve si ya está resuelto y dónde**. Es lo primero que hay que
 mirar antes de "arreglar" algo, para no volver a resolver lo mismo ni deshacer
@@ -885,7 +968,124 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 
 ---
 
-## 9. Bitácora (cambios importantes, lo más reciente arriba)
+## 9. Encender una sede nueva — el caso Angamos
+
+> Pedido el 2026-07-30: Mall Plaza quedó funcionando y administración pide
+> llevarlo a **Parque Angamos**. Esta sección es el plan; cuando se ejecute,
+> se corrige acá con lo que de verdad pasó.
+
+### 9.0 La buena noticia: casi todo ya es multi-sede
+
+**No hay que escribir código nuevo.** Está verificado leyendo el repo:
+
+| Pieza | Estado |
+|---|---|
+| `index.html` | `SEDES` ya trae `angamos: {label:'Parque Angamos'}`. Todo filtra por `SEDE` |
+| Las 5 Edge Functions | Ya leen `FUDO_${sede.toUpperCase()}_APIKEY`. Ninguna tiene "plaza" escrito a mano |
+| `productos`, `recetas`, `repartos`, `historial`, `fudo_productos` | Todas llevan columna `sede` |
+| El motor de descuento | Recibe la sede y respeta `fudo_sync.modo` por sede |
+
+Agregar una sede es **agregar filas y secrets**, no construir nada. Eso ya
+estaba anticipado en §7 y se confirma acá.
+
+### 9.1 Lo que SÍ hay que hacer, en orden
+
+**Nada de esto se hace sin haber corrido antes el chequeo de salud (§6).**
+
+1. **Conseguir las credenciales de Fudo de Angamos.** Es otra cuenta de Fudo,
+   con su propio `apiKey`/`apiSecret`. Las pide Jhon a administración.
+2. **Cargarlas como secrets** en Supabase → Edge Functions → Secrets, con estos
+   nombres exactos: **`FUDO_ANGAMOS_APIKEY`** y **`FUDO_ANGAMOS_APISECRET`**.
+   El nombre no es libre: las funciones lo arman con `sede.toUpperCase()`.
+3. **Crear la fila de `fudo_sync` para angamos, en `modo = 'prueba'`.**
+   ⚠️ **Esto no se salta.** En `prueba` el motor lee las ventas y las registra
+   pero NO toca el stock. Es la única forma de comprobar que las recetas están
+   bien sin descuadrar un inventario real. Se pasa a `real` recién cuando los
+   números cuadren, y lo decide Jhon (regla 0.1.7).
+4. **Traer el catálogo de Fudo de Angamos**: correr `fudo-sync-productos` con
+   `sede: 'angamos'`. Eso llena `fudo_productos`. Sin esto no hay con qué
+   emparejar.
+5. **Revisar los productos de inventario de angamos.** Ya existen filas con
+   `sede='angamos'` (por eso existe `2026-07-replicar-secciones-plaza-a-angamos.sql`),
+   pero **cuántos y en qué estado hay que consultarlo, no suponerlo**:
+   ```sql
+   select rubro, count(*), sum(case when activo='SÍ' then 1 else 0 end) as activos
+   from public.productos where sede='angamos' group by rubro order by 2 desc;
+   ```
+6. **Rehacer las recetas para angamos.** Esta es la parte cara, y la razón está
+   en el punto 1: **el catálogo de Fudo de Angamos es otra cuenta, así que los
+   `fudo_product_id` son distintos.** Las recetas de plaza NO sirven tal cual —
+   no se pueden copiar cambiando la sede.
+   Lo que sí se puede: emparejar por nombre para *proponer* recetas, igual que
+   se hizo en plaza (`emparejador-segunda-pasada.sql`). Y aplica la regla
+   0.1.4: el emparejamiento por nombre **propone candidatos, no concluye**.
+7. **Comprobar en `prueba` durante unos días**, mirando `fudo_movimientos` de
+   angamos: qué se leyó, qué se habría descontado, qué quedó sin receta.
+8. **Recién ahí, `modo = 'real'`.**
+
+### 9.2 Las trampas que ya conocemos, aplicadas a Angamos
+
+- **No copiar las recetas de plaza cambiando la sede.** Los ids de Fudo son de
+  otra cuenta. Es el error más probable de esta migración.
+- **El emparejador de vitrina/congelador hay que correrlo también en angamos**,
+  y con la sede cambiada: `2026-07-emparejar-vitrina-congelador.sql` tiene
+  `sede='plaza'` escrito dentro, en varias consultas. **Revisar cada `where`
+  antes de correrlo** — si se corre tal cual, no hace nada o hace algo raro.
+- **Lo mismo con cualquier `.sql` viejo del repo.** Contado el 2026-07-30:
+  **22 de los 42 archivos de `sql/` tienen `'plaza'` escrito a mano**, algunos
+  seis o siete veces (`emparejador-segunda-pasada.sql` lo tiene 16). Ninguno
+  sirve tal cual para angamos. **Buscar `plaza` en el archivo y revisar cada
+  aparición antes de correrlo** — no reemplazar a ciegas: en varios, `plaza` es
+  el origen a copiar (como en `replicar-secciones-plaza-a-angamos.sql`) y
+  cambiarlo rompería el sentido del script.
+- **El empuje de stock hacia Fudo NO se enciende de entrada.** Primero
+  descontar (leer de Fudo), y solo cuando eso sea confiable, considerar
+  escribir. En plaza fueron dos meses entre una cosa y la otra, y con razón.
+- **`app_permisos` no tiene columna `sede`**: quien puede empujar a Fudo puede
+  hacerlo en CUALQUIER sede. Con dos sedes vivas eso pasa a importar — es la
+  primera vez que el permiso global es un riesgo real y no teórico. Decidir con
+  Jhon si hace falta permiso por sede antes de encender el empuje en angamos.
+- **Angamos arranca sin historial y sin repartos**, y eso está bien: son
+  tablas por sede que se llenan solas con el uso.
+
+### 9.3 Cómo se sabe que quedó bien
+
+El mismo chequeo de salud (`sql/2026-07-salud-del-sistema.sql`), que ya reporta
+la cobertura de recetas **por sede** (bloque 9). Angamos empieza en 0% y la
+métrica de avance es esa. Los bloques 5, 7 y 8 sirven igual para las dos sedes.
+
+---
+
+## 10. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-07-30 (noche)** — **El archivo madre, reforzado para el salto a
+  Angamos.** Jhon va a abrir un chat nuevo (las skills que instaló no cargan en
+  el chat viejo), así que lo que no esté escrito acá se pierde. Se agregó:
+  1. **Mapa de entrada** arriba del todo: con ~1500 líneas, un chat nuevo
+     necesita saber qué leer según lo que vaya a hacer, y cuáles son las tres
+     cosas que más caro han costado.
+  2. **§6.0 "Dónde quedamos"**: el estado de las etapas en curso. Lleva
+     instrucción de mantenerlo al día — una sección de estado que envejece
+     engaña más de lo que ayuda.
+  3. **§9, encender una sede nueva.** Verificado leyendo el repo, no supuesto:
+     la app y las 5 Edge Functions **ya son multi-sede** (`SEDES` trae angamos;
+     las funciones arman `FUDO_${sede.toUpperCase()}_APIKEY`). No hay código
+     nuevo que escribir. Lo que sí hay: secrets de la cuenta de Fudo de
+     Angamos, fila de `fudo_sync` **en `prueba`**, catálogo, y **rehacer las
+     recetas** — porque Angamos es otra cuenta de Fudo y los `fudo_product_id`
+     son distintos, así que copiar las de plaza cambiando la sede no funciona.
+     Ese es el error más probable de esta migración y por eso está escrito.
+  4. **§3.5, el editor de Supabase es el límite real, no Postgres.** El mismo
+     día, el bloque 0 del chequeo devolvió "No se pudo obtener" sin llegar a
+     ejecutarse: comillas de dólar (`$q$`) y 5.578 caracteres en una sentencia.
+     Ya había pasado con `stock-para-fudo`. Cómo se reconoce: el error nombra
+     la API de Supabase y no habla de sintaxis ni de tablas — no hay que
+     rediagnosticar el SQL. Todo lo que se le entregue a Jhon va corto, sin
+     `$$`, y si es largo ya partido en dos.
+  5. **Se anotó que `app_permisos` no tiene columna `sede`**: con dos sedes
+     vivas, quien puede empujar a Fudo puede hacerlo en cualquiera. Pasa de
+     detalle teórico a decisión que hay que tomar antes de encender el empuje
+     en Angamos.
 
 - **2026-07-30 (tarde)** — **Jhon corrigió el informe, y el hallazgo más grave
   resultó no existir.** Las tres correcciones y lo que se hizo con ellas:
