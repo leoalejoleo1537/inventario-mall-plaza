@@ -599,7 +599,7 @@ paso a paso, porque no es técnico. El estado:
 | Funciones duplicadas | ninguna |
 | Stock vs. fechas | cuadra · sin negativos · sin fechas en cero |
 | `producto_lotes` en tiempo real | **estaba SIN publicar** → arreglado ese día (ver abajo) |
-| Recetas rotas | 2: `Muffin Amapola`→insumo 82, `Dona Pistacho Dubai`→insumo 693 |
+| Recetas rotas | 2, ya explicadas por Jhon: **`Muffin Amapola`** (él borró el insumo a propósito, ese producto ya no se vende → la receta se desactiva) y **`Dona Pistacho Dubai`** (el insumo correcto sí existe, la receta apuntaba a una fila que ya no está → se reapunta). Arreglo en `2026-07-cerrar-recetas-rotas.sql` |
 | `historial_dias` | instalada, una sola firma → el historial está bien |
 | Días guardados | 9 |
 
@@ -740,7 +740,9 @@ riesgo.
       tienen pareja en vitrina.
 - [ ] **Depurar recetas.** Plan en `docs/auditoria-recetas.md`; informe de solo
       lectura en `sql/2026-07-auditoria-recetas.sql`. La métrica de avance es
-      el % de cobertura (bloque 9).
+      el % de cobertura (bloque 9 del chequeo). **Al 2026-07-30 va en 48%** en
+      plaza: 168 recetas sobre 608 productos de Fudo, y 840 de 1685 ítems
+      vendidos en la semana salieron sin receta.
 - [ ] **Terminar de clasificar los tipos**: correr los 3 pasos de
       `sql/2026-07-tipo-de-producto.sql` y ponerle tipo desde la ficha a los que
       queden en "— revisar —".
