@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Tarea para la casa — medir el té, el café y la naranja</title>
+<style>*{box-sizing:border-box}body{margin:0}</style>
+</head>
+<body>
+<style>
+  :root{
+    --navy:#0F1E31; --slate:#2F4A6D; --orange:#DC4405;
+    --ink:#1C2733; --muted:#6B7684; --line:#E3E5E8; --line-soft:#EEF0F2;
+    --bg:#FAFBFC; --card:#FFFFFF; --sunk:#F3F5F7;
+    --red:#C0392B; --red-bg:#FDECEA;
+    --green:#2E7D32; --green-bg:#E6F4E6;
+    --amber:#B26A00; --amber-bg:#FFF3E0;
+    --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --navy:#0F1E31; --slate:#9FBBDD; --orange:#FF7A45;
+      --ink:#E6EBF1; --muted:#93A2B5; --line:#26405F; --line-soft:#1E3350;
+      --bg:#0F1E31; --card:#16283F; --sunk:#132339;
+      --red:#FF8C7A; --red-bg:#3A1E1B;
+      --green:#8FD694; --green-bg:#17321B;
+      --amber:#F2B25C; --amber-bg:#3A2C15;
+    }
+  }
+  :root[data-theme="dark"]{
+    --slate:#9FBBDD; --orange:#FF7A45;
+    --ink:#E6EBF1; --muted:#93A2B5; --line:#26405F; --line-soft:#1E3350;
+    --bg:#0F1E31; --card:#16283F; --sunk:#132339;
+    --red:#FF8C7A; --red-bg:#3A1E1B;
+    --green:#8FD694; --green-bg:#17321B;
+    --amber:#F2B25C; --amber-bg:#3A2C15;
+  }
+  :root[data-theme="light"]{
+    --slate:#2F4A6D; --orange:#DC4405;
+    --ink:#1C2733; --muted:#6B7684; --line:#E3E5E8; --line-soft:#EEF0F2;
+    --bg:#FAFBFC; --card:#FFFFFF; --sunk:#F3F5F7;
+    --red:#C0392B; --red-bg:#FDECEA;
+    --green:#2E7D32; --green-bg:#E6F4E6;
+    --amber:#B26A00; --amber-bg:#FFF3E0;
+  }
+
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);
+       font-size:16.5px;line-height:1.6;-webkit-text-size-adjust:100%}
+  .wrap{max-width:820px;margin:0 auto;padding:0 20px 90px}
+  p{margin-bottom:13px}
+  p:last-child{margin-bottom:0}
+  strong{font-weight:680}
+
+  header.top{padding:52px 0 26px;border-bottom:3px solid var(--slate);margin-bottom:38px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+           color:var(--orange);margin-bottom:16px}
+  h1{font-family:var(--serif);font-weight:400;font-size:clamp(30px,5.4vw,44px);line-height:1.12;
+     letter-spacing:-.015em;text-wrap:balance;margin-bottom:16px}
+  .bajada{font-size:17.5px;color:var(--muted);max-width:56ch}
+
+  .ficha{background:var(--card);border:1px solid var(--line);border-radius:14px;
+         padding:26px 26px 24px;margin-top:26px;break-inside:avoid}
+  .ficha-cab{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .num{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.1em;
+       color:#fff;background:var(--slate);padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .num.hoy{background:var(--orange)}
+  h2{font-family:var(--serif);font-weight:400;font-size:26px;letter-spacing:-.01em;text-wrap:balance}
+  .cuando{font-family:var(--mono);font-size:11.5px;color:var(--muted);
+          text-transform:uppercase;letter-spacing:.07em}
+  .porque{color:var(--muted);font-size:15px;margin:10px 0 20px;max-width:60ch}
+
+  h3{font-family:var(--sans);font-weight:680;font-size:15px;margin:22px 0 10px;
+     color:var(--slate);letter-spacing:.01em}
+  h3:first-of-type{margin-top:16px}
+
+  ol.pasos{list-style:none;counter-reset:p;margin:0}
+  ol.pasos li{counter-increment:p;position:relative;padding-left:34px;margin-bottom:16px}
+  ol.pasos li::before{content:counter(p);position:absolute;left:0;top:1px;
+    width:22px;height:22px;border-radius:50%;background:var(--sunk);border:1px solid var(--line);
+    color:var(--muted);font-family:var(--mono);font-size:11.5px;font-weight:700;
+    display:flex;align-items:center;justify-content:center}
+
+  .anota{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:9px 0 0}
+  .anota .rot{font-size:14.5px;color:var(--muted);flex:1 1 auto;min-width:180px}
+  .linea{border-bottom:1.5px dashed var(--line);min-width:96px;flex:0 0 auto;height:1.5em}
+  .linea.corta{min-width:62px}
+  .linea.larga{min-width:200px;flex:1 1 200px}
+  .uni{font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap}
+
+  .caja{border-radius:11px;padding:16px 18px;margin-top:18px;font-size:15px}
+  .caja h4{font-family:var(--sans);font-weight:700;font-size:14px;margin-bottom:7px;
+           letter-spacing:.01em}
+  .calc{background:var(--sunk);border:1px solid var(--line)}
+  .ojo{background:var(--amber-bg);border:1px solid color-mix(in srgb,var(--amber) 34%,transparent);color:var(--amber)}
+  .ojo h4{color:var(--amber)}
+  .listo{background:var(--green-bg);border:1px solid color-mix(in srgb,var(--green) 30%,transparent);color:var(--green)}
+  .listo h4{color:var(--green)}
+  .caja p{color:inherit}
+
+  .formula{font-family:var(--mono);font-size:14px;background:var(--card);border:1px solid var(--line);
+           border-radius:8px;padding:12px 14px;margin:10px 0;overflow-x:auto;white-space:pre;
+           font-variant-numeric:tabular-nums;color:var(--ink)}
+
+  .scroll{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:10px}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:440px}
+  th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+  thead th{background:var(--sunk);font-family:var(--mono);font-weight:600;font-size:10.5px;
+           letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+  tbody tr:last-child td{border-bottom:none}
+  td.num-col{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  td.esc{border-bottom:1.5px dashed var(--line)}
+
+  ul.simple{list-style:none;margin:10px 0 0}
+  ul.simple li{position:relative;padding-left:19px;margin-bottom:8px;font-size:15px}
+  ul.simple li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;
+    border-radius:1px;background:var(--orange)}
+
+  footer{margin-top:52px;padding-top:24px;border-top:1px solid var(--line);
+         font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.75}
+
+  @media print{
+    body{background:#fff;font-size:12pt}
+    .wrap{max-width:none;padding:0}
+    .ficha{border:1px solid #999;box-shadow:none;page-break-inside:avoid}
+    header.top{padding-top:0}
+    .linea{border-bottom:1px solid #666}
+  }
+  @media (max-width:560px){
+    .anota{gap:6px}
+    .anota .rot{flex:1 1 100%;min-width:0}
+    .linea{flex:1 1 auto}
+  }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Tarea para la casa · Café del Desierto</div>
+  <h1>Medir el té, el café y la naranja</h1>
+  <p class="bajada">
+    Tres fichas para llenar en el local. No hay que calcular nada acá — solo
+    anotar lo que se mide y lo que dice el envase. Los cálculos los hago yo con
+    estos números.
+  </p>
+</header>
+
+<div class="caja calc" style="margin-top:0">
+  <h4>Qué hay que tener a mano</h4>
+  <p>
+    Una <strong>pesa de cocina</strong> (la de la repostería sirve), un
+    <strong>jarro medidor</strong> con marcas de ml, y este documento abierto en el
+    teléfono. Las fichas 1 y 2 son de una sola vez, diez minutos cada una. La
+    ficha 3 es un número por día durante dos semanas.
+  </p>
+</div>
+
+<!-- ============ FICHA 1 ============ -->
+<section class="ficha">
+  <div class="ficha-cab">
+    <span class="num hoy">Ficha 1</span>
+    <h2>El té</h2>
+    <span class="cuando">10 minutos · una sola vez</span>
+  </div>
+  <p class="porque">
+    Empezamos por acá porque el cálculo es el más simple y, si algo sale mal, el
+    error cuesta poco. Es el ensayo antes del café.
+  </p>
+
+  <h3>Lo que dice el envase</h3>
+  <div class="anota"><span class="rot">Nombre exacto del té que vamos a probar</span>
+    <span class="linea larga"></span></div>
+  <div class="anota"><span class="rot">Cuánto trae el paquete cerrado</span>
+    <span class="linea"></span><span class="uni">gramos</span></div>
+  <div class="anota"><span class="rot">Cuánto cuesta el paquete</span>
+    <span class="linea"></span><span class="uni">$</span></div>
+
+  <h3>Lo que hay que pesar</h3>
+  <ol class="pasos">
+    <li>Prepara una tetera como se prepara siempre, pero <strong>pesa la hoja
+        antes de echarla</strong>. Anota el número.</li>
+    <li>Repite otras dos veces, en momentos distintos y ojalá con personas
+        distintas. No busques que den igual — lo interesante es cuánto varían.</li>
+  </ol>
+  <div class="anota"><span class="rot">Pesada 1</span><span class="linea corta"></span><span class="uni">g</span>
+    <span class="rot" style="flex:0 0 auto">Pesada 2</span><span class="linea corta"></span><span class="uni">g</span>
+    <span class="rot" style="flex:0 0 auto">Pesada 3</span><span class="linea corta"></span><span class="uni">g</span></div>
+
+  <h3>Cómo se vende</h3>
+  <div class="anota"><span class="rot">Una tetera, ¿se vende como un solo producto o se sirve más de una taza?</span>
+    <span class="linea larga"></span></div>
+  <div class="anota"><span class="rot">¿Se recarga con agua la misma hoja? ¿Cuántas veces?</span>
+    <span class="linea larga"></span></div>
+
+  <h3>Qué productos del menú usan este té</h3>
+  <p style="font-size:14.5px;color:var(--muted);margin-top:2px">
+    Escríbelos <strong>tal como aparecen en Fudo</strong>, aunque el nombre sea raro.
+  </p>
+  <div class="anota"><span class="linea larga"></span></div>
+  <div class="anota"><span class="linea larga"></span></div>
+  <div class="anota"><span class="linea larga"></span></div>
+
+  <div class="caja calc">
+    <h4>El cálculo que sale de esto</h4>
+    <div class="formula">teteras por paquete  =  gramos del paquete  ÷  gramos por tetera</div>
+    <p>
+      Y esa división ya es una <strong>predicción que puedes comprobar</strong>: si
+      da 80 teteras y vendes 20 al día, el paquete debería durarte cuatro días. Si
+      te dura dos, el número está mal o se está yendo té por otro lado.
+    </p>
+  </div>
+</section>
+
+<!-- ============ FICHA 2 ============ -->
+<section class="ficha">
+  <div class="ficha-cab">
+    <span class="num">Ficha 2</span>
+    <h2>El café</h2>
+    <span class="cuando">10 minutos · una sola vez</span>
+  </div>
+  <p class="porque">
+    De esta ya me diste lo más importante. Lo que falta no se pesa: se pregunta y
+    se observa.
+  </p>
+
+  <div class="caja listo">
+    <h4>Con lo que ya me dijiste</h4>
+    <div class="formula">60 kg  =  60.000 g
+60.000 g  ÷  18 g por dosis  =  3.333 dosis por bulto</div>
+    <p>
+      Si cada dosis es un espresso doble, son <strong>3.333 dobles</strong>. Si se
+      parte en dos simples, <strong>6.667 simples</strong>. Descontando entre 5% y
+      15% que se va en calibración y shots botados, quedan entre
+      <strong>2.800 y 3.200 dosis vendibles</strong> por bulto.
+    </p>
+  </div>
+
+  <h3>Lo que hay que confirmar</h3>
+  <div class="anota"><span class="rot">¿El bulto dice 60 kg exactos en el envase?</span>
+    <span class="linea"></span><span class="uni">kg</span></div>
+  <div class="anota"><span class="rot">¿La molienda está calibrada en 18 g o varía por barista?</span>
+    <span class="linea larga"></span></div>
+  <div class="anota"><span class="rot">Precio del bulto</span>
+    <span class="linea"></span><span class="uni">$</span></div>
+
+  <h3>La pregunta que de verdad falta: cuántas dosis lleva cada bebida</h3>
+  <p style="font-size:14.5px;color:var(--muted);margin-top:2px">
+    Esto es lo único que no puedo deducir. Pregúntale a los baristas y llena la
+    tabla con las bebidas de la carta que llevan café.
+  </p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Bebida (como aparece en Fudo)</th><th>Dosis que lleva</th><th>Gramos</th></tr></thead>
+      <tbody>
+        <tr><td>Espresso simple</td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td>Espresso doble</td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td>Cortado</td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td>Americano</td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td>Cappuccino</td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td>Latte</td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>El café que no se vende</h3>
+  <ol class="pasos">
+    <li>Durante <strong>una semana</strong>, que quien abre anote cuántos shots
+        bota en la calibración de la mañana.</li>
+    <li>Y cuántos shots se botan en el día por venir mal.</li>
+  </ol>
+  <div class="anota"><span class="rot">Promedio de shots botados por día</span>
+    <span class="linea corta"></span><span class="uni">shots</span></div>
+
+  <div class="caja ojo">
+    <h4>Por qué esto importa más de lo que parece</h4>
+    <p>
+      Es lo que separa un cálculo que cuadra de uno que siempre queda corto y nadie
+      entiende por qué. Si se botan 20 shots al día, son 360 g diarios — más de
+      10 kg al mes que el sistema descontaría de menos si no lo contamos.
+    </p>
+  </div>
+</section>
+
+<!-- ============ FICHA 3 ============ -->
+<section class="ficha">
+  <div class="ficha-cab">
+    <span class="num">Ficha 3</span>
+    <h2>La naranja</h2>
+    <span class="cuando">Un número por día · dos semanas</span>
+  </div>
+  <p class="porque">
+    Esta es la difícil, porque la naranja la usan tres productos distintos y no
+    hay forma de saber a cuál se fue cada una. Por eso acá no medimos: observamos.
+  </p>
+
+  <h3>Primero, tres medidas rápidas</h3>
+  <ol class="pasos">
+    <li>Cuenta cuántas naranjas trae <strong>una caja cerrada</strong>.</li>
+    <li>Exprime <strong>cinco naranjas</strong>, una por una, y anota los ml de cada una.</li>
+    <li>Llena un vaso de zumo como se sirve al cliente y mide cuántos ml lleva.</li>
+  </ol>
+  <div class="anota"><span class="rot">Naranjas por caja</span>
+    <span class="linea corta"></span><span class="uni">unidades</span></div>
+  <div class="anota"><span class="rot">Los 5 exprimidos, en ml</span>
+    <span class="linea corta"></span><span class="linea corta"></span><span class="linea corta"></span>
+    <span class="linea corta"></span><span class="linea corta"></span></div>
+  <div class="anota"><span class="rot">Un vaso de zumo</span>
+    <span class="linea corta"></span><span class="uni">ml</span></div>
+
+  <h3>Qué productos usan naranja</h3>
+  <p style="font-size:14.5px;color:var(--muted);margin-top:2px">
+    Me nombraste zumo, desayunos y orange coffee. Confirma y agrega los que falten,
+    con el nombre exacto de Fudo.
+  </p>
+  <div class="anota"><span class="linea larga"></span></div>
+  <div class="anota"><span class="linea larga"></span></div>
+  <div class="anota"><span class="linea larga"></span></div>
+  <div class="anota"><span class="linea larga"></span></div>
+
+  <h3>Y después, lo único que hay que anotar cada día</h3>
+  <div class="caja listo">
+    <h4>Un solo número al cierre</h4>
+    <p>
+      <strong>Cuántas cajas de naranja se abrieron ese día.</strong> Con media caja
+      vale poner <span style="font-family:var(--mono)">0,5</span>.
+    </p>
+    <p style="margin-top:9px">
+      No hace falta anotar las ventas: <strong>esas ya las tiene el sistema.</strong>
+      Yo cruzo tus cajas con los zumos, desayunos y orange coffees que Fudo
+      registró ese mismo día.
+    </p>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Día</th><th>Cajas abiertas</th><th>Anotaciones (si pasó algo raro)</th></tr></thead>
+      <tbody>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+        <tr><td class="esc"></td><td class="esc"></td><td class="esc"></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="caja ojo">
+    <h4>Una condición para que esto funcione, y hay que saberla antes</h4>
+    <p>
+      Para separar cuánta naranja se va a cada producto, <strong>la mezcla de
+      ventas tiene que variar entre días</strong>. Si todos los días se venden más
+      o menos los mismos zumos y los mismos desayunos en la misma proporción, no
+      hay forma matemática de distinguirlos: el cálculo no sabría si la naranja se
+      fue al zumo o al desayuno.
+    </p>
+    <p style="margin-top:9px">
+      Por eso conviene que las dos semanas incluyan <strong>días distintos entre
+      sí</strong> — un fin de semana, un día de lluvia, un día de mucho desayuno.
+      La variedad es la que hace hablar a los números.
+    </p>
+  </div>
+</section>
+
+<!-- ============ CIERRE ============ -->
+<section class="ficha">
+  <div class="ficha-cab">
+    <span class="num">Después</span>
+    <h2>Qué hago yo con esto</h2>
+  </div>
+  <ul class="simple">
+    <li><strong>Ficha 1 y 2:</strong> con esos números armo las recetas del té y del
+      café y quedan descontando solas. No hay que esperar nada.</li>
+    <li><strong>Ficha 3:</strong> cruzo tus cajas con las ventas de esos días y calculo
+      cuánta naranja se lleva cada producto. Con eso armo las tres recetas.</li>
+    <li><strong>El mes siguiente:</strong> el conteo del inventario nos dice cuánto nos
+      desviamos. Esa diferencia no es un error del sistema — es la merma real, y
+      es un número que hoy nadie conoce.</li>
+  </ul>
+
+  <div class="caja calc">
+    <h4>Lo que no hay que esperar de esto</h4>
+    <p>
+      Ninguno de estos números va a ser exacto, y no falta nada: <strong>un
+      aproximado que se corrige cada mes con el conteo es mejor que un cálculo
+      perfecto que nadie revisa.</strong> El sistema no tiene que adivinar la
+      realidad — tiene que acercarse y dejar que el conteo lo corrija.
+    </p>
+  </div>
+</section>
+
+<footer>
+  Preparado el 31 de julio de 2026 · Café del Desierto, Mall Plaza.<br>
+  Las fichas 1 y 2 se llenan una vez. La ficha 3 pide un número por día durante
+  dos semanas.<br>
+  Cuando estén llenas, me las pasas y armo las recetas.
+</footer>
+
+</div>
+</body>
+</html>
