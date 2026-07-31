@@ -55,8 +55,12 @@ from (select 'productos' t, count(*) n from productos
  union all select 'fudo_productos', count(*) from fudo_productos
  union all select 'repartos', count(*) from repartos
  union all select 'reparto_items', count(*) from reparto_items
- union all select 'historial', count(*) from historial) z
-
+ -- historial crece para siempre (un inventario guardado por día), pero la app
+ -- nunca lo pide entero: pide UN día. Lo que puede truncarse es un día, no la
+ -- tabla. Medir el total acá haría que el chequeo grite para siempre desde el
+ -- quinto día guardado, y una alarma que siempre suena enseña a ignorarla.
+ union all select 'historial (el dia mas grande)',
+        coalesce((select max(c) from (select count(*) c from historial group by sede, fecha) h),0)) z
 union all
 select 2, 'Funciones duplicadas',
   case when count(*)>0 then 'REVISAR YA' else 'ok' end,
@@ -347,12 +351,29 @@ order by fp.sede;
 -- ================================================================
 -- 10) RECETAS QUE APUNTAN A UN PRODUCTO QUE YA NO ESTÁ
 --
--- Si un insumo se desactivó o se borró, la receta queda apuntando al
--- vacío y el cálculo para Fudo deja de considerarlo.
+-- Dos casos distintos, con arreglos distintos:
+--   · la fila se BORRÓ            -> hay que rehacer esa línea de receta
+--   · el producto está DESACTIVADO -> reactivarlo, o apuntar la receta a otro
+--
+-- Mientras tanto ese insumo no limita la venta: el cálculo para Fudo lo
+-- deja fuera del join, así que ese producto de Fudo se ofrece como si
+-- ese ingrediente sobrara.
 -- ================================================================
-select r.sede, r.fudo_product_id, ri.producto_id as insumo_que_no_existe
+select ri.producto_id                                    as insumo_id,
+       coalesce(fp.nombre, '(Fudo '||r.fudo_product_id||')') as receta_de_fudo,
+       coalesce(p.producto, '— YA NO EXISTE la fila —')   as insumo,
+       coalesce(p.sede,  '—')                            as sede,
+       coalesce(p.rubro, '—')                            as seccion,
+       coalesce(p.activo,'—')                            as activo,
+       coalesce(p.stock_actual::text,'—')                as stock,
+       ri.cantidad                                       as descuenta,
+       case when p.id is null       then 'la fila se borró: rehacer esta línea de receta'
+            when p.activo <> 'SÍ'   then 'existe pero DESACTIVADO: reactivarlo o apuntar a otro'
+            else 'ok' end                                as que_pasa
 from public.recetas r
 join public.receta_items ri on ri.receta_id = r.id
-left join public.productos p on p.id = ri.producto_id and p.activo = 'SÍ'
-where r.activo and p.id is null
-order by r.sede, r.fudo_product_id;
+left join public.productos p       on p.id = ri.producto_id
+left join public.fudo_productos fp on fp.fudo_product_id = r.fudo_product_id and fp.sede = r.sede
+where r.activo
+  and (p.id is null or p.activo <> 'SÍ')
+order by ri.producto_id;

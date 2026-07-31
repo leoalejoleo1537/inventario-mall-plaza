@@ -585,9 +585,33 @@ paso a paso, porque no es técnico. El estado:
 
 | Etapa | Qué es | Estado |
 |---|---|---|
-| 1 | Correr el chequeo de salud | **⏳ pendiente** — falló con "No se pudo obtener", se reescribió corto y sin `$$`; falta que Jhon lo corra |
-| 2 | Sacar el primer respaldo y guardarlo en Notion | ⏳ pendiente, después de la 1 |
-| 3 | Fijar `supabase-js` | ✅ **hecho y en producción** (2.111.0, fusionado a `master`) |
+| 1 | Correr el chequeo de salud | ✅ **hecho el 2026-07-30** — resultados abajo |
+| 2 | Sacar el primer respaldo y guardarlo en Notion | ⏳ **acá vamos** |
+| 3 | Fijar `supabase-js` | ✅ hecho y en producción (2.111.0) |
+
+**Primera corrida del chequeo (2026-07-30) — el estado REAL de Mall Plaza:**
+
+| Qué | Resultado |
+|---|---|
+| Motor de descuento | **impecable: 845 aplicadas de 845 con receta**, modo `real`. Cero fallas en 7 días |
+| Ítems vendidos sin receta | 840 — es cobertura que falta, no una falla |
+| Cobertura de recetas | **48% en plaza** (168 recetas sobre 608 productos de Fudo) |
+| Funciones duplicadas | ninguna |
+| Stock vs. fechas | cuadra · sin negativos · sin fechas en cero |
+| `producto_lotes` en tiempo real | **estaba SIN publicar** → arreglado ese día (ver abajo) |
+| Recetas rotas | 2: `Muffin Amapola`→insumo 82, `Dona Pistacho Dubai`→insumo 693 |
+| `historial_dias` | instalada, una sola firma → el historial está bien |
+| Días guardados | 9 |
+
+**Productos activos por sede** (importante para §9): `plaza 233 · angamos 187 ·
+bodega 182`. **Angamos ya tiene sus 187 productos cargados, pero CERO recetas**
+— confirma lo que dice §9.1: las recetas hay que hacerlas de nuevo.
+
+**El hallazgo que justificó el chequeo entero:** `producto_lotes` no estaba en
+`supabase_realtime`, pese a que la bitácora del 27 de julio y el catálogo §8 lo
+daban por resuelto. **El `.sql` estaba en el repo y nunca se había corrido en
+producción** — la regla 0.1.2, encontrada por el chequeo en vez de por un susto
+en el mesón. Arreglado el 2026-07-30.
 
 **Lo que se cerró el 2026-07-30:**
 - Informe de estabilidad completo (§6 reordenada por si la falla avisa o no).
@@ -1048,9 +1072,10 @@ estaba anticipado en §7 y se confirma acá.
 4. **Traer el catálogo de Fudo de Angamos**: correr `fudo-sync-productos` con
    `sede: 'angamos'`. Eso llena `fudo_productos`. Sin esto no hay con qué
    emparejar.
-5. **Revisar los productos de inventario de angamos.** Ya existen filas con
-   `sede='angamos'` (por eso existe `2026-07-replicar-secciones-plaza-a-angamos.sql`),
-   pero **cuántos y en qué estado hay que consultarlo, no suponerlo**:
+5. **Los productos de inventario de angamos YA ESTÁN.** Medido el 2026-07-30:
+   **187 productos activos** en `sede='angamos'` (plaza tiene 233). Este paso
+   está prácticamente hecho; lo que queda es revisar que las secciones y los
+   mín/máx tengan sentido para ese local:
    ```sql
    select rubro, count(*), sum(case when activo='SÍ' then 1 else 0 end) as activos
    from public.productos where sede='angamos' group by rubro order by 2 desc;
@@ -1059,6 +1084,9 @@ estaba anticipado en §7 y se confirma acá.
    en el punto 1: **el catálogo de Fudo de Angamos es otra cuenta, así que los
    `fudo_product_id` son distintos.** Las recetas de plaza NO sirven tal cual —
    no se pueden copiar cambiando la sede.
+   **Confirmado el 2026-07-30: angamos tiene 0 recetas** (plaza tiene 168, que
+   cubren el 48% de su catálogo). O sea, este paso está entero por delante, y
+   es el que define cuánto va a demorar la migración.
    Lo que sí se puede: emparejar por nombre para *proponer* recetas, igual que
    se hizo en plaza (`emparejador-segunda-pasada.sql`). Y aplica la regla
    0.1.4: el emparejamiento por nombre **propone candidatos, no concluye**.
