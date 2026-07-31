@@ -604,7 +604,18 @@ paso a paso, porque no es técnico. El estado:
 | 4 | Cuaderno de migraciones (`migraciones_aplicadas`) | ✅ hecho el 2026-07-31 — 13 archivos anotados |
 | 5 | Que la alarma del motor suene por proporción | ✅ hecho el 2026-07-31 — `juzgarVentas()` + prueba guardada |
 | 6 | Estado del motor en la BASE (no solo en el botón ⟳) | ✅ hecho el 2026-07-31 — falta que Jhon corra el SQL y pegue la Edge Function |
-| 7 | Encender el cron | ⏳ **acá vamos** — `2026-07-cron-automatico-ventas.sql`, en 3 pasos con espera |
+| 7 | Encender el cron | ✅ **hecho el 2026-07-31 19:00** — corrió solo, `la_disparo = cron`, y el sensor quedó encendido |
+
+**✅ EL PLAN DE ESTABILIDAD ESTÁ COMPLETO.** Mall Plaza quedó con: chequeo
+mensual, respaldo probado, librería fija, cuaderno de migraciones, alarma por
+proporción, estado del motor en la base, y sincronización automática cada 15
+minutos vigilada. **Lo siguiente que pidió Jhon es Angamos → §9.**
+
+**Cómo quedó el cron (2026-07-31):** agendado `*/15 * * * *` con el nombre
+`sync-ventas-plaza`; primera corrida automática a las 19:00:05 con
+`ultima_corrida_por = 'cron'`, 92 ítems, 0 errores; `cron_activo = true`.
+El botón ⟳ sigue existiendo — pasó de ser la única forma de sincronizar a ser
+el "actualiza ahora mismo".
 
 **Decisión de Jhon (2026-07-31): la estabilidad primero, Angamos después.**
 *"Quiero que el modelo sea bastante sólido antes de pasar a Angamos."*
