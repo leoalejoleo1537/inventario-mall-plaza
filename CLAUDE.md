@@ -39,6 +39,19 @@ terminal ni git. Todo lo que él haga tiene que ser: copiar un texto, pegarlo en
 Supabase, apretar Run, y guardar el resultado en Notion. Lo que va al repo lo
 commitea Claude.
 
+**Cómo hablarle a Jhon** *(pedido por él el 2026-07-31)*: el tono está bien,
+pero **falta bajar el nivel técnico**. Él entiende con **metáforas y ejemplos**,
+no con términos. Antes de entregarle un script hay que decirle, en lenguaje
+llano, **qué hace, qué toca y qué pasa si sale mal** — porque si no entiende
+para qué sirve, lo copia a medias o no lo copia. Ejemplos que ya funcionaron:
+el cuaderno de migraciones = *la cartilla de vacunas*; el modo `prueba` = *el
+motor girando en punto muerto*. Un párrafo de metáfora antes del script ahorra
+dos vueltas de confusión.
+
+**Y una regla que sale de la misma conversación:** todo script que se le entregue
+lleva al final la línea que lo anota solo en `migraciones_aplicadas` (§8). Que
+el cuaderno se escriba no puede depender de que él se acuerde.
+
 ## 0. REGLA DURA — comparar Fudo vs. inventario es SIEMPRE de solo lectura
 
 > Se agrega esta regla porque una sesión anterior, al pedirle "compara los
@@ -586,8 +599,13 @@ paso a paso, porque no es técnico. El estado:
 | Etapa | Qué es | Estado |
 |---|---|---|
 | 1 | Correr el chequeo de salud | ✅ **hecho el 2026-07-30** — resultados abajo |
-| 2 | Sacar el primer respaldo y guardarlo en Notion | ⏳ **acá vamos** |
+| 2 | Sacar el primer respaldo y guardarlo en Notion | ✅ hecho el 2026-07-30 — los 4 CSV quedaron guardados |
 | 3 | Fijar `supabase-js` | ✅ hecho y en producción (2.111.0) |
+| 4 | **Cuaderno de migraciones** (`migraciones_aplicadas`) | ⏳ **acá vamos** — `2026-07-registro-de-migraciones.sql` |
+| 5 | Que la alarma del motor suene por proporción | ⏳ requisito antes del cron |
+
+**Decisión de Jhon (2026-07-31): la estabilidad primero, Angamos después.**
+*"Quiero que el modelo sea bastante sólido antes de pasar a Angamos."*
 
 **Primera corrida del chequeo (2026-07-30) — el estado REAL de Mall Plaza:**
 
@@ -599,7 +617,7 @@ paso a paso, porque no es técnico. El estado:
 | Funciones duplicadas | ninguna |
 | Stock vs. fechas | cuadra · sin negativos · sin fechas en cero |
 | `producto_lotes` en tiempo real | **estaba SIN publicar** → arreglado ese día (ver abajo) |
-| Recetas rotas | 2, ya explicadas por Jhon: **`Muffin Amapola`** (él borró el insumo a propósito, ese producto ya no se vende → la receta se desactiva) y **`Dona Pistacho Dubai`** (el insumo correcto sí existe, la receta apuntaba a una fila que ya no está → se reapunta). Arreglo en `2026-07-cerrar-recetas-rotas.sql` |
+| Recetas rotas | 2. **`Dona Pistacho Dubai` la arregló Jhon a mano desde la app** el 31-07 (le puso el producto correcto). **`Muffin Amapola` se mantiene por decisión de Jhon**: él borró el insumo pero quiere conservar el producto, así que esa receta sigue apuntando al vacío a propósito — el chequeo la va a seguir mostrando, y eso es esperado, no una falla |
 | `historial_dias` | instalada, una sola firma → el historial está bien |
 | Días guardados | 9 |
 
@@ -1029,6 +1047,7 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 | Riesgo | Qué lo cubre hoy | Dónde vive |
 |---|---|---|
 | Instalar un motor suponiendo el estado de producción | Chequeo de salud: **bloque 0 da el resumen de 10 filas en una sola corrida**; los bloques 1-10 son el detalle | `2026-07-salud-del-sistema.sql` |
+| **Creer que un `.sql` se corrió cuando no** (3 incidentes: las 15 h, el cálculo viejo, `producto_lotes`) | Cuaderno `migraciones_aplicadas`. **Cada script nuevo se anota solo al final** — no depende de que alguien se acuerde. Sembrado solo con lo que el chequeo COMPROBÓ, no con lo que "debería" estar | `2026-07-registro-de-migraciones.sql` |
 | Perder datos sin punto de restauración | Respaldo de `productos`/`recetas`/`receta_items`/`producto_lotes`, probado restaurando. **Los archivos se guardan en Notion**, no en el repo (ver `respaldos/README.md`) | `2026-07-respaldo-para-guardar.sql` |
 | Que la librería cambie sola y rompa la app | Versión fija `@2.111.0` | `index.html:15` |
 | Que alguien sin permiso escriba en Fudo | Comprobación contra `app_permisos` **en el servidor**, no solo esconder el botón | las Edge Functions de Fudo |
