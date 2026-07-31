@@ -110,6 +110,19 @@
   .toast.open{opacity:1;transform:translate(-50%,0)}
   /* ---------- tabs (píldoras, estilo Fudo) ---------- */
   .tabs{background:#fff;border-bottom:1px solid var(--border);padding:9px 14px;position:sticky;top:0;z-index:20}
+  /* ---------- aviso del motor ----------
+     Solo aparece cuando hay algo que decir. Si el motor va bien no se ve
+     nada: la pantalla limpia ES el mensaje de que todo está en orden. */
+  .motor-aviso{display:none;align-items:center;gap:9px;padding:10px 14px;
+    font-size:13.5px;font-weight:650;line-height:1.35;border-bottom:1px solid var(--border);
+    animation:motorEntra .22s ease-out}
+  .motor-aviso.ver{display:flex}
+  .motor-aviso.grave{background:var(--red-bg);color:var(--red-fg)}
+  .motor-aviso.tibio{background:var(--amber-bg);color:var(--amber-fg)}
+  .motor-aviso .cuando{font-weight:500;opacity:.75;white-space:nowrap}
+  .motor-aviso svg{flex:0 0 18px;width:18px;height:18px}
+  @keyframes motorEntra{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){ .motor-aviso{animation:none} }
   .tabs .inner{max-width:900px;margin:0 auto;display:flex;gap:7px}
   .tab{padding:8px 15px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
   .tab.active{background:var(--orange);border-color:var(--orange);color:#fff}
@@ -618,6 +631,12 @@
     <button class="tab" data-tab="hist">Historial</button>
     <button class="tab" data-tab="recetas">Recetas</button>
   </div>
+</div>
+
+<div class="motor-aviso" id="motorAviso">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+  <span id="motorAvisoTxt"></span>
+  <span class="cuando" id="motorAvisoCuando"></span>
 </div>
 
 <!-- ================= MENÚ LATERAL ================= -->
@@ -1252,6 +1271,7 @@ function pickSede(s){
   cargarPermisos();
   loadData();
   loadRepartos();
+  revisarMotor();          // si el motor está caído, se ve al entrar
   subscribeRealtime();
   if(presChannel){ try{ presChannel.track({nombre:NOMBRE, sede:SEDE}); }catch(e){} }  // avisa en qué sede estoy
 }
@@ -2925,6 +2945,66 @@ function juzgarVentas(d){
     + (err ? ` · ⚠️ ${err} con error` : '')};
 }
 
+/* ---------------- el aviso que no depende de que alguien apriete ⟳ -------
+   juzgarVentas() de arriba solo se entera cuando alguien toca el botón. Con
+   el cron encendido nadie lo toca, así que un motor caído no tendría testigo.
+   Esto lee lo que el motor dejó escrito en fudo_sync y decide si hay que
+   mostrar algo en pantalla.
+
+   Dos reglas que evitan avisos falsos:
+   · La corrida vieja SOLO alarma si el cron está encendido (`cron_activo`).
+     Hoy la sync depende del botón, así que "hace 5 horas" es normal y gritar
+     por eso enseñaría a ignorar el aviso.
+   · Un motor que nunca corrió no es un motor roto: es una sede recién
+     encendida. Angamos va a estar así, y no debe aparecer en rojo. */
+const MOTOR_SIN_NOTICIAS_MIN = 45;   // el cron corre cada 15; 3 vueltas perdidas
+
+function juzgarMotor(sync, ahora){
+  if(!sync) return null;
+  ahora = ahora || Date.now();
+  const min = sync.ultima_corrida_at
+    ? Math.floor((ahora - new Date(sync.ultima_corrida_at).getTime())/60000) : null;
+
+  if(sync.ultimo_resultado === 'falla')
+    return {nivel:'grave', texto:'El inventario no se está descontando', min};
+
+  if(sync.cron_activo && min !== null && min >= MOTOR_SIN_NOTICIAS_MIN)
+    return {nivel:'grave', texto:'La sincronización automática se detuvo', min};
+
+  if(sync.ultimo_resultado === 'parcial')
+    return {nivel:'tibio',
+            texto:`${sync.ultimos_errores} de ${sync.ultimos_items} ventas no se descontaron`, min};
+
+  return null;                        // todo bien: no se muestra nada
+}
+
+function haceCuanto(min){
+  if(min === null || min === undefined) return '';
+  if(min < 2)  return 'recién';
+  if(min < 60) return 'hace ' + min + ' min';
+  const h = Math.floor(min/60);
+  if(h < 24)   return 'hace ' + h + ' h';
+  const d = Math.floor(h/24);
+  return 'hace ' + d + (d === 1 ? ' día' : ' días');
+}
+
+async function revisarMotor(){
+  const el = $('motorAviso'); if(!el || !SEDE) return;
+  let sync = null;
+  try{
+    const {data} = await sb.from('fudo_sync').select('*').eq('sede',SEDE).maybeSingle();
+    sync = data;
+  }catch(e){ return; }               // sin señal no se inventa una alarma
+  const v = juzgarMotor(sync);
+  el.classList.toggle('ver', !!v);
+  el.classList.toggle('grave', !!v && v.nivel === 'grave');
+  el.classList.toggle('tibio', !!v && v.nivel === 'tibio');
+  if(v){
+    $('motorAvisoTxt').textContent = v.texto;
+    $('motorAvisoCuando').textContent = haceCuanto(v.min);
+  }
+}
+
 const PASOS_SYNC = [
   {
     nombre: 'productos',
@@ -3149,6 +3229,10 @@ async function resincronizar(){
   ultimaRecarga=Date.now();
   await loadData();
   await loadRepartos();
+  /* Se revisa acá y no solo al abrir la app: `resincronizar` corre al volver
+     del fondo, al recuperar señal y después de cada ⟳, que son justo los
+     momentos en que el teléfono se pone al día con lo que pasó sin mirar. */
+  revisarMotor();
 }
 /* La app se duerme al bloquear el teléfono o dejar la pestaña de fondo, y la
    conexión en vivo se corta sin avisar. Al volver, se recarga para no quedar

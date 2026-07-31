@@ -603,7 +603,8 @@ paso a paso, porque no es técnico. El estado:
 | 3 | Fijar `supabase-js` | ✅ hecho y en producción (2.111.0) |
 | 4 | Cuaderno de migraciones (`migraciones_aplicadas`) | ✅ hecho el 2026-07-31 — 13 archivos anotados |
 | 5 | Que la alarma del motor suene por proporción | ✅ hecho el 2026-07-31 — `juzgarVentas()` + prueba guardada |
-| 6 | Estado del motor en la BASE (no solo en el botón ⟳) | ⏳ **acá vamos** — requisito para el cron |
+| 6 | Estado del motor en la BASE (no solo en el botón ⟳) | ✅ hecho el 2026-07-31 — falta que Jhon corra el SQL y pegue la Edge Function |
+| 7 | Encender el cron (`cron_activo = true`) | ⏳ ya desbloqueado |
 
 **Decisión de Jhon (2026-07-31): la estabilidad primero, Angamos después.**
 *"Quiero que el modelo sea bastante sólido antes de pasar a Angamos."*
@@ -693,12 +694,18 @@ riesgo.
       direcciones: que suene cuando debe **y que no suene cuando no** (el caso
       real de 1685 ítems sin errores, y el de releer ventas ya procesadas, que
       da 0 movimientos y es normal).
-- [ ] **Falta la otra mitad: el estado del motor tiene que vivir en la BASE.**
-      Hoy la alarma solo existe dentro del botón ⟳: si nadie lo aprieta, nadie
-      se entera. **Es requisito para activar el cron** — automatizar la sync sin
-      esto le quita al sistema su único testigo. Lo que falta: que
-      `fudo-sync-ventas` deje su resultado en una fila (cuándo corrió, cuántos
-      ítems, cuántos errores) y que la pantalla lo lea.
+- [x] ~~**El estado del motor tiene que vivir en la BASE.**~~ **Hecho el
+      2026-07-31.** `fudo_sync` ganó 7 columnas (`ultima_corrida_at`,
+      `ultimo_resultado`, `ultimos_items/errores/movimientos`,
+      `ultima_corrida_por`, `cron_activo`); `fudo-sync-ventas` las escribe en
+      cada corrida; y la app muestra una franja bajo las pestañas
+      (`juzgarMotor()` + `#motorAviso`) solo cuando hay algo que decir.
+      **Dos reglas anti-falsa-alarma, con prueba:** la corrida vieja solo
+      alarma si `cron_activo` está en true —sin cron, "hace 5 horas" es
+      normal—, y una sede que nunca corrió no es una sede rota, es una recién
+      encendida (el caso Angamos).
+      **Con esto el cron queda desbloqueado**: encenderlo es correr
+      `2026-07-cron-automatico-ventas.sql` y poner `cron_activo = true`.
 - [ ] **Respaldos de la base.** Revisar en Supabase → Settings → Database →
       Backups. En el plan gratuito **no hay punto de restauración**. Y el modo
       de trabajo del proyecto es copiar `update` generados y pegarlos a mano:
@@ -1052,6 +1059,8 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 | **Creer que un `.sql` se corrió cuando no** (3 incidentes: las 15 h, el cálculo viejo, `producto_lotes`) | Cuaderno `migraciones_aplicadas`. **Cada script nuevo se anota solo al final** — no depende de que alguien se acuerde. Sembrado solo con lo que el chequeo COMPROBÓ, no con lo que "debería" estar | `2026-07-registro-de-migraciones.sql` |
 | Perder datos sin punto de restauración | Respaldo de `productos`/`recetas`/`receta_items`/`producto_lotes`, probado restaurando. **Los archivos se guardan en Notion**, no en el repo (ver `respaldos/README.md`) | `2026-07-respaldo-para-guardar.sql` |
 | Que la librería cambie sola y rompa la app | Versión fija `@2.111.0` | `index.html:15` |
+| **Que el motor falle y nadie se entere** | Alarma por proporción en el botón (`juzgarVentas`) **y** franja en pantalla leída de la base (`juzgarMotor`), que funciona aunque nadie apriete ⟳ | `index.html` + `2026-07-estado-del-motor.sql` |
+| No saber qué versión de una Edge Function está desplegada | `fudo-sync-ventas` devuelve `version` en cada respuesta | `supabase/functions/fudo-sync-ventas/index.ts` |
 | Que alguien sin permiso escriba en Fudo | Comprobación contra `app_permisos` **en el servidor**, no solo esconder el botón | las Edge Functions de Fudo |
 | Recetas que apuntan al vacío o cobertura incompleta | Informe de solo lectura + bloques 9 y 10 del chequeo | `2026-07-auditoria-recetas.sql` |
 | Revisar cómo están los permisos sin cambiarlos | Diagnóstico de solo lectura (ver 6.1: la decisión ya está tomada) | `2026-07-revision-seguridad.sql` |

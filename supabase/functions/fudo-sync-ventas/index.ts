@@ -14,6 +14,13 @@
 // ================================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+/* Versión de ESTE archivo, que viaja en cada respuesta.
+   Las Edge Functions se despliegan copiando y pegando en el panel de Supabase,
+   así que el .ts del repo no prueba qué está corriendo en producción. Con esto
+   se puede preguntar sin entrar al panel: si la respuesta trae una versión
+   vieja, es que el pegado nunca se hizo. Subirla al cambiar el archivo. */
+const VERSION = "2026-07-31";
+
 const AUTH_URL = "https://auth.fu.do/api";
 const API_BASE = "https://api.fu.do/v1alpha1";
 const PAGE_SIZE = 500;
@@ -37,12 +44,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
     // sede desde ?sede=plaza (dashboard) o desde el cuerpo JSON (botón de la app)
-    const qsSede = new URL(req.url).searchParams.get("sede");
-    let bodySede: string | null = null;
-    if (!qsSede && req.method === "POST") {
-      bodySede = (await req.json().catch(() => ({})))?.sede ?? null;
+    const url = new URL(req.url);
+    const qsSede = url.searchParams.get("sede");
+    let bodySede: string | null = null, bodyOrigen: string | null = null;
+    if (req.method === "POST") {
+      const b = await req.json().catch(() => ({}));
+      bodySede = b?.sede ?? null;
+      bodyOrigen = b?.origen ?? null;
     }
     const sede = (qsSede ?? bodySede ?? "plaza").toLowerCase();
+    // Quién disparó esta corrida. El cron manda ?origen=cron; el botón de la
+    // app manda "boton". Sirve para saber si la sync automática sigue viva.
+    const origen = (url.searchParams.get("origen") ?? bodyOrigen ?? "boton").toLowerCase();
     const KEY = `FUDO_${sede.toUpperCase()}_APIKEY`;
     const SECRET = `FUDO_${sede.toUpperCase()}_APISECRET`;
     const apiKey = Deno.env.get(KEY), apiSecret = Deno.env.get(SECRET);
@@ -154,21 +167,45 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 4) avanzar el cursor (solo hacia adelante)
+    // 4) avanzar el cursor (solo hacia adelante) y DEJAR DICHO CÓMO FUE
+    //
+    // Lo segundo importa tanto como lo primero: hasta el 2026-07-31 el
+    // resultado de cada corrida solo existía en esta respuesta, o sea que
+    // únicamente lo veía quien había apretado ⟳. Con el cron encendido no
+    // hay nadie apretando nada, así que un motor caído no tendría testigo.
+    // Ahora queda escrito en la base y la pantalla lo puede leer sola.
+    const intentos = procesados + errores;
+    const resultado = errores === 0
+      ? "ok"
+      : (movimientos === 0 || errores >= intentos * 0.10) ? "falla" : "parcial";
+
+    const fila: Record<string, unknown> = {
+      sede,
+      updated_at: new Date().toISOString(),
+      ultima_corrida_at: new Date().toISOString(),
+      ultima_corrida_por: origen,
+      ultimo_resultado: resultado,
+      ultimos_items: intentos,
+      ultimos_errores: errores,
+      ultimos_movimientos: movimientos,
+    };
     if (maxCreatedAt > (cursor ? cursor.getTime() : 0)) {
-      await supabase.from("fudo_sync").upsert(
-        { sede, ultima_venta_at: new Date(maxCreatedAt).toISOString(), updated_at: new Date().toISOString() },
-        { onConflict: "sede" },
-      );
+      fila.ultima_venta_at = new Date(maxCreatedAt).toISOString();
     }
+    // Que un fallo al anotar no tape el resultado: el descuento ya ocurrió.
+    const { error: errAnotar } = await supabase.from("fudo_sync")
+      .upsert(fila, { onConflict: "sede" });
 
     return json({
       ok: true, sede, modo,
+      version: VERSION,
       ventana: { desde: isoFudo(desde), hasta: isoFudo(ahora) },
       ventas_leidas: ventasVistas,
       items_procesados: procesados,
       movimientos_generados: movimientos,
       errores,
+      resultado,
+      ...(errAnotar ? { aviso: "No se pudo dejar constancia de esta corrida: " + errAnotar.message } : {}),
     });
   } catch (e) {
     return json({ error: "Error inesperado.", detalle: String(e) }, 500);
