@@ -1278,6 +1278,52 @@ cuenta en el mesón necesita saber qué está contando.
 
 ---
 
+## 10.1 Lo que está EN MESA — el doble descuento del conteo nocturno
+
+> Problema traído por Jhon el 2026-08-01. **Comprobado, todavía sin construir.**
+
+**El síntoma.** Jefatura cuenta de noche con mesas abiertas. Hay 10 panes en el
+estante y 2 en una mesa sin cerrar; la app dice 12. El jefe cuenta 10 y
+"corrige" la app a 10. Cuando la mesa cierra, el motor descuenta 2 y queda en
+**8**. El jefe concluye "esto no sirve".
+
+**La causa, y es importante decirla bien: el sistema iba a quedar correcto solo.**
+Los 12 son "10 en el estante + 2 en camino". Si nadie tocaba nada, al cerrar la
+mesa quedaba en 10. **La corrección manual es la que rompe** — esos 2 se
+descuentan dos veces, una a mano y otra por el motor.
+
+La imagen que se lo explica a cualquiera: la cuenta dice $12.000 pero ya giraste
+un cheque de $2.000 que no se ha cobrado. Si "corriges" el saldo a $10.000,
+cuando el cheque se cobre quedas en $8.000.
+
+**Capacitar sola no basta** (y esto ya es doctrina del proyecto): pelea contra
+la operación real, le pide a alguien que no actúe sobre lo que ve con sus ojos,
+y cuando falla, falla en silencio.
+
+**COMPROBADO el 2026-08-01 con `fudo-probar-mesas-abiertas`** (prueba aislada de
+solo lectura, borrable):
+
+| Pregunta | Respuesta |
+|---|---|
+| ¿Fudo expone las mesas abiertas? | **Sí** |
+| ¿Cómo se llama ese estado? | **`IN-COURSE`** — no es `OPEN`, que era lo que yo habría adivinado |
+| ¿Traen sus productos? | **Sí**, con `include=items.product` |
+| ¿Se puede filtrar por estado? | **Sí**: `filter[saleState]=in.(IN-COURSE)` |
+
+**La decisión de diseño tomada: NO descontar por mesas abiertas.** Solo leerlas
+para (a) mostrar cuánto hay en tránsito y (b) que el conteo manual cuadre solo.
+Descontar al poner el producto en la mesa obligaría a detectar retiros y
+anulaciones y a devolver stock — una fuente nueva de errores silenciosos, que es
+lo que más caro ha salido acá. Leyendo sin descontar, **una mesa anulada no
+rompe nada**.
+
+**Pendiente de diseño** (Jhon lo marcó y tiene razón): la píldora de un sándwich
+ya carga nombre, mín, máx, estado, total y una fecha por lote. **No se le agrega
+información.** El camino propuesto es intervenir donde ocurre el daño —la ficha
+donde se edita el stock— y no en cada fila de la lista.
+
+---
+
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
 - **2026-07-30 (noche)** — **El archivo madre, reforzado para el salto a
