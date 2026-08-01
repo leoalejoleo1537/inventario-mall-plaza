@@ -53,6 +53,24 @@ dos vueltas de confusión.
 lleva al final la línea que lo anota solo en `migraciones_aplicadas` (§8). Que
 el cuaderno se escriba no puede depender de que él se acuerde.
 
+**CABECERA OBLIGATORIA EN TODO ARCHIVO QUE SE LE ENTREGUE** *(pedido por Jhon el
+2026-08-01, después de perder varias vueltas preguntando dónde se pega cada
+cosa).* Él dijo textual: *"asume que ni sé utilizar bien aún Supabase"*. Cada
+archivo empieza con estas cinco líneas, antes de cualquier otra cosa:
+
+```
+--  DÓNDE VA:  Supabase -> SQL Editor -> New query     (o -> Edge Functions -> Deploy)
+--  ES:        1 solo bloque / 3 bloques, uno por uno
+--  TARDA:     instantáneo / ~12 segundos / hay que esperar 20 min entre el 1 y el 2
+--  QUÉ HACE:  una frase. Y si escribe algo, decirlo.
+--  QUÉ VER:   qué columna mirar y qué significa
+```
+
+No es cortesía: **cada vez que falta, él pierde una vuelta preguntando y eso
+cuesta tokens que le hacen falta para avanzar.** Un `.sql` va al SQL Editor y un
+`.ts` va a Edge Functions — eso ya lo tiene claro; lo que falta siempre es en
+cuántas partes va, cuánto tarda y qué tiene que mirar del resultado.
+
 ## 0. REGLA DURA — comparar Fudo vs. inventario es SIEMPRE de solo lectura
 
 > Se agrega esta regla porque una sesión anterior, al pedirle "compara los
