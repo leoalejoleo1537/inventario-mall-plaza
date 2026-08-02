@@ -9,11 +9,12 @@
 
 ## EMPIEZA POR ACÁ (mapa de este archivo)
 
-Son ~1500 líneas. Este es el orden en que conviene usarlas:
+Son ~1800 líneas. Este es el orden en que conviene usarlas:
 
 | Si vas a… | Lee primero |
 |---|---|
-| **Cualquier cosa** | Las reglas 0 a 0.5. Son duras, salen de fallas reales y no se negocian |
+| **Cualquier cosa** | Las reglas 0 a 0.6. Son duras, salen de fallas reales y no se negocian |
+| Cambiar algo estructural, o encender una sede | **§0.6 — Mall Plaza es el patrón metro** |
 | Comparar / auditar / revisar algo | §0 — es un INFORME, nunca una edición |
 | Tocar productos, recetas o stock | §0.1 — el checklist del final es obligatorio |
 | Tocar el motor de descuento o cualquier función SQL | §0.5 — la falla de 15 horas está ahí |
@@ -420,6 +421,35 @@ cae**, porque nadie va a buscar lo que parece estar bien.
 
 ---
 
+## 0.6 REGLA DURA — Mall Plaza es el patrón metro
+
+> Jhon, 2026-08-01, al abrir el trabajo de Angamos: *"quiero que el modelo tal
+> como está ahora sea nuestra regla o patrón metro; la infraestructura no
+> debería cambiar, debemos mantenerla, a lo mejor solo refinar y optimizar."*
+
+El patrón metro es la barra que define cuánto mide un metro: no se discute, se
+compara contra ella. **Mall Plaza funcionando es esa barra.**
+
+- **La infraestructura no se rediseña para acomodar una sede nueva.** Mismas
+  tablas, mismo motor (`fudo_procesar_item`), mismas 5 Edge Functions, misma
+  pantalla, misma estética. Encender una sede es **agregar filas y secrets**
+  (§9), nunca construir una variante.
+- **Si algo no calza en la sede nueva, se ajustan los DATOS de esa sede**, no
+  el modelo. Ejemplo real: los nombres de Angamos no calzaban con los de Plaza.
+  La respuesta correcta fue un emparejador que traduce, no cambiarle el esquema
+  a `recetas`.
+- **Refinar y optimizar sí; reemplazar no.** Mejorar el rendimiento del
+  pintado, fijar la versión de una librería, achicar una consulta: bienvenido.
+  Cambiar cómo se guardan las recetas, partir el motor en dos, meter una capa
+  nueva: eso se conversa con Jhon primero y se justifica contra la barra.
+- **Nada que se haga por Angamos puede degradar Mall Plaza.** Plaza está en
+  `modo='real'` con el cron corriendo: es producción de verdad. Ningún script
+  de la migración toca sus recetas, su stock, su modo ni su cron.
+- Corolario práctico: **si un script nuevo necesita que Plaza cambie para
+  funcionar, el script está mal planteado.**
+
+---
+
 ## 1. Qué es esto y para quién
 
 Sistema de **inventario multi-sede** para una cadena de cafés ("Café del Desierto"),
@@ -584,15 +614,60 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 - Mensajes de commit claros, en español, describiendo el porqué.
 - Nunca push a `master` sin que el cambio esté probado/confirmado.
 
+### 5.1 ⚠️ El clon local se atrasa. Comprobarlo SIEMPRE al abrir sesión.
+
+Jhon no usa git: trabaja pegando SQL en Supabase y mirando la app en Vercel.
+**Nadie hace `pull` salvo Claude.** El 2026-08-01 el clon de trabajo estaba
+**81 commits atrás** y su copia de este archivo tenía 156 líneas en vez de 1631
+— o sea, sin las reglas 0.2 a 0.5, sin el catálogo §8 y sin toda esta §9. Un
+chat que lea esa copia planifica con confianza sobre información falsa, que es
+peor que no tener nada.
+
+```bash
+git fetch origin master && git rev-list --left-right --count master...origin/master
+```
+
+`0  0` es lo sano. Es la misma regla 0.1.2 aplicada al repo en vez de a la base:
+**lo que tienes delante no es necesariamente lo que hay.**
+
+### 5.2 Herramientas ECC
+
+El catálogo completo de agentes, skills y comandos de ECC, y cuáles sirven de
+verdad para este stack, está en el **`CLAUDE.md` de la carpeta de trabajo**
+(`Inventario/CLAUDE.md`, §6). No se duplica acá. Lo que conviene recordar:
+
+- **Antes de correr SQL nuevo en Supabase** → agente `database-reviewer`.
+- **Antes de pegar una Edge Function** → agente `security-reviewer`.
+- **`/security-scan` NO revisa el código de la app**, revisa la configuración de
+  Claude Code. Para la app son los dos agentes de arriba.
+- Las exigencias ECC de TDD y 80% de cobertura **no aplican acá** (§0.5: la
+  verificación real es la base, el navegador y el teléfono).
+
 ---
 
 ## 6. Estado actual y pendientes
 
-### 6.0 DÓNDE QUEDAMOS — al 2026-07-30, fin del día
+### 6.0 DÓNDE QUEDAMOS — al 2026-08-01
 
 > Esto es lo que un chat nuevo necesita saber antes que nada. **Actualizar
 > esta sección cada vez que se cierre una etapa**, y borrar lo que ya no
 > aplique — si envejece, engaña.
+
+**LO QUE ESTÁ EN CURSO AHORA: encender Angamos (§9).** El plan de estabilidad
+de Mall Plaza está completo (detalle más abajo) y Jhon dio el paso siguiente.
+
+| Paso de Angamos | Estado |
+|---|---|
+| Credenciales de Fudo Angamos | ⏳ **pedidas, todavía no llegan** — bloquea los pasos 2 a 4 de §9.1 |
+| Informe de reconciliación del inventario | ✅ escrito: `sql/2026-08-angamos-informe-inventario.sql`. **Falta que Jhon lo corra** |
+| Decidir los 14 duplicados de Angamos (lista A) | ⏳ espera el informe — §9.0.1 |
+| Decidir los insumos sin pareja (lista B) | ⏳ espera el informe |
+| Script de réplica de recetas | ✅ escrito: `sql/2026-08-angamos-replicar-recetas.sql`. **No se corre hasta tener el catálogo de Fudo de Angamos** — se detiene solo si falta |
+| `fudo_sync` de angamos en `prueba` | ⏳ pendiente |
+| Cron de angamos | ⏳ no se agenda hasta que la sede esté en `real` |
+
+**Lo primero que tiene que hacer el próximo chat:** comprobar que el clon local
+esté al día (§5.1). El 2026-08-01 estaba 81 commits atrás.
 
 **En curso: el plan de estabilidad, en etapas.** Jhon pidió ir de a una y con
 paso a paso, porque no es técnico. El estado:
@@ -1089,6 +1164,57 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 > Pedido el 2026-07-30: Mall Plaza quedó funcionando y administración pide
 > llevarlo a **Parque Angamos**. Esta sección es el plan; cuando se ejecute,
 > se corrige acá con lo que de verdad pasó.
+>
+> **Actualizada el 2026-08-01** con los números medidos contra la base y con la
+> regla de Angamos que decidió Jhon (§9.0.1). Las herramientas ya están
+> escritas: `sql/2026-08-angamos-informe-inventario.sql` y
+> `sql/2026-08-angamos-replicar-recetas.sql`.
+
+### 9.0.1 LA REGLA DE ANGAMOS — ahí no hay productos duplicados
+
+> Jhon, 2026-08-01: *"no quiero que renombres los productos de Angamos. La
+> naturaleza de Mall Plaza me exige tener dos nombres para el mismo producto,
+> por ejemplo dona vitrina y dona congelador. Pero en Angamos solo va a existir
+> vitrina, no va a haber productos duplicados, a razón de que Angamos tiene su
+> bodega, la cual aún no vamos a hacer su inventario."*
+
+Esto es una diferencia **de la operación, no del modelo**, y hay que respetarla
+tal cual (regla 0.1.7):
+
+| | Mall Plaza | Parque Angamos |
+|---|---|---|
+| Un mismo producto | vive **dos veces**: `X Vitrina` y `X Congelador` | vive **una vez**: `X` |
+| Por qué | el local guarda y repone desde su propio congelador | la reposición viene de la bodega de Angamos |
+| El congelador de esa sede | es una sección del inventario | **es una bodega aparte, y su inventario todavía NO se hace** |
+
+Consecuencias que mandan sobre cualquier script:
+
+- **No renombrar productos de Angamos** para que se parezcan a los de Plaza.
+  Los nombres los decide el equipo (regla 0.1.7); el que traduce es el script.
+- **El emparejador le quita el apellido de sección al nombre de Plaza** antes de
+  buscar en Angamos: `Brownie Vitrina` y `Brownie Congelador` se buscan los dos
+  como `brownie`. Así una receta de Plaza cae sobre el único producto de
+  Angamos. En Plaza la regla sigue siendo "la venta sale de la vitrina"; en
+  Angamos no hay par que elegir.
+- **Ojo con el recorte**: quita `vitrina` y `congelador`, **no** `congelado`.
+  En "Platano congelado" esa palabra es un adjetivo, no una sección — recortarla
+  dejaría el producto como "platano" y abriría la puerta a un emparejamiento
+  falso. Está verificado contra los 234 nombres de Plaza: con `congelado` fuera
+  del recorte, ningún nombre se cruza con otro que no le corresponda.
+- **Cuando se haga el inventario de la bodega de Angamos, es una SEDE nueva**
+  (como `bodega` lo es de Plaza), no una sección de `angamos`. Ese día se vuelve
+  a esta sección.
+
+**⚠️ Pendiente que hay que decidir con Jhon (medido el 2026-08-01):** Angamos
+**hoy sí tiene 14 productos duplicados**, cada uno una vez en su sección y otra
+en `Congelador`: Brownie · Waffles · Macarrons · Mini muffin · Donas frambuesa
+· Donas nutella · Donas oreo · Galleton Chips · Galleton Red Velvet · Muffin
+amapola · Muffin de zanahoria · Muffin relleno arandano · Muffin vainilla chips
+· Volcan de chocolate. Los creó `sql/2026-07-duplicar-vitrina-en-congelador.sql`,
+que corre sobre **plaza y angamos**. Contradicen esta regla, obligan a contar
+dos veces lo mismo, y son la única causa de ambigüedad del emparejador. El
+bloque A del informe los lista. **La decisión —apagarlos con `activo='NO'`— es
+de Jhon, no del script.**
 
 ### 9.0 La buena noticia: casi todo ya es multi-sede
 
@@ -1102,7 +1228,48 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 | El motor de descuento | Recibe la sede y respeta `fudo_sync.modo` por sede |
 
 Agregar una sede es **agregar filas y secrets**, no construir nada. Eso ya
-estaba anticipado en §7 y se confirma acá.
+estaba anticipado en §7 y se confirma acá, y es la regla 0.6 en acción.
+
+### 9.0.2 El punto de partida, medido contra la base el 2026-08-01
+
+| Qué | Plaza | Angamos |
+|---|---|---|
+| `productos` activos | 234 | **187** |
+| `recetas` | 168 | **0** |
+| `fudo_productos` activos | 346 | **0** — la API no está conectada |
+| `fudo_sync` | `modo='real'`, `cron_activo=true` | **no existe la fila** |
+
+Y el tamaño real del trabajo de emparejar, sobre las **237 líneas de receta**
+de Plaza (87 insumos distintos), una vez que se le recorta el apellido de
+sección al nombre:
+
+| Cómo caen en Angamos | Líneas | Insumos distintos |
+|---|---|---|
+| **pareja única — se copian solas** | **177** (75%) | 58 |
+| ambiguas **por los duplicados de §9.0.1** | 28 | 13 |
+| sin pareja — hay que decidirlas | 32 | **16** |
+
+**Las 28 ambiguas se resuelven solas** en cuanto Jhon decida la lista A: son
+justo los 13 insumos que en Angamos existen dos veces (Brownie, Waffles,
+Macarrons, Mini muffin, las donas, los muffins…).
+
+**Los 16 sin pareja son la lista B**, y son de dos clases distintas:
+
+| Parece el mismo producto con otro nombre | Parece que falta de verdad |
+|---|---|
+| `T. Cheesecake Maracuya` ↔ `T. Cheesecake Mara` | `Miel` |
+| `T. Cheesecake Frambuesa` ↔ `T. Cheesecake Fram` | `Pizza Capresse` |
+| `Croissant Jamon Queso` ↔ `Sandwich Jamón Queso` | `Agua Bosqua con/sin gas` |
+| `Muffin de amapola` ↔ `Muffin amapola` | `Sandwich Selladito` |
+| `Cocacola mini` ↔ `Cocacola mini sprite` (?) | `Donas chocolate`, `Galletas New York`, `Muffin de chocolate`, `Galleton Vainilla Chips`, `Dona Pistacho Dubai`, `Bebida Cocacola zero mini` |
+
+**Esa tabla es una hipótesis, no un diagnóstico** (regla 0.1.8: un nombre raro
+es una pregunta, no un hallazgo). Los de la izquierda hay que confirmarlos con
+el equipo; los de la derecha son productos que Plaza agregó el 2026-07-25 y que
+a Angamos nunca se le cargaron. **Cuál es cuál lo dice Jhon.**
+
+> Traducido: **3 de cada 4 líneas de receta se copian solas.** El trabajo humano
+> son 13 duplicados que apagar y 16 nombres que confirmar.
 
 ### 9.1 Lo que SÍ hay que hacer, en orden
 
@@ -1121,40 +1288,40 @@ estaba anticipado en §7 y se confirma acá.
 4. **Traer el catálogo de Fudo de Angamos**: correr `fudo-sync-productos` con
    `sede: 'angamos'`. Eso llena `fudo_productos`. Sin esto no hay con qué
    emparejar.
-5. **Los productos de inventario de angamos YA ESTÁN.** Medido el 2026-07-30:
-   **187 productos activos** en `sede='angamos'` (plaza tiene 233). Este paso
-   está prácticamente hecho; lo que queda es revisar que las secciones y los
-   mín/máx tengan sentido para ese local:
-   ```sql
-   select rubro, count(*), sum(case when activo='SÍ' then 1 else 0 end) as activos
-   from public.productos where sede='angamos' group by rubro order by 2 desc;
-   ```
-6. **Trasladar las recetas de plaza a angamos.** ⚠️ **Esto cambió el
-   2026-07-31, y para mejor.** Jhon confirmó que **las dos sedes tienen la
-   MISMA carta**: mismos productos, mismos precios, y no hay nada en Angamos
-   que no esté en Mall Plaza.
+5. **Los productos de inventario de angamos YA ESTÁN, pero hay que
+   reconciliarlos primero.** Correr **`sql/2026-08-angamos-informe-inventario.sql`**
+   — es de solo lectura y devuelve las tres listas que Jhon tiene que decidir:
+   **A** los 14 duplicados de §9.0.1, **B** los insumos de receta de Plaza sin
+   pareja en Angamos, **C** lo que solo existe en Angamos.
 
-   Sigue siendo cierto que **no se puede copiar la fila tal cual** — el
-   catálogo de Fudo de Angamos es otra cuenta y los `fudo_product_id` son
-   distintos, así que una copia literal apuntaría al vacío. Pero **sí se puede
-   trasladar la ESTRUCTURA emparejando por nombre**, en dos saltos:
+   Este paso va **antes** de las recetas, no después: los duplicados de la lista
+   A son la única causa de ambigüedad del emparejador, y se resuelven una vez.
+
+6. **Trasladar las recetas de plaza a angamos** con
+   **`sql/2026-08-angamos-replicar-recetas.sql`**, que ya está escrito y hace
+   exactamente lo que dice el punto anterior de esta sección.
+
+   Jhon confirmó el 2026-07-31 que **las dos sedes tienen la MISMA carta**.
+   Pero **no se puede copiar la fila tal cual**: el catálogo de Fudo de Angamos
+   es otra cuenta y los `fudo_product_id` son distintos, así que una copia
+   literal apuntaría al vacío. Se traslada la ESTRUCTURA, en dos saltos:
 
    ```
-   Fudo plaza "Cappuccino"   →  Fudo angamos "Cappuccino"    (por nombre)
+   Fudo plaza "Brownie-solo"        →  Fudo angamos "Brownie-solo"
       ↓ sus receta_items
-   producto plaza "Leche"    →  producto angamos "Leche"     (por nombre)
+   producto plaza "Brownie Vitrina" →  producto angamos "Brownie"
    ```
+
+   El segundo salto recorta el apellido de sección (§9.0.1).
 
    Con la regla 0.1.4 intacta: **el emparejamiento por nombre PROPONE, no
-   concluye.** El script tiene que sacar la lista de "esto haría", Jhon la
-   revisa, y recién ahí se escribe. Lo que no calce queda a mano.
+   concluye.** El PASO 1 del script muestra qué haría; Jhon lo revisa; el
+   PASO 2 es el único que escribe, y **solo copia recetas que llegan enteras**.
+   Una receta a medias descontaría parte de lo vendido sin avisar, así que las
+   incompletas quedan fuera a propósito y se hacen a mano.
 
-   Esto convierte el paso más caro de la migración en un rato de revisión.
-   Antes de escribirlo, correr el emparejador contra los dos catálogos y
-   mirar cuántos productos calzan de verdad.
-   **Confirmado el 2026-07-30: angamos tiene 0 recetas** (plaza tiene 168, que
-   cubren el 48% de su catálogo). El emparejador que ya existe
-   (`emparejador-segunda-pasada.sql`) es el punto de partida.
+   Los dos pasos calculan la lista con el mismo código, a propósito: lo que
+   muestra la vista previa es exactamente lo que aplica el paso 2.
 7. **Comprobar en `prueba` durante unos días**, mirando `fudo_movimientos` de
    angamos: qué se leyó, qué se habría descontado, qué quedó sin receta.
 8. **Recién ahí, `modo = 'real'`.**
@@ -1261,6 +1428,47 @@ cuenta en el mesón necesita saber qué está contando.
 ---
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-08-01** — **Arranca Angamos: las dos herramientas escritas, y tres
+  reglas nuevas.** Sesión de planificación, sin tocar producción.
+  1. **§0.6, Mall Plaza es el patrón metro** — pedido textual de Jhon: la
+     infraestructura se mantiene, a lo más se refina. Una sede nueva son filas,
+     nunca una variante del modelo.
+  2. **§9.0.1, en Angamos no hay productos duplicados.** El par
+     vitrina/congelador es una necesidad de Mall Plaza; Angamos repone desde su
+     propia bodega, **cuyo inventario todavía no se hace**. Consecuencia: no se
+     renombra nada en Angamos, el que traduce es el emparejador (le recorta el
+     apellido de sección al nombre de Plaza). Y quedó anotado que hoy Angamos
+     **sí tiene 14 duplicados**, creados por
+     `duplicar-vitrina-en-congelador.sql`, que hay que decidir.
+  3. **§5.1, el clon local se atrasa.** Esta sesión empezó leyendo un
+     `CLAUDE.md` de 156 líneas creyendo que era el bueno: el clon estaba **81
+     commits atrás** y casi se replanifica desde cero la §9 que ya existía.
+     Es la regla 0.1.2 aplicada al repo. La comprobación es una línea y ahora
+     está escrita en dos lugares.
+
+  **Lo que se escribió** (ninguno corrido todavía):
+  - `sql/2026-08-angamos-informe-inventario.sql` — solo lectura. Las tres listas
+    que Jhon tiene que decidir antes de replicar nada.
+  - `sql/2026-08-angamos-replicar-recetas.sql` — vista previa + aplicar, con el
+    mismo código en los dos pasos para que no puedan divergir, y un freno que
+    detiene todo si el catálogo de Fudo de Angamos está vacío (si no, el script
+    no haría nada y parecería que funcionó — §0.5).
+
+  **Dos lecciones de método, las dos por medir en vez de leer:**
+  - El regex que recorta el apellido de sección incluía `congelado`, y eso
+    convertía "Platano congelado" en "platano". Hoy no rompía nada, pero era
+    una trampa esperando. Se encontró **corriendo el emparejador contra los 234
+    nombres reales**, no leyéndolo. Un emparejador se valida contra los datos
+    que va a emparejar.
+  - La primera medición de cobertura dio **"0 líneas con pareja única"**, un
+    número catastrófico que sonaba a que las cartas no tenían nada que ver.
+    Era un error del script de conteo (PowerShell desenvuelve los arreglos de
+    un elemento, así que las parejas únicas contaban como cero). La cifra real
+    es **177 de 237, el 75%**. Esto es la regla 0.1.6 en vivo: **una medición
+    que da un resultado catastrófico casi siempre está midiendo mal.** Antes de
+    anunciar un número que cambia el plan, sacarlo dos veces por caminos
+    distintos.
 
 - **2026-07-30 (noche)** — **El archivo madre, reforzado para el salto a
   Angamos.** Jhon va a abrir un chat nuevo (las skills que instaló no cargan en
