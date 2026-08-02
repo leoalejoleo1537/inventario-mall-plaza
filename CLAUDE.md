@@ -1122,93 +1122,162 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 Agregar una sede es **agregar filas y secrets**, no construir nada. Eso ya
 estaba anticipado en §7 y se confirma acá.
 
-### 9.1 Lo que SÍ hay que hacer, en orden
+### 9.1 El plan, en orden — y el orden IMPORTA
 
-**Nada de esto se hace sin haber corrido antes el chequeo de salud (§6).**
+> Refinado el 2026-08-01 sobre un plan que armó otra sesión. Lo que sigue ya
+> incorpora sus hallazgos medidos y las correcciones que les faltaban.
 
-1. **Conseguir las credenciales de Fudo de Angamos.** Es otra cuenta de Fudo,
-   con su propio `apiKey`/`apiSecret`. Las pide Jhon a administración.
-2. **Cargarlas como secrets** en Supabase → Edge Functions → Secrets, con estos
-   nombres exactos: **`FUDO_ANGAMOS_APIKEY`** y **`FUDO_ANGAMOS_APISECRET`**.
-   El nombre no es libre: las funciones lo arman con `sede.toUpperCase()`.
-3. **Crear la fila de `fudo_sync` para angamos, en `modo = 'prueba'`.**
-   ⚠️ **Esto no se salta.** En `prueba` el motor lee las ventas y las registra
-   pero NO toca el stock. Es la única forma de comprobar que las recetas están
-   bien sin descuadrar un inventario real. Se pasa a `real` recién cuando los
-   números cuadren, y lo decide Jhon (regla 0.1.7).
-4. **Traer el catálogo de Fudo de Angamos**: correr `fudo-sync-productos` con
-   `sede: 'angamos'`. Eso llena `fudo_productos`. Sin esto no hay con qué
-   emparejar.
-5. **Los productos de inventario de angamos YA ESTÁN.** Medido el 2026-07-30:
-   **187 productos activos** en `sede='angamos'` (plaza tiene 233). Este paso
-   está prácticamente hecho; lo que queda es revisar que las secciones y los
-   mín/máx tengan sentido para ese local:
-   ```sql
-   select rubro, count(*), sum(case when activo='SÍ' then 1 else 0 end) as activos
-   from public.productos where sede='angamos' group by rubro order by 2 desc;
-   ```
-6. **Trasladar las recetas de plaza a angamos.** ⚠️ **Esto cambió el
-   2026-07-31, y para mejor.** Jhon confirmó que **las dos sedes tienen la
-   MISMA carta**: mismos productos, mismos precios, y no hay nada en Angamos
-   que no esté en Mall Plaza.
+**Antes de todo:** correr el chequeo de salud (§6) y **sacar un respaldo**
+(`2026-07-respaldo-para-guardar.sql`). La fase 4 es la primera escritura masiva
+que este proyecto le hace a una sede entera; el respaldo es barato y es la
+única red que hay.
 
-   Sigue siendo cierto que **no se puede copiar la fila tal cual** — el
-   catálogo de Fudo de Angamos es otra cuenta y los `fudo_product_id` son
-   distintos, así que una copia literal apuntaría al vacío. Pero **sí se puede
-   trasladar la ESTRUCTURA emparejando por nombre**, en dos saltos:
+#### Fase 1 — Ordenar el inventario de Angamos *(se puede hacer YA, sin credenciales)*
 
-   ```
-   Fudo plaza "Cappuccino"   →  Fudo angamos "Cappuccino"    (por nombre)
-      ↓ sus receta_items
-   producto plaza "Leche"    →  producto angamos "Leche"     (por nombre)
-   ```
+Es solo lectura y **no depende de Fudo**, así que avanza mientras administración
+consigue las llaves.
 
-   Con la regla 0.1.4 intacta: **el emparejamiento por nombre PROPONE, no
-   concluye.** El script tiene que sacar la lista de "esto haría", Jhon la
-   revisa, y recién ahí se escribe. Lo que no calce queda a mano.
+1. **Los 14 duplicados de Angamos.** ⚠️ Hallazgo del 2026-08-01, verificado
+   leyendo el archivo: `sql/2026-07-duplicar-vitrina-en-congelador.sql` tiene
+   `where p.sede in ('plaza','angamos')` — corre sobre **las dos sedes**. Creó
+   en Angamos una copia en `Congelador` de cada producto de vitrina.
 
-   Esto convierte el paso más caro de la migración en un rato de revisión.
-   Antes de escribirlo, correr el emparejador contra los dos catálogos y
-   mirar cuántos productos calzan de verdad.
-   **Confirmado el 2026-07-30: angamos tiene 0 recetas** (plaza tiene 168, que
-   cubren el 48% de su catálogo). El emparejador que ya existe
-   (`emparejador-segunda-pasada.sql`) es el punto de partida.
-7. **Comprobar en `prueba` durante unos días**, mirando `fudo_movimientos` de
-   angamos: qué se leyó, qué se habría descontado, qué quedó sin receta.
-8. **Recién ahí, `modo = 'real'`.**
+   En Plaza el par vitrina/congelador es necesario. **En Angamos no**: esa sede
+   tiene su propia bodega y ese inventario todavía no se hace. Propuesta a
+   confirmar por Jhon: **desactivar** (`activo='NO'`), no borrar — deja rastro
+   y se deshace.
+
+   **Esto va PRIMERO, y no es cosmético.** Mientras existan los duplicados, cada
+   insumo de Plaza tiene dos candidatos en Angamos y el emparejador no puede
+   decidir. Apagándolos, buena parte de las ambigüedades desaparece sola. Y si
+   se replicaran las recetas antes, quedarían apuntando a un producto que
+   después se va a desactivar.
+
+2. **Insumos de Plaza sin pareja en Angamos.** Listar con su rubro y su
+   candidato más cercano. Hay dos tipos y solo Jhon los distingue: el mismo
+   producto con otro nombre (`T. Cheesecake Maracuya` ↔ `T. Cheesecake Mara`)
+   y los que de verdad faltan (`Miel`, `Sandwich Selladito`). Regla 0.1.8: **es
+   una pregunta, no un hallazgo.**
+
+3. **Los productos que solo existen en Angamos.** Jhon confirmó que la carta es
+   la misma, así que estos **no deberían ser platos**: lo más probable es que
+   sean insumos, envases o limpieza propios de esa sede. Se listan para
+   confirmarlo, no para corregir nada.
+
+#### Fase 2 — Conectar Fudo *(bloqueada hasta que lleguen las credenciales)*
+
+4. Secrets en Supabase → Edge Functions → Secrets: **`FUDO_ANGAMOS_APIKEY`** y
+   **`FUDO_ANGAMOS_APISECRET`**. El nombre no es libre — las funciones lo arman
+   con `sede.toUpperCase()`.
+5. **Fila de `fudo_sync` para angamos en `modo = 'prueba'` y `cron_activo = false`.**
+   ⚠️ No se salta. En `prueba` el motor lee y registra pero NO toca el stock.
+6. **Ninguna Edge Function se toca ni se redespliega.** Ya son multi-sede.
+7. Correr `fudo-sync-productos` con `sede:'angamos'` para llenar `fudo_productos`.
+
+#### Fase 3 — MEDIR el calce de los dos catálogos de Fudo, antes de escribir nada
+
+**Este paso no estaba en el plan original y es el que más puede doler si falta.**
+
+El traslado de recetas tiene DOS saltos por nombre, y el plan cuidaba solo el
+segundo:
+
+```
+salto 1:  Fudo plaza "Cappuccino"  →  Fudo angamos "Cappuccino"
+salto 2:  insumo plaza "Leche"     →  insumo angamos "Leche"
+```
+
+El salto 1 es **igual de frágil** que el 2, y hay evidencia dura: dentro del
+propio Plaza convivían `T. Cheesecake Maracuya` y `T. Cheesecake Mara` para lo
+mismo. Son dos cuentas de Fudo distintas, cargadas por gente distinta, en
+momentos distintos. Nada garantiza que escriban igual.
+
+Entonces: apenas llegue el catálogo, **contar cuántos de los 168 productos de
+Fudo con receta en Plaza tienen un nombre idéntico en Fudo Angamos.** Si calzan
+150, adelante. Si calzan 60, el traslado automático no es el camino y hay que
+saberlo ANTES de escribir 168 recetas.
+
+#### Fase 4 — Trasladar las recetas *(la única escritura masiva)*
+
+8. **Vista previa primero.** Por cada receta de Plaza: qué crearía en Angamos,
+   con qué insumos, marcada `✓ automático` / `⚠ ambiguo` / `✗ sin pareja`. No
+   escribe nada. **Jhon la revisa.**
+9. **Aplicar solo los `✓`.** Conserva `cantidad` y `aplica`. Idempotente.
+10. **No trasladar recetas que en Plaza ya están rotas.** `Muffin Amapola`
+    apunta a un insumo borrado a propósito (§6.0). Copiar eso a Angamos sería
+    exportar un problema conocido.
+11. **Si dos insumos de Plaza caen en el mismo producto de Angamos**, se suman
+    las cantidades en una línea — el `unique (receta_id, producto_id)` lo exige.
+
+**Cómo se deshace, y hay que escribirlo ANTES de correrlo** (regla 0.1.3).
+Hoy Angamos tiene 0 recetas, así que la vuelta atrás es limpia:
+
+```sql
+delete from public.receta_items
+ where receta_id in (select id from public.recetas where sede='angamos');
+delete from public.recetas where sede='angamos';
+```
+
+⚠️ Esto solo sirve **mientras nadie haya hecho recetas a mano en Angamos**. Una
+vez que Jhon corrija alguna desde la app, deja de ser reversible en bloque.
+
+#### Fase 5 — Prueba, y recién después `real`
+
+12. Días en `modo='prueba'` mirando `fudo_movimientos` de angamos.
+13. **La falsa alarma que hay que esperar:** en `prueba`, `aplicado=false` en
+    todo es lo NORMAL (regla 0.1.9). Y la franja del motor **no** debe ponerse
+    roja en una sede recién encendida — eso ya está cubierto y probado en
+    `juzgarMotor()`.
+14. El paso a `real` **lo decide Jhon**, no el plan.
+15. El cron de Angamos se agenda **recién con la sede en `real`**, duplicando el
+    bloque de `2026-07-cron-automatico-ventas.sql` con `?sede=angamos`, y en los
+    3 pasos ya probados: agendar → comprobar a los 20 min que
+    `ultima_corrida_por` diga `cron` → recién ahí `cron_activo = true`.
+16. **El empuje de stock hacia Fudo NO se enciende en Angamos.**
 
 ### 9.2 Las trampas que ya conocemos, aplicadas a Angamos
 
 - **No copiar las recetas de plaza cambiando la sede.** Los ids de Fudo son de
   otra cuenta. Es el error más probable de esta migración.
-- **El emparejador de vitrina/congelador hay que correrlo también en angamos**,
-  y con la sede cambiada: `2026-07-emparejar-vitrina-congelador.sql` tiene
-  `sede='plaza'` escrito dentro, en varias consultas. **Revisar cada `where`
-  antes de correrlo** — si se corre tal cual, no hace nada o hace algo raro.
+- **El emparejador de vitrina/congelador NO se corre en Angamos.** En esa sede
+  no hay par que emparejar — lo que hay son duplicados que sobran (fase 1).
 - **Lo mismo con cualquier `.sql` viejo del repo.** Contado el 2026-07-30:
   **22 de los 42 archivos de `sql/` tienen `'plaza'` escrito a mano**, algunos
-  seis o siete veces (`emparejador-segunda-pasada.sql` lo tiene 16). Ninguno
-  sirve tal cual para angamos. **Buscar `plaza` en el archivo y revisar cada
-  aparición antes de correrlo** — no reemplazar a ciegas: en varios, `plaza` es
-  el origen a copiar (como en `replicar-secciones-plaza-a-angamos.sql`) y
-  cambiarlo rompería el sentido del script.
+  seis o siete veces. Ninguno sirve tal cual. **Revisar cada aparición** — no
+  reemplazar a ciegas: en varios, `plaza` es el ORIGEN a copiar (como en
+  `replicar-secciones-plaza-a-angamos.sql`) y cambiarlo rompe el sentido.
 - **El empuje de stock hacia Fudo NO se enciende de entrada.** Primero
-  descontar (leer de Fudo), y solo cuando eso sea confiable, considerar
-  escribir. En plaza fueron dos meses entre una cosa y la otra, y con razón.
+  descontar, y solo cuando eso sea confiable, considerar escribir. En plaza
+  fueron dos meses entre una cosa y la otra, y con razón.
 - **`app_permisos` no tiene columna `sede`**: quien puede empujar a Fudo puede
-  hacerlo en CUALQUIER sede. Con dos sedes vivas eso pasa a importar — es la
-  primera vez que el permiso global es un riesgo real y no teórico. Decidir con
-  Jhon si hace falta permiso por sede antes de encender el empuje en angamos.
-- **Angamos arranca sin historial y sin repartos**, y eso está bien: son
-  tablas por sede que se llenan solas con el uso.
+  hacerlo en CUALQUIER sede. Con dos sedes vivas deja de ser teórico. Decidir
+  con Jhon antes de encender el empuje en angamos.
+- **Angamos arranca sin historial y sin repartos**, y eso está bien: son tablas
+  por sede que se llenan solas con el uso.
 
 ### 9.3 Cómo se sabe que quedó bien
 
-El mismo chequeo de salud (`sql/2026-07-salud-del-sistema.sql`), que ya reporta
-la cobertura de recetas **por sede** (bloque 9). Angamos empieza en 0% y la
-métrica de avance es esa. Los bloques 5, 7 y 8 sirven igual para las dos sedes.
+Con `sql/2026-07-salud-del-sistema.sql`, **bloque 0** para el resumen y estos
+tres en particular:
 
----
+| Bloque | Qué contesta para Angamos |
+|---|---|
+| 9 | Cobertura de recetas por sede. Angamos parte en 0% y esa es la métrica |
+| **10** | **Recetas que apuntan al vacío.** Es el que atrapa un traslado mal hecho: si el emparejador se equivocó, acá salen |
+| 8 | Si el motor está leyendo — recordando que en `prueba` no aplicar es lo normal |
+
+Y en la app: elegir Parque Angamos y comprobar que el inventario y las recetas
+cargan, y que **la franja del motor no da falsa alarma** en una sede recién
+encendida.
+
+### 9.4 Regla de trabajo — Mall Plaza es el patrón
+
+*(De la sesión del 2026-08-01. Vale la pena porque evita una tentación real.)*
+
+**La infraestructura no cambia para encender una sede.** Mismas tablas, mismo
+motor, mismas Edge Functions, misma estética. Angamos se enciende **agregando
+filas**. Si en el camino aparece una mejora que valdría la pena, **se propone
+aparte y para las dos sedes** — no se cuela dentro de la migración, donde
+nadie la va a poder distinguir de lo que había que hacer igual.
 
 ## 10. Insumos que no se cuentan de a uno (té, café, naranja, limpieza)
 
