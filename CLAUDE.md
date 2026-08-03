@@ -21,6 +21,7 @@ Son ~1500 líneas. Este es el orden en que conviene usarlas:
 | Saber si un problema ya está resuelto | **§8, el catálogo** — se busca el problema y dice dónde vive la solución |
 | Saber qué falta por hacer | §6, ordenado por si la falla avisa o no |
 | Encender una sede nueva | **§9** — el caso Angamos, paso a paso |
+| Proponer que el sistema mueva stock solo | **§0.2.1** — ya se intentó y se apagó; leer por qué antes |
 | Poner recetas a insumos a granel (té, café, naranja) | **§10** — el marco y los datos ya medidos |
 | Entender por qué algo está hecho así | §11, la bitácora |
 
@@ -266,6 +267,10 @@ cuántas partes va, cuánto tarda y qué tiene que mirar del resultado.
 > Jhon, 2026-07-27: "es absurdo, no podemos tener números negativos en el
 > inventario... esta regla se aplica a todos los productos sin excepción."
 
+> ⚠️ **2026-08-01:** el *traslado automático* de 4 unidades congelador→vitrina
+> que vivía en ese mismo archivo **se apagó** (§0.2.1). El **tope en cero sigue
+> intacto** — son dos cosas distintas que compartían archivo.
+
 - **Ningún producto, en ningún camino, puede quedar con stock negativo.**
   No solo los que tienen pareja Vitrina/Congelador (`sql/2026-07-reposicion-
   congelador-y-tope-cero.sql`) — **también** los productos con lotes de
@@ -283,6 +288,52 @@ cuántas partes va, cuánto tarda y qué tiene que mirar del resultado.
   necesita "permitir" un negativo por algún motivo** (ej. para "ver cuánto
   faltó"), eso es una decisión que se pregunta a Jhon explícitamente — no
   se asume. La regla por defecto es tope duro en 0.
+
+---
+
+## 0.2.1 APAGADO — la reposición automática congelador → vitrina
+
+> Jhon, 2026-08-01: *"este parche está trayendo más problemas que soluciones
+> realmente. Lo mejor que podemos hacer es desactivar este sistema y pasar a un
+> sistema de conteo manual mientras se nos ocurra algo mejor."*
+
+**Qué hacía:** cuando una venta iba a dejar la vitrina en 0, el motor trasladaba
+solo 4 unidades desde el producto pareja del Congelador (detectado por nombre
+base) antes de descontar.
+
+**Por qué se apagó, y la lección general:** el sistema **movía producto en los
+números sin que nadie lo hubiera movido en el mesón.** La app decía que la
+vitrina tenía 4 cuando el estante estaba vacío. Es la misma clase de error que
+el doble descuento del conteo nocturno (§10.1): **el sistema simulando una
+acción física que nadie hizo.** Un inventario puede ir atrasado respecto a la
+realidad —eso se corrige contando—, pero no puede inventar movimientos.
+
+**Cómo quedó** (`sql/2026-08-apagar-reposicion-automatica.sql`):
+
+| | |
+|---|---|
+| Traslado automático de 4 unidades | ❌ apagado |
+| Tope en cero (regla 0.2) | ✅ **intacto** — no era parte del parche |
+| `fudo_procesar_item` | **no se tocó**: la función auxiliar conserva nombre y argumentos, así que no hubo riesgo de dejar dos firmas (§0.5) |
+| Cálculo para Fudo | **no cambia**: `fudo_stock_calculado` ya suma vitrina + congelador por nombre base |
+| "Total" en la app | **no cambia**: sigue sumando el par |
+
+**Qué pasa ahora:** la vitrina llega a 0 y se queda en 0. El congelador conserva
+su stock. Alguien mueve el producto de verdad y ajusta a mano.
+
+**Antes de proponer una versión nueva de esto**, entender por qué falló la
+primera: no fue el número 4 ni la detección de la pareja. Fue que **el traslado
+físico y el traslado en los números son dos hechos distintos**, y el sistema
+asumía el segundo sin evidencia del primero. Cualquier solución futura tiene que
+apoyarse en algo que alguien haga de verdad — no en una suposición.
+
+**Probado** contra un esquema copiado del DDL del repo, en las dos direcciones:
+con la versión vieja instalada la vitrina saltaba sola de 1 a 4 y el congelador
+bajaba de 9 a 5; con la nueva la vitrina queda en 0, el congelador queda intacto
+en 9, y vender 5 teniendo 2 sigue dejando 0 y no −3.
+
+**Cómo se vuelve atrás:** correr de nuevo
+`sql/2026-07-reposicion-congelador-y-tope-cero.sql`.
 
 ---
 
@@ -1050,7 +1101,7 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 | Dos `fudo_procesar_item` conviviendo dejaban la llamada por API ambigua — **15 h sin descontar** | Se borró la firma vieja; desde entonces todo script lleva un `drop` por cada firma posible | `2026-07-URGENTE-dos-motores.sql` | 07-27 |
 | Ese fallo era **invisible**: la app decía "✓" igual | Si la sync lee ventas y no descuenta ninguna, se abre una ventana que lo dice | `index.html` (`PASOS_SYNC`, paso `ventas`) | 07-27 |
 | El stock quedaba negativo al vender más de lo que había | Tope duro en 0 en el motor **y** restricciones `CHECK` en la tabla | `2026-07-tope-cero-sin-excepcion.sql` | 07-27 |
-| Vitrina en 0 con el congelador lleno | Reposición automática de 4 unidades desde la pareja, antes de descontar | `2026-07-reposicion-congelador-y-tope-cero.sql` | 07-27 |
+| ~~Vitrina en 0 con el congelador lleno~~ | ~~Reposición automática de 4 unidades~~ → **APAGADO el 2026-08-01**: movía producto en los números sin que nadie lo moviera en el mesón. Pasa a conteo manual (§0.2.1) | `2026-08-apagar-reposicion-automatica.sql` | 08-01 |
 | Adriana tardaba horas actualizando el stock de Fudo a mano (ponía 1.000 de todo) | Cálculo en la base + Edge Function que escribe por `PATCH` JSON:API, siempre valor absoluto | `2026-07-stock-para-fudo-v2-CORTO.sql` + `fudo-empujar-stock` | 07-28 |
 | Los envases (bolsas, bandejas) limitaban la venta: "Torta Pedidos Ya" quedaba en 0 con 8 trozos | Se excluyen del `min()` por `productos.tipo = 'Envases'` | `2026-07-stock-para-fudo-v2-envases.sql` | 07-28 |
 | A Fudo le llegaba solo el stock de vitrina (alfajor 2 en vez de 17) | El stock de un insumo pasa a ser la **suma de su nombre base** | `2026-07-stock-para-fudo-v3-suma-el-par.sql` | 07-29 |
