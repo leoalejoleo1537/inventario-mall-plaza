@@ -327,6 +327,12 @@ físico y el traslado en los números son dos hechos distintos**, y el sistema
 asumía el segundo sin evidencia del primero. Cualquier solución futura tiene que
 apoyarse en algo que alguien haga de verdad — no en una suposición.
 
+**Cómo se comprueba que quedó apagado.** Contar las firmas NO alcanza: si el
+`create` fallara, el conteo daría lo mismo. Hay que mirar el cuerpo instalado —
+`pg_get_functiondef()` y buscar `v_trasladar` / `least(4`. Está como bloque 4
+del propio archivo, y probado en las dos direcciones: delata la versión vieja y
+confirma la nueva.
+
 **Probado** contra un esquema copiado del DDL del repo, en las dos direcciones:
 con la versión vieja instalada la vitrina saltaba sola de 1 a 4 y el congelador
 bajaba de 9 a 5; con la nueva la vitrina queda en 0, el congelador queda intacto

@@ -1,10 +1,11 @@
 -- ================================================================
 --  DÓNDE VA:  Supabase  ->  SQL Editor  ->  New query
---  ES:        3 bloques. Correr UNO POR UNO, en orden.
+--  ES:        4 bloques. Correr UNO POR UNO, en orden.
 --  TARDA:     instantáneo cada uno
 --  QUÉ HACE:  apaga el traslado automático de 4 unidades desde el
 --             Congelador a la Vitrina. SÍ MODIFICA el sistema.
---  QUÉ VER:   el bloque 3 tiene que devolver UNA sola fila.
+--  QUÉ VER:   el bloque 3 devuelve UNA fila; el bloque 4 confirma
+--             que el traslado quedó apagado de verdad.
 -- ================================================================
 --
 -- POR QUÉ SE APAGA (Jhon, 2026-08-01): "este parche está trayendo más
@@ -107,6 +108,26 @@ from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public'
   and p.proname = 'descontar_con_reposicion';
+
+
+-- ================================================================
+-- BLOQUE 4 — LA COMPROBACIÓN QUE DE VERDAD IMPORTA
+--
+-- El bloque 3 solo dice CUÁNTAS funciones hay. Si el bloque 2 hubiera
+-- fallado, el 3 mostraría exactamente lo mismo. Esto mira POR DENTRO
+-- de la función instalada y confirma qué hace.
+--
+-- QUÉ VER: las dos primeras columnas tienen que decir ✅.
+-- ================================================================
+select case when pg_get_functiondef(p.oid) ilike '%v_trasladar%'
+              or pg_get_functiondef(p.oid) ilike '%least(4%'
+            then '🔴 TODAVIA REPONE — el bloque 2 no se aplico'
+            else '✅ APAGADO — ya no traslada nada del congelador' end as traslado_automatico,
+       case when pg_get_functiondef(p.oid) ilike '%greatest(0%'
+            then '✅ el tope en cero sigue activo'
+            else '🔴 OJO: no se ve el tope en cero' end as stock_negativo
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname='public' and p.proname='descontar_con_reposicion';
 
 
 -- ---------- registro en el cuaderno ----------
