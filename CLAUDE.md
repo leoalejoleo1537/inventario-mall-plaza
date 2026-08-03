@@ -321,6 +321,31 @@ realidad —eso se corrige contando—, pero no puede inventar movimientos.
 **Qué pasa ahora:** la vitrina llega a 0 y se queda en 0. El congelador conserva
 su stock. Alguien mueve el producto de verdad y ajusta a mano.
 
+**DECISIÓN CERRADA (Jhon, 2026-08-01), después de evaluar cuatro alternativas.**
+La vitrina llega a 0 y **ahí se detiene el descuento**, aunque el congelador
+tenga stock. No se cascadea al congelador, no se traslada nada, no se asume
+nada. Queda en conteo manual.
+
+**La razón, y es la que zanja el asunto:** *"los jefes de turno pueden poner
+cuatro, cinco, incluso seis productos. Muchas veces hay dos en vitrina y por
+rellenar ponen otros dos."* **La cantidad de reposición es variable y nadie la
+registra.** Cualquier número que el sistema asuma va a estar equivocado casi
+siempre, y cada suposición descalibra un poco más el modelo.
+
+Se evaluó y se **descartó** que la venta cascadeara al congelador cuando la
+vitrina llega a 0. El argumento a favor era que la venta prueba que el producto
+salió del local; el argumento en contra —el que ganó— es que igual obliga al
+sistema a interpretar un movimiento entre estantes que nadie mapeó.
+
+Aplica a los pares vitrina/congelador: brownies, donas, cinnamon rolls,
+muffins, galletones y demás bollería.
+
+**El costo aceptado, dicho sin adornos:** con la vitrina en 0, las ventas
+siguientes **no se descuentan de ninguna parte**. El total que muestra la app
+—y el que se le manda a Fudo— queda por encima de la realidad hasta el
+siguiente conteo. Es un atraso conocido y corregible contando, y se prefiere a
+un número inventado que parece exacto.
+
 **Antes de proponer una versión nueva de esto**, entender por qué falló la
 primera: no fue el número 4 ni la detección de la pareja. Fue que **el traslado
 físico y el traslado en los números son dos hechos distintos**, y el sistema
