@@ -1179,6 +1179,7 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 | **Que el motor falle y nadie se entere** | Alarma por proporción en el botón (`juzgarVentas`) **y** franja en pantalla leída de la base (`juzgarMotor`), que funciona aunque nadie apriete ⟳ | `index.html` + `2026-07-estado-del-motor.sql` |
 | No saber qué versión de una Edge Function está desplegada | `fudo-sync-ventas` devuelve `version` en cada respuesta | `supabase/functions/fudo-sync-ventas/index.ts` |
 | Que alguien sin permiso escriba en Fudo | Comprobación contra `app_permisos` **en el servidor**, no solo esconder el botón | las Edge Functions de Fudo |
+| Que el personal de una sede edite productos de la otra sin querer | `app_permisos.sede` acota el permiso a una sede (vacío = todas). Seguro contra accidentes, no seguridad | `2026-08-permiso-por-sede.sql` + `permisosDeLaSede()` |
 | Recetas que apuntan al vacío o cobertura incompleta | Informe de solo lectura + bloques 9 y 10 del chequeo | `2026-07-auditoria-recetas.sql` |
 | Revisar cómo están los permisos sin cambiarlos | Diagnóstico de solo lectura (ver 6.1: la decisión ya está tomada) | `2026-07-revision-seguridad.sql` |
 
@@ -1350,6 +1351,40 @@ Angamos todavía no tiene ninguna. Vale anotarlo porque el nombre del paso
 (`productos`) y lo que la gente espera del botón no coinciden: **el ⟳ trae lo
 que Fudo sabe, no lo que nosotros construimos.**
 
+### 9.6 La depuración de Angamos la hace su propio personal — permiso por sede
+
+*(Jhon, 2026-08-04.)* El inventario de Angamos hay que ordenarlo a mano: borrar
+lo que allá no se vende (Muffin Amapola), agregar lo que sí (Agua Bosqua), y
+**apagar los duplicados de Congelador** — porque *"Mall Plaza tiene un fenómeno
+que Angamos no tiene, el producto con doble posición"*. Todo eso necesita **Modo
+edición**, y lo hace la gente de esa sede, no Jhon.
+
+**Lo que él propuso y por qué NO conviene:** prestarles su cuenta. Esa cuenta
+tiene `puede_fudo = true` — o sea, **puede escribirle el stock a Fudo**, en
+cualquier sede. Prestarla es entregar el botón rojo junto con el lápiz. Y además
+deja sin rastro quién hizo qué.
+
+**Lo que se hizo:** `app_permisos` ganó una columna **`sede`**.
+
+| | |
+|---|---|
+| `sede` vacío | todas las sedes — **así quedaron las 5 cuentas que ya existían**, no le cambió nada a nadie |
+| `sede = 'angamos'` | el Modo edición y la zona de administración **no aparecen** en Mall Plaza |
+| Acota los dos permisos | `puede_editar` **y** `puede_fudo`, no solo el primero |
+| La cuenta nueva de Angamos | `puede_editar = true`, **`puede_fudo = false`** — para ordenar el inventario no hace falta escribirle a Fudo, y ese botón no se enciende en Angamos (§9.2) |
+
+En la app: `permisosDeLaSede(fila, sede)`, una función aparte y pura justamente
+para poder probarla. `cargarPermisos()` ya se volvía a correr al cambiar de sede
+(`pickSede`), así que el permiso se re-evalúa solo. Prueba en
+`pruebas/permiso-por-sede.mjs`, 11 casos, en las dos direcciones — incluido
+**que las cuentas de siempre no pierdan nada**, que es el riesgo real de esta
+migración, y que si la columna todavía no existe en la base todo siga como antes.
+
+**Qué es y qué no es esto:** es un **seguro contra accidentes, no seguridad** —
+y está bien que así sea (§6.1). Evita que alguien de Angamos borre sin querer un
+producto de Mall Plaza, que lleva meses cuadrada. No evita a un malintencionado,
+porque la app lee y escribe sin sesión por decisión tomada.
+
 ### 9.2 Las trampas que ya conocemos, aplicadas a Angamos
 
 - **No copiar las recetas de plaza cambiando la sede.** Los ids de Fudo son de
@@ -1364,9 +1399,11 @@ que Fudo sabe, no lo que nosotros construimos.**
 - **El empuje de stock hacia Fudo NO se enciende de entrada.** Primero
   descontar, y solo cuando eso sea confiable, considerar escribir. En plaza
   fueron dos meses entre una cosa y la otra, y con razón.
-- **`app_permisos` no tiene columna `sede`**: quien puede empujar a Fudo puede
-  hacerlo en CUALQUIER sede. Con dos sedes vivas deja de ser teórico. Decidir
-  con Jhon antes de encender el empuje en angamos.
+- ~~**`app_permisos` no tiene columna `sede`**~~ → **resuelto el 2026-08-04**
+  (`sql/2026-08-permiso-por-sede.sql`). Ahora `app_permisos.sede` acota el
+  permiso a UNA sede; **vacío = todas**, que es como quedaron las 5 cuentas
+  que ya existían, así que a nadie le cambió nada. Acota los DOS permisos:
+  `puede_editar` y `puede_fudo`. Ver §9.6.
 - **Angamos arranca sin historial y sin repartos**, y eso está bien: son tablas
   por sede que se llenan solas con el uso.
 

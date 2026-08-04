@@ -1204,16 +1204,35 @@ function setModoEdicion(v){
    La app lo lee para MOSTRAR u ocultar; el candado de verdad está en las
    Edge Functions, que lo vuelven a comprobar en el servidor antes de
    escribir. Esconder un botón nunca es seguridad. */
-let PERMISOS = { puede_fudo:false, puede_editar:false, correo:null };
+/* Acota una fila de app_permisos a la sede en la que estoy parado.
+   `sede` vacío = todas las sedes, que es como quedaron las 5 cuentas que ya
+   existían — así agregar la columna no le cambia nada a nadie.
+   Se agregó el 2026-08-04: el personal de Angamos hace su propia depuración y
+   necesita Modo edición, pero SOLO allá — un borrado sin querer en Mall Plaza,
+   que lleva meses cuadrada, es caro de deshacer.
+   Si la columna todavía no existe en la base, `fila.sede` viene undefined y el
+   permiso queda como estaba: para todas las sedes. */
+function permisosDeLaSede(fila, sede){
+  if(!fila) return { puede_fudo:false, puede_editar:false, sede:null };
+  const suya = fila.sede || null;
+  const aqui = !suya || suya === sede;
+  return {
+    sede: suya,
+    puede_fudo:   !!fila.puede_fudo   && aqui,
+    puede_editar: !!fila.puede_editar && aqui,
+  };
+}
+
+let PERMISOS = { puede_fudo:false, puede_editar:false, correo:null, sede:null };
 async function cargarPermisos(){
-  PERMISOS = { puede_fudo:false, puede_editar:false, correo:null };
+  PERMISOS = { puede_fudo:false, puede_editar:false, correo:null, sede:null };
   try{
     const {data:{session}} = await sb.auth.getSession();
     const correo = session?.user?.email?.toLowerCase() || null;
     PERMISOS.correo = correo;
     if(correo){
       const {data} = await sb.from('app_permisos').select('*').eq('correo',correo).maybeSingle();
-      if(data){ PERMISOS.puede_fudo = !!data.puede_fudo; PERMISOS.puede_editar = !!data.puede_editar; }
+      if(data) Object.assign(PERMISOS, permisosDeLaSede(data, SEDE));
     }
   }catch(e){ console.error(e); }   // si la tabla no existe todavía, nadie ve nada nuevo
   aplicarPermisos();
