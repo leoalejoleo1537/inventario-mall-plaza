@@ -1251,8 +1251,10 @@ consigue las llaves.
 4. Secrets en Supabase → Edge Functions → Secrets: **`FUDO_ANGAMOS_APIKEY`** y
    **`FUDO_ANGAMOS_APISECRET`**. El nombre no es libre — las funciones lo arman
    con `sede.toUpperCase()`.
-5. **Fila de `fudo_sync` para angamos en `modo = 'prueba'` y `cron_activo = false`.**
-   ⚠️ No se salta. En `prueba` el motor lee y registra pero NO toca el stock.
+5. **Fila de `fudo_sync` para angamos, `cron_activo = false`.**
+   ⚠️ **El modo quedó en `real`, no en `prueba`** — decisión de Jhon del
+   2026-08-04, ver §9.5. El plan original decía `prueba`; se cambió a pedido
+   suyo y con su razón escrita.
 6. **Ninguna Edge Function se toca ni se redespliega.** Ya son multi-sede.
 7. Correr `fudo-sync-productos` con `sede:'angamos'` para llenar `fudo_productos`.
 
@@ -1315,6 +1317,38 @@ vez que Jhon corrija alguna desde la app, deja de ser reversible en bloque.
     3 pasos ya probados: agendar → comprobar a los 20 min que
     `ultima_corrida_por` diga `cron` → recién ahí `cron_activo = true`.
 16. **El empuje de stock hacia Fudo NO se enciende en Angamos.**
+
+### 9.5 Angamos arranca en `real`, no en `prueba` — y el ⟳ no trae recetas
+
+*(Jhon, 2026-08-04. Dos cosas de la misma conversación.)*
+
+**1. El modo.** Él lo pidió así, textual: *"por ahora no quiero que el modelo
+esté en modo prueba… solo lo vamos a tocar nosotros, y quiero mover todo en
+modo real para que esté lo más actualizado posible, además Angamos ya tiene su
+inventario antiguo de Excel todavía, así que no te preocupes."*
+
+Los dos argumentos son buenos y hay que dejarlos escritos, porque el plan
+original (§9.1 fase 5) decía lo contrario y una sesión futura podría "corregirlo"
+sin saber por qué: **nadie del mesón está usando Angamos todavía** —el riesgo de
+que un número raro confunda a alguien es cero— y **el Excel sigue vivo como red**.
+En `prueba` habría que mirar `fudo_movimientos` a mano para saber qué habría
+pasado; en `real` el inventario simplemente se mantiene al día solo.
+
+**El matiz que hay que entender, y no es un pero:** hoy el modo **no cambia
+nada**, porque Angamos tiene **0 recetas** y sin receta no hay qué descontar.
+El modo empieza a importar el día que se creen las 168 recetas de una vez —
+ahí un emparejamiento equivocado baja stock inmediatamente en vez de quedar
+anotado. Por eso la vista previa de la fase 4 pasa de recomendable a
+**obligatoria**: era la red que daba el modo `prueba`, y ahora es la única.
+
+Archivo: `sql/2026-08-angamos-catalogo-y-modo-real.sql`.
+
+**2. "El ⟳ no trae las recetas".** Jhon lo reportó como falla y **no lo es**.
+El botón corre `PASOS_SYNC`: catálogo de productos de Fudo y lectura de ventas.
+**Las recetas no viajan por ahí** — son filas nuestras, en nuestra base, y
+Angamos todavía no tiene ninguna. Vale anotarlo porque el nombre del paso
+(`productos`) y lo que la gente espera del botón no coinciden: **el ⟳ trae lo
+que Fudo sabe, no lo que nosotros construimos.**
 
 ### 9.2 Las trampas que ya conocemos, aplicadas a Angamos
 
