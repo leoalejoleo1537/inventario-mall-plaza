@@ -1,4 +1,18 @@
 -- ================================================================
+--  ⚠️⚠️  NO CORRER. GUARDADO POR SI ALGÚN DÍA HACE FALTA.  ⚠️⚠️
+--
+--  Jhon decidió el 2026-08-04 NO acotar el permiso por sede: le presta
+--  su cuenta al personal de Angamos y los capacita él. Son dos personas
+--  y un producto borrado se vuelve a crear. Ver §9.6 del archivo madre.
+--
+--  Mientras este archivo no se corra, la columna `sede` no existe y la
+--  app funciona exactamente como siempre — `permisosDeLaSede()` devuelve
+--  el permiso completo. Eso está probado (pruebas/permiso-por-sede.mjs).
+--
+--  Cuándo volver a mirarlo: si crece la cantidad de gente con permiso,
+--  o cuando se encienda el empuje de stock a Fudo en Angamos.
+-- ================================================================
+--
 --  DÓNDE VA:  Supabase  ->  SQL Editor  ->  New query
 --  ES:        3 bloques. Correr UNO POR UNO, en orden.
 --  TARDA:     instantáneo cada uno

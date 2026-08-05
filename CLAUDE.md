@@ -1179,7 +1179,7 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 | **Que el motor falle y nadie se entere** | Alarma por proporción en el botón (`juzgarVentas`) **y** franja en pantalla leída de la base (`juzgarMotor`), que funciona aunque nadie apriete ⟳ | `index.html` + `2026-07-estado-del-motor.sql` |
 | No saber qué versión de una Edge Function está desplegada | `fudo-sync-ventas` devuelve `version` en cada respuesta | `supabase/functions/fudo-sync-ventas/index.ts` |
 | Que alguien sin permiso escriba en Fudo | Comprobación contra `app_permisos` **en el servidor**, no solo esconder el botón | las Edge Functions de Fudo |
-| Que el personal de una sede edite productos de la otra sin querer | `app_permisos.sede` acota el permiso a una sede (vacío = todas). Seguro contra accidentes, no seguridad | `2026-08-permiso-por-sede.sql` + `permisosDeLaSede()` |
+| Que el personal de una sede edite productos de la otra sin querer | **Construido pero apagado por decisión de Jhon** (§9.6): `app_permisos.sede` acotaría el permiso a una sede. Hoy se controla capacitando | `2026-08-permiso-por-sede.sql` (sin correr) |
 | Recetas que apuntan al vacío o cobertura incompleta | Informe de solo lectura + bloques 9 y 10 del chequeo | `2026-07-auditoria-recetas.sql` |
 | Revisar cómo están los permisos sin cambiarlos | Diagnóstico de solo lectura (ver 6.1: la decisión ya está tomada) | `2026-07-revision-seguridad.sql` |
 
@@ -1359,12 +1359,29 @@ lo que allá no se vende (Muffin Amapola), agregar lo que sí (Agua Bosqua), y
 que Angamos no tiene, el producto con doble posición"*. Todo eso necesita **Modo
 edición**, y lo hace la gente de esa sede, no Jhon.
 
-**Lo que él propuso y por qué NO conviene:** prestarles su cuenta. Esa cuenta
-tiene `puede_fudo = true` — o sea, **puede escribirle el stock a Fudo**, en
-cualquier sede. Prestarla es entregar el botón rojo junto con el lápiz. Y además
-deja sin rastro quién hizo qué.
+**DECISIÓN DE JHON, y es la que manda: les presta su cuenta.** Yo propuse acotar
+el permiso por sede y él lo evaluó y dijo que no hacía falta, con estos
+argumentos: *"son máximo dos personas las que van a tener contacto con el
+inventario… yo mismo los voy a capacitar… Este también fue mi sistema, y desde
+que el modelo era más crudo no tuve ningún problema en que se eliminaran
+productos que hicieran falta. Y en caso de que se eliminaran, se podrían volver
+a crear."*
 
-**Lo que se hizo:** `app_permisos` ganó una columna **`sede`**.
+Vale dejar escrito el argumento porque es correcto y una sesión futura podría
+querer "arreglarlo": **el daño acá es reversible** —un producto borrado se
+vuelve a crear— y el riesgo se controla con capacitación porque el universo de
+gente es dos personas, no veinte. Aplica la regla 0.1.7.
+
+Mi objeción quedó anotada y no se vuelve a proponer: esa cuenta lleva
+`puede_fudo = true`, o sea el botón que le escribe el stock a Fudo. **Él lo
+sabe y decidió igual.**
+
+**La mecánica quedó construida pero APAGADA.** `app_permisos` puede tener una
+columna **`sede`**, y el código de la app ya la respeta — pero
+`sql/2026-08-permiso-por-sede.sql` **no se corrió y no hay que correrlo**.
+Mientras la columna no exista, `permisosDeLaSede()` devuelve el permiso
+completo y todo funciona como siempre (está probado, es uno de los 11 casos).
+Si algún día crecen las sedes o la gente, esto es lo que hay:
 
 | | |
 |---|---|
@@ -1380,10 +1397,10 @@ para poder probarla. `cargarPermisos()` ya se volvía a correr al cambiar de sed
 **que las cuentas de siempre no pierdan nada**, que es el riesgo real de esta
 migración, y que si la columna todavía no existe en la base todo siga como antes.
 
-**Qué es y qué no es esto:** es un **seguro contra accidentes, no seguridad** —
-y está bien que así sea (§6.1). Evita que alguien de Angamos borre sin querer un
-producto de Mall Plaza, que lleva meses cuadrada. No evita a un malintencionado,
-porque la app lee y escribe sin sesión por decisión tomada.
+**Qué habría sido y qué no:** un **seguro contra accidentes, no seguridad**
+(§6.1). Nunca habría evitado a un malintencionado, porque la app lee y escribe
+sin sesión por decisión tomada. Contra el resbalón sí servía — y Jhon decidió
+que contra el resbalón alcanza con capacitar a dos personas.
 
 ### 9.2 Las trampas que ya conocemos, aplicadas a Angamos
 
@@ -1399,11 +1416,11 @@ porque la app lee y escribe sin sesión por decisión tomada.
 - **El empuje de stock hacia Fudo NO se enciende de entrada.** Primero
   descontar, y solo cuando eso sea confiable, considerar escribir. En plaza
   fueron dos meses entre una cosa y la otra, y con razón.
-- ~~**`app_permisos` no tiene columna `sede`**~~ → **resuelto el 2026-08-04**
-  (`sql/2026-08-permiso-por-sede.sql`). Ahora `app_permisos.sede` acota el
-  permiso a UNA sede; **vacío = todas**, que es como quedaron las 5 cuentas
-  que ya existían, así que a nadie le cambió nada. Acota los DOS permisos:
-  `puede_editar` y `puede_fudo`. Ver §9.6.
+- **`app_permisos` no tiene columna `sede`**, y eso es una **decisión**, no un
+  descuido: la mecánica está construida (`sql/2026-08-permiso-por-sede.sql` +
+  `permisosDeLaSede()`) pero **Jhon decidió el 2026-08-04 no correrla** — ver
+  §9.6. Mientras tanto, quien puede empujar a Fudo puede hacerlo en cualquier
+  sede. Volver a mirarlo **cuando se encienda el empuje en Angamos**, no antes.
 - **Angamos arranca sin historial y sin repartos**, y eso está bien: son tablas
   por sede que se llenan solas con el uso.
 
