@@ -694,14 +694,48 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 
 ## 6. Estado actual y pendientes
 
-### 6.0 DÓNDE QUEDAMOS — al 2026-07-30, fin del día
+### 6.0 DÓNDE QUEDAMOS — al 2026-08-05, fin del día
 
 > Esto es lo que un chat nuevo necesita saber antes que nada. **Actualizar
 > esta sección cada vez que se cierre una etapa**, y borrar lo que ya no
 > aplique — si envejece, engaña.
 
-**En curso: el plan de estabilidad, en etapas.** Jhon pidió ir de a una y con
-paso a paso, porque no es técnico. El estado:
+## ✅ ANGAMOS QUEDÓ ENCENDIDA (2026-08-05)
+
+**Lo que está hecho y no hay que volver a hacer:**
+
+| | |
+|---|---|
+| Credenciales de Fudo Angamos | ✅ secrets creados, la conexión anda |
+| Catálogo de Fudo | ✅ ~670 productos, 437 activos |
+| Modo | ✅ **`real`** por decisión de Jhon (§9.5) |
+| Inventario | ✅ 189 productos · los 14 duplicados de Congelador apagados |
+| **Recetas** | ✅ **de 1 a ~85 en una tarde** (§9.7) |
+| Cron | ❌ **apagado a propósito** — se enciende cuando la sede se empiece a usar (§9.1 fase 5) |
+| Empuje de stock a Fudo | ❌ **no se enciende** — primero descontar, y solo cuando eso sea confiable (§9.2) |
+
+**Lo que queda pendiente y NO es mío:**
+- **El conteo.** Todo Angamos está en 0 salvo Pizza Capresse Azapa. Lo hace el
+  personal de la sede. Guía de capacitación en `docs/guia-angamos.html`.
+- **Los ~40 combos.** Los ve administración. **Atajo que ya se sabe:** Jhon ya
+  los armó a mano en Mall Plaza, así que esas recetas son el molde (§9.7).
+- **Productos que faltan crear:** `Sandwich Selladito` (5 recetas de Plaza
+  dependen de él), `Miel`, `Agua Bosqua sin gas`, Fanta, Pepsi.
+- **Preguntas de carta sin contestar:** si `Croissant Jamón Queso` es el
+  `Sandwich Jamón Queso`, qué es exactamente `Cocacola mini sprite`, cuál de
+  los tres galletones es `Galleton Vainilla Chips`, y si `matilda` (id 677) y
+  `Manjar Bolsa` (id 773) se venden solos.
+
+**Lo único que falta comprobar de verdad:** que una venta real en el Fudo de
+Angamos descuente. En Plaza se probó con una pizza y es la única prueba que
+vale. No bloquea nada porque la sede todavía no se usa.
+
+**Lo siguiente que pidió Jhon (2026-08-05):** bugs y temas estéticos.
+
+---
+
+**Antes de Angamos: el plan de estabilidad, cerrado.** Jhon pidió ir de a una y
+con paso a paso, porque no es técnico. El estado:
 
 | Etapa | Qué es | Estado |
 |---|---|---|
@@ -716,7 +750,7 @@ paso a paso, porque no es técnico. El estado:
 **✅ EL PLAN DE ESTABILIDAD ESTÁ COMPLETO.** Mall Plaza quedó con: chequeo
 mensual, respaldo probado, librería fija, cuaderno de migraciones, alarma por
 proporción, estado del motor en la base, y sincronización automática cada 15
-minutos vigilada. **Lo siguiente que pidió Jhon es Angamos → §9.**
+minutos vigilada.
 
 **Cómo quedó el cron (2026-07-31):** agendado `*/15 * * * *` con el nombre
 `sync-ventas-plaza`; primera corrida automática a las 19:00:05 con
