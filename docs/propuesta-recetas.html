@@ -1,0 +1,438 @@
+<title>Recetas · propuesta de rediseño</title>
+<style>
+  :root{
+    --navy:#0F1E31; --navy2:#16283F;
+    --orange:#DC4405; --orange-dark:#B93A04;
+    --pizarra:#2F4A6D;
+    --ok-tx:#2E7D32;  --ok-bg:#E6F4E6;
+    --warn-tx:#B26A00;--warn-bg:#FFF3E0;
+    --crit-tx:#C0392B;--crit-bg:#FDECEA;
+    --text:#1C2733; --muted:#6B7684; --line:#E3E5E8;
+    --bg:#F5F6F7; --card:#FFFFFF; --inset:#F7F8F9;
+    --sombra:0 1px 3px rgba(15,30,49,.07), 0 1px 1px rgba(15,30,49,.04);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --text:#E8EBEE; --muted:#93A0AE; --line:#2A3B50;
+      --bg:#0B1523; --card:#16283F; --inset:#101F33; --pizarra:#3D5F86;
+      --ok-tx:#8FD694; --ok-bg:#1B3220; --warn-tx:#F0B95E; --warn-bg:#33260F;
+      --crit-tx:#F0968C; --crit-bg:#3A1B18;
+      --orange:#FF6B33; --orange-dark:#FF8A5C;
+      --sombra:0 1px 3px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --text:#E8EBEE; --muted:#93A0AE; --line:#2A3B50;
+    --bg:#0B1523; --card:#16283F; --inset:#101F33; --pizarra:#3D5F86;
+    --ok-tx:#8FD694; --ok-bg:#1B3220; --warn-tx:#F0B95E; --warn-bg:#33260F;
+    --crit-tx:#F0968C; --crit-bg:#3A1B18;
+    --orange:#FF6B33; --orange-dark:#FF8A5C;
+    --sombra:0 1px 3px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --text:#1C2733; --muted:#6B7684; --line:#E3E5E8;
+    --bg:#F5F6F7; --card:#FFFFFF; --inset:#F7F8F9; --pizarra:#2F4A6D;
+    --ok-tx:#2E7D32; --ok-bg:#E6F4E6; --warn-tx:#B26A00; --warn-bg:#FFF3E0;
+    --crit-tx:#C0392B; --crit-bg:#FDECEA;
+    --orange:#DC4405; --orange-dark:#B93A04;
+    --sombra:0 1px 3px rgba(15,30,49,.07), 0 1px 1px rgba(15,30,49,.04);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg);color:var(--text);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:0 18px 80px}
+  p{margin:0 0 14px;max-width:66ch}
+
+  .top{background:var(--navy);color:#fff;padding:32px 18px 28px;margin-bottom:24px}
+  .top-in{max-width:820px;margin:0 auto}
+  .top .marca{font-size:11.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#FF8A5C}
+  .top h1{margin:8px 0 6px;font-size:29px;line-height:1.16;font-weight:800;text-wrap:balance}
+  .top .sub{margin:0;color:#A9B7C6;font-size:15px}
+
+  h2{background:var(--pizarra);color:#fff;margin:36px 0 16px;padding:11px 15px;border-radius:10px;
+    font-size:14.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+  h3{margin:24px 0 8px;font-size:17.5px;font-weight:800;text-wrap:balance}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px;box-shadow:var(--sombra);margin-bottom:14px}
+  .card > *:last-child{margin-bottom:0}
+
+  .nota{border-radius:12px;padding:15px 18px;margin-bottom:14px;border:1px solid transparent}
+  .nota > *:last-child{margin-bottom:0}
+  .nota.warn{background:var(--warn-bg);border-color:color-mix(in srgb,var(--warn-tx) 26%,transparent)}
+  .nota.ok{background:var(--ok-bg);border-color:color-mix(in srgb,var(--ok-tx) 26%,transparent)}
+  .nota .t{font-weight:800;display:block;margin-bottom:4px}
+
+  /* ---------- la maqueta: se ve como la app ---------- */
+  .demo{border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    box-shadow:0 6px 20px rgba(15,30,49,.10);margin:6px 0 20px;background:var(--card)}
+  .demo-bar{background:var(--navy);color:#fff;padding:11px 16px;display:flex;align-items:center;gap:10px}
+  .demo-bar .tit{font-weight:700;font-size:16px;line-height:1.15}
+  .demo-bar .sede{font-size:11.5px;color:#A9B7C6;font-weight:600}
+  .demo-body{padding:18px 16px;background:var(--inset)}
+
+  /* el puente Fudo -> inventario */
+  .puente{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-bottom:16px}
+  .lado{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 12px;text-align:center}
+  .lado .n{font-size:30px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .lado .l{font-size:11.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:5px}
+  .flecha{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--orange);min-width:74px}
+  .flecha .cnt{font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}
+  .flecha svg{width:70px;height:22px}
+
+  .estados{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px}
+  .est{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px 10px;text-align:center}
+  .est .n{font-size:24px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .est .l{font-size:12px;margin-top:3px;line-height:1.3}
+  .est.ok .n{color:var(--ok-tx)} .est.falta .n{color:var(--orange)} .est.no .n{color:var(--muted)}
+
+  .barra-fila{background:var(--card);border:1px solid var(--line);border-radius:11px;
+    padding:11px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s, transform .12s}
+  .barra-fila:hover{border-color:var(--orange)}
+  .barra-fila:active{transform:scale(.99)}
+  .barra-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:7px}
+  .barra-top .nom{font-weight:700;font-size:14.5px}
+  .barra-top .cif{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .barra{height:7px;border-radius:999px;background:color-mix(in srgb,var(--muted) 20%,transparent);overflow:hidden;display:flex}
+  .barra i{display:block;height:100%}
+  .barra .b-ok{background:var(--ok-tx)}
+  .barra .b-no{background:color-mix(in srgb,var(--muted) 55%,transparent)}
+
+  /* la cola de enlazar */
+  .cola-cab{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px}
+  .cola-cab .q{font-size:12.5px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+  .ficha{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:18px;box-shadow:var(--sombra)}
+  .ficha .de{font-size:11.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--orange)}
+  .ficha .nom{font-size:22px;font-weight:800;line-height:1.2;margin:5px 0 2px;text-wrap:balance}
+  .ficha .meta{font-size:13px;color:var(--muted);margin-bottom:15px}
+  .preg{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-bottom:9px}
+
+  .cand{width:100%;display:flex;align-items:center;gap:12px;background:var(--card);
+    border:1.5px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px;
+    cursor:pointer;text-align:left;font:inherit;color:inherit;transition:border-color .15s,background .15s,transform .12s}
+  .cand:hover{border-color:var(--orange);background:color-mix(in srgb,var(--orange) 5%,var(--card))}
+  .cand:active{transform:scale(.985)}
+  .cand .tick{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:transparent;font-size:14px}
+  .cand:hover .tick{border-color:var(--orange);color:var(--orange)}
+  .cand .txt{flex:1;min-width:0}
+  .cand .p1{font-weight:700;font-size:15px}
+  .cand .p2{font-size:12.5px;color:var(--muted)}
+  .cand .por{font-size:11.5px;font-weight:800;color:var(--ok-tx);background:var(--ok-bg);
+    padding:2px 9px;border-radius:999px;white-space:nowrap}
+
+  .buscar{width:100%;padding:11px 14px;border:1.5px solid var(--line);border-radius:11px;
+    background:var(--card);color:var(--text);font:inherit;font-size:14.5px;margin-bottom:10px}
+  .buscar::placeholder{color:var(--muted)}
+
+  .otras{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .chip-btn{background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:7px 14px;
+    font:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:border-color .15s,color .15s}
+  .chip-btn:hover{border-color:var(--muted);color:var(--text)}
+  .chip-btn:active{transform:scale(.96)}
+
+  .hecho{text-align:center;padding:30px 16px}
+  .hecho .ico{font-size:40px;line-height:1}
+  .hecho .t{font-size:19px;font-weight:800;margin:8px 0 4px}
+  .hecho .s{color:var(--muted);font-size:14px}
+  .reset{margin-top:14px;background:var(--orange);color:#fff;border:none;border-radius:999px;
+    padding:10px 20px;font:inherit;font-weight:800;cursor:pointer}
+
+  .aviso-demo{font-size:12.5px;color:var(--muted);text-align:center;margin:-12px 0 22px;font-style:italic}
+
+  .tabla-cont{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);
+    box-shadow:var(--sombra);margin-bottom:14px}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:420px}
+  th{background:color-mix(in srgb,var(--pizarra) 9%,transparent);text-align:left;padding:10px 14px;
+    font-size:11.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);
+    border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+
+  ul{margin:0 0 14px;padding-left:20px;max-width:66ch}
+  li{margin-bottom:6px}
+  li:last-child{margin-bottom:0}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+  @media (max-width:560px){
+    .puente{grid-template-columns:1fr;gap:8px}
+    .flecha{flex-direction:row;min-width:0}
+    .flecha svg{width:22px;height:34px;transform:rotate(90deg)}
+    .estados{grid-template-columns:1fr}
+  }
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="marca">Café del Desierto · propuesta</div>
+    <h1>Recetas deja de ser una lista y pasa a ser un taller</h1>
+    <p class="sub">Maqueta navegable · 5 de agosto de 2026</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <p><strong>El diagnóstico, y es más de fondo que lo estético:</strong> la
+    pantalla de hoy muestra <em>las recetas que ya existen</em>. Pero el trabajo
+    que hay que hacer es el contrario — <em>las que faltan</em>. Nadie entra a
+    Recetas a mirar lo que ya está resuelto.</p>
+    <p>Por eso se ve vacía aunque tenga 172 filas: <strong>está mostrando el
+    lado equivocado del problema.</strong></p>
+  </div>
+
+  <h2>El hallazgo que hace posible el resto</h2>
+
+  <div class="nota warn">
+    <span class="t">Hacen falta tres estados, no dos</span>
+    <p>Si un producto solo puede estar <em>con receta</em> o <em>sin receta</em>,
+    el contador nunca llega a cero: los ~40 combos, los tés, los cafés y los
+    productos internos van a quedar en rojo <strong>para siempre</strong>. Y una
+    pantalla que siempre grita, se deja de mirar.</p>
+    <p>El tercer estado es <strong>"no lleva receta"</strong>, puesto a
+    propósito por una persona. Con eso el número se vuelve honesto y llegar a
+    cero se vuelve posible — que es lo que convierte la pantalla en un trabajo
+    con final, en vez de una alarma permanente.</p>
+  </div>
+
+  <h2>1 · La portada — el puente</h2>
+
+  <p>Lo primero que se ve contesta tu idea del símbolo: <strong>de dónde sale y
+  a dónde llega.</strong> Fudo tiene los productos que se venden; el inventario
+  tiene lo que se descuenta; en el medio están los enlaces, que es lo que se
+  viene a construir.</p>
+
+  <div class="demo">
+    <div class="demo-bar">
+      <div>
+        <div class="tit">Recetas</div>
+        <div class="sede">Parque Angamos</div>
+      </div>
+    </div>
+    <div class="demo-body">
+
+      <div class="puente">
+        <div class="lado">
+          <div class="n">437</div>
+          <div class="l">se venden en Fudo</div>
+        </div>
+        <div class="flecha">
+          <svg viewBox="0 0 70 22" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2 11h58"></path><path d="M52 4l8 7-8 7"></path>
+          </svg>
+          <span class="cnt">85 enlazados</span>
+        </div>
+        <div class="lado">
+          <div class="n">189</div>
+          <div class="l">en el inventario</div>
+        </div>
+      </div>
+
+      <div class="estados">
+        <div class="est ok"><div class="n">85</div><div class="l">descuentan</div></div>
+        <div class="est falta"><div class="n">146</div><div class="l">falta enlazar</div></div>
+        <div class="est no"><div class="n">206</div><div class="l">no llevan receta</div></div>
+      </div>
+
+      <div class="barra-fila">
+        <div class="barra-top"><span class="nom">Vitrina de tortas</span><span class="cif">18 de 22</span></div>
+        <div class="barra"><i class="b-ok" style="width:82%"></i><i class="b-no" style="width:0%"></i></div>
+      </div>
+      <div class="barra-fila">
+        <div class="barra-top"><span class="nom">Sándwiches</span><span class="cif">6 de 9</span></div>
+        <div class="barra"><i class="b-ok" style="width:67%"></i></div>
+      </div>
+      <div class="barra-fila">
+        <div class="barra-top"><span class="nom">Combos</span><span class="cif">0 de 41</span></div>
+        <div class="barra"><i class="b-ok" style="width:0%"></i></div>
+      </div>
+      <div class="barra-fila">
+        <div class="barra-top"><span class="nom">Bebidas</span><span class="cif">9 de 14</span></div>
+        <div class="barra"><i class="b-ok" style="width:64%"></i></div>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="aviso-demo">Los números son los reales de Angamos de hoy.</p>
+
+  <p><strong>Por qué las barras van por sección y no una sola grande:</strong>
+  "48% de cobertura" no le dice a nadie qué hacer. "Combos: 0 de 41" sí — dice
+  dónde está el hueco y por dónde empezar. Se toca una barra y se entra a
+  trabajar en esa.</p>
+
+  <h2>2 · El taller — enlazar de a uno</h2>
+
+  <p>Acá está el corazón. Un producto a la vez, con los candidatos ya
+  propuestos. <strong>Es tocar uno y listo</strong> — no hay que buscar, salvo
+  que ninguno sirva.</p>
+
+  <div class="demo">
+    <div class="demo-bar">
+      <div>
+        <div class="tit">Enlazar</div>
+        <div class="sede">Parque Angamos</div>
+      </div>
+    </div>
+    <div class="demo-body" id="taller"></div>
+  </div>
+
+  <p class="aviso-demo">Es una maqueta de verdad: tócala. Siete productos reales del Fudo de Angamos.</p>
+
+  <div class="card">
+    <h3>Las cuatro decisiones de diseño que hay detrás</h3>
+    <p><strong>Tocar A y después tocar B, nunca arrastrar.</strong> Arrastrar se
+    ve precioso con mouse y es peleado con el dedo. Tocar-tocar funciona igual
+    en el teléfono y en el computador, y además es más rápido. Una sola forma de
+    hacerlo, no dos que se van separando.</p>
+    <p><strong>Los candidatos vienen propuestos, no hay que buscarlos.</strong>
+    El sistema ya sabe cuál se parece más. Propone — no decide: quien enlaza es
+    la persona. Es la misma regla con la que armamos las 81 recetas de hoy.</p>
+    <p><strong>El buscador solo aparece si ninguno sirve.</strong> Lo normal es
+    que el primer candidato sea el correcto; el buscador es la salida de
+    emergencia, no la puerta de entrada.</p>
+    <p><strong>Cada ficha se resuelve o se descarta, pero no se queda.</strong>
+    El contador baja siempre. Eso es lo que hace que el trabajo se sienta que
+    avanza en vez de que no se acaba nunca.</p>
+  </div>
+
+  <h2>3 · Lo que hay que construir debajo</h2>
+
+  <p>Esto no es solo pantalla. Hay tres cosas que faltan en la base y conviene
+  saberlas antes de decidir:</p>
+
+  <div class="tabla-cont">
+    <table>
+      <thead><tr><th>Qué falta</th><th>Para qué</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Marcar "no lleva receta"</strong></td>
+          <td>Es el tercer estado. Sin esto el contador no llega a cero nunca y la pantalla se vuelve ruido.</td>
+        </tr>
+        <tr>
+          <td><strong>Guardar quién enlazó y cuándo</strong></td>
+          <td>Si un enlace queda mal, hay que poder ver quién lo hizo y deshacerlo. Es la condición de toda la zona de configuración.</td>
+        </tr>
+        <tr>
+          <td><strong>Categoría del producto de Fudo</strong></td>
+          <td>Es lo que agrupa las barras de la portada. Fudo ya la manda (<code>categoria_id</code>), hoy se guarda y no se usa.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="nota ok">
+    <span class="t">Lo que esta pantalla NO hace, y es a propósito</span>
+    <p>No arma recetas de varios insumos — los combos y los cafés necesitan otra
+    cosa. No define cantidades fraccionarias (los 18 g de café). Y no borra
+    productos.</p>
+    <p>Hacer bien lo simple primero es lo que ya funcionó hoy: 81 recetas en una
+    tarde porque eran todas de un insumo. Meter los combos acá haría la pantalla
+    el doble de complicada para el 20% de los casos.</p>
+  </div>
+
+  <h2>Lo que falta que decidas</h2>
+
+  <div class="card">
+    <p><strong>1. ¿La portada o directo al taller?</strong> La portada explica y
+    da contexto; el taller es donde se trabaja. Se puede abrir en cualquiera de
+    las dos. Mi recomendación: abrir en la portada las primeras semanas —
+    mientras jefatura está aprendiendo— y después cambiarlo a que abra en el
+    taller.</p>
+    <p><strong>2. ¿Qué pasa cuando el producto no existe en el inventario?</strong>
+    Como el Croissant Nutella. Se puede ofrecer crearlo ahí mismo, sin salir de
+    la pantalla. Es cómodo — y es también la forma más fácil de llenar el
+    inventario de duplicados. Yo lo dejaría fuera de la primera versión.</p>
+    <p><strong>3. ¿Los combos entran o no?</strong> Son 41 y hoy son el hueco más
+    grande. Pero necesitan una pantalla distinta, porque un combo descuenta dos
+    o tres cosas. Se puede hacer después, con lo aprendido de esta.</p>
+  </div>
+
+</div>
+
+<script>
+  const COLA = [
+    { nom:'Waffle', precio:'$3.200', cat:'Vitrina de tortas',
+      cands:[ {p:'Waffles', s:'Vitrina de tortas · stock 0', por:'casi seguro'},
+              {p:'Brownie solo', s:'Vitrina de tortas · stock 0'} ] },
+    { nom:'Torta amor', precio:'$5.900', cat:'Vitrina de tortas',
+      cands:[ {p:'Trozo torta amor', s:'Vitrina de tortas · stock 0', por:'casi seguro'},
+              {p:'Trozo torta hojarasca', s:'Vitrina de tortas · stock 0'},
+              {p:'Trozo torta Matilda', s:'Vitrina de tortas · stock 0'} ] },
+    { nom:'Tiramisu Pedidos Ya', precio:'$7.000', cat:'Vitrina de tortas',
+      cands:[ {p:'Trozo de Tiramisu', s:'Vitrina de tortas · stock 0', por:'casi seguro'} ] },
+    { nom:'Té dilmah earl grey', precio:'$3.500', cat:'Barra',
+      cands:[], pista:'No se encontró nada parecido. Los tés de hoja no se descuentan por unidad.' },
+    { nom:'Croissant nutella', precio:'$4.500', cat:'Vitrina de tortas',
+      cands:[ {p:'Croissant manjar', s:'Vitrina de tortas · stock 0'} ],
+      pista:'El único croissant del inventario es el de manjar. Si el de nutella se vende, falta crearlo.' },
+    { nom:'APALTADO + CAFE', precio:'$9.490', cat:'Combos',
+      cands:[ {p:'Sandwich Apaltado', s:'Sándwiches · stock 0'} ],
+      pista:'Este combo descuenta dos cosas: el sándwich y el café. Necesita la pantalla de combos.' },
+    { nom:'Sandwich Champiñon Nuevo', precio:'$9.490', cat:'Sándwiches',
+      cands:[ {p:'Sandwich Champiñón', s:'Sándwiches · stock 0', por:'casi seguro'},
+              {p:'Pizza Champiñón', s:'Congelador · stock 0'} ] },
+  ];
+
+  let i = 0, hechos = 0;
+  const cont = document.getElementById('taller');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function pintar(){
+    if(i >= COLA.length){
+      cont.innerHTML =
+        '<div class="hecho"><div class="ico">✓</div>' +
+        '<div class="t">No queda nada por enlazar</div>' +
+        '<div class="s">Resolviste ' + hechos + ' de ' + COLA.length + '. En la app real seguiría con la siguiente sección.</div>' +
+        '<button class="reset" id="reset">Volver a empezar</button></div>';
+      document.getElementById('reset').onclick = () => { i = 0; hechos = 0; pintar(); };
+      return;
+    }
+    const f = COLA[i];
+    const cands = f.cands.map((c, n) =>
+      '<button class="cand" data-ok="1">' +
+        '<span class="tick">✓</span>' +
+        '<span class="txt"><span class="p1">' + esc(c.p) + '</span><br>' +
+          '<span class="p2">' + esc(c.s) + '</span></span>' +
+        (c.por ? '<span class="por">' + esc(c.por) + '</span>' : '') +
+      '</button>').join('');
+
+    cont.innerHTML =
+      '<div class="cola-cab"><span class="q">Quedan ' + (COLA.length - i) + '</span>' +
+        '<span class="q" style="color:var(--ok-tx)">' + hechos + ' resueltos</span></div>' +
+      '<div class="ficha">' +
+        '<div class="de">Se vende en Fudo</div>' +
+        '<div class="nom">' + esc(f.nom) + '</div>' +
+        '<div class="meta">' + esc(f.precio) + ' · ' + esc(f.cat) + '</div>' +
+        '<div class="preg">¿Qué descuenta del inventario?</div>' +
+        (cands || '<input class="buscar" placeholder="Buscar en el inventario…">') +
+        (f.pista ? '<div class="p2" style="font-size:13px;color:var(--muted);margin-top:6px">' + esc(f.pista) + '</div>' : '') +
+        '<div class="otras">' +
+          '<button class="chip-btn" data-a="buscar">Buscar otro</button>' +
+          '<button class="chip-btn" data-a="no">No lleva receta</button>' +
+          '<button class="chip-btn" data-a="saltar">Después</button>' +
+        '</div>' +
+      '</div>';
+
+    cont.querySelectorAll('.cand').forEach(b => b.onclick = () => { hechos++; i++; pintar(); });
+    cont.querySelectorAll('[data-a]').forEach(b => b.onclick = () => {
+      const a = b.dataset.a;
+      if(a === 'buscar'){
+        const cj = cont.querySelector('.ficha');
+        if(!cj.querySelector('.buscar')){
+          const inp = document.createElement('input');
+          inp.className = 'buscar';
+          inp.placeholder = 'Buscar en el inventario…';
+          cj.querySelector('.preg').after(inp);
+          inp.focus();
+        }
+        return;
+      }
+      if(a === 'no') hechos++;
+      i++; pintar();
+    });
+  }
+  pintar();
+</script>
