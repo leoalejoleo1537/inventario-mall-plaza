@@ -1402,6 +1402,75 @@ migración, y que si la columna todavía no existe en la base todo siga como ant
 sin sesión por decisión tomada. Contra el resbalón sí servía — y Jhon decidió
 que contra el resbalón alcanza con capacitar a dos personas.
 
+### 9.7 Las recetas de Angamos — cómo se armaron (2026-08-05)
+
+Angamos pasó de **1 receta a ~85 en una tarde**. Vale escribir cómo, porque el
+plan original (§9.1 fase 4, "trasladar las 168 de Plaza") resultó ser **el
+camino equivocado** para la mayoría.
+
+**El hallazgo que lo simplificó todo.** Para una receta de UN insumo no hacen
+falta las recetas de Plaza. El plan cuidaba dos saltos de nombre:
+
+```
+salto 1:  Fudo plaza "Cappuccino"  ->  Fudo angamos "Cappuccino"
+salto 2:  insumo plaza "Leche"     ->  insumo angamos "Leche"
+```
+
+Pero una receta 1:1 se empareja **dentro de Angamos**: catálogo de Fudo
+Angamos contra inventario Angamos. **Un salto en vez de dos**, y los dos lados
+los cargó la misma gente en la misma sede. El traslado desde Plaza queda solo
+para lo que de verdad tiene varios insumos — los combos y los preparados.
+
+**La evidencia de que el emparejador automático NO servía.** El calce exacto
+encontró 38 de 437. Pero el candidato "más parecido" se equivocó justo en el
+producto de más peso: `Croissant Jamon Queso`, insumo de **11 recetas** en
+Plaza, recibió como propuesta `Croissant manjar`. Si se hubiera aplicado
+automático, ese error se propagaba a once recetas de una vez. **Falla donde
+sale más caro** — por eso la lista final la revisó Jhon par por par.
+
+**Cómo quedó repartido:**
+
+| | |
+|---|---|
+| 23 | el nombre calza exacto en los dos lados |
+| 17 | variantes **"Pedidos Ya"** — mismo producto por delivery, misma receta |
+| 41 | el mismo producto **escrito distinto** (`Torta amor` → `Trozo torta amor`, `Sandiwch jamón serrano` → `Sandwich Serrano`) |
+
+**Lo que NO lleva receta, y son decisiones, no olvidos:**
+- **Los insumos de barra** (pulpas, té de hoja, syrups, azúcar flor, naranjas,
+  limones, bombillas, collarines). Jhon: *"NO se descuentan (por ahora), solo
+  lo cuantificable, al igual que en Mall Plaza."* Es la regla de §4 aplicada a
+  la sede nueva.
+- **Los ~40 combos** (`APALTADO + CAFE`). Los ve administración. **Y ojo:
+  Jhon ya las armó a mano en Mall Plaza**, así que esas recetas son el molde —
+  los `fudo_product_id` no sirven (otra cuenta) pero el contenido sí.
+- **Cafés, tés y jugos preparados.** Dependen de la medición de granel (§10).
+- `producto prueba`, `RESERVA`, `Tostadas Admin`, `cafe mediano psicóloga`:
+  productos internos o de prueba. No llevan receta nunca.
+
+**Dos cosas que salieron mal y cómo se detectaron:**
+
+1. **Dos recetas no se crearon** (`Torta Matilda Pedidos Ya`, `Media Luna
+   Manjar`). Los productos SÍ existían: el nombre en Fudo trae un espacio de
+   más que no se ve. **La lección es del método, no del bug**: el bloque de
+   comprobación estaba escrito para *delatar* el nombre que no calza en vez de
+   crear la receta igual. Sin ese bloque, esas dos habrían quedado en silencio.
+   Al comparar nombres contra Fudo, comparar **sin espacios sobrantes ni
+   tildes** — nunca letra por letra.
+2. **Salieron 83 recetas donde se esperaban 79.** Causa probable: nombres
+   repetidos en el catálogo de Fudo de Angamos (dos productos distintos que se
+   llaman igual) — no es un error, los dos se venden y los dos descuentan lo
+   mismo. Se comprueba con el bloque 3 de
+   `2026-08-angamos-recetas-cierre.sql`. **Un número que no cuadra se
+   investiga, no se redondea.**
+
+**El Muffin Amapola NO se trasladó.** Jhon lo borró del inventario de Angamos
+porque allá no se vende. Mall Plaza arrastra su receta apuntando al vacío a
+propósito (§6.0); exportar eso a la sede nueva no tenía sentido.
+
+Archivos: `2026-08-angamos-recetas-simples-informe.sql` (solo lectura),
+`2026-08-angamos-recetas-tanda-unica.sql`, `2026-08-angamos-recetas-cierre.sql`.
+
 ### 9.2 Las trampas que ya conocemos, aplicadas a Angamos
 
 - **No copiar las recetas de plaza cambiando la sede.** Los ids de Fudo son de
