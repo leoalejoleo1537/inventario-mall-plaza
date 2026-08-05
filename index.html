@@ -71,7 +71,13 @@
   /* ---------- top bar ---------- */
   .topbar{background:var(--navy);color:#fff;padding:10px 8px}
   .topbar .inner{max-width:900px;margin:0 auto;display:flex;align-items:center;gap:4px}
-  .topbar h1{flex:1;min-width:0;font-size:19px;font-weight:700;margin:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar h1{font-size:19px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
+  /* La sede va SIEMPRE a la vista, bajo el título. Motivo real: con dos sedes
+     vivas es fácil entrar a la equivocada, editar y no darse cuenta. Antes
+     solo se veía abriendo el menú ☰, o sea justo cuando ya no se está mirando
+     la lista. */
+  .top-tit{flex:1;min-width:0;margin:0 4px}
+  .top-sede{font-size:12.5px;font-weight:600;color:#A9B7C6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.2px;margin-top:1px}
   .top-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}
   .icon-btn{width:42px;height:42px;border:none;background:transparent;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0}
   .icon-btn:active{background:rgba(255,255,255,.16)}
@@ -654,7 +660,10 @@
     <button type="button" class="icon-btn" id="btnMenu" aria-label="Menú">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"></path></svg>
     </button>
-    <h1 id="topTitle">Inventario</h1>
+    <div class="top-tit">
+      <h1 id="topTitle">Inventario</h1>
+      <div class="top-sede" id="topSede">—</div>
+    </div>
     <div class="top-actions">
       <button type="button" class="icon-btn" id="btnActualizar" aria-label="Actualizar" title="Actualizar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
@@ -669,7 +678,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v9a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1v-9"></path></svg>
     </button>
     <button class="tab" data-tab="reparto">Reparto <span class="tab-nuevo" id="tabNuevo" style="display:none">NUEVO</span><span class="tab-badge" id="repBadge" style="display:none"></span></button>
-    <button class="tab" data-tab="hist">Historial</button>
     <button class="tab" data-tab="recetas">Recetas</button>
   </div>
 </div>
@@ -692,6 +700,12 @@
   <button type="button" class="drawer-item" data-accion="actualizar">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
     Actualizar
+  </button>
+  <!-- Historial se mudó de pestaña al menú: metía ruido arriba y casi no se
+       usa. Sigue funcionando igual, solo cambió de dónde se entra. -->
+  <button type="button" class="drawer-item" data-accion="historial">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"></path><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path><path d="M12 7v5l3 2"></path></svg>
+    Historial
   </button>
 
   <!-- Solo para las cuentas con permiso. Un jefe de turno no ve nada de esto. -->
@@ -1263,6 +1277,7 @@ $('drawer').addEventListener('click',e=>{
   const a=it.dataset.accion;
   cerrarMenu();
   if(a==='actualizar')     actualizarTodo();
+  if(a==='historial')      pickTab('hist');
   if(a==='cambiar-sede')   showGate();
   if(a==='admin')          abrirAdmin();
 });
@@ -1375,6 +1390,7 @@ let vistaActual = 'inv';
 function pickSede(s){
   SEDE = s;
   $('topTitle').textContent = TITULOS.inv;
+  $('topSede').textContent = SEDES[s].label;
   $('footText').textContent = SEDES[s].label + ' · sincronizado en tiempo real';
   // reset estado/filtros
   DATA=[]; filterState=null; modalProd=null; carrito=[];
@@ -1641,14 +1657,28 @@ async function loadData(){
 }
 /* trae los lotes de vencimiento de los productos de la sede.
    Si la tabla todavía no existe en la base, la app sigue funcionando igual. */
+/* Por qué el mapa se arma aparte y se cambia al final, en vez de ir llenando
+   LOTES directamente: guardar las fechas de un sándwich borra e inserta varias
+   filas, y CADA una llega como evento en vivo que vuelve a llamar acá. Antes,
+   todas esas lecturas vaciaban LOTES al empezar pero escribían DESPUÉS de su
+   propia espera — así que el último vaciado ocurría antes de que llegaran
+   todas, y las respuestas se apilaban: la misma fecha aparecía 2 o 3 veces en
+   la lista. Se arreglaba solo con la siguiente lectura, que es justo lo que lo
+   hacía parecer una falla intermitente.
+   `lotesRun` descarta las respuestas viejas: si mientras esta lectura viajaba
+   se pidió otra, esta ya no vale y se tira. */
+let lotesRun = 0;
 async function loadLotes(){
-  LOTES={};
+  const mio = ++lotesRun;
   const ids=DATA.map(d=>d.id);
-  if(!ids.length) return;
+  if(!ids.length){ LOTES={}; return; }
   const {data,error}=await sb.from('producto_lotes').select('id,producto_id,cantidad,vencimiento').in('producto_id',ids);
+  if(mio !== lotesRun) return;          // llegó una lectura más nueva: esta quedó vieja
   if(error){ hasLotes=false; return; }
   hasLotes=true;
-  (data||[]).forEach(l=>{ (LOTES[l.producto_id]=LOTES[l.producto_id]||[]).push(l); });
+  const nuevo={};
+  (data||[]).forEach(l=>{ (nuevo[l.producto_id]=nuevo[l.producto_id]||[]).push(l); });
+  LOTES=nuevo;
 }
 /* reintenta una operación de Supabase hasta 3 veces (para señal móvil floja) */
 async function conReintento(fn,intentos=3){
@@ -2909,11 +2939,13 @@ $('btnRegistrarReparto').addEventListener('click', async()=>{
   } finally { btn.disabled=false; btn.textContent='Enviar reparto'; }
 });
 
-/* ---------------- tabs ---------------- */
-document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+/* ---------------- tabs ----------------
+   Historial ya no tiene pestaña: se entra desde el menú ☰. Por eso cambiar de
+   vista es una función y no el manejador del click — el menú la llama igual.
+   Si la vista no tiene pestaña, ninguna queda marcada, que es lo correcto. */
+function pickTab(tab){
   if(!SEDE)return;
-  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
-  const tab=t.dataset.tab;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
   $('view-inv').style.display = tab==='inv'?'block':'none';
   $('view-reparto').style.display = tab==='reparto'?'block':'none';
   $('view-hist').style.display = tab==='hist'?'block':'none';
@@ -2925,7 +2957,8 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   if(tab==='hist') loadHistorial();
   if(tab==='reparto') loadRepartos();
   if(tab==='recetas') loadRecetas();
-}));
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>pickTab(t.dataset.tab)));
 
 /* ---------------- recetas ---------------- */
 let FUDOPROD=[];   // productos activos de Fudo de la sede (para el desplegable)
