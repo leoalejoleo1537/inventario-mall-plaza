@@ -21,41 +21,52 @@
 -- ================================================================
 -- BLOQUE 1 — CREAR LAS 2 QUE FALTARON
 --
--- Son 4 sentencias. Copiar TODO el bloque y apretar Run una vez.
+-- Son 3 sentencias sueltas, sin tablas de apoyo. Copiar TODO el bloque
+-- y apretar Run una vez.
+--
+-- ⚠️ La versión anterior de este bloque creaba una tabla de trabajo y
+-- la usaba en la misma corrida. El editor de Supabase no la ve todavía
+-- y responde "relation does not exist". Lección: en un mismo Run, no
+-- crear una tabla y usarla — o se parte en dos pasos, o se resuelve
+-- sin tabla, como acá.
+--
+-- Por qué se compara con "ilike" y no con "=": el nombre en Fudo trae
+-- algún carácter invisible (un espacio doble, o un espacio que no es
+-- el espacio normal). Con ilike y comodines da lo mismo cuál sea.
 -- ================================================================
-drop table if exists public.angamos_mapa_recetas;
-create table public.angamos_mapa_recetas(
-  clave_fudo text primary key,
-  nombre_inv text not null
-);
 
-insert into public.angamos_mapa_recetas values
- ('torta matilda pedidos ya','Trozo torta Matilda'),
- ('media luna manjar','Medialuna manjar');
+-- 1a) MIRAR primero: así se ve qué nombres hay de verdad en Fudo.
+--     "largo" es cuántos caracteres tiene — si es más de lo que se ve
+--     en pantalla, ahí está el espacio de más.
+select fudo_product_id, nombre, length(nombre) as largo
+from public.fudo_productos
+where sede='angamos' and activo
+  and (nombre ilike '%matilda%' or nombre ilike '%manjar%')
+order by nombre;
 
+-- 1b) Crear las dos recetas.
 insert into public.recetas (sede, fudo_product_id, fudo_product_nombre, activo)
 select 'angamos', f.fudo_product_id, f.nombre, true
 from public.fudo_productos f
-join public.angamos_mapa_recetas m
-  on m.clave_fudo = lower(translate(regexp_replace(trim(f.nombre),'\s+',' ','g'),
-                          'ÁÉÍÓÚÜÑáéíóúüñ','AEIOUUNaeiouun'))
 where f.sede='angamos' and f.activo
+  and (f.nombre ilike '%matilda%pedidos%ya%' or f.nombre ilike '%media%luna%manjar%')
 on conflict (sede, fudo_product_id) do nothing;
 
+-- 1c) Decirles qué descuentan.
 insert into public.receta_items (receta_id, producto_id, cantidad, aplica)
 select r.id, p.id, 1, 'siempre'
 from public.recetas r
 join public.fudo_productos f
   on f.sede='angamos' and f.fudo_product_id = r.fudo_product_id
-join public.angamos_mapa_recetas m
-  on m.clave_fudo = lower(translate(regexp_replace(trim(f.nombre),'\s+',' ','g'),
-                          'ÁÉÍÓÚÜÑáéíóúüñ','AEIOUUNaeiouun'))
 join public.productos p
-  on p.sede='angamos' and p.activo='SÍ' and p.producto = m.nombre_inv
+  on p.sede='angamos' and p.activo='SÍ'
+ and p.producto = case
+       when f.nombre ilike '%matilda%'      then 'Trozo torta Matilda'
+       when f.nombre ilike '%media%luna%'   then 'Medialuna manjar'
+     end
 where r.sede='angamos' and r.activo
+  and (f.nombre ilike '%matilda%pedidos%ya%' or f.nombre ilike '%media%luna%manjar%')
 on conflict (receta_id, producto_id) do nothing;
-
-drop table if exists public.angamos_mapa_recetas;
 
 
 -- ================================================================

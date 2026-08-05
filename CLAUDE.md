@@ -640,6 +640,12 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
    si no hay más remedio, se entrega ya partido en dos con las dos mitades
    listas para pegar — no se le pide a él que lo parta.
 
+   **Y una tercera, del 2026-08-05: no crear una tabla y usarla en el mismo
+   Run.** Un bloque que hacía `create table` y después `insert ... join` sobre
+   ella respondió `relation "..." does not exist`. Si de verdad hace falta una
+   tabla de apoyo, va en un paso aparte; casi siempre se puede evitar con un
+   `with ... as (values ...)` o con la condición escrita directo.
+
 6. **Jhon NO trabaja con una copia del repositorio en su computador.** Trabaja
    en el panel de Supabase, en Notion y en el teléfono. Entonces: **nunca
    entregar una instrucción que suponga `git`, una terminal o una carpeta
@@ -1455,8 +1461,15 @@ sale más caro** — por eso la lista final la revisó Jhon par por par.
    más que no se ve. **La lección es del método, no del bug**: el bloque de
    comprobación estaba escrito para *delatar* el nombre que no calza en vez de
    crear la receta igual. Sin ese bloque, esas dos habrían quedado en silencio.
-   Al comparar nombres contra Fudo, comparar **sin espacios sobrantes ni
-   tildes** — nunca letra por letra.
+   Al comparar nombres contra Fudo, comparar con **`ilike` y comodines** —
+   nunca letra por letra, y tampoco confiando en normalizar espacios: el
+   carácter invisible puede no ser un espacio corriente.
+
+   **Y el arreglo falló a la primera por otra causa, que es la que hay que
+   recordar:** creaba una tabla de trabajo y la usaba **en el mismo Run**. El
+   editor de Supabase respondió `relation "public.angamos_mapa_recetas" does
+   not exist`. Suma a §3.5: en una misma corrida del editor, **no crear una
+   tabla y usarla** — o se parte en dos pasos, o se resuelve sin tabla.
 2. **Salieron 83 recetas donde se esperaban 79.** Causa probable: nombres
    repetidos en el catálogo de Fudo de Angamos (dos productos distintos que se
    llaman igual) — no es un error, los dos se venden y los dos descuentan lo
