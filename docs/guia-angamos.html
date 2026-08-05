@@ -1,0 +1,408 @@
+<title>Inventario · Parque Angamos — Guía de partida</title>
+<style>
+  :root{
+    /* La paleta es la de la app, no una nueva: esta guía es la introducción
+       al sistema y tiene que verse como el sistema. */
+    --navy:#0F1E31; --navy2:#16283F;
+    --orange:#DC4405; --orange-dark:#B93A04;
+    --pizarra:#2F4A6D;
+    --ok-tx:#2E7D32;  --ok-bg:#E6F4E6;
+    --warn-tx:#B26A00;--warn-bg:#FFF3E0;
+    --crit-tx:#C0392B;--crit-bg:#FDECEA;
+    --text:#1C2733; --muted:#6B7684; --line:#E3E5E8;
+    --bg:#F5F6F7; --card:#FFFFFF;
+    --sombra:0 1px 3px rgba(15,30,49,.07), 0 1px 1px rgba(15,30,49,.04);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --text:#E8EBEE; --muted:#93A0AE; --line:#2A3B50;
+      --bg:#0B1523; --card:#16283F;
+      --pizarra:#3D5F86;
+      --ok-tx:#8FD694;  --ok-bg:#1B3220;
+      --warn-tx:#F0B95E;--warn-bg:#33260F;
+      --crit-tx:#F0968C;--crit-bg:#3A1B18;
+      --orange:#FF6B33; --orange-dark:#FF8A5C;
+      --sombra:0 1px 3px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --text:#E8EBEE; --muted:#93A0AE; --line:#2A3B50;
+    --bg:#0B1523; --card:#16283F;
+    --pizarra:#3D5F86;
+    --ok-tx:#8FD694;  --ok-bg:#1B3220;
+    --warn-tx:#F0B95E;--warn-bg:#33260F;
+    --crit-tx:#F0968C;--crit-bg:#3A1B18;
+    --orange:#FF6B33; --orange-dark:#FF8A5C;
+    --sombra:0 1px 3px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --text:#1C2733; --muted:#6B7684; --line:#E3E5E8;
+    --bg:#F5F6F7; --card:#FFFFFF;
+    --pizarra:#2F4A6D;
+    --ok-tx:#2E7D32;  --ok-bg:#E6F4E6;
+    --warn-tx:#B26A00;--warn-bg:#FFF3E0;
+    --crit-tx:#C0392B;--crit-bg:#FDECEA;
+    --orange:#DC4405; --orange-dark:#B93A04;
+    --sombra:0 1px 3px rgba(15,30,49,.07), 0 1px 1px rgba(15,30,49,.04);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--text);
+    font-size:16px; line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 20px 72px}
+
+  /* ---------- cabecera: la barra navy de la app ---------- */
+  .top{background:var(--navy);color:#fff;padding:34px 20px 30px;margin-bottom:26px}
+  .top-in{max-width:760px;margin:0 auto}
+  .top .marca{font-size:12px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
+    color:var(--orange-dark);filter:brightness(1.5)}
+  .top h1{margin:8px 0 6px;font-size:30px;line-height:1.16;font-weight:800;text-wrap:balance}
+  .top .sub{margin:0;color:#A9B7C6;font-size:15px}
+
+  /* ---------- cabecera de sección: pizarra, como en la app ---------- */
+  h2{
+    background:var(--pizarra);color:#fff;
+    margin:38px 0 16px; padding:11px 15px; border-radius:10px;
+    font-size:15px; font-weight:800; letter-spacing:.4px; text-transform:uppercase;
+  }
+  h3{margin:26px 0 8px;font-size:17.5px;font-weight:800;text-wrap:balance}
+  p{margin:0 0 14px;max-width:66ch}
+  strong{font-weight:700}
+  a{color:var(--orange)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px;box-shadow:var(--sombra);margin-bottom:14px}
+  .card > *:last-child{margin-bottom:0}
+
+  /* ---------- números de partida ---------- */
+  .cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:8px}
+  .cifra{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:15px 16px;box-shadow:var(--sombra)}
+  .cifra .n{font-size:31px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+  .cifra .l{font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+  .cifra.alerta .n{color:var(--orange)}
+
+  /* ---------- tareas: la secuencia importa, por eso van numeradas ---------- */
+  .tarea{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px 18px 19px;box-shadow:var(--sombra);margin-bottom:14px;
+    display:grid;grid-template-columns:38px 1fr;gap:15px;align-items:start}
+  .tarea .num{width:32px;height:32px;border-radius:999px;background:var(--orange);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;
+    font-variant-numeric:tabular-nums;margin-top:2px}
+  .tarea h3{margin:0 0 6px}
+  .tarea > div > *:last-child{margin-bottom:0}
+
+  /* ---------- píldoras de estado ---------- */
+  .pill{display:inline-block;padding:2.5px 11px;border-radius:999px;
+    font-size:12.5px;font-weight:800;letter-spacing:.2px;white-space:nowrap}
+  .pill.ok{background:var(--ok-bg);color:var(--ok-tx)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn-tx)}
+  .pill.crit{background:var(--crit-bg);color:var(--crit-tx)}
+
+  /* ---------- avisos ---------- */
+  .nota{border-radius:12px;padding:15px 18px;margin-bottom:14px;border:1px solid transparent}
+  .nota > *:last-child{margin-bottom:0}
+  .nota.warn{background:var(--warn-bg);border-color:color-mix(in srgb,var(--warn-tx) 26%,transparent);color:var(--text)}
+  .nota.crit{background:var(--crit-bg);border-color:color-mix(in srgb,var(--crit-tx) 26%,transparent);color:var(--text)}
+  .nota .t{font-weight:800;display:block;margin-bottom:4px}
+
+  /* ---------- tablas ---------- */
+  .tabla-cont{overflow-x:auto;border:1px solid var(--line);border-radius:12px;
+    background:var(--card);box-shadow:var(--sombra);margin-bottom:14px}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:460px}
+  th{background:color-mix(in srgb,var(--pizarra) 9%,transparent);
+    text-align:left;padding:10px 14px;font-size:12px;font-weight:800;
+    letter-spacing:.7px;text-transform:uppercase;color:var(--muted);
+    border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  td.resp{color:var(--muted);font-style:italic;white-space:nowrap}
+
+  ul{margin:0 0 14px;padding-left:20px;max-width:66ch}
+  li{margin-bottom:6px}
+  li:last-child{margin-bottom:0}
+
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:4px}
+  .chip{background:color-mix(in srgb,var(--muted) 12%,transparent);
+    border-radius:999px;padding:4px 12px;font-size:13.5px;font-weight:600}
+
+  .cierre{margin-top:34px;padding-top:20px;border-top:2px solid var(--line);
+    color:var(--muted);font-size:14px}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="marca">Café del Desierto · Inventario</div>
+    <h1>Parque Angamos empieza a contar</h1>
+    <p class="sub">Guía de partida para la capacitación · 5 de agosto de 2026</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <p><strong>Esto reemplaza la planilla de Excel.</strong> Lo que ustedes cuenten
+    acá pasa a ser el inventario de verdad de Angamos: lo que se ve desde el
+    teléfono, lo que ve jefatura, y lo que después le va a decir a Fudo cuánto
+    queda.</p>
+    <p>La vara es simple: <strong>si el sistema no les resulta más cómodo que el
+    Excel, vuelven al Excel.</strong> Así que todo lo que les incomode mañana,
+    díganlo — se arregla.</p>
+  </div>
+
+  <h2>Cómo funciona, en tres frases</h2>
+
+  <div class="card">
+    <p><strong>1.</strong> Ustedes cuentan lo que hay y lo escriben en la app.</p>
+    <p><strong>2.</strong> Cuando alguien vende algo en Fudo, el sistema descuenta
+    solo los insumos que ese producto usa. Nadie anota nada a mano.</p>
+    <p><strong>3.</strong> Para que el paso 2 ocurra, cada producto de la carta
+    necesita una <em>receta</em>: la lista de qué descuenta al venderse.</p>
+    <p><strong>Angamos todavía no tiene recetas.</strong> Por eso hoy el descuento
+    automático no está funcionando allá, y por eso el trabajo de mañana importa:
+    sin nombres confirmados no se pueden armar las recetas.</p>
+  </div>
+
+  <h2>Dónde está Angamos hoy</h2>
+
+  <div class="cifras">
+    <div class="cifra">
+      <div class="n">189</div>
+      <div class="l">productos cargados</div>
+    </div>
+    <div class="cifra alerta">
+      <div class="n">1</div>
+      <div class="l">único producto con stock<br>(Pizza Capresse Azapa · 4)</div>
+    </div>
+    <div class="cifra alerta">
+      <div class="n">1</div>
+      <div class="l">receta funcionando<br>Mall Plaza tiene 172</div>
+    </div>
+    <div class="cifra">
+      <div class="n">399</div>
+      <div class="l">productos en el Fudo de Angamos</div>
+    </div>
+  </div>
+
+  <div class="nota warn">
+    <span class="t">Los 188 productos en cero no son un error</span>
+    <p>Están en cero porque nunca se han contado, no porque se hayan acabado.
+    Esa es exactamente la tarea 1.</p>
+  </div>
+
+  <h2>Lo que hay que hacer</h2>
+
+  <div class="tarea">
+    <div class="num">1</div>
+    <div>
+      <h3>Contar todo <span class="pill crit">lo más importante</span></h3>
+      <p>Producto por producto, sección por sección. Es el trabajo de verdad y
+      es el que nadie más puede hacer: el sistema no tiene forma de saber qué
+      hay en el estante.</p>
+      <p>Al contar van a encontrar productos que <strong>no existen en Angamos</strong>
+      y productos que <strong>existen y no están en la lista</strong>. Eso es
+      normal — la lista se armó copiando la de Mall Plaza. Anótenlos, es la
+      tarea 3.</p>
+    </div>
+  </div>
+
+  <div class="tarea">
+    <div class="num">2</div>
+    <div>
+      <h3>Confirmar los nombres</h3>
+      <p>Mall Plaza y Angamos escriben algunos productos distinto. Mientras eso
+      no esté confirmado, las recetas no se pueden trasladar: el sistema no
+      sabría a qué producto descontarle.</p>
+      <p>Está todo en la <strong>hoja de preguntas</strong>, más abajo. Son
+      catorce respuestas y desbloquean las 172 recetas.</p>
+    </div>
+  </div>
+
+  <div class="tarea">
+    <div class="num">3</div>
+    <div>
+      <h3>Decir qué falta</h3>
+      <p>De la revisión salieron tres productos que Mall Plaza usa y que en
+      Angamos no existen con ningún nombre parecido:</p>
+      <div class="chips">
+        <span class="chip">Sándwich Selladito</span>
+        <span class="chip">Miel</span>
+        <span class="chip">Agua Bosqua sin gas</span>
+      </div>
+      <p style="margin-top:12px">El Sándwich Selladito es el que más pesa: en
+      Mall Plaza lo usan <strong>5 recetas</strong>. Del Agua Bosqua, en Angamos
+      solo está cargada la <em>con gas</em>.</p>
+      <p>¿Se venden en Angamos? Si sí, hay que crearlos. Si no, no se hace nada.</p>
+    </div>
+  </div>
+
+  <div class="tarea">
+    <div class="num">4</div>
+    <div>
+      <h3>Los 14 del Congelador <span class="pill ok">no los toquen</span></h3>
+      <p>Van a ver estos catorce productos repetidos, una vez en su vitrina y
+      otra vez en Congelador:</p>
+      <div class="chips">
+        <span class="chip">Brownie</span>
+        <span class="chip">Donas frambuesa</span>
+        <span class="chip">Donas nutella</span>
+        <span class="chip">Donas oreo</span>
+        <span class="chip">Galletón Chips</span>
+        <span class="chip">Galletón Red Velvet</span>
+        <span class="chip">Macarrons</span>
+        <span class="chip">Mini muffin</span>
+        <span class="chip">Muffin amapola</span>
+        <span class="chip">Muffin de zanahoria</span>
+        <span class="chip">Muffin relleno arándano</span>
+        <span class="chip">Muffin vainilla chips</span>
+        <span class="chip">Volcán de chocolate</span>
+        <span class="chip">Waffles</span>
+      </div>
+      <p style="margin-top:12px"><strong>No es culpa de ustedes ni algo que
+      tengan que arreglar.</strong> En Mall Plaza hay productos que viven en dos
+      lugares a la vez — la dona está en la vitrina y su repuesto en el
+      congelador — y al copiar la lista se copió también ese doble. Angamos no
+      funciona así.</p>
+      <p>Se apagan de una sola vez, desde afuera. Los catorce están en cero, así
+      que no se pierde nada.</p>
+    </div>
+  </div>
+
+  <h2>Cinco reglas de la casa</h2>
+
+  <div class="card">
+    <h3>Buscar antes de crear</h3>
+    <p>Siempre. Si crean un producto que ya existía con otro nombre, queda
+    duplicado y alguien va a terminar contando dos veces lo mismo. Es el error
+    más caro que tiene este sistema y ya nos pasó.</p>
+
+    <h3>Cero es un dato, no un error</h3>
+    <p>Si no queda nada, se pone cero. El sistema nunca deja números negativos:
+    si se vendió más de lo que había, se queda en cero y se corrige contando.</p>
+
+    <h3>En los perecederos mandan las fechas</h3>
+    <p>En un sándwich no se escribe la cantidad: se cargan las fechas de
+    vencimiento con cuánto hay de cada una, y el sistema suma. Todas las fechas
+    quedan a la vista, siempre — es lo más delicado de la cafetería.</p>
+
+    <h3>El Modo edición se enciende a propósito</h3>
+    <p>Cambiar un nombre, cambiar una sección o eliminar un producto solo se
+    puede con el Modo edición encendido, y arranca apagado cada vez que se abre
+    la app. Es a propósito: son las acciones de las que no se vuelve.</p>
+
+    <h3>Cuenten con las mesas cerradas</h3>
+    <p>El descuento ocurre cuando la mesa se cierra en Fudo. Si cuentan con
+    mesas abiertas, la app va a mostrar más de lo que hay en el estante —
+    porque eso que falta ya está vendido y va en camino. <strong>Si en ese
+    momento "corrigen" el número a mano, después se descuenta dos veces.</strong></p>
+  </div>
+
+  <h2>Hoja de preguntas</h2>
+
+  <p>Estas son las respuestas que hacen falta para trasladar las recetas. Se
+  pueden ir contestando mientras cuentan.</p>
+
+  <h3>Primero: ¿son el mismo producto, escrito distinto?</h3>
+
+  <div class="tabla-cont">
+    <table>
+      <thead>
+        <tr><th>En Mall Plaza</th><th>En Angamos</th><th>¿Es el mismo?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>T. Cheesecake Frambuesa</td><td>T. Cheesecake Fram</td><td class="resp">sí / no</td></tr>
+        <tr><td>T. Cheesecake Maracuyá</td><td>T. Cheesecake Mara</td><td class="resp">sí / no</td></tr>
+        <tr><td>Macarrons</td><td>Macarrons</td><td class="resp">sí / no</td></tr>
+        <tr><td>Donas de nutella</td><td>Donas nutella</td><td class="resp">sí / no</td></tr>
+        <tr><td>Pizza Capresse</td><td>Pizza Capresse Azapa</td><td class="resp">sí / no</td></tr>
+        <tr><td>Muffin de amapola</td><td>Muffin amapola</td><td class="resp">sí / no</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Después: las que nadie puede adivinar</h3>
+
+  <div class="nota crit">
+    <span class="t">La primera es la que más pesa</span>
+    <p><strong>Croissant Jamón Queso</strong> es el insumo de <strong>11 recetas</strong>
+    en Mall Plaza — el más usado de toda la lista. El sistema propuso solo
+    "Croissant manjar", que no es lo mismo. Si esta queda mal contestada, quedan
+    once recetas mal.</p>
+  </div>
+
+  <div class="tabla-cont">
+    <table>
+      <thead>
+        <tr><th>La pregunta</th><th>Lo que hay en Angamos</th><th>Respuesta</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Croissant Jamón Queso</strong><br><span style="color:var(--muted);font-size:13px">11 recetas dependen de esto</span></td>
+          <td>Sándwich Jamón Queso · Croissant manjar</td>
+          <td class="resp">…</td>
+        </tr>
+        <tr>
+          <td><strong>Galletón Vainilla Chips</strong></td>
+          <td>Galletón Chips · Galletón Red Velvet · Galletón Avena con Pasas</td>
+          <td class="resp">…</td>
+        </tr>
+        <tr>
+          <td><strong>Cocacola mini sprite</strong><br><span style="color:var(--muted);font-size:13px">en Plaza son dos productos separados</span></td>
+          <td>¿es la Coca mini, la Coca zero mini, o la Sprite?</td>
+          <td class="resp">…</td>
+        </tr>
+        <tr>
+          <td><strong>Galletas New York</strong></td>
+          <td>lo más parecido es GALLETAS OREO</td>
+          <td class="resp">…</td>
+        </tr>
+        <tr>
+          <td><strong>Muffin de chocolate</strong></td>
+          <td>no aparece nada parecido</td>
+          <td class="resp">…</td>
+        </tr>
+        <tr>
+          <td><strong>Dona Pistacho Dubai</strong></td>
+          <td>hay Cannolis Pistacho, que no es lo mismo</td>
+          <td class="resp">…</td>
+        </tr>
+        <tr>
+          <td><strong>Brownie</strong> y <strong>Brownie solo</strong><br><span style="color:var(--muted);font-size:13px">los dos están cargados en Angamos</span></td>
+          <td>¿son dos cosas distintas o una sola?</td>
+          <td class="resp">…</td>
+        </tr>
+        <tr>
+          <td><strong>Muffin amapola</strong> y <strong>Queque Amapola</strong></td>
+          <td>¿se venden en Angamos?</td>
+          <td class="resp">…</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Qué pasa después</h2>
+
+  <div class="card">
+    <p>Con el conteo hecho y la hoja contestada se trasladan las
+    <strong>172 recetas</strong> de Mall Plaza a Angamos. Desde ese día, vender
+    en Fudo descuenta el inventario solo — que es todo el punto del sistema.</p>
+    <p>Después de eso queda una cosa más: enseñarle al sistema los insumos que
+    no se cuentan de a uno (el té, el café, la naranja). Pero eso es otra etapa
+    y todavía se está midiendo en Mall Plaza.</p>
+  </div>
+
+  <div class="nota warn">
+    <span class="t">Mientras tanto, no boten el Excel</span>
+    <p>El inventario viejo de Angamos sigue siendo la red. Se apaga cuando los
+    números de la app cuadren con el estante varios días seguidos, no antes.</p>
+  </div>
+
+  <p class="cierre">Café del Desierto · Sistema de inventario multi-sede ·
+  Mall Plaza lleva más de dos semanas descontando solo. Angamos parte hoy.</p>
+
+</div>
