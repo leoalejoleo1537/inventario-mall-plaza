@@ -18,12 +18,14 @@ catch { console.log('\n(se salta: Playwright no está instalado)\n'); process.ex
 const FUDO = [
   {fudo_product_id:'1', nombre:'Waffle',                 code:null, precio:3200, categoria_id:'12'},
   {fudo_product_id:'2', nombre:'Torta amor Pedidos Ya',  code:null, precio:7000, categoria_id:'12'},
-  {fudo_product_id:'3', nombre:'ALCOHOL GEL MANOS',      code:null, precio:0,    categoria_id:'29'},
   {fudo_product_id:'4', nombre:'APALTADO + CAFE',        code:null, precio:9490, categoria_id:'18'},
+  {fudo_product_id:'3', nombre:'ALCOHOL GEL MANOS',      code:null, precio:0,    categoria_id:'29'},
 ];
 const PRODUCTOS = [
   {id:10, sede:'plaza', producto:'Waffles',          rubro:'Vitrina de tortas', stock_actual:4, stock_min:2, stock_max:10, activo:'SÍ'},
   {id:11, sede:'plaza', producto:'Trozo torta amor', rubro:'Vitrina de tortas', stock_actual:2, stock_min:1, stock_max:8,  activo:'SÍ'},
+  {id:12, sede:'plaza', producto:'Sandwich Apaltado', rubro:'Sándwiches',        stock_actual:5, stock_min:2, stock_max:9,  activo:'SÍ'},
+  {id:13, sede:'plaza', producto:'Cafe',             rubro:'Mesones',           stock_actual:9, stock_min:1, stock_max:20, activo:'SÍ'},
 ];
 const CATS = [
   {categoria_id:'12', rubro:'Vitrina'},
@@ -139,8 +141,32 @@ await caso('propone "Waffles" para el "Waffle" de Fudo', async () => {
   return t.includes('Waffles') || 'propuso: '+t.slice(0,80);
 });
 
-await caso('al tocar el candidato, ESCRIBE la receta en la base', async () => {
+await caso('tocar un candidato lo MARCA, todavía no guarda nada', async () => {
   await page.click('.tl-cand');
+  await page.waitForTimeout(150);
+  const marcado = await page.isVisible('.tl-cand.on');
+  const w = await page.evaluate(()=>window.__escrito.filter(x=>x.tabla==='recetas'));
+  if(!marcado) return 'no se marcó';
+  if(w.length)  return 'guardó antes de que apretaran Listo';
+  return true;
+});
+
+await caso('aparece la barra con "Listo" y dice cuántos van', async () => {
+  const t = await page.textContent('.tl-barra');
+  return t.includes('1 producto') && t.includes('Listo') || 'dice: '+t;
+});
+
+await caso('volver a tocarlo lo desmarca', async () => {
+  await page.click('.tl-cand');
+  await page.waitForTimeout(150);
+  const hay = await page.locator('.tl-barra').count();
+  return hay === 0 || 'la barra siguió ahí';
+});
+
+await caso('al apretar Listo, ESCRIBE la receta en la base', async () => {
+  await page.click('.tl-cand');
+  await page.waitForTimeout(120);
+  await page.click('.tl-barra .btn');
   await page.waitForTimeout(250);
   const w = await page.evaluate(()=>window.__escrito);
   const r = w.find(x=>x.tabla==='recetas'), it = w.find(x=>x.tabla==='receta_items');
@@ -150,8 +176,10 @@ await caso('al tocar el candidato, ESCRIBE la receta en la base', async () => {
   return true;
 });
 
-await caso('deja deshacer lo último', async () =>
-  (await page.textContent('#rec-taller')).includes('Deshacer') || 'no ofrece deshacer');
+await caso('lo hecho queda a la vista, con su deshacer', async () => {
+  const t = await page.textContent('.tl-hechos');
+  return (t.includes('Waffle') && t.includes('Deshacer')) || 'muestra: '+t.slice(0,80);
+});
 
 await caso('avanza al siguiente producto', async () =>
   (await page.textContent('.tl-nom')).includes('Torta amor') || 'quedó en: '+(await page.textContent('.tl-nom')));
@@ -159,6 +187,53 @@ await caso('avanza al siguiente producto', async () =>
 await caso('quita el "Pedidos Ya" y propone el trozo de torta', async () => {
   const t = await page.textContent('#tl-cands');
   return t.includes('Trozo torta amor') || 'propuso: '+t.slice(0,80);
+});
+
+console.log('\nCombos: varios productos en una sola receta');
+// Se resuelve la torta para llegar al combo, que es el que tiene dos candidatos.
+await page.click('.tl-cand'); await page.waitForTimeout(100);
+await page.click('.tl-barra .btn'); await page.waitForTimeout(250);
+
+await caso('llegó al combo', async () =>
+  (await page.textContent('.tl-nom')).includes('APALTADO') || 'quedó en: '+(await page.textContent('.tl-nom')));
+
+await caso('se pueden marcar dos y la barra los cuenta', async () => {
+  const cands = page.locator('.tl-cand');
+  const n = await cands.count();
+  if(n < 2) return 'solo hay '+n+' candidato(s) para probarlo';
+  await cands.nth(0).click(); await page.waitForTimeout(80);
+  await cands.nth(1).click(); await page.waitForTimeout(150);
+  const t = await page.textContent('.tl-barra');
+  return t.includes('2 productos') || 'dice: '+t;
+});
+
+await caso('guarda UNA receta con DOS líneas', async () => {
+  const antes = await page.evaluate(()=>window.__escrito.filter(x=>x.tabla==='receta_items').length);
+  await page.click('.tl-barra .btn');
+  await page.waitForTimeout(250);
+  const w = await page.evaluate(()=>window.__escrito.filter(x=>x.tabla==='receta_items'));
+  const nueva = w[antes];
+  if(!nueva) return 'no guardó las líneas';
+  if(nueva.filas.length !== 2) return 'guardó '+nueva.filas.length+' línea(s), esperaba 2';
+  const rid = nueva.filas[0].receta_id;
+  return nueva.filas.every(f=>f.receta_id===rid) || 'las líneas quedaron en recetas distintas';
+});
+
+await caso('el historial acumula, no reemplaza', async () => {
+  const n = await page.locator('.tl-hfila').count();
+  return n === 3 || 'muestra '+n+', esperaba 3';
+});
+
+await caso('se puede deshacer el PRIMERO, no solo el último', async () => {
+  await page.locator('.tl-hfila').nth(2).locator('button').click();   // el más viejo: el Waffle
+  await page.waitForTimeout(300);
+  const n = await page.locator('.tl-hfila').count();
+  if(n !== 2) return 'quedaron '+n+' en el historial';
+  const w = await page.evaluate(()=>window.__escrito.filter(x=>x.borrado).length);
+  if(!w) return 'no borró nada de la base';
+  // y el producto vuelve al frente de la cola, para poder corregirlo al toque
+  const nom = await page.textContent('.tl-nom');
+  return nom.includes('Waffle') || 'no volvió a preguntar por él, quedó en: '+nom;
 });
 
 console.log('\nLos combos siguen donde estaban:');

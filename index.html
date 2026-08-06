@@ -320,10 +320,29 @@
   .tl-hecho .ico{font-size:38px;line-height:1}
   .tl-hecho .t{font-size:18px;font-weight:800;margin:8px 0 4px}
   .tl-hecho .s{color:var(--muted);font-size:13.5px}
-  /* Deshacer: la zona de configuración no puede tener acciones sin vuelta atrás */
-  .tl-undo{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--navy);color:#fff;
-           border-radius:11px;padding:10px 14px;margin-bottom:10px;font-size:13.5px}
-  .tl-undo button{background:none;border:none;color:var(--orange);font:inherit;font-weight:800;cursor:pointer;padding:2px 4px}
+  /* El candidato elegido. Se marca con el naranja de acción, que es el que en
+     toda la app significa "esto está encendido". */
+  .tl-cand.on{border-color:var(--orange);background:#FFF7F3}
+  .tl-cand.on .tk{border-color:var(--orange);background:var(--orange);color:#fff}
+
+  /* La barra de confirmar, pegada abajo: con el pulgar en el teléfono queda a
+     mano sin tener que subir a buscar un botón. */
+  .tl-barra{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;
+            background:var(--navy);color:#fff;border-radius:12px;padding:11px 12px 11px 16px;margin-top:12px;
+            box-shadow:0 -2px 14px rgba(15,30,49,.18)}
+  .tl-barra .tb{font-size:13.5px;font-weight:600}
+  .tl-barra .btn{padding:9px 20px;font-size:14.5px}
+
+  /* Lo hecho en esta sesión, acumulado. Deshacer solo lo último no alcanza: en
+     el mesón uno se da cuenta del error tres productos después. */
+  .tl-hechos{margin-bottom:12px}
+  .tl-hfila{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--border);
+            border-radius:10px;padding:8px 10px 8px 12px;margin-bottom:5px;font-size:13px}
+  .tl-hfila .hi{flex-shrink:0;font-size:13px;opacity:.7}
+  .tl-hfila .ht{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+  .tl-hfila button{flex-shrink:0;background:none;border:none;color:var(--orange);font:inherit;font-size:12.5px;
+                   font-weight:800;cursor:pointer;padding:3px 5px}
+  .tl-hfila button:active{transform:scale(.94)}
 
   /* La marca NUEVO late apenas: la idea es que dé ganas de entrar, no llamar
      la atención. Se apaga con prefers-reduced-motion. */
@@ -3160,7 +3179,10 @@ function renderPortada(){
 }
 
 /* ---------- el taller ---------- */
-let COLA=[], colaIdx=0, colaSec=null, ULTIMO=null;
+let COLA=[], colaIdx=0, colaSec=null;
+let SEL = new Set();       // los productos elegidos para el que se está viendo
+let HECHOS = [];           // lo hecho en esta sesión, lo más reciente primero
+const TOPE_HECHOS = 6;     // cuántos quedan a la vista
 
 /* Los nombres de Fudo traen apellidos que no son parte del producto. Quitarlos
    antes de comparar es lo que hace que "Torta amor Pedidos Ya" encuentre
@@ -3192,7 +3214,7 @@ function candidatos(fp){
 function abrirTaller(sec){
   colaSec = sec || null;
   COLA = FUDOPROD.filter(fp=>estadoFudo(fp)==='falta' && (!colaSec || seccionDe(fp)===colaSec));
-  colaIdx = 0; ULTIMO = null;
+  colaIdx = 0; SEL.clear(); HECHOS = [];
   $('rec-portada').style.display='none';
   $('rec-combos').style.display='none';
   $('rec-taller').style.display='block';
@@ -3205,10 +3227,18 @@ function cerrarTaller(){
 }
 function pintarTaller(){
   const cont=$('rec-taller');
-  const undo = ULTIMO ? `<div class="tl-undo"><span>${esc(ULTIMO.texto)}</span><button data-a="deshacer">Deshacer</button></div>` : '';
+  /* El historial se ACUMULA. Antes solo se podía deshacer lo último, y en el
+     mesón eso no alcanza: uno se da cuenta del error tres productos después.
+     Ahora quedan a la vista los últimos, cada uno con su propio deshacer. */
+  const hechos = HECHOS.length ? `<div class="tl-hechos">${
+    HECHOS.slice(0, TOPE_HECHOS).map((h,i)=>`<div class="tl-hfila">
+      <span class="hi">${h.tipo==='receta'?'🔗':'⊘'}</span>
+      <span class="ht">${esc(h.texto)}</span>
+      <button data-des="${i}">Deshacer</button>
+    </div>`).join('')}</div>` : '';
 
   if(colaIdx >= COLA.length){
-    cont.innerHTML = undo + `<div class="tl-ficha tl-hecho">
+    cont.innerHTML = hechos + `<div class="tl-ficha tl-hecho">
       <div class="ico">✓</div>
       <div class="t">${colaSec ? esc(colaSec)+' al día' : 'No queda nada por enlazar'}</div>
       <div class="s">Cada producto de esta lista ya descuenta o quedó marcado.</div>
@@ -3221,15 +3251,31 @@ function pintarTaller(){
   const cands = candidatos(fp);
   const precio = fp.precio!=null && +fp.precio>0 ? '$'+Number(fp.precio).toLocaleString('es-CL')+' · ' : '';
 
-  const lista = cands.map((c,i)=>`
-    <button class="tl-cand" data-pid="${c.p.id}">
+  /* Los elegidos a mano (buscados o recién creados) se muestran arriba aunque
+     no estuvieran entre los candidatos propuestos. */
+  const ids = new Set(cands.map(c=>c.p.id));
+  const extra = [...SEL].filter(id=>!ids.has(id))
+    .map(id=>({p: DATA.find(d=>d.id===id), pt:0})).filter(x=>x.p);
+  const todos = [...extra, ...cands];
+
+  const lista = todos.map((c,i)=>{
+    const on = SEL.has(c.p.id);
+    return `<button class="tl-cand${on?' on':''}" data-pid="${c.p.id}">
       <span class="tk">✓</span>
       <span class="tx"><span class="p1">${esc(c.p.producto)}</span><br>
         <span class="p2">${esc(c.p.rubro||'sin sección')} · hay ${fmt(c.p.stock_actual)}</span></span>
-      ${i===0 && c.pt>=80 ? '<span class="por">casi seguro</span>' : ''}
-    </button>`).join('');
+      ${!on && i===extra.length && c.pt>=80 ? '<span class="por">casi seguro</span>' : ''}
+    </button>`;
+  }).join('');
 
-  cont.innerHTML = undo + `
+  /* La barra de confirmar aparece recién cuando hay algo elegido: si no hay
+     nada seleccionado no tiene qué decir, y un botón apagado es ruido. */
+  const barra = SEL.size ? `<div class="tl-barra">
+      <span class="tb">${SEL.size} producto${SEL.size===1?'':'s'} · esto descontará</span>
+      <button class="btn btn-orange" data-a="listo">Listo</button>
+    </div>` : '';
+
+  cont.innerHTML = hechos + `
     <div class="tl-cab">
       <span class="q">Quedan ${COLA.length-colaIdx}${colaSec?' · '+esc(colaSec):''}</span>
       <button class="tl-volver" data-a="volver">✕ Salir</button>
@@ -3240,52 +3286,68 @@ function pintarTaller(){
       <div class="tl-meta">${precio}${esc(seccionDe(fp))}</div>
       <div class="tl-preg">¿Qué descuenta del inventario?</div>
       <div id="tl-cands">${lista || '<div class="tl-pista">No se encontró nada parecido en el inventario.</div>'}</div>
+      ${SEL.size ? '' : '<div class="tl-pista">Si lleva más de una cosa —como un combo— tócalas todas.</div>'}
       <div class="tl-otras">
-        <button class="tl-chip" data-a="buscar">Buscar otro</button>
+        <button class="tl-chip" data-a="buscar">Agregar otro</button>
         <button class="tl-chip" data-a="crear">Crear producto</button>
         <button class="tl-chip" data-a="no">No lleva receta</button>
         <button class="tl-chip" data-a="saltar">Después</button>
       </div>
-    </div>`;
+    </div>` + barra;
   ligarTaller();
 }
 function ligarTaller(){
   const cont=$('rec-taller');
-  cont.querySelectorAll('.tl-cand').forEach(b=> b.onclick = ()=> enlazar(+b.dataset.pid));
+  cont.querySelectorAll('.tl-cand').forEach(b=> b.onclick = ()=> alternar(+b.dataset.pid));
   cont.querySelectorAll('[data-a]').forEach(b=> b.onclick = ()=> accionTaller(b.dataset.a));
+  cont.querySelectorAll('[data-des]').forEach(b=> b.onclick = ()=> deshacer(+b.dataset.des));
+}
+/* Tocar un candidato lo agrega o lo saca. Se llegó a esto probando con tres
+   personas: todas intentaron armar combos acá, aunque no estaba diseñado para
+   eso. Cuando el instinto va para un lado, se sigue el instinto. */
+function alternar(pid){
+  if(SEL.has(pid)) SEL.delete(pid); else SEL.add(pid);
+  pintarTaller();
 }
 async function accionTaller(a){
-  if(a==='volver')   return cerrarTaller();
-  if(a==='deshacer') return deshacerUltimo();
-  if(a==='saltar'){ colaIdx++; ULTIMO=null; return pintarTaller(); }
+  if(a==='volver')   { SEL.clear(); return cerrarTaller(); }
+  if(a==='listo')    return confirmarEnlace();
+  if(a==='saltar')   { SEL.clear(); colaIdx++; return pintarTaller(); }
   if(a==='buscar'){
-    const p = await elegirProducto('¿Qué descuenta?');
-    if(p) enlazar(p.id);
+    const p = await elegirProducto('¿Qué más descuenta?', [...SEL]);
+    if(p){ SEL.add(p.id); pintarTaller(); }
     return;
   }
-  if(a==='crear')  return crearYEnlazar();
+  if(a==='crear')  return crearProducto();
   if(a==='no')     return marcarNoLleva();
 }
 
-/* Enlazar: crear la receta y su única línea. Es lo mismo que hacen los scripts,
-   pero sin pasar por SQL — que es todo el punto de la zona de configuración. */
-async function enlazar(pid){
-  const fp = COLA[colaIdx]; if(!fp) return;
-  const prod = DATA.find(d=>d.id===pid); if(!prod) return;
+/* Guarda la receta con TODOS los elegidos. Una línea por producto, cantidad 1.
+   Es lo mismo que hacen los scripts, pero sin pasar por SQL — que es todo el
+   punto de la zona de configuración. */
+async function confirmarEnlace(){
+  const fp = COLA[colaIdx]; if(!fp || !SEL.size) return;
+  const elegidos = [...SEL].map(id=>DATA.find(d=>d.id===id)).filter(Boolean);
+  if(!elegidos.length) return;
+
   const r = await conReintento(()=> sb.from('recetas')
     .insert({sede:SEDE, fudo_product_id:fp.fudo_product_id, fudo_product_nombre:fp.nombre,
              activo:true, creado_por: PERMISOS.correo || NOMBRE || null})
     .select().single());
   if(r.error){ avisar('No se pudo crear el enlace.\n\nDetalle: '+r.error.message); return; }
-  const it = await conReintento(()=> sb.from('receta_items')
-    .insert({receta_id:r.data.id, producto_id:pid, cantidad:1, aplica:'siempre'}));
+
+  const lineas = elegidos.map(p=>({receta_id:r.data.id, producto_id:p.id, cantidad:1, aplica:'siempre'}));
+  const it = await conReintento(()=> sb.from('receta_items').insert(lineas));
   if(it.error){
-    await sb.from('recetas').delete().eq('id', r.data.id);   // no dejar una receta que no descuenta nada
+    // Una receta sin insumos no descuenta nada: se deshace entera antes de dejarla.
+    await sb.from('recetas').delete().eq('id', r.data.id);
     avisar('No se pudo guardar qué descuenta.\n\nDetalle: '+it.error.message); return;
   }
-  RECETAS.push({...r.data, items:[{receta_id:r.data.id, producto_id:pid, cantidad:1, aplica:'siempre'}]});
-  ULTIMO = {tipo:'receta', id:r.data.id, texto:`${fp.nombre} → ${prod.producto}`};
-  colaIdx++; pintarTaller();
+
+  RECETAS.push({...r.data, items: lineas});
+  HECHOS.unshift({tipo:'receta', id:r.data.id, fpid:fp.fudo_product_id,
+                  texto:`${fp.nombre} → ${elegidos.map(p=>p.producto).join(' + ')}`});
+  SEL.clear(); colaIdx++; pintarTaller();
 }
 
 async function marcarNoLleva(){
@@ -3297,22 +3359,23 @@ async function marcarNoLleva(){
              quien: PERMISOS.correo || NOMBRE || null}));
   if(r.error){ avisar('No se pudo marcar.\n\nDetalle: '+r.error.message); return; }
   NOLLEVA[fp.fudo_product_id]=motivo;
-  ULTIMO = {tipo:'nolleva', fpid:fp.fudo_product_id, texto:`${fp.nombre} · ${MOTIVOS[motivo]||motivo}`};
-  colaIdx++; pintarTaller();
+  HECHOS.unshift({tipo:'nolleva', fpid:fp.fudo_product_id,
+                  texto:`${fp.nombre} · ${MOTIVOS[motivo]||motivo}`});
+  SEL.clear(); colaIdx++; pintarTaller();
 }
 
-/* Crear el producto y enlazarlo en el mismo gesto. Decisión de Jhon: pasa a ser
-   la única forma en que todos pueden crear productos, porque nace enlazado y no
-   suelto. Antes de crear se busca por si ya existe con otro nombre (regla
+/* Crear el producto desde el mismo gesto de enlazar. Decisión de Jhon: pasa a
+   ser la única forma en que todos pueden crear productos, porque nace enlazado
+   y no suelto. Antes de crear se busca por si ya existe con otro nombre (regla
    0.1.3): un duplicado obliga a contar dos veces lo mismo. */
-async function crearYEnlazar(){
+async function crearProducto(){
   const fp = COLA[colaIdx]; if(!fp) return;
   const nombre = (fp.nombre||'').trim();
   const ya = DATA.find(d=> normNombre(d.producto)===normNombre(nombre));
   if(ya){
     const usar = await preguntar('Ese producto ya existe',
-      `"${ya.producto}" ya está en ${ya.rubro||'el inventario'}. ¿Lo enlazamos a ese en vez de crear otro?`, 'Sí, enlazar a ese');
-    if(usar) return enlazar(ya.id);
+      `"${ya.producto}" ya está en ${ya.rubro||'el inventario'}. ¿Usamos ese en vez de crear otro?`, 'Sí, usar ese');
+    if(usar){ SEL.add(ya.id); pintarTaller(); }
     return;
   }
   const rubro = await elegirSeccion();
@@ -3322,21 +3385,29 @@ async function crearYEnlazar(){
   if(r.error){ avisar('No se pudo crear el producto.\n\nDetalle: '+r.error.message); return; }
   DATA.push(r.data);
   metrics(); render();
-  await enlazar(r.data.id);
+  SEL.add(r.data.id);
+  pintarTaller();
 }
 
-async function deshacerUltimo(){
-  if(!ULTIMO) return;
-  if(ULTIMO.tipo==='receta'){
-    await sb.from('receta_items').delete().eq('receta_id', ULTIMO.id);
-    await sb.from('recetas').delete().eq('id', ULTIMO.id);
-    RECETAS = RECETAS.filter(r=>r.id!==ULTIMO.id);
+/* Deshacer cualquiera del historial, no solo el último. El producto vuelve a la
+   cola JUSTO ADELANTE: si alguien deshace es porque lo quiere corregir, así que
+   lo lógico es que sea lo siguiente que se le pregunte. */
+async function deshacer(i){
+  const h = HECHOS[i]; if(!h) return;
+  if(h.tipo==='receta'){
+    await sb.from('receta_items').delete().eq('receta_id', h.id);
+    await sb.from('recetas').delete().eq('id', h.id);
+    RECETAS = RECETAS.filter(r=>r.id!==h.id);
   } else {
     await sb.from('fudo_no_lleva_receta').delete()
-      .eq('sede',SEDE).eq('fudo_product_id', ULTIMO.fpid);
-    delete NOLLEVA[ULTIMO.fpid];
+      .eq('sede',SEDE).eq('fudo_product_id', h.fpid);
+    delete NOLLEVA[h.fpid];
   }
-  ULTIMO=null; colaIdx=Math.max(0, colaIdx-1); pintarTaller();
+  HECHOS.splice(i,1);
+  const fp = FUDOPROD.find(f=>f.fudo_product_id===h.fpid);
+  if(fp && !COLA.slice(colaIdx).some(x=>x.fudo_product_id===h.fpid)) COLA.splice(colaIdx, 0, fp);
+  SEL.clear();
+  pintarTaller();
 }
 
 /* Dos preguntas cortas con la cara de la app, no ventanas del navegador. */
