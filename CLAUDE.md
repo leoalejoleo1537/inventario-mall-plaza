@@ -7,9 +7,50 @@
 
 ---
 
+## ÍNDICE
+
+> **Cómo usar este archivo sin leerlo entero.** Son ~2.300 líneas y leerlas
+> todas cuesta caro. Este índice existe para saltar directo. La regla:
+> **las secciones 0 a 0.5 se leen SIEMPRE** — son duras, salen de fallas
+> reales y no se negocian. El resto se abre cuando el trabajo lo pide.
+
+| § | Qué hay ahí | Cuándo abrirla |
+|---|---|---|
+| **0** | Comparar Fudo vs. inventario es de SOLO LECTURA | **siempre** |
+| **0.1** | Reglas al tocar datos · 9 reglas + checklist | **siempre** |
+| **0.2** | El stock nunca puede ser negativo | **siempre** |
+| 0.2.1 | La reposición automática está APAGADA, y por qué | antes de proponer que el sistema mueva stock solo |
+| **0.3** | Las fechas de los sándwiches se muestran todas | tocar perecederos |
+| 0.3.1 | Quién manda cuando el stock y las fechas no cuadran | tocar perecederos |
+| **0.4** | Un perecedero entra solo por fechas | sumar stock desde cualquier camino |
+| **0.5** | La falla de las 15 horas · cómo tocar el motor | tocar el motor o cualquier función SQL |
+| 1 | Qué es esto y para quién | contexto general |
+| 2 | Estética · paleta y formas | tocar la pantalla |
+| 2.0 | Que sea bella, no solo que funcione | tocar la pantalla |
+| 2.1 | Texto mínimo — nada de párrafos explicativos | escribir cualquier texto de la app |
+| 3 | Arquitectura · dónde vive cada pieza | desplegar algo |
+| 3.5 | **Los 3 límites del editor de Supabase** | escribir un `.sql` para Jhon |
+| 3.6 | Jhon no tiene el repo en su computador | entregarle instrucciones |
+| 4 | Cómo funciona el motor de inventario | entender el descuento |
+| 5 | Git · Vercel publica `master` | publicar un cambio |
+| **6.0** | **DÓNDE QUEDAMOS** — el estado de hoy | **empezar una sesión** |
+| 6 A–E | Pendientes, ordenados por si la falla avisa o no | elegir en qué trabajar |
+| 6.1 | La seguridad se mantiene en mínimos (decisión) | antes de proponer cerrar permisos |
+| 6.2 | **La zona de configuración** — el pendiente grande | el trabajo que viene |
+| 6.3 | **Recetas rediseñada** — decisiones ya tomadas | construir la pantalla nueva |
+| 7 | ¿POS propio? · la conversación con administración | decisiones de largo plazo |
+| **8** | **Catálogo de soluciones** — se busca el problema | antes de "arreglar" algo |
+| 9 | Encender una sede nueva · el caso Angamos completo | otra sede |
+| 9.7 | Cómo se armaron las recetas de Angamos | armar recetas |
+| 10 | Insumos a granel (té, café, naranja) | el trabajo de medición |
+| 10.1 | El doble descuento del conteo nocturno | mesas abiertas |
+| **11** | Bitácora — por qué algo está hecho así | entender una decisión vieja |
+
+---
+
 ## EMPIEZA POR ACÁ (mapa de este archivo)
 
-Son ~1500 líneas. Este es el orden en que conviene usarlas:
+Este es el orden en que conviene usarlas:
 
 | Si vas a… | Lee primero |
 |---|---|
@@ -730,7 +771,24 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 Angamos descuente. En Plaza se probó con una pizza y es la única prueba que
 vale. No bloquea nada porque la sede todavía no se usa.
 
-**Lo siguiente que pidió Jhon (2026-08-05):** bugs y temas estéticos.
+**Lo siguiente, y ya está decidido (2026-08-05):**
+
+1. **Rediseñar Recetas** → §6.3, con la propuesta aprobada y las decisiones
+   tomadas. Es la primera pieza de lo que viene.
+2. **La zona de configuración** → §6.2. Es una etapa completa, no una pantalla.
+
+**Bugs y estética de esa misma tanda — cerrados el 2026-08-05:**
+fechas duplicadas (era una carrera entre lecturas, no un problema de datos),
+la sede siempre visible bajo el título, e Historial mudado al menú ☰.
+**Fusionados a `master` con permiso de Jhon.**
+
+**Y uno que quedó pendiente de su lado:** renombrar `Macarrons Vitrina de
+dulces` (id 85) a `Macarrons Vitrina`, para que sume con el del Congelador.
+`base_nombre()` sabe quitar ` Vitrina` y ` Congelador`, pero no
+` Vitrina de dulces` — por eso los nombres base no calzaban y Adriana veía 6 en
+vez de 30. Costó un sobre-stock que hubo que devolver.
+El resto de los pares del Congelador **Jhon los revisó y NO hay que enlazarlos**:
+son productos distintos.
 
 ---
 
@@ -1014,6 +1072,86 @@ regla 0.1.7.
   de personas. Mientras sea stock de una cafetería, la respuesta es esta.
 - `sql/2026-07-revision-seguridad.sql` se mantiene en el repo como diagnóstico
   de solo lectura — sirve para *saber* cómo está, no para cambiarlo.
+
+### 6.2 EL PENDIENTE GRANDE — la zona de configuración
+
+> Jhon, 2026-08-05: *"sería muy difícil que tenga que venir a ti para decir
+> 'une estos dos productos por el mismo ID'… esto va a ser MUY grande, vamos a
+> necesitar dedicarnos meramente a este apartado."*
+
+**No es una pantalla más: es una etapa completa del proyecto**, y hay que
+entrar a ella con tiempo dedicado, no colgarla de otra tarea.
+
+**El diagnóstico que la justifica, y sale de mirar una sesión entera de
+trabajo.** El 2026-08-05 pasaron por SQL: apagar 14 duplicados, enlazar los
+macarrons, dar un permiso, poner tipos de producto, crear 81 recetas.
+**Ninguna es una decisión técnica** — son decisiones del negocio que pasan por
+un script solo porque nadie construyó la pantalla.
+
+**El patrón de fondo:** *la app sabe editar productos, pero no sabe editar
+relaciones.* Qué producto de Fudo descuenta cuál del inventario. Qué vitrina va
+con qué congelador. Quién puede editar qué. Todas las relaciones viven en SQL.
+Y el bug de los macarrons pasó **exactamente por eso**: la relación
+vitrina/congelador está escondida dentro del nombre del producto, así que un
+nombre mal puesto rompe una relación y nadie lo ve.
+
+**LA CONDICIÓN, y no se negocia.** Hoy Claude es el badén: revisa el `where`,
+escribe la vista previa, deja el deshacer. Si eso pasa a un botón, el badén
+desaparece. Entonces **toda acción destructiva de esa zona lleva las mismas
+tres cosas que llevan los scripts: vista previa antes, registro de quién lo
+hizo, y deshacer.** Sin eso, la zona de configuración es una forma cómoda de
+romper el inventario en silencio — la falla que este proyecto ya pagó cara
+(§0.5).
+
+**Qué SÍ va ahí:** enlazar recetas · emparejar vitrina/congelador · usuarios y
+permisos · tipos y secciones · marcar un producto como "no lleva receta".
+
+**Qué NO va ahí, y sigue siendo de Claude:** el motor de descuento, el esquema
+de la base, y el interruptor `prueba`/`real`.
+
+**Por dónde empieza:** por Recetas (§6.3). No es una pantalla aparte de esta
+zona — es su primera pieza, y el molde del resto.
+
+### 6.3 RECETAS — el rediseño, con las decisiones ya tomadas
+
+Propuesta navegable en `docs/propuesta-recetas.html`. Jhon la revisó el
+2026-08-05 y aprobó el diseño. Lo decidido:
+
+**El diagnóstico:** la pantalla muestra las recetas que YA existen, y el
+trabajo son las que FALTAN. Por eso se ve vacía teniendo 172 filas — muestra el
+lado equivocado del problema.
+
+**El hallazgo que lo hace posible: hacen falta TRES estados, no dos.** Con solo
+"con receta" / "sin receta", los 41 combos, los tés, los cafés y los productos
+internos quedan en rojo **para siempre** y el contador nunca llega a cero. Una
+pantalla que siempre grita se deja de mirar. El tercero es **"no lleva receta"**,
+puesto a propósito por una persona.
+
+| Decisión | Qué quedó |
+|---|---|
+| Dos vistas | **portada** (el puente Fudo→inventario + barras por sección) y **taller** (cola de a un producto) |
+| Dónde abre | En la **portada** las primeras semanas, mientras jefatura aprende. Después se cambia al taller |
+| Marca NUEVO | Sí, **con animación de color MUY sutil** — el objetivo es que den ganas de explorar, no llamar la atención |
+| Agrupación de las barras | **Por NUESTRAS secciones** (`rubro`), no por las categorías de Fudo. *"Los trabajadores están más familiarizados con 'Vitrina de tortas' que con 'tortas'"* |
+| Interacción | **Tocar A y después tocar B. NUNCA arrastrar** — arrastrar es lindo con mouse y peleado con el dedo, y serían dos interacciones que mantener |
+| Candidatos | Vienen propuestos, ordenados por parecido. **Proponen, no deciden** (regla 0.1.4) |
+| Producto que no existe | **Se puede crear ahí mismo**, y pasa a ser **la única forma en que todos pueden crear productos** — creando y enlazando en el mismo gesto |
+| Combos | **Fuera de esta pantalla.** El botón actual de crear recetas **se queda donde está y como está**, solo cambia de nombre a **"Crear combos"**. Jhon: *"no debe desaparecer ni cambiar de lugar, ya están muy familiarizados con él"* |
+| Sedes | **Las dos**, plaza y angamos |
+
+**El problema que queda abierto, y hay que resolverlo antes de construir:** las
+barras se agrupan por nuestras secciones, pero **un producto de Fudo sin receta
+todavía no tiene sección nuestra** — la sección vive en el producto del
+inventario, que es justo el que falta enlazar. Es un huevo y gallina.
+La salida más limpia: **una tabla chica que traduzca cada categoría de Fudo a
+una sección nuestra**, llenada una sola vez (Fudo tiene ~15-20 categorías). Así
+el agrupamiento sale de un dato que existe desde el principio, y los nombres en
+pantalla siguen siendo los que el equipo reconoce.
+
+**Lo que la pantalla NO hace, a propósito:** recetas de varios insumos,
+cantidades fraccionarias (los 18 g de café), ni borrar productos. Hacer bien lo
+simple primero es lo que ya funcionó: 81 recetas en una tarde porque eran todas
+de un insumo.
 
 ### ✅ Lo que NO está en riesgo
 
@@ -1359,6 +1497,53 @@ vez que Jhon corrija alguna desde la app, deja de ser reversible en bloque.
     `ultima_corrida_por` diga `cron` → recién ahí `cron_activo = true`.
 16. **El empuje de stock hacia Fudo NO se enciende en Angamos.**
 
+### 9.2 Las trampas que ya conocemos, aplicadas a Angamos
+
+- **No copiar las recetas de plaza cambiando la sede.** Los ids de Fudo son de
+  otra cuenta. Es el error más probable de esta migración.
+- **El emparejador de vitrina/congelador NO se corre en Angamos.** En esa sede
+  no hay par que emparejar — lo que hay son duplicados que sobran (fase 1).
+- **Lo mismo con cualquier `.sql` viejo del repo.** Contado el 2026-07-30:
+  **22 de los 42 archivos de `sql/` tienen `'plaza'` escrito a mano**, algunos
+  seis o siete veces. Ninguno sirve tal cual. **Revisar cada aparición** — no
+  reemplazar a ciegas: en varios, `plaza` es el ORIGEN a copiar (como en
+  `replicar-secciones-plaza-a-angamos.sql`) y cambiarlo rompe el sentido.
+- **El empuje de stock hacia Fudo NO se enciende de entrada.** Primero
+  descontar, y solo cuando eso sea confiable, considerar escribir. En plaza
+  fueron dos meses entre una cosa y la otra, y con razón.
+- **`app_permisos` no tiene columna `sede`**, y eso es una **decisión**, no un
+  descuido: la mecánica está construida (`sql/2026-08-permiso-por-sede.sql` +
+  `permisosDeLaSede()`) pero **Jhon decidió el 2026-08-04 no correrla** — ver
+  §9.6. Mientras tanto, quien puede empujar a Fudo puede hacerlo en cualquier
+  sede. Volver a mirarlo **cuando se encienda el empuje en Angamos**, no antes.
+- **Angamos arranca sin historial y sin repartos**, y eso está bien: son tablas
+  por sede que se llenan solas con el uso.
+
+### 9.3 Cómo se sabe que quedó bien
+
+Con `sql/2026-07-salud-del-sistema.sql`, **bloque 0** para el resumen y estos
+tres en particular:
+
+| Bloque | Qué contesta para Angamos |
+|---|---|
+| 9 | Cobertura de recetas por sede. Angamos parte en 0% y esa es la métrica |
+| **10** | **Recetas que apuntan al vacío.** Es el que atrapa un traslado mal hecho: si el emparejador se equivocó, acá salen |
+| 8 | Si el motor está leyendo — recordando que en `prueba` no aplicar es lo normal |
+
+Y en la app: elegir Parque Angamos y comprobar que el inventario y las recetas
+cargan, y que **la franja del motor no da falsa alarma** en una sede recién
+encendida.
+
+### 9.4 Regla de trabajo — Mall Plaza es el patrón
+
+*(De la sesión del 2026-08-01. Vale la pena porque evita una tentación real.)*
+
+**La infraestructura no cambia para encender una sede.** Mismas tablas, mismo
+motor, mismas Edge Functions, misma estética. Angamos se enciende **agregando
+filas**. Si en el camino aparece una mejora que valdría la pena, **se propone
+aparte y para las dos sedes** — no se cuela dentro de la migración, donde
+nadie la va a poder distinguir de lo que había que hacer igual.
+
 ### 9.5 Angamos arranca en `real`, no en `prueba` — y el ⟳ no trae recetas
 
 *(Jhon, 2026-08-04. Dos cosas de la misma conversación.)*
@@ -1517,53 +1702,6 @@ propósito (§6.0); exportar eso a la sede nueva no tenía sentido.
 
 Archivos: `2026-08-angamos-recetas-simples-informe.sql` (solo lectura),
 `2026-08-angamos-recetas-tanda-unica.sql`, `2026-08-angamos-recetas-cierre.sql`.
-
-### 9.2 Las trampas que ya conocemos, aplicadas a Angamos
-
-- **No copiar las recetas de plaza cambiando la sede.** Los ids de Fudo son de
-  otra cuenta. Es el error más probable de esta migración.
-- **El emparejador de vitrina/congelador NO se corre en Angamos.** En esa sede
-  no hay par que emparejar — lo que hay son duplicados que sobran (fase 1).
-- **Lo mismo con cualquier `.sql` viejo del repo.** Contado el 2026-07-30:
-  **22 de los 42 archivos de `sql/` tienen `'plaza'` escrito a mano**, algunos
-  seis o siete veces. Ninguno sirve tal cual. **Revisar cada aparición** — no
-  reemplazar a ciegas: en varios, `plaza` es el ORIGEN a copiar (como en
-  `replicar-secciones-plaza-a-angamos.sql`) y cambiarlo rompe el sentido.
-- **El empuje de stock hacia Fudo NO se enciende de entrada.** Primero
-  descontar, y solo cuando eso sea confiable, considerar escribir. En plaza
-  fueron dos meses entre una cosa y la otra, y con razón.
-- **`app_permisos` no tiene columna `sede`**, y eso es una **decisión**, no un
-  descuido: la mecánica está construida (`sql/2026-08-permiso-por-sede.sql` +
-  `permisosDeLaSede()`) pero **Jhon decidió el 2026-08-04 no correrla** — ver
-  §9.6. Mientras tanto, quien puede empujar a Fudo puede hacerlo en cualquier
-  sede. Volver a mirarlo **cuando se encienda el empuje en Angamos**, no antes.
-- **Angamos arranca sin historial y sin repartos**, y eso está bien: son tablas
-  por sede que se llenan solas con el uso.
-
-### 9.3 Cómo se sabe que quedó bien
-
-Con `sql/2026-07-salud-del-sistema.sql`, **bloque 0** para el resumen y estos
-tres en particular:
-
-| Bloque | Qué contesta para Angamos |
-|---|---|
-| 9 | Cobertura de recetas por sede. Angamos parte en 0% y esa es la métrica |
-| **10** | **Recetas que apuntan al vacío.** Es el que atrapa un traslado mal hecho: si el emparejador se equivocó, acá salen |
-| 8 | Si el motor está leyendo — recordando que en `prueba` no aplicar es lo normal |
-
-Y en la app: elegir Parque Angamos y comprobar que el inventario y las recetas
-cargan, y que **la franja del motor no da falsa alarma** en una sede recién
-encendida.
-
-### 9.4 Regla de trabajo — Mall Plaza es el patrón
-
-*(De la sesión del 2026-08-01. Vale la pena porque evita una tentación real.)*
-
-**La infraestructura no cambia para encender una sede.** Mismas tablas, mismo
-motor, mismas Edge Functions, misma estética. Angamos se enciende **agregando
-filas**. Si en el camino aparece una mejora que valdría la pena, **se propone
-aparte y para las dos sedes** — no se cuela dentro de la migración, donde
-nadie la va a poder distinguir de lo que había que hacer igual.
 
 ## 10. Insumos que no se cuentan de a uno (té, café, naranja, limpieza)
 
