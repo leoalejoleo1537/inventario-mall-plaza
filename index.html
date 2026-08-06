@@ -251,6 +251,85 @@
   .rec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
   .rec-card .rn{font-weight:700;font-size:15px}
   .rec-card .ri{font-size:12.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+
+  /* ---------- recetas: portada y taller ----------
+     La pantalla mostraba las recetas que YA existen, y el trabajo son las que
+     FALTAN — por eso se veía vacía teniendo 172 filas. La portada muestra el
+     hueco; el taller es donde se cierra. */
+  .rec-modos{display:flex;gap:6px;margin-bottom:14px}
+  .rec-modo{flex:1;padding:9px 10px;border:1px solid var(--border);background:var(--card);color:var(--muted);
+            border-radius:999px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+  .rec-modo.active{background:var(--orange);border-color:var(--orange);color:#fff}
+  .rec-modo:active{transform:scale(.97)}
+
+  .puente{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:12px}
+  .puente .lado{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 10px;text-align:center}
+  .puente .lado .n{font-size:28px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .puente .lado .l{font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-top:5px;line-height:1.25}
+  .puente .flecha{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--orange);min-width:72px}
+  .puente .flecha svg{width:66px;height:20px}
+  .puente .flecha .cnt{font-size:11.5px;font-weight:800;color:var(--muted);white-space:nowrap}
+
+  .rec-estados{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px}
+  .rec-est{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:11px 8px;text-align:center}
+  .rec-est .n{font-size:22px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .rec-est .l{font-size:11.5px;margin-top:3px;line-height:1.25;color:var(--muted)}
+  .rec-est.ok .n{color:var(--green-fg)}
+  .rec-est.falta .n{color:var(--orange)}
+
+  .rec-cta{width:100%;margin-bottom:16px;font-size:15.5px;padding:13px}
+  .rec-barra{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:10px 13px;margin-bottom:7px;cursor:pointer;
+             transition:border-color .15s,transform .12s}
+  .rec-barra:hover{border-color:var(--orange)}
+  .rec-barra:active{transform:scale(.99)}
+  .rec-barra.lista{opacity:.62}
+  .rec-barra .bt{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+  .rec-barra .bn{font-weight:700;font-size:14.5px}
+  .rec-barra .bc{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .rec-barra .bb{height:6px;border-radius:999px;background:var(--border);overflow:hidden}
+  .rec-barra .bb i{display:block;height:100%;background:var(--green-fg);transition:width .3s ease}
+
+  /* la ficha del taller */
+  .tl-cab{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px}
+  .tl-cab .q{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+  .tl-volver{background:none;border:none;color:var(--muted);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;padding:4px 2px}
+  .tl-ficha{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:17px;box-shadow:0 1px 3px rgba(15,30,49,.06)}
+  .tl-de{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--orange)}
+  .tl-nom{font-size:21px;font-weight:800;line-height:1.2;margin:5px 0 2px}
+  .tl-meta{font-size:12.5px;color:var(--muted);margin-bottom:14px}
+  .tl-preg{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px}
+  .tl-cand{width:100%;display:flex;align-items:center;gap:11px;background:var(--card);border:1.5px solid var(--border);
+           border-radius:11px;padding:11px 13px;margin-bottom:7px;cursor:pointer;text-align:left;font:inherit;color:inherit;
+           transition:border-color .15s,background .15s,transform .12s}
+  .tl-cand:hover{border-color:var(--orange);background:#FFF7F3}
+  .tl-cand:active{transform:scale(.985)}
+  .tl-cand .tk{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;
+               display:flex;align-items:center;justify-content:center;font-weight:800;color:transparent;font-size:13px}
+  .tl-cand:hover .tk{border-color:var(--orange);color:var(--orange)}
+  .tl-cand .tx{flex:1;min-width:0}
+  .tl-cand .p1{font-weight:700;font-size:14.5px}
+  .tl-cand .p2{font-size:12px;color:var(--muted)}
+  .tl-cand .por{font-size:11px;font-weight:800;color:var(--green-fg);background:var(--green-bg);padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .tl-pista{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.5}
+  .tl-otras{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px;padding-top:13px;border-top:1px solid var(--border)}
+  .tl-chip{background:transparent;border:1.5px solid var(--border);border-radius:999px;padding:7px 13px;font:inherit;
+           font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;transition:border-color .15s,color .15s}
+  .tl-chip:hover{border-color:var(--muted);color:var(--text)}
+  .tl-chip:active{transform:scale(.96)}
+  .tl-hecho{text-align:center;padding:34px 16px}
+  .tl-hecho .ico{font-size:38px;line-height:1}
+  .tl-hecho .t{font-size:18px;font-weight:800;margin:8px 0 4px}
+  .tl-hecho .s{color:var(--muted);font-size:13.5px}
+  /* Deshacer: la zona de configuración no puede tener acciones sin vuelta atrás */
+  .tl-undo{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--navy);color:#fff;
+           border-radius:11px;padding:10px 14px;margin-bottom:10px;font-size:13.5px}
+  .tl-undo button{background:none;border:none;color:var(--orange);font:inherit;font-weight:800;cursor:pointer;padding:2px 4px}
+
+  /* La marca NUEVO late apenas: la idea es que dé ganas de entrar, no llamar
+     la atención. Se apaga con prefers-reduced-motion. */
+  @keyframes nuevo-late{0%,100%{background:var(--orange)}50%{background:#F0733F}}
+  .tab-nuevo.late{animation:nuevo-late 2.6s ease-in-out infinite}
+  @media (prefers-reduced-motion: reduce){ .tab-nuevo.late{animation:none} }
   /* ---------- lotes de vencimiento (cantidad + fecha) ---------- */
   /* tres columnas con su propio espacio: en iOS el campo de fecha se dibuja
      más ancho que su caja y se montaba encima de la ✕ */
@@ -678,7 +757,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v9a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1v-9"></path></svg>
     </button>
     <button class="tab" data-tab="reparto">Reparto <span class="tab-nuevo" id="tabNuevo" style="display:none">NUEVO</span><span class="tab-badge" id="repBadge" style="display:none"></span></button>
-    <button class="tab" data-tab="recetas">Recetas</button>
+    <button class="tab" data-tab="recetas">Recetas <span class="tab-nuevo late" id="tabNuevoRec" style="display:none">NUEVO</span></button>
   </div>
 </div>
 
@@ -939,14 +1018,49 @@
 
 <!-- ================= RECETAS ================= -->
 <div class="wrap" id="view-recetas" style="display:none">
-  <div class="busca" data-busca="recetas" style="margin-bottom:8px">
-    <input type="text" id="rec-q" placeholder="Buscar receta…" style="width:100%">
+
+  <div class="rec-modos">
+    <button class="rec-modo active" data-modo="enlazar">Enlazar</button>
+    <button class="rec-modo" data-modo="combos">Combos</button>
   </div>
-  <div style="margin-bottom:12px">
-    <button class="btn btn-orange" id="btnNuevaReceta" style="white-space:nowrap">+ Nueva</button>
+
+  <!-- ---------- portada: el puente ---------- -->
+  <div id="rec-portada">
+    <div class="puente">
+      <div class="lado"><div class="n" id="rp-fudo">—</div><div class="l">se venden en Fudo</div></div>
+      <div class="flecha">
+        <svg viewBox="0 0 66 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M2 10h54"></path><path d="M49 4l7 6-7 6"></path>
+        </svg>
+        <span class="cnt" id="rp-enlaces">—</span>
+      </div>
+      <div class="lado"><div class="n" id="rp-inv">—</div><div class="l">en el inventario</div></div>
+    </div>
+
+    <div class="rec-estados">
+      <div class="rec-est ok"><div class="n" id="rp-ok">—</div><div class="l">descuentan</div></div>
+      <div class="rec-est falta"><div class="n" id="rp-falta">—</div><div class="l">falta enlazar</div></div>
+      <div class="rec-est"><div class="n" id="rp-no">—</div><div class="l">no llevan receta</div></div>
+    </div>
+
+    <button class="btn btn-orange rec-cta" id="btnTaller">Enlazar pendientes</button>
+    <div id="rp-barras"></div>
   </div>
-  <div class="count" id="rec-count"></div>
-  <div id="rec-list"><div class="empty">Cargando recetas…</div></div>
+
+  <!-- ---------- taller: de a un producto ---------- -->
+  <div id="rec-taller" style="display:none"></div>
+
+  <!-- ---------- combos: la pantalla de siempre, sin mover nada ---------- -->
+  <div id="rec-combos" style="display:none">
+    <div class="busca" data-busca="recetas" style="margin-bottom:8px">
+      <input type="text" id="rec-q" placeholder="Buscar receta…" style="width:100%">
+    </div>
+    <div style="margin-bottom:12px">
+      <button class="btn btn-orange" id="btnNuevaReceta" style="white-space:nowrap">+ Crear combo</button>
+    </div>
+    <div class="count" id="rec-count"></div>
+    <div id="rec-list"><div class="empty">Cargando recetas…</div></div>
+  </div>
 </div>
 
 <!-- ================= MODAL RECETA ================= -->
@@ -1145,9 +1259,15 @@ const fmtCorta   = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.
    que el equipo entre a ver la pantalla nueva. Se apaga sola en esta fecha
    (una semana), así nadie tiene que acordarse de sacarla. */
 const FIN_NUEVO = '2026-08-03';
+/* La marca de Recetas dura más porque lo que hay que aprender es más: no es una
+   pantalla nueva, es una forma nueva de trabajar. Se apaga sola en la fecha —
+   no depende de que alguien se acuerde de sacarla. */
+const FIN_NUEVO_REC = '2026-09-05';
 function marcarNuevo(){
   const b = $('tabNuevo');
   if(b) b.style.display = hoyISO() < FIN_NUEVO ? 'inline-block' : 'none';
+  const r = $('tabNuevoRec');
+  if(r) r.style.display = hoyISO() < FIN_NUEVO_REC ? 'inline-block' : 'none';
 }
 
 /* lotes de vencimiento por producto: { producto_id: [{id,cantidad,vencimiento}] } */
@@ -2956,7 +3076,10 @@ function pickTab(tab){
   if(tab==='inv') irAlInicio();
   if(tab==='hist') loadHistorial();
   if(tab==='reparto') loadRepartos();
-  if(tab==='recetas') loadRecetas();
+  /* Abre siempre en la portada, no en el último modo que se dejó: mientras
+     jefatura está aprendiendo, lo primero que tienen que ver es dónde está el
+     hueco. Cuando ya se sepa de memoria, esto pasa a abrir en el taller. */
+  if(tab==='recetas'){ modoRecetas('enlazar'); loadRecetas(); }
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>pickTab(t.dataset.tab)));
 
@@ -2965,15 +3088,321 @@ let FUDOPROD=[];   // productos activos de Fudo de la sede (para el desplegable)
 let RECETAS=[];    // recetas con sus insumos
 let recEditId=null;
 
+let CATS={};       // categoria_id de Fudo -> sección nuestra
+let NOLLEVA={};    // fudo_product_id -> motivo (puestos a propósito por una persona)
+
+/* ---------------- Recetas: portada y taller ----------------
+
+   El problema que resuelve esta pantalla: la lista de recetas muestra las que
+   YA existen, y el trabajo son las que FALTAN. Por eso se veía vacía teniendo
+   172 filas — mostraba el lado equivocado.
+
+   Hacen falta TRES estados y no dos. Con solo "con receta" / "sin receta", los
+   combos, los cafés y los insumos internos quedan en rojo para siempre y el
+   contador nunca llega a cero; una pantalla que siempre grita se deja de
+   mirar. El tercero es "no lleva receta", puesto a propósito por una persona y
+   con su motivo — así el número es honesto y ninguno se pierde: el día que
+   toquen los combos, se filtran por su motivo y ahí están.                     */
+
+const MOTIVOS = {
+  'no se vende': 'No se vende (insumo interno)',
+  'es combo':    'Es un combo · varios insumos',
+  'es preparado':'Es preparado · café, té o jugo',
+  'no se cuenta':'No se cuenta por unidad',
+};
+const SIN_SECCION = 'Sin clasificar';
+const seccionDe = fp => CATS[fp.categoria_id] || SIN_SECCION;
+const tieneReceta = fpid => RECETAS.some(r=>r.fudo_product_id===fpid && r.activo!==false);
+
+/* Estado de cada producto de Fudo: descuenta / no lleva / falta. */
+function estadoFudo(fp){
+  if(tieneReceta(fp.fudo_product_id)) return 'ok';
+  if(NOLLEVA[fp.fudo_product_id]) return 'no';
+  return 'falta';
+}
+function resumenRecetas(){
+  const secs={};
+  let ok=0, no=0, falta=0;
+  FUDOPROD.forEach(fp=>{
+    const s=seccionDe(fp), e=estadoFudo(fp);
+    const b = secs[s] || (secs[s]={sec:s, total:0, ok:0, no:0, falta:0});
+    b.total++; b[e]++;
+    if(e==='ok') ok++; else if(e==='no') no++; else falta++;
+  });
+  /* Ordenadas por lo que FALTA, no alfabéticamente: lo que ya está completo se
+     hunde solo y deja de pedir atención. Misma idea que el inventario. */
+  const barras = Object.values(secs).sort((a,b)=> b.falta-a.falta || b.total-a.total);
+  return {ok, no, falta, barras};
+}
+
+function renderPortada(){
+  const r = resumenRecetas();
+  $('rp-fudo').textContent    = FUDOPROD.length;
+  $('rp-inv').textContent     = DATA.length;
+  $('rp-enlaces').textContent = r.ok + (r.ok===1?' enlace':' enlaces');
+  $('rp-ok').textContent      = r.ok;
+  $('rp-falta').textContent   = r.falta;
+  $('rp-no').textContent      = r.no;
+
+  const b=$('btnTaller');
+  b.textContent = r.falta ? `Enlazar ${r.falta} pendiente${r.falta===1?'':'s'}` : '✓ No queda nada por enlazar';
+  b.disabled = !r.falta;
+
+  $('rp-barras').innerHTML = r.barras.map(s=>{
+    const hechos = s.ok + s.no;                     // resuelto = enlazado o marcado
+    const pct = s.total ? Math.round(100*hechos/s.total) : 0;
+    const cif = s.falta ? `faltan ${s.falta} de ${s.total}` : `${s.total} · listo`;
+    return `<div class="rec-barra${s.falta?'':' lista'}" data-sec="${esc(s.sec)}">
+      <div class="bt"><span class="bn">${esc(s.sec)}</span><span class="bc">${cif}</span></div>
+      <div class="bb"><i style="width:${pct}%"></i></div>
+    </div>`;
+  }).join('') || '<div class="empty">Todavía no hay productos de Fudo en esta sede.</div>';
+}
+
+/* ---------- el taller ---------- */
+let COLA=[], colaIdx=0, colaSec=null, ULTIMO=null;
+
+/* Los nombres de Fudo traen apellidos que no son parte del producto. Quitarlos
+   antes de comparar es lo que hace que "Torta amor Pedidos Ya" encuentre
+   "Trozo torta amor". Sale de armar las 81 recetas de Angamos a mano. */
+const APELLIDOS = /\s*(pedidos\s*ya|pedidos\s*y[a4]|nuevo|nueva|vegano|vegana|- ?solo|solo)\s*$/i;
+const limpiaFudo = s => normNombre(String(s||'').replace(APELLIDOS,''));
+
+/* Propone, no concluye (regla 0.1.4). El orden importa: el emparejador
+   automático ya se equivocó en el producto de más peso, así que decide la
+   persona — esto solo ahorra el buscar. */
+function candidatos(fp){
+  const a = limpiaFudo(fp.nombre);
+  if(!a) return [];
+  const pa = a.split(' ').filter(w=>w.length>=4);
+  return DATA.map(p=>{
+    const b = normNombre(p.producto);
+    let pt = 0;
+    if(a===b) pt = 100;
+    else if(a.includes(b) || b.includes(a)) pt = 80 - Math.abs(a.length-b.length)/4;
+    else {
+      const pb = new Set(b.split(' ').filter(w=>w.length>=4));
+      const comunes = pa.filter(w=>pb.has(w)).length;
+      pt = comunes ? 40*comunes - Math.abs(a.length-b.length)/6 : 0;
+    }
+    return {p, pt};
+  }).filter(x=>x.pt>18).sort((x,y)=>y.pt-x.pt).slice(0,4);
+}
+
+function abrirTaller(sec){
+  colaSec = sec || null;
+  COLA = FUDOPROD.filter(fp=>estadoFudo(fp)==='falta' && (!colaSec || seccionDe(fp)===colaSec));
+  colaIdx = 0; ULTIMO = null;
+  $('rec-portada').style.display='none';
+  $('rec-combos').style.display='none';
+  $('rec-taller').style.display='block';
+  pintarTaller();
+}
+function cerrarTaller(){
+  $('rec-taller').style.display='none';
+  $('rec-portada').style.display='block';
+  renderPortada();
+}
+function pintarTaller(){
+  const cont=$('rec-taller');
+  const undo = ULTIMO ? `<div class="tl-undo"><span>${esc(ULTIMO.texto)}</span><button data-a="deshacer">Deshacer</button></div>` : '';
+
+  if(colaIdx >= COLA.length){
+    cont.innerHTML = undo + `<div class="tl-ficha tl-hecho">
+      <div class="ico">✓</div>
+      <div class="t">${colaSec ? esc(colaSec)+' al día' : 'No queda nada por enlazar'}</div>
+      <div class="s">Cada producto de esta lista ya descuenta o quedó marcado.</div>
+      <button class="btn btn-orange rec-cta" style="margin-top:16px" data-a="volver">Volver</button>
+    </div>`;
+    ligarTaller(); return;
+  }
+
+  const fp = COLA[colaIdx];
+  const cands = candidatos(fp);
+  const precio = fp.precio!=null && +fp.precio>0 ? '$'+Number(fp.precio).toLocaleString('es-CL')+' · ' : '';
+
+  const lista = cands.map((c,i)=>`
+    <button class="tl-cand" data-pid="${c.p.id}">
+      <span class="tk">✓</span>
+      <span class="tx"><span class="p1">${esc(c.p.producto)}</span><br>
+        <span class="p2">${esc(c.p.rubro||'sin sección')} · hay ${fmt(c.p.stock_actual)}</span></span>
+      ${i===0 && c.pt>=80 ? '<span class="por">casi seguro</span>' : ''}
+    </button>`).join('');
+
+  cont.innerHTML = undo + `
+    <div class="tl-cab">
+      <span class="q">Quedan ${COLA.length-colaIdx}${colaSec?' · '+esc(colaSec):''}</span>
+      <button class="tl-volver" data-a="volver">✕ Salir</button>
+    </div>
+    <div class="tl-ficha">
+      <div class="tl-de">Se vende en Fudo</div>
+      <div class="tl-nom">${esc(fp.nombre)||'(sin nombre)'}</div>
+      <div class="tl-meta">${precio}${esc(seccionDe(fp))}</div>
+      <div class="tl-preg">¿Qué descuenta del inventario?</div>
+      <div id="tl-cands">${lista || '<div class="tl-pista">No se encontró nada parecido en el inventario.</div>'}</div>
+      <div class="tl-otras">
+        <button class="tl-chip" data-a="buscar">Buscar otro</button>
+        <button class="tl-chip" data-a="crear">Crear producto</button>
+        <button class="tl-chip" data-a="no">No lleva receta</button>
+        <button class="tl-chip" data-a="saltar">Después</button>
+      </div>
+    </div>`;
+  ligarTaller();
+}
+function ligarTaller(){
+  const cont=$('rec-taller');
+  cont.querySelectorAll('.tl-cand').forEach(b=> b.onclick = ()=> enlazar(+b.dataset.pid));
+  cont.querySelectorAll('[data-a]').forEach(b=> b.onclick = ()=> accionTaller(b.dataset.a));
+}
+async function accionTaller(a){
+  if(a==='volver')   return cerrarTaller();
+  if(a==='deshacer') return deshacerUltimo();
+  if(a==='saltar'){ colaIdx++; ULTIMO=null; return pintarTaller(); }
+  if(a==='buscar'){
+    const p = await elegirProducto('¿Qué descuenta?');
+    if(p) enlazar(p.id);
+    return;
+  }
+  if(a==='crear')  return crearYEnlazar();
+  if(a==='no')     return marcarNoLleva();
+}
+
+/* Enlazar: crear la receta y su única línea. Es lo mismo que hacen los scripts,
+   pero sin pasar por SQL — que es todo el punto de la zona de configuración. */
+async function enlazar(pid){
+  const fp = COLA[colaIdx]; if(!fp) return;
+  const prod = DATA.find(d=>d.id===pid); if(!prod) return;
+  const r = await conReintento(()=> sb.from('recetas')
+    .insert({sede:SEDE, fudo_product_id:fp.fudo_product_id, fudo_product_nombre:fp.nombre,
+             activo:true, creado_por: PERMISOS.correo || NOMBRE || null})
+    .select().single());
+  if(r.error){ avisar('No se pudo crear el enlace.\n\nDetalle: '+r.error.message); return; }
+  const it = await conReintento(()=> sb.from('receta_items')
+    .insert({receta_id:r.data.id, producto_id:pid, cantidad:1, aplica:'siempre'}));
+  if(it.error){
+    await sb.from('recetas').delete().eq('id', r.data.id);   // no dejar una receta que no descuenta nada
+    avisar('No se pudo guardar qué descuenta.\n\nDetalle: '+it.error.message); return;
+  }
+  RECETAS.push({...r.data, items:[{receta_id:r.data.id, producto_id:pid, cantidad:1, aplica:'siempre'}]});
+  ULTIMO = {tipo:'receta', id:r.data.id, texto:`${fp.nombre} → ${prod.producto}`};
+  colaIdx++; pintarTaller();
+}
+
+async function marcarNoLleva(){
+  const fp = COLA[colaIdx]; if(!fp) return;
+  const motivo = await elegirMotivo();
+  if(!motivo) return;
+  const r = await conReintento(()=> sb.from('fudo_no_lleva_receta')
+    .insert({sede:SEDE, fudo_product_id:fp.fudo_product_id, motivo,
+             quien: PERMISOS.correo || NOMBRE || null}));
+  if(r.error){ avisar('No se pudo marcar.\n\nDetalle: '+r.error.message); return; }
+  NOLLEVA[fp.fudo_product_id]=motivo;
+  ULTIMO = {tipo:'nolleva', fpid:fp.fudo_product_id, texto:`${fp.nombre} · ${MOTIVOS[motivo]||motivo}`};
+  colaIdx++; pintarTaller();
+}
+
+/* Crear el producto y enlazarlo en el mismo gesto. Decisión de Jhon: pasa a ser
+   la única forma en que todos pueden crear productos, porque nace enlazado y no
+   suelto. Antes de crear se busca por si ya existe con otro nombre (regla
+   0.1.3): un duplicado obliga a contar dos veces lo mismo. */
+async function crearYEnlazar(){
+  const fp = COLA[colaIdx]; if(!fp) return;
+  const nombre = (fp.nombre||'').trim();
+  const ya = DATA.find(d=> normNombre(d.producto)===normNombre(nombre));
+  if(ya){
+    const usar = await preguntar('Ese producto ya existe',
+      `"${ya.producto}" ya está en ${ya.rubro||'el inventario'}. ¿Lo enlazamos a ese en vez de crear otro?`, 'Sí, enlazar a ese');
+    if(usar) return enlazar(ya.id);
+    return;
+  }
+  const rubro = await elegirSeccion();
+  if(!rubro) return;
+  const r = await conReintento(()=> sb.from('productos')
+    .insert({sede:SEDE, producto:nombre, rubro, stock_actual:0, activo:'SÍ'}).select().single());
+  if(r.error){ avisar('No se pudo crear el producto.\n\nDetalle: '+r.error.message); return; }
+  DATA.push(r.data);
+  metrics(); render();
+  await enlazar(r.data.id);
+}
+
+async function deshacerUltimo(){
+  if(!ULTIMO) return;
+  if(ULTIMO.tipo==='receta'){
+    await sb.from('receta_items').delete().eq('receta_id', ULTIMO.id);
+    await sb.from('recetas').delete().eq('id', ULTIMO.id);
+    RECETAS = RECETAS.filter(r=>r.id!==ULTIMO.id);
+  } else {
+    await sb.from('fudo_no_lleva_receta').delete()
+      .eq('sede',SEDE).eq('fudo_product_id', ULTIMO.fpid);
+    delete NOLLEVA[ULTIMO.fpid];
+  }
+  ULTIMO=null; colaIdx=Math.max(0, colaIdx-1); pintarTaller();
+}
+
+/* Dos preguntas cortas con la cara de la app, no ventanas del navegador. */
+function elegirMotivo(){
+  const ops = Object.entries(MOTIVOS).map(([k,v])=>`<button class="tl-cand" data-v="${k}"><span class="tk">✓</span><span class="tx"><span class="p1">${esc(v)}</span></span></button>`).join('');
+  return elegirEnVentana('¿Por qué no lleva receta?', ops);
+}
+function elegirSeccion(){
+  const secs=[...new Set(DATA.map(d=>d.rubro).filter(Boolean))].sort();
+  const ops = secs.map(s=>`<button class="tl-cand" data-v="${esc(s)}"><span class="tk">✓</span><span class="tx"><span class="p1">${esc(s)}</span></span></button>`).join('');
+  return elegirEnVentana('¿En qué sección va?', ops);
+}
+function elegirEnVentana(titulo, opcionesHTML){
+  return new Promise(res=>{
+    const ov=document.createElement('div');
+    /* overlay-blur, como el resto: ninguna ventana de la app vuelve al negro
+       plano del navegador (regla 2.0). */
+    ov.className='overlay overlay-blur open';
+    ov.innerHTML=`<div class="modal" style="max-width:380px">
+      <h2 style="margin:2px 0 14px;font-size:18px">${esc(titulo)}</h2>
+      ${opcionesHTML}
+      <div class="mbtns" style="margin-top:14px"><button class="btn btn-gris" data-x="1">Cancelar</button></div>
+    </div>`;
+    document.body.appendChild(ov);
+    const cerrar=v=>{ ov.remove(); res(v); };
+    ov.querySelectorAll('[data-v]').forEach(b=> b.onclick=()=>cerrar(b.dataset.v));
+    ov.querySelector('[data-x]').onclick=()=>cerrar(null);
+    ov.addEventListener('click',e=>{ if(e.target===ov) cerrar(null); });
+  });
+}
+
+/* ---------- cambiar de modo ---------- */
+function modoRecetas(m){
+  document.querySelectorAll('.rec-modo').forEach(b=>b.classList.toggle('active', b.dataset.modo===m));
+  $('rec-taller').style.display='none';
+  $('rec-portada').style.display = m==='enlazar' ? 'block' : 'none';
+  $('rec-combos').style.display  = m==='combos'  ? 'block' : 'none';
+  if(m==='enlazar') renderPortada();
+}
+document.querySelectorAll('.rec-modo').forEach(b=> b.addEventListener('click',()=>modoRecetas(b.dataset.modo)));
+$('btnTaller').addEventListener('click',()=>abrirTaller(null));
+$('rp-barras').addEventListener('click',e=>{
+  const b=e.target.closest('[data-sec]'); if(b) abrirTaller(b.dataset.sec);
+});
+
 async function loadRecetas(){
   if(!SEDE) return;
   $('rec-list').innerHTML='<div class="empty">Cargando recetas…</div>';
-  const fp = await sb.from('fudo_productos').select('fudo_product_id,nombre,code').eq('sede',SEDE).eq('activo',true).order('nombre');
+  /* El tope de 1000 filas de Supabase corta sin avisar y Angamos ya tiene 670
+     productos en el catálogo: se pide explícito y con margen. */
+  const fp = await sb.from('fudo_productos').select('fudo_product_id,nombre,code,precio,categoria_id')
+                     .eq('sede',SEDE).eq('activo',true).order('nombre').limit(2000);
   if(fp.error){
     $('rec-list').innerHTML='<div class="empty">Todavía no se han traído los productos de Fudo para esta sede.<br>Hay que correr el puente de productos primero.</div>';
     $('rec-count').textContent=''; return;
   }
   FUDOPROD = fp.data||[];
+
+  /* Las dos tablas nuevas. Si alguna todavía no existe en la base, la pantalla
+     sigue funcionando: sin categorías todo cae en "Sin clasificar", y sin la
+     tabla de "no lleva receta" simplemente no hay ninguno marcado. */
+  CATS={}; NOLLEVA={};
+  const ct = await sb.from('fudo_categorias').select('categoria_id,rubro').eq('sede',SEDE);
+  if(!ct.error) (ct.data||[]).forEach(c=>{ if(c.rubro) CATS[c.categoria_id]=c.rubro; });
+  const nl = await sb.from('fudo_no_lleva_receta').select('fudo_product_id,motivo').eq('sede',SEDE).limit(2000);
+  if(!nl.error) (nl.data||[]).forEach(n=>{ NOLLEVA[n.fudo_product_id]=n.motivo||'sin motivo'; });
   const rc = await sb.from('recetas').select('*').eq('sede',SEDE).order('fudo_product_nombre');
   if(rc.error){
     $('rec-list').innerHTML='<div class="empty">Las recetas aún no están activadas en la base de datos.</div>';
@@ -2984,12 +3413,13 @@ async function loadRecetas(){
   if(ids.length){ const ri=await sb.from('receta_items').select('*').in('receta_id',ids); items=ri.data||[]; }
   RECETAS=(rc.data||[]).map(r=>({...r, items: items.filter(it=>it.receta_id===r.id)}));
   renderRecetas();
+  renderPortada();
 }
 function renderRecetas(){
   const q=normNombre($('rec-q').value);
   const rows=RECETAS.filter(r=>!q || normNombre(r.fudo_product_nombre).includes(q));
   $('rec-count').textContent = `${rows.length} receta${rows.length===1?'':'s'}`;
-  if(!rows.length){ $('rec-list').innerHTML='<div class="empty">No hay recetas todavía. Usa “+ Nueva” para crear la primera.</div>'; return; }
+  if(!rows.length){ $('rec-list').innerHTML='<div class="empty">No hay recetas todavía. Usa “+ Crear combo” para crear la primera.</div>'; return; }
   $('rec-list').innerHTML = rows.map(r=>{
     const det=(r.items||[]).map(it=>{
       const p=DATA.find(d=>d.id===it.producto_id);
