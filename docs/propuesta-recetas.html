@@ -231,37 +231,62 @@
       </div>
 
       <div class="estados">
-        <div class="est ok"><div class="n">85</div><div class="l">descuentan</div></div>
-        <div class="est falta"><div class="n">146</div><div class="l">falta enlazar</div></div>
-        <div class="est no"><div class="n">206</div><div class="l">no llevan receta</div></div>
+        <div class="est ok"><div class="n">87</div><div class="l">descuentan</div></div>
+        <div class="est falta"><div class="n">81</div><div class="l">falta enlazar</div></div>
+        <div class="est no"><div class="n">273</div><div class="l">no llevan receta</div></div>
       </div>
 
       <div class="barra-fila">
-        <div class="barra-top"><span class="nom">Vitrina de tortas</span><span class="cif">18 de 22</span></div>
-        <div class="barra"><i class="b-ok" style="width:82%"></i><i class="b-no" style="width:0%"></i></div>
+        <div class="barra-top"><span class="nom">Pedidos Ya</span><span class="cif">17 de 47</span></div>
+        <div class="barra"><i class="b-ok" style="width:36%"></i></div>
       </div>
       <div class="barra-fila">
-        <div class="barra-top"><span class="nom">Sándwiches</span><span class="cif">6 de 9</span></div>
-        <div class="barra"><i class="b-ok" style="width:67%"></i></div>
+        <div class="barra-top"><span class="nom">Vitrina</span><span class="cif">37 de 60</span></div>
+        <div class="barra"><i class="b-ok" style="width:62%"></i></div>
       </div>
       <div class="barra-fila">
-        <div class="barra-top"><span class="nom">Combos</span><span class="cif">0 de 41</span></div>
-        <div class="barra"><i class="b-ok" style="width:0%"></i></div>
+        <div class="barra-top"><span class="nom">Sándwiches y desayunos</span><span class="cif">6 de 18</span></div>
+        <div class="barra"><i class="b-ok" style="width:33%"></i></div>
       </div>
       <div class="barra-fila">
-        <div class="barra-top"><span class="nom">Bebidas</span><span class="cif">9 de 14</span></div>
-        <div class="barra"><i class="b-ok" style="width:64%"></i></div>
+        <div class="barra-top"><span class="nom">Agregados</span><span class="cif">1 de 13</span></div>
+        <div class="barra"><i class="b-ok" style="width:8%"></i></div>
+      </div>
+      <div class="barra-fila">
+        <div class="barra-top"><span class="nom">Bebidas</span><span class="cif">9 de 13</span></div>
+        <div class="barra"><i class="b-ok" style="width:69%"></i></div>
+      </div>
+      <div class="barra-fila">
+        <div class="barra-top"><span class="nom">Pizzas</span><span class="cif">6 de 6 · listo</span></div>
+        <div class="barra"><i class="b-ok" style="width:100%"></i></div>
       </div>
 
     </div>
   </div>
 
-  <p class="aviso-demo">Los números son los reales de Angamos de hoy.</p>
+  <p class="aviso-demo">Números reales de Parque Angamos al 5 de agosto.</p>
 
   <p><strong>Por qué las barras van por sección y no una sola grande:</strong>
-  "48% de cobertura" no le dice a nadie qué hacer. "Combos: 0 de 41" sí — dice
-  dónde está el hueco y por dónde empezar. Se toca una barra y se entra a
+  "19% de cobertura" no le dice a nadie qué hacer. "Agregados: 1 de 13" sí —
+  dice dónde está el hueco y por dónde empezar. Se toca una barra y se entra a
   trabajar en esa.</p>
+
+  <p><strong>Y van ordenadas por lo que falta, no alfabéticamente.</strong> Lo
+  que ya está completo se hunde solo — Pizzas queda abajo y en verde, sin pedir
+  nada. Es la misma idea del inventario: arriba lo que necesita atención.</p>
+
+  <div class="nota ok">
+    <span class="t">El número que cambia el tamaño del trabajo</span>
+    <p>Angamos tiene 441 productos en Fudo y 87 enlazados. Suena a 354
+    pendientes — pero al agruparlos aparece otra cosa:</p>
+    <p><strong>105</strong> son insumos internos que ni siquiera se venden
+    (desinfectante, azúcar, bandejas) · <strong>107</strong> son cafés y bebidas
+    frías que dependen de la medición del café y el té · <strong>63</strong> son
+    combos, que los ve administración.</p>
+    <p><strong>Lo que de verdad se puede enlazar hoy son 81.</strong> Eso es una
+    tarde de dos personas, no un proyecto. Y esa es toda la diferencia entre una
+    pantalla que da ganas de usar y una que agobia.</p>
+  </div>
 
   <h2>2 · El taller — enlazar de a uno</h2>
 
@@ -316,8 +341,8 @@
           <td>Si un enlace queda mal, hay que poder ver quién lo hizo y deshacerlo. Es la condición de toda la zona de configuración.</td>
         </tr>
         <tr>
-          <td><strong>Categoría del producto de Fudo</strong></td>
-          <td>Es lo que agrupa las barras de la portada. Fudo ya la manda (<code>categoria_id</code>), hoy se guarda y no se usa.</td>
+          <td><s>Categoría del producto de Fudo</s> <strong>✅ resuelto</strong></td>
+          <td>Es lo que agrupa las barras. Quedó en <code>fudo_categorias</code>: 15 categorías por sede, traducidas a mano a nuestros nombres. <strong>Cero productos sin sección en las dos sedes.</strong></td>
         </tr>
       </tbody>
     </table>
