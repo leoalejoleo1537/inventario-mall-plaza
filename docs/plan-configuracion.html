@@ -1,0 +1,408 @@
+<title>La zona de configuración · plan completo</title>
+<style>
+  :root{
+    --navy:#0F1E31; --navy2:#16283F;
+    --orange:#DC4405; --orange-dark:#B93A04;
+    --pizarra:#2F4A6D;
+    --ok-tx:#2E7D32;  --ok-bg:#E6F4E6;
+    --warn-tx:#B26A00;--warn-bg:#FFF3E0;
+    --crit-tx:#C0392B;--crit-bg:#FDECEA;
+    --text:#1C2733; --muted:#6B7684; --line:#E3E5E8;
+    --bg:#F5F6F7; --card:#FFFFFF; --inset:#F7F8F9;
+    --sombra:0 1px 3px rgba(15,30,49,.07), 0 1px 1px rgba(15,30,49,.04);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --text:#E8EBEE; --muted:#93A0AE; --line:#2A3B50; --bg:#0B1523; --card:#16283F;
+      --inset:#101F33; --pizarra:#3D5F86; --ok-tx:#8FD694; --ok-bg:#1B3220;
+      --warn-tx:#F0B95E; --warn-bg:#33260F; --crit-tx:#F0968C; --crit-bg:#3A1B18;
+      --orange:#FF6B33; --orange-dark:#FF8A5C; --sombra:0 1px 3px rgba(0,0,0,.35); }
+  }
+  :root[data-theme="dark"]{ --text:#E8EBEE; --muted:#93A0AE; --line:#2A3B50; --bg:#0B1523; --card:#16283F;
+    --inset:#101F33; --pizarra:#3D5F86; --ok-tx:#8FD694; --ok-bg:#1B3220;
+    --warn-tx:#F0B95E; --warn-bg:#33260F; --crit-tx:#F0968C; --crit-bg:#3A1B18;
+    --orange:#FF6B33; --orange-dark:#FF8A5C; --sombra:0 1px 3px rgba(0,0,0,.35); }
+  :root[data-theme="light"]{ --text:#1C2733; --muted:#6B7684; --line:#E3E5E8; --bg:#F5F6F7; --card:#FFFFFF;
+    --inset:#F7F8F9; --pizarra:#2F4A6D; --ok-tx:#2E7D32; --ok-bg:#E6F4E6;
+    --warn-tx:#B26A00; --warn-bg:#FFF3E0; --crit-tx:#C0392B; --crit-bg:#FDECEA;
+    --orange:#DC4405; --orange-dark:#B93A04;
+    --sombra:0 1px 3px rgba(15,30,49,.07), 0 1px 1px rgba(15,30,49,.04); }
+
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg);color:var(--text);font-size:16px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:800px;margin:0 auto;padding:0 18px 80px}
+  p{margin:0 0 14px;max-width:66ch}
+
+  .top{background:var(--navy);color:#fff;padding:34px 18px 30px;margin-bottom:26px}
+  .top-in{max-width:800px;margin:0 auto}
+  .top .marca{font-size:11.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#FF8A5C}
+  .top h1{margin:8px 0 6px;font-size:30px;line-height:1.16;font-weight:800;text-wrap:balance}
+  .top .sub{margin:0;color:#A9B7C6;font-size:15px}
+
+  h2{background:var(--pizarra);color:#fff;margin:38px 0 16px;padding:11px 15px;border-radius:10px;
+    font-size:14.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+  h3{margin:26px 0 8px;font-size:18px;font-weight:800;text-wrap:balance}
+  h4{margin:18px 0 6px;font-size:15px;font-weight:800;color:var(--muted);
+     letter-spacing:.4px;text-transform:uppercase}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px;box-shadow:var(--sombra);margin-bottom:14px}
+  .card > *:last-child{margin-bottom:0}
+
+  .nota{border-radius:12px;padding:15px 18px;margin-bottom:14px;border:1px solid transparent}
+  .nota > *:last-child{margin-bottom:0}
+  .nota.warn{background:var(--warn-bg);border-color:color-mix(in srgb,var(--warn-tx) 26%,transparent)}
+  .nota.crit{background:var(--crit-bg);border-color:color-mix(in srgb,var(--crit-tx) 26%,transparent)}
+  .nota.ok{background:var(--ok-bg);border-color:color-mix(in srgb,var(--ok-tx) 26%,transparent)}
+  .nota .t{font-weight:800;display:block;margin-bottom:4px}
+
+  .cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+  .cifra{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 16px;box-shadow:var(--sombra)}
+  .cifra .n{font-size:32px;font-weight:800;line-height:1.05;font-variant-numeric:tabular-nums}
+  .cifra .l{font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+  .cifra.a .n{color:var(--orange)}
+
+  .tabla-cont{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);
+    box-shadow:var(--sombra);margin-bottom:14px}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:520px}
+  th{background:color-mix(in srgb,var(--pizarra) 9%,transparent);text-align:left;padding:10px 14px;
+    font-size:11.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);
+    border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.5}
+  tr:last-child td{border-bottom:none}
+  code{background:color-mix(in srgb,var(--muted) 14%,transparent);padding:1px 6px;border-radius:5px;
+       font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  ul{margin:0 0 14px;padding-left:20px;max-width:66ch}
+  li{margin-bottom:6px}
+  li:last-child{margin-bottom:0}
+
+  /* Cada área: número + contenido. La numeración es real — es el orden de
+     construcción propuesto, no decoración. */
+  .area{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:18px 20px 18px 19px;box-shadow:var(--sombra);margin-bottom:14px;
+    display:grid;grid-template-columns:36px 1fr;gap:15px;align-items:start}
+  .area .num{width:31px;height:31px;border-radius:999px;background:var(--pizarra);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;
+    font-variant-numeric:tabular-nums;margin-top:3px}
+  .area.p1 .num{background:var(--orange)}
+  .area h3{margin:0 0 6px}
+  .area > div > *:last-child{margin-bottom:0}
+
+  .pill{display:inline-block;padding:2.5px 11px;border-radius:999px;font-size:12px;
+    font-weight:800;letter-spacing:.2px;white-space:nowrap;vertical-align:middle}
+  .pill.ok{background:var(--ok-bg);color:var(--ok-tx)}
+  .pill.warn{background:var(--warn-bg);color:var(--warn-tx)}
+  .pill.crit{background:var(--crit-bg);color:var(--crit-tx)}
+
+  .hoy{font-size:13.5px;color:var(--muted);border-left:3px solid var(--line);padding-left:12px;margin:10px 0}
+  .cierre{margin-top:36px;padding-top:20px;border-top:2px solid var(--line);color:var(--muted);font-size:14px}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="marca">Café del Desierto · plan</div>
+    <h1>La zona de configuración</h1>
+    <p class="sub">Qué va adentro, en qué orden, y qué se queda fuera · 5 de agosto de 2026</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <p><strong>La frase que originó esto</strong>, y vale releerla porque define
+    el alcance: <em>"sería muy difícil que tenga que venir a ti para decir 'une
+    estos dos productos por el mismo ID'".</em></p>
+    <p>Tienes razón, y este plan sale de mirar la evidencia en vez de imaginar
+    funciones.</p>
+  </div>
+
+  <h2>El diagnóstico, con números</h2>
+
+  <p>Llevo <strong>56 archivos SQL</strong> escritos para este proyecto. Los
+  clasifiqué uno por uno según qué clase de decisión resuelven:</p>
+
+  <div class="cifras">
+    <div class="cifra a"><div class="n">24</div><div class="l">son <strong>configuración del negocio</strong><br>decisiones tuyas que pasaron por un script</div></div>
+    <div class="cifra a"><div class="n">12</div><div class="l">son <strong>diagnóstico</strong><br>preguntas, no cambios</div></div>
+    <div class="cifra"><div class="n">20</div><div class="l">son <strong>motor y esquema</strong><br>eso sí es trabajo de ingeniería</div></div>
+  </div>
+
+  <p><strong>Dos de cada tres scripts que escribí no eran ingeniería.</strong>
+  Apagar 14 duplicados, poner un tipo de producto, dar un permiso, emparejar
+  unos macarrons, traducir 15 categorías. Ninguna de esas decisiones necesitaba
+  mi criterio — necesitaban una pantalla que no existía.</p>
+
+  <div class="nota warn">
+    <span class="t">El patrón de fondo, y explica el bug que te costó plata</span>
+    <p><strong>La app sabe editar productos, pero no sabe editar relaciones.</strong>
+    Qué producto de Fudo descuenta cuál del inventario. Qué vitrina va con qué
+    congelador. Quién puede editar qué. Todas las relaciones viven en SQL.</p>
+    <p>Y los macarrons pasaron <em>exactamente</em> por eso: la relación
+    vitrina↔congelador está escondida dentro del <strong>nombre</strong> del
+    producto. Nadie la ve, nadie la puede revisar, y un nombre mal escrito la
+    rompe en silencio. Eso no se arregla renombrando: se arregla haciendo la
+    relación visible y editable.</p>
+  </div>
+
+  <h2>La línea: qué entra y qué no</h2>
+
+  <div class="tabla-cont">
+    <table>
+      <thead><tr><th>Entra</th><th>Se queda fuera</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Decisiones del <strong>negocio</strong>: nombres, secciones, tipos, relaciones, permisos, mínimos</td>
+          <td>El <strong>motor de descuento</strong> (<code>fudo_procesar_item</code>)</td>
+        </tr>
+        <tr>
+          <td>Lo que hoy se corrige a mano y se corrige seguido</td>
+          <td>El <strong>esquema</strong> de la base — crear tablas y columnas</td>
+        </tr>
+        <tr>
+          <td>Diagnósticos de solo lectura</td>
+          <td>La <strong>lógica</strong> de cómo se descuenta y del tope en cero</td>
+        </tr>
+        <tr>
+          <td>Encender y apagar cosas que ya existen</td>
+          <td>Todo lo que si sale mal <strong>no se puede deshacer contando</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>El criterio, en una frase:</strong> si el daño se repara contando,
+  va en la zona de configuración. Si el daño deja el inventario mintiendo en
+  silencio, sigue siendo mío.</p>
+
+  <h2>La condición, y no se negocia</h2>
+
+  <div class="nota crit">
+    <span class="t">Hoy Claude es el badén. Si desaparece, hay que reemplazarlo.</span>
+    <p>Cuando escribo un script, tres cosas pasan sin que las pidas: reviso el
+    <code>where</code>, te muestro una vista previa de qué va a tocar, y te dejo
+    escrito cómo deshacerlo. Ese es el freno.</p>
+    <p><strong>Un botón no tiene freno.</strong> Así que cada acción destructiva
+    de esta zona lleva las mismas tres cosas:</p>
+    <ul>
+      <li><strong>Vista previa antes.</strong> "Esto va a afectar a 14 productos" y la lista, antes de que pase nada.</li>
+      <li><strong>Registro de quién y cuándo.</strong> Sin eso, un cambio raro no tiene a quién preguntarle.</li>
+      <li><strong>Deshacer.</strong> Como el del taller de recetas — que ya funciona y es el molde.</li>
+    </ul>
+    <p>Sin las tres, esta zona es una forma cómoda de romper el inventario en
+    silencio. Que es la falla que este proyecto ya pagó cara.</p>
+  </div>
+
+  <h2>Las ocho áreas · en orden de construcción</h2>
+
+  <p>El orden no es por tamaño: es por <strong>cuánto duele hoy</strong>. Las
+  primeras son las que ya te costaron plata o vueltas conmigo.</p>
+
+  <div class="area p1">
+    <div class="num">1</div>
+    <div>
+      <h3>Pares vitrina ↔ congelador <span class="pill crit">ya costó plata</span></h3>
+      <p>El mismo producto en dos lugares. Hoy la app los suma <strong>adivinando
+      por el nombre</strong>: si uno se llama <code>Macarrons Vitrina de dulces</code>
+      y el otro <code>Macarrons Congelador</code>, no calzan y Adriana ve 6 en vez
+      de 30. Pidió de más, hubo que devolver.</p>
+      <p><strong>Qué tendría:</strong> una lista de pares explícitos. Tocas dos
+      productos y quedan unidos — y se ven unidos, con el total. Lo que hoy está
+      escondido en el nombre pasa a ser un dato que se puede mirar.</p>
+      <p><strong>El bonus:</strong> renombrar deja de ser peligroso. Hoy cambiar
+      un nombre puede romper una suma sin que nadie lo note.</p>
+      <div class="hoy">Hoy: <code>emparejar-vitrina-congelador.sql</code> ·
+      <code>pares-vitrina-congelador.sql</code> · <code>macarrons-y-pares.sql</code> ·
+      <code>apellido-seccion-bolleria.sql</code> — cuatro scripts para lo mismo.</div>
+    </div>
+  </div>
+
+  <div class="area p1">
+    <div class="num">2</div>
+    <div>
+      <h3>Productos, en lote <span class="pill warn">lo más frecuente</span></h3>
+      <p>La ficha del producto ya deja editar uno. Lo que falta es <strong>hacerlo
+      de a muchos</strong>, que es como llega el trabajo de verdad: "apaga estos
+      14 duplicados", "ponle mínimo 12 a toda la bollería", "mueve estos 6 de
+      sección".</p>
+      <p><strong>Qué tendría:</strong> lista con filtros y casillas. Eliges, y
+      arriba aparece qué se puede hacer con lo elegido: cambiar sección, cambiar
+      tipo, poner mín/máx, activar, desactivar. Con vista previa y deshacer.</p>
+      <p><strong>Y una columna que falta en la base:</strong> la <strong>unidad de
+      medida</strong>. Hoy "Café en grano 8" no dice si son 8 bultos, 8 kilos u 8
+      paquetes. Para lo discreto da igual; para el trabajo del café y el té es
+      imprescindible, porque quien cuenta necesita saber qué está contando.</p>
+      <div class="hoy">Hoy: <code>duplicar-vitrina-en-congelador.sql</code> ·
+      <code>tipo-de-producto.sql</code> · <code>crear-bodega-y-nuevo-angamos.sql</code>
+      y varias tandas de <code>update</code> escritas a mano.</div>
+    </div>
+  </div>
+
+  <div class="area">
+    <div class="num">3</div>
+    <div>
+      <h3>Personas y permisos</h3>
+      <p>Hoy los 5 usuarios viven en una tabla que solo se toca por SQL. Agregar
+      a alguien, quitarle el botón de Fudo o acotarlo a una sede son tres
+      scripts distintos.</p>
+      <p><strong>Qué tendría:</strong> la lista de personas con dos interruptores
+      —<em>puede editar</em> y <em>puede escribir en Fudo</em>— y la sede a la que
+      queda acotada. La mecánica de la sede <strong>ya está construida y probada</strong>
+      (11 casos); solo falta correr una línea el día que la quieras.</p>
+      <div class="hoy">Hoy: <code>permisos-y-deshacer.sql</code> ·
+      <code>permiso-por-sede.sql</code> · <code>recetas-todos-pueden-crear.sql</code> ·
+      <code>fix-permisos-authenticated.sql</code>.</div>
+    </div>
+  </div>
+
+  <div class="area">
+    <div class="num">4</div>
+    <div>
+      <h3>Secciones, tipos y turnos <span class="pill warn">hay reglas del negocio dentro del código</span></h3>
+      <p>Esta es la que más me incomoda como está. <strong>Qué sección se cuenta
+      en el turno AM y cuál en el PM está escrito dentro de <code>index.html</code></strong>,
+      en una lista fija. Mover "Congelador" de turno es un cambio de código y un
+      despliegue — para una decisión que es puramente operativa.</p>
+      <p>Lo mismo con el renombre de "Mechada" a "Plateada" en el resumen de
+      WhatsApp: es una etiqueta del negocio viviendo en el código.</p>
+      <p><strong>Qué tendría:</strong> las secciones como filas editables — nombre,
+      orden en pantalla, turno AM/PM. Y los tipos de producto igual.</p>
+      <div class="hoy">Hoy: <code>SEC_AM</code> y <code>NOMBRES_RESUMEN</code> en
+      <code>index.html</code>, más <code>secciones-inventario.sql</code>.</div>
+    </div>
+  </div>
+
+  <div class="area">
+    <div class="num">5</div>
+    <div>
+      <h3>Sedes y sus interruptores</h3>
+      <p>Cada sede tiene tres perillas que hoy son SQL: el modo
+      <strong>prueba/real</strong>, el <strong>cron</strong> encendido o apagado,
+      y si el <strong>empuje de stock a Fudo</strong> está habilitado.</p>
+      <p><strong>Qué tendría:</strong> una tarjeta por sede con su estado y esas
+      tres perillas. Más el nombre de la sede, que hoy también está en el código.</p>
+      <div class="nota warn" style="margin-top:12px">
+        <span class="t">Con una excepción</span>
+        <p>El interruptor <strong>prueba → real</strong> lo dejaría fuera de tu
+        alcance directo, o al menos con una confirmación fuerte. Bajar a
+        <code>prueba</code> una sede que está descontando la congela sin que
+        nadie se entere — y "falla en silencio" es la peor clase de falla que
+        este proyecto conoce.</p>
+      </div>
+      <div class="hoy">Hoy: <code>angamos-catalogo-y-modo-real.sql</code> ·
+      <code>cron-automatico-ventas.sql</code> · <code>SEDES</code> en el código.</div>
+    </div>
+  </div>
+
+  <div class="area">
+    <div class="num">6</div>
+    <div>
+      <h3>Salud del sistema, como pantalla</h3>
+      <p>El chequeo de 10 bloques existe y funciona, pero hay que acordarse de
+      correrlo y pegármelo. <strong>Un chequeo que depende de que alguien se
+      acuerde no es un chequeo</strong> — es la misma lección del cuaderno de
+      migraciones.</p>
+      <p><strong>Qué tendría:</strong> las 10 filas del resumen, en pantalla, con
+      su semáforo. Cuánto le falta a cada tabla para el tope de las 1000 filas,
+      si hay funciones duplicadas, si el stock cuadra con las fechas, qué recetas
+      apuntan al vacío, cuándo corrió el motor por última vez.</p>
+      <p><strong>Todo de solo lectura.</strong> Es la parte más segura de esta
+      zona y probablemente la que más te va a servir a diario.</p>
+      <div class="hoy">Hoy: <code>salud-del-sistema.sql</code> ·
+      <code>auditoria-recetas.sql</code> · 5 archivos de <code>diagnostico-*</code>.</div>
+    </div>
+  </div>
+
+  <div class="area">
+    <div class="num">7</div>
+    <div>
+      <h3>El registro de cambios</h3>
+      <p>Es lo que hace que todo lo anterior sea seguro. Una sola lista: qué se
+      cambió, quién, cuándo, y el botón de deshacer.</p>
+      <p>Hoy existe a medias — <code>fudo_stock_push</code> guarda los empujes a
+      Fudo con su valor anterior, y el taller de recetas ya lleva su historial.
+      Falta que <strong>todo</strong> pase por el mismo lugar.</p>
+      <p><strong>No es una función más: es la que justifica las otras seis.</strong>
+      Sin esto, la zona de configuración es un cuchillo sin mango.</p>
+    </div>
+  </div>
+
+  <div class="area">
+    <div class="num">8</div>
+    <div>
+      <h3>Respaldo desde la app</h3>
+      <p>Hoy sacar un respaldo es correr un script y guardar 4 CSV en Notion. Con
+      el plan gratuito de Supabase <strong>no hay punto de restauración</strong>,
+      así que el respaldo es la única red que existe.</p>
+      <p><strong>Qué tendría:</strong> un botón que baja los CSV, y la fecha del
+      último respaldo a la vista. Si pasó más de un mes, que se note.</p>
+      <div class="hoy">Hoy: <code>respaldo-para-guardar.sql</code>, probado
+      restaurando de verdad.</div>
+    </div>
+  </div>
+
+  <h2>Lo que hay que construir debajo</h2>
+
+  <div class="tabla-cont">
+    <table>
+      <thead><tr><th>Qué falta</th><th>Para qué</th><th>Tamaño</th></tr></thead>
+      <tbody>
+        <tr><td><code>producto_pares</code></td><td>La relación vitrina↔congelador, explícita en vez de adivinada por el nombre</td><td>tabla chica</td></tr>
+        <tr><td><code>cambios</code></td><td>Quién cambió qué y cuándo, con lo anterior guardado para poder deshacer</td><td>tabla + disciplina</td></tr>
+        <tr><td><code>secciones</code></td><td>Nombre, orden y turno AM/PM. Hoy el turno está en el código</td><td>tabla chica</td></tr>
+        <tr><td><code>productos.unidad</code></td><td>Si son kilos, bultos o unidades. Imprescindible para el café y el té</td><td>una columna</td></tr>
+        <tr><td><code>sedes</code></td><td>Nombre y perillas por sede. Hoy la mitad está en el código y la mitad en <code>fudo_sync</code></td><td>tabla chica</td></tr>
+        <tr><td>Vista de salud</td><td>Que el chequeo se pueda leer desde la app sin correr SQL</td><td>una función</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Cómo lo construiría</h2>
+
+  <div class="card">
+    <p><strong>No de una.</strong> Ocho áreas de una sentada es cómo se
+    introducen errores invisibles — y esta zona escribe en la base.</p>
+    <p><strong>El orden que propongo</strong> es el de arriba, y la razón es que
+    las dos primeras ya te costaron plata o vueltas. Las áreas 6 y 7 —salud y
+    registro— las adelantaría si prefieres empezar por lo que no puede romper
+    nada: son de solo lectura y de registro.</p>
+    <p><strong>Cada área se entrega funcionando y probada</strong> antes de
+    empezar la siguiente, con sus comprobaciones guardadas como las del taller
+    de recetas. Así, si algo sale mal, sabemos exactamente dónde.</p>
+  </div>
+
+  <div class="nota ok">
+    <span class="t">Lo que esto cambia entre tú y yo</span>
+    <p>No desaparezco: cambio de trabajo. Paso de <em>"corre este UPDATE"</em> a
+    <em>"construyo la pantalla para que no tengas que correrlo"</em>. Es
+    convertir un costo que se repite en uno que se paga una vez — que es
+    exactamente tu argumento, y es correcto.</p>
+    <p>Y me quedo con lo que de verdad necesita criterio técnico: el motor, el
+    esquema, y las decisiones donde equivocarse no se arregla contando.</p>
+  </div>
+
+  <h2>Lo que necesito que decidas</h2>
+
+  <div class="card">
+    <p><strong>1. ¿Por dónde partimos?</strong> Mi recomendación son los
+    <strong>pares vitrina/congelador</strong> — es la que ya costó plata y la que
+    arregla una causa raíz, no un síntoma. La alternativa conservadora es
+    empezar por <strong>salud</strong>, que no puede romper nada.</p>
+    <p><strong>2. ¿Esta zona es solo tuya?</strong> Dijiste que sí. Entonces vive
+    detrás del permiso que ya existe y no aparece para nadie más. Pero conviene
+    decidirlo ahora: si más adelante entra administración, el registro de quién
+    hizo qué pasa de recomendable a obligatorio desde el primer día.</p>
+    <p><strong>3. ¿Dónde vive?</strong> Hoy hay una "Zona de administración" en el
+    menú ☰ con el botón rojo de Fudo. Puede crecer ahí mismo, o ser una página
+    aparte. Mi voto es página aparte: un barista no debería ni cargar ese código
+    para mirar el stock.</p>
+    <p><strong>4. ¿El interruptor prueba/real entra o no?</strong> Yo lo dejaría
+    fuera. Es el único de la lista que puede congelar el inventario sin que nadie
+    se entere.</p>
+  </div>
+
+  <p class="cierre">Café del Desierto · Este plan sale de clasificar los 56
+  scripts escritos para el proyecto, no de imaginar funciones. Cada área nombra
+  los archivos que hoy hacen ese trabajo a mano.</p>
+
+</div>
