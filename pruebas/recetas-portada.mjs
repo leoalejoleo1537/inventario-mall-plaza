@@ -19,12 +19,12 @@ const normNombre = s => (s==null?'':String(s)).toLowerCase().normalize('NFD')
   .replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
 
 /* Arma una instancia con el estado que quiera cada escenario. */
-function montar({DATA=[], RECETAS=[], NOLLEVA={}, CATS={}, FUDOPROD=[]}={}){
+function montar({DATA=[], RECETAS=[], NOLLEVA={}, CATS={}, FUDOPROD=[], POSPUESTOS=new Set()}={}){
   const stub = () => ({ textContent:'', innerHTML:'', disabled:false, style:{} });
   return new Function(
-    'normNombre','DATA','RECETAS','NOLLEVA','CATS','FUDOPROD','$','fmt','esc',
+    'normNombre','DATA','RECETAS','NOLLEVA','POSPUESTOS','CATS','FUDOPROD','$','fmt','esc',
     codigo + '; return {resumenRecetas, candidatos, limpiaFudo, estadoFudo, seccionDe};'
-  )(normNombre, DATA, RECETAS, NOLLEVA, CATS, FUDOPROD, stub, n=>n, s=>s);
+  )(normNombre, DATA, RECETAS, NOLLEVA, POSPUESTOS, CATS, FUDOPROD, stub, n=>n, s=>s);
 }
 
 let ok=0, mal=0;
@@ -93,13 +93,29 @@ console.log('\nLos tres estados, que son lo que hace que el contador llegue a ce
 
   const r = resumenRecetas();
   caso('cuenta 1 ok · 2 falta · 2 no', [r.ok, r.falta, r.no], [1,2,2]);
-  caso('los tres estados suman el total', r.ok+r.falta+r.no, FUDOPROD.length);
+  caso('los estados suman el total', r.ok+r.falta+r.no+r.pospuesto, FUDOPROD.length);
   caso('la barra con más pendientes va primero', r.barras[0].sec, 'Vitrina');
   caso('las que no tienen pendientes se hunden',
        r.barras[r.barras.length-1].falta, 0);
 }
 
 // ---------------------------------------------------------------- sin las tablas
+console.log('\n"Después" sale de la lista de pendientes pero no se pierde:');
+{
+  const FUDOPROD = [
+    {fudo_product_id:'1', nombre:'Waffle',     categoria_id:'12'},
+    {fudo_product_id:'2', nombre:'Torta amor', categoria_id:'12'},
+  ];
+  const { resumenRecetas, estadoFudo } = montar({FUDOPROD, CATS:{'12':'Vitrina'},
+                                                 POSPUESTOS:new Set(['2'])});
+  caso('el pospuesto tiene su propio estado', estadoFudo(FUDOPROD[1]), 'pospuesto');
+  const r = resumenRecetas();
+  caso('NO cuenta como pendiente',  r.falta, 1);
+  caso('NI como "no lleva receta"', r.no, 0);
+  caso('se cuenta aparte',          r.pospuesto, 1);
+  caso('y no se pierde del total',  r.ok+r.falta+r.no+r.pospuesto, 2);
+}
+
 console.log('\nSi las tablas nuevas todavía no existen, la pantalla NO se rompe:');
 {
   const FUDOPROD=[{fudo_product_id:'1', nombre:'Waffle', categoria_id:'12'}];

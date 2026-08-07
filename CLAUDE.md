@@ -1107,6 +1107,21 @@ romper el inventario en silencio — la falla que este proyecto ya pagó cara
 **Qué SÍ va ahí:** enlazar recetas · emparejar vitrina/congelador · usuarios y
 permisos · tipos y secciones · marcar un producto como "no lleva receta".
 
+**LO QUE SE ADELANTÓ FUERA DEL PANEL, y hay que integrar cuando exista**
+*(pedidos desde el local el 2026-08-06, hechos como parche en `index.html`)*:
+
+| Qué se hizo | Dónde está hoy | Qué falta en el panel |
+|---|---|---|
+| **Renombrar una sección** | menú ☰ → Secciones | crear, borrar, reordenar y mover productos entre secciones |
+| **"Después" se recuerda** (`fudo_pospuestos`) | la portada de Recetas | poder vaciar el montón de una, y ver quién pospuso qué |
+| **Tipos de producto en Angamos** | se llenaron por SQL | editar los tipos como lista, no producto por producto |
+| **Lista de conteo** | escondida tras `FLAGS` en `index.html` | **el interruptor para encenderla o apagarla por sede** |
+
+**`FLAGS` es el patrón para lo que viene:** una función que hoy se enciende
+cambiando una línea del código, y que el día que exista el panel pasa a ser un
+interruptor. Cualquier función nueva que no esté lista para todos entra por
+ahí — no comentada ni en una rama.
+
 **Qué NO va ahí, y sigue siendo de Claude:** el motor de descuento, el esquema
 de la base, y el interruptor `prueba`/`real`.
 
