@@ -3308,7 +3308,8 @@ function candidatos(fp){
 
 /* sec = null (todo lo pendiente) · el nombre de una sección · o POSPUESTOS
    para repasar el montón de "lo veo después". */
-const VER_POSPUESTOS = ' pospuestos';
+const VER_POSPUESTOS = 'pospuestos';   // no puede chocar con el nombre de una sección
+const nombreCola = () => colaSec === VER_POSPUESTOS ? 'para después' : colaSec;
 function abrirTaller(sec){
   colaSec = sec || null;
   COLA = colaSec === VER_POSPUESTOS

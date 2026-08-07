@@ -682,6 +682,23 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
    si no hay más remedio, se entrega ya partido en dos con las dos mitades
    listas para pegar — no se le pide a él que lo parta.
 
+   **⚠️ Y una regla de PRUEBAS que salió de un bug real (2026-08-06):
+   si hay dos caminos a la misma pantalla, se prueban LOS DOS.**
+
+   La portada de Recetas se abre de dos formas: el botón grande y tocar una
+   barra de sección. Una función (`nombreCola`) quedó **usada pero sin
+   definir**, y solo se ejecuta al entrar por la barra. Resultado: la pantalla
+   quedaba **en blanco** — un `ReferenceError` en pleno pintado — y las 22
+   comprobaciones seguían en verde, porque todas entraban por el botón.
+
+   Es la falla silenciosa de siempre en versión chica: no se cayó nada, solo
+   apareció vacío. Y lo encontró Jhon usándolo, no las pruebas.
+
+   La comprobación que faltaba ahora existe y es de una línea: **entrar por la
+   barra y verificar que el contenedor no quedó vacío**, más que no haya
+   ningún error de JavaScript en la sesión. Ese segundo chequeo es el que
+   convierte un `ReferenceError` mudo en una prueba roja.
+
    **Y una tercera, del 2026-08-05: no crear una tabla y usarla en el mismo
    Run.** Un bloque que hacía `create table` y después `insert ... join` sobre
    ella respondió `relation "..." does not exist`. Si de verdad hace falta una

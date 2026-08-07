@@ -129,6 +129,28 @@ await caso('las barras salen agrupadas por NUESTRAS secciones', async () => {
 await caso('el botón dice cuántos faltan', async () =>
   (await page.textContent('#btnTaller')).includes('4') || 'dice '+(await page.textContent('#btnTaller')));
 
+/* Entrar por una BARRA, no solo por el botón grande.
+   Esto se agrega después de un bug real: `nombreCola` quedó usada pero sin
+   definir, y solo se ejecuta al abrir el taller DESDE UNA SECCIÓN. La pantalla
+   quedaba en blanco. Las pruebas pasaban porque todas entraban por el botón.
+   La lección: si hay dos caminos a la misma pantalla, se prueban los dos. */
+console.log('\nEntrar por una barra de sección:');
+await page.click('.rec-barra');
+await page.waitForTimeout(250);
+
+await caso('el taller NO queda en blanco', async () => {
+  const t = (await page.textContent('#rec-taller')).trim();
+  return t.length > 20 || 'quedó vacío: "'+t+'"';
+});
+await caso('trae solo los de esa sección', async () => {
+  const t = await page.textContent('.tl-cab');
+  return t.includes('Vitrina') || 'la cabecera dice: '+t;
+});
+await caso('y ningún error de JavaScript al hacerlo', async () =>
+  errores.length === 0 || errores.join(' | '));
+await page.click('[data-a="volver"]');
+await page.waitForTimeout(200);
+
 console.log('\nEl taller:');
 await page.click('#btnTaller');
 await page.waitForTimeout(200);
