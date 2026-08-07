@@ -85,6 +85,43 @@
   .icon-btn.girando svg{animation:sync-spin .8s linear infinite}
   .icon-btn:disabled{opacity:.55;cursor:default}
   .icon-btn.on{background:rgba(255,255,255,.18)}
+  .icon-btn{position:relative}
+  /* Las ventanas que se crean sobre la marcha van DEBAJO de la de preguntar.
+     Si no, un "¿seguro?" lanzado desde una de ellas queda atrás y no se puede
+     tocar — le pasó a la ficha del producto en julio y no se repite. */
+  .overlay.overlay-prop{z-index:54}
+  /* El puntito de tareas pendientes: avisa sin decir un número que nadie pidió */
+  .icon-btn .pto{position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:50%;
+                 background:var(--orange);box-shadow:0 0 0 2px var(--navy)}
+
+  /* ---------- lista de tareas ----------
+     Sale de un globo desde el botón que se tocó, con el fondo desenfocado,
+     como el resto de la app (regla 2.0). No es una pantalla: es una ventana. */
+  .tareas-caja{max-width:420px;width:100%}
+  .tk-lista{max-height:52vh;overflow-y:auto;overscroll-behavior:contain;margin:2px -4px 0}
+  .tk-fila{display:flex;align-items:flex-start;gap:11px;padding:10px 6px;border-bottom:1px solid var(--border)}
+  .tk-fila:last-child{border-bottom:none}
+  .tk-box{width:23px;height:23px;flex-shrink:0;border-radius:7px;border:2px solid var(--border);
+          background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;
+          color:transparent;font-weight:800;font-size:13px;padding:0;margin-top:1px;transition:background .15s,border-color .15s}
+  .tk-fila.ok .tk-box{background:var(--green-fg);border-color:var(--green-fg);color:#fff}
+  .tk-tx{flex:1;min-width:0;font-size:14.5px;line-height:1.45;text-align:left;word-break:break-word}
+  .tk-fila.ok .tk-tx{color:var(--muted);text-decoration:line-through}
+  .tk-x{flex-shrink:0;background:none;border:none;color:var(--muted);font-size:17px;line-height:1;
+        cursor:pointer;padding:2px 4px;opacity:.55}
+  .tk-x:hover{opacity:1;color:var(--red-fg)}
+  .tk-vacio{text-align:center;color:var(--muted);font-size:14px;padding:26px 10px}
+  .tk-pie{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .tk-pie .btn{flex:1;min-width:88px;padding:10px 12px;font-size:14px}
+  .tk-nueva{display:flex;gap:8px;margin-top:12px}
+  .tk-nueva input{flex:1;min-width:0;padding:11px 13px;border:1.5px solid var(--border);border-radius:11px;
+                  background:var(--card);color:var(--text);font:inherit;font-size:15px}
+  /* El globo: brota desde donde se tocó, no desde el centro de la pantalla */
+  .globo{animation:globo-abre .22s cubic-bezier(.2,.9,.3,1.1) both}
+  @keyframes globo-abre{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:scale(1)}}
+  .globo.cerrando{animation:globo-cierra .16s ease-in both}
+  @keyframes globo-cierra{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.9)}}
+  @media (prefers-reduced-motion: reduce){ .globo,.globo.cerrando{animation:none} }
   .btn-switch{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
   .btn-switch:hover{background:rgba(255,255,255,.22)}
   .live{font-size:12px;display:flex;align-items:center;gap:6px;color:#cdd6e0;white-space:nowrap}
@@ -768,6 +805,14 @@
       <div class="top-sede" id="topSede">—</div>
     </div>
     <div class="top-actions">
+      <!-- Lista de tareas del turno. Va en la barra de arriba y no en una
+           pestaña porque no pertenece a Inventario ni a Reparto: se consulta
+           desde cualquiera. Y no gasta espacio de la lista, que era la
+           objeción. Se enciende por sede en FLAGS. -->
+      <button type="button" class="icon-btn" id="btnTareas" aria-label="Tareas" title="Tareas" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10"></path><path d="M9 12h10"></path><path d="M9 19h10"></path><path d="m3 5 1.5 1.5L7 4"></path><path d="m3 12 1.5 1.5L7 11"></path><path d="M3.5 18.5h2.5"></path></svg>
+        <span class="pto" id="tareasPto" style="display:none"></span>
+      </button>
       <button type="button" class="icon-btn" id="btnActualizar" aria-label="Actualizar" title="Actualizar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
       </button>
@@ -962,6 +1007,10 @@
       <div id="reparto-results"></div>
       <div id="carrito-box" style="display:none">
         <div class="cart-title">Va en este reparto</div>
+        <!-- El nombre lo pidió el equipo: "reparto de tortas" se reconoce de
+             un vistazo mejor que "Adriana · 06:05". Es opcional. -->
+        <input type="text" id="rep-nombre" maxlength="40" autocomplete="off"
+               placeholder="Nombre del reparto (opcional)">
         <div id="carrito-list"></div>
         <button class="btn btn-orange btn-block" id="btnRegistrarReparto" style="margin-top:10px">Enviar reparto</button>
       </div>
@@ -1413,6 +1462,129 @@ function aplicarPermisos(){
   if(!PERMISOS.puede_editar) setModoEdicion(false);
 }
 
+/* ---------------- lista de tareas del turno ----------------
+
+   Pedida por jefatura. Decisiones que vale dejar escritas:
+
+   · Va en la barra de ARRIBA y no en una pestaña. No pertenece a Inventario
+     ni a Reparto —se consulta desde cualquiera— y una pestaña la escondería
+     justo cuando estás en otra. Además no gasta espacio de la lista, que era
+     la objeción de Jhon a la cuarta tarjeta.
+   · Es una VENTANA, no una pantalla: son menos de 15 tareas y casi siempre
+     las mismas. Un globo que sale desde el botón que se tocó (regla 2.0).
+   · "Limpiar" DESTILDA todas, no las borra. La lista es la misma cada turno;
+     borrarla obligaría a reescribirla todos los días. Para sacar una tarea de
+     verdad está la ✕ de su fila.
+   · Se enciende por sede en FLAGS. El día que exista el panel de configuración
+     esto pasa a ser un interruptor (§6.2).                                    */
+const FLAGS = { tareas: { angamos:true, plaza:false, bodega:false } };
+const hayTareas = () => !!(SEDE && FLAGS.tareas[SEDE]);
+
+let TAREAS = [];
+async function cargarTareas(){
+  $('btnTareas').style.display = hayTareas() ? '' : 'none';
+  if(!hayTareas()){ TAREAS=[]; return; }
+  const r = await sb.from('tareas').select('*').eq('sede',SEDE).order('id');
+  TAREAS = r.error ? [] : (r.data||[]);
+  pintarPunto();
+}
+function pintarPunto(){
+  const p = $('tareasPto');
+  if(p) p.style.display = TAREAS.some(t=>!t.hecha) ? '' : 'none';
+}
+function abrirTareas(){
+  const ov=document.createElement('div');
+  ov.className='overlay overlay-blur overlay-prop open';
+  ov.innerHTML = `<div class="modal tareas-caja globo">
+      <h2 style="margin:2px 0 12px;font-size:19px">Tareas del turno</h2>
+      <div class="tk-lista" id="tk-lista"></div>
+      <div class="tk-nueva">
+        <input type="text" id="tk-nueva" maxlength="120" placeholder="Agregar tarea…">
+        <button class="btn btn-orange" data-a="add">Agregar</button>
+      </div>
+      <div class="tk-pie">
+        <button class="btn btn-gris" data-a="copiar">Copiar</button>
+        <button class="btn btn-gris" data-a="limpiar">Limpiar</button>
+        <button class="btn" data-a="cerrar">Cerrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  const caja = ov.querySelector('.modal');
+  const cerrar = ()=>{
+    caja.classList.add('cerrando');
+    setTimeout(()=>ov.remove(), 160);
+  };
+  const pintar = ()=>{
+    const l = $('tk-lista');
+    l.innerHTML = TAREAS.length ? TAREAS.map(t=>`
+      <div class="tk-fila${t.hecha?' ok':''}" data-id="${t.id}">
+        <button class="tk-box" data-tog="${t.id}" aria-label="Marcar">✓</button>
+        <span class="tk-tx">${esc(t.texto)}</span>
+        <button class="tk-x" data-del="${t.id}" aria-label="Quitar">✕</button>
+      </div>`).join('')
+      : '<div class="tk-vacio">No hay tareas todavía.<br>Agrega la primera abajo.</div>';
+    l.querySelectorAll('[data-tog]').forEach(b=> b.onclick=()=>alternarTarea(+b.dataset.tog, pintar));
+    l.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>quitarTarea(+b.dataset.del, pintar));
+  };
+  pintar();
+  const inp = ov.querySelector('#tk-nueva');
+  const agregar = async ()=>{
+    const txt = (inp.value||'').replace(/\s+/g,' ').trim();
+    if(!txt) return;
+    inp.value=''; inp.focus();
+    await agregarTarea(txt, pintar);
+  };
+  ov.querySelectorAll('[data-a]').forEach(b=> b.onclick = async ()=>{
+    const a=b.dataset.a;
+    if(a==='cerrar')  return cerrar();
+    if(a==='add')     return agregar();
+    if(a==='copiar')  return copiarTareas();
+    if(a==='limpiar') return limpiarTareas(pintar);
+  });
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter') agregar(); });
+  ov.addEventListener('click',e=>{ if(e.target===ov) cerrar(); });
+}
+async function alternarTarea(id, pintar){
+  const t = TAREAS.find(x=>x.id===id); if(!t) return;
+  t.hecha = !t.hecha; pintar(); pintarPunto();          // se ve al toque, no se espera a la base
+  const r = await sb.from('tareas').update({hecha:t.hecha}).eq('id',id);
+  if(r.error){ t.hecha=!t.hecha; pintar(); pintarPunto(); avisar('No se pudo guardar. Revisa tu señal.'); }
+}
+async function agregarTarea(texto, pintar){
+  const r = await conReintento(()=> sb.from('tareas')
+    .insert({sede:SEDE, texto, creada_por: NOMBRE || null}).select().single());
+  if(r.error){ avisar('No se pudo agregar la tarea.\n\nDetalle: '+r.error.message); return; }
+  TAREAS.push(r.data); pintar(); pintarPunto();
+}
+async function quitarTarea(id, pintar){
+  const t = TAREAS.find(x=>x.id===id); if(!t) return;
+  const ok = await preguntar('¿Quitar esta tarea?', t.texto, 'Sí, quitar');
+  if(!ok) return;
+  const r = await sb.from('tareas').delete().eq('id',id);
+  if(r.error){ avisar('No se pudo quitar.'); return; }
+  TAREAS = TAREAS.filter(x=>x.id!==id); pintar(); pintarPunto();
+}
+/* Limpiar DESTILDA, no borra: la lista es la misma cada turno y borrarla
+   obligaría a reescribirla todos los días. */
+async function limpiarTareas(pintar){
+  const marcadas = TAREAS.filter(t=>t.hecha).length;
+  if(!marcadas){ aviso('No hay ninguna marcada'); return; }
+  const ok = await preguntar('¿Empezar de nuevo?',
+    `Se van a destildar ${marcadas} tarea${marcadas===1?'':'s'}. Las tareas no se borran.`, 'Sí, destildar');
+  if(!ok) return;
+  TAREAS.forEach(t=>t.hecha=false); pintar(); pintarPunto();
+  const r = await sb.from('tareas').update({hecha:false}).eq('sede',SEDE);
+  if(r.error) avisar('No se pudo guardar. Revisa tu señal.');
+}
+function copiarTareas(){
+  if(!TAREAS.length){ aviso('No hay tareas que copiar'); return; }
+  const txt = TAREAS.map(t=>`${t.hecha?'✅':'⬜'} ${t.texto}`).join('\n');
+  navigator.clipboard.writeText(txt)
+    .then(()=>aviso('✓ Copiado'))
+    .catch(()=>avisar('No se pudo copiar.\n\n'+txt));
+}
+$('btnTareas').addEventListener('click', abrirTareas);
+
 /* ---------------- renombrar secciones ----------------
    Pedido desde el local: quieren llamarle "Refrigerador" a lo que hoy dice
    "Leches", y así. Hasta hoy eso pasaba por un UPDATE mío.
@@ -1461,7 +1633,7 @@ async function renombrarSeccion(actual, n){
 function pedirTexto(titulo, valor){
   return new Promise(res=>{
     const ov=document.createElement('div');
-    ov.className='overlay overlay-blur open';
+    ov.className='overlay overlay-blur overlay-prop open';
     ov.innerHTML=`<div class="modal" style="max-width:360px">
       <h2 style="margin:2px 0 12px;font-size:18px">${esc(titulo)}</h2>
       <input type="text" class="pt-in" value="${esc(valor||'')}"
@@ -1630,6 +1802,7 @@ function pickSede(s){
   $('repartos-abiertos').innerHTML='';
   marcarNuevo();
   cargarPermisos();
+  cargarTareas();
   loadData();
   loadRepartos();
   revisarMotor();          // si el motor está caído, se ve al entrar
@@ -2773,7 +2946,7 @@ function renderRepartos(){
     return `<div class="sec${abierta?' open':''}" data-repsec="${r.id}">
       <div class="sec-head">
         <button type="button" class="sec-btn" data-caja="rep${r.id}">
-          <span>${r.creado_por?esc(r.creado_por)+' · ':''}${new Date(r.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})}</span>
+          <span>${r.nombre?'<b>'+esc(r.nombre)+'</b> · ':''}${r.creado_por?esc(r.creado_por)+' · ':''}${new Date(r.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})}</span>
           <span class="sec-tags"><span class="sec-count">${hechos} de ${r.items.length}</span></span>
         </button>
         <button type="button" class="sec-copy" data-copiarrep="${r.id}" aria-label="Copiar resumen" title="Copiar resumen">${COPY_SVG}</button>
@@ -2801,7 +2974,7 @@ function renderRepartos(){
     const dia = new Date(r.created_at).toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit'});
     return `<div class="cerr${abierta?' open':''}" data-cerr="${r.id}">
       <button type="button" class="cerr-cab" data-caja="cerr${r.id}">
-        <span class="cerr-nom">${r.creado_por?esc(r.creado_por)+' · ':''}${dia}</span>
+        <span class="cerr-nom">${r.nombre?esc(r.nombre)+' · ':''}${r.creado_por?esc(r.creado_por)+' · ':''}${dia}</span>
         <span class="cerr-res">${rec.length} recibido${rec.length===1?'':'s'}${no.length?' · '+no.length+' no llegó'+(no.length===1?'':'aron'):''}</span>
       </button>
       ${abierta?`<div class="cerr-body">
@@ -3141,7 +3314,7 @@ $('btnRegistrarReparto').addEventListener('click', async()=>{
   const btn=$('btnRegistrarReparto'); btn.disabled=true; btn.textContent='Enviando…';
   try{
     const {data,error} = await conReintento(()=>sb.from('repartos')
-      .insert([{sede:SEDE, creado_por:NOMBRE}]).select());
+      .insert([{sede:SEDE, creado_por:NOMBRE, nombre:(($('rep-nombre').value||'').replace(/\s+/g,' ').trim()||null)}]).select());
     if(error||!data||!data[0]){
       avisar('No se pudo enviar el reparto. Revisa tu señal e inténtalo de nuevo.'); console.error(error); return;
     }
@@ -3152,7 +3325,7 @@ $('btnRegistrarReparto').addEventListener('click', async()=>{
       await sb.from('repartos').delete().eq('id',rid);   // no dejar un reparto vacío dando vueltas
       avisar('No se pudo enviar el reparto. Revisa tu señal e inténtalo de nuevo.'); console.error(e2); return;
     }
-    carrito=[]; renderCarrito(); renderRepartoResults(); rqEl.value='';
+    carrito=[]; renderCarrito(); renderRepartoResults(); rqEl.value=''; $('rep-nombre').value='';
     render();   // se van las marcas "En reparto" de la lista del inventario
     aviso('✓ Reparto enviado · '+items.length+' producto'+(items.length===1?'':'s'));
     await loadRepartos();
@@ -3547,7 +3720,7 @@ function elegirEnVentana(titulo, opcionesHTML, attr){
     const ov=document.createElement('div');
     /* overlay-blur, como el resto: ninguna ventana de la app vuelve al negro
        plano del navegador (regla 2.0). */
-    ov.className='overlay overlay-blur open';
+    ov.className='overlay overlay-blur overlay-prop open';
     ov.innerHTML=`<div class="modal" style="max-width:380px">
       <h2 style="margin:2px 0 14px;font-size:18px">${esc(titulo)}</h2>
       ${opcionesHTML}
