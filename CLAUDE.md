@@ -1117,6 +1117,19 @@ permisos · tipos y secciones · marcar un producto como "no lleva receta".
 | **Tipos de producto en Angamos** | se llenaron por SQL | editar los tipos como lista, no producto por producto |
 | **Lista de conteo** | escondida tras `FLAGS` en `index.html` | **el interruptor para encenderla o apagarla por sede** |
 
+**⚠️ PENDIENTE ANOTADO (Jhon, 2026-08-06): productos de BODEGA metidos en
+Angamos.** En el inventario de angamos hay productos con la palabra *"bodega"*
+en el nombre —`Bodega leche de avena` y similares— que son de la **bodega
+central**, no de la sede. Jhon: *"no quiero contaminar Angamos con productos
+de bodega, esto es importante… por ahora no hace daño, pero quiero que lo
+recuerdes."*
+
+**Por qué importa más de lo que parece:** esos productos cuentan en las
+métricas de la sede, aparecen en el buscador de reparto y ensucian los
+candidatos del taller de recetas. No rompen nada hoy porque están en cero.
+Hay que decidir con él si se mueven a la sede `bodega` o se desactivan — es
+una decisión suya, no una limpieza automática (§0).
+
 **`FLAGS` es el patrón para lo que viene:** una función que hoy se enciende
 cambiando una línea del código, y que el día que exista el panel pasa a ser un
 interruptor. Cualquier función nueva que no esté lista para todos entra por
