@@ -38,6 +38,7 @@
 | 6.1 | La seguridad se mantiene en mínimos (decisión) | antes de proponer cerrar permisos |
 | 6.2 | **La zona de configuración** — el pendiente grande | el trabajo que viene |
 | 6.3 | **Recetas rediseñada** — decisiones ya tomadas | construir la pantalla nueva |
+| 6.4 | Lo que viene después: tablero de análisis y la planilla del café | terminada la zona de configuración |
 | 7 | ¿POS propio? · la conversación con administración | decisiones de largo plazo |
 | **8** | **Catálogo de soluciones** — se busca el problema | antes de "arreglar" algo |
 | 9 | Encender una sede nueva · el caso Angamos completo | otra sede |
@@ -1111,6 +1112,36 @@ de la base, y el interruptor `prueba`/`real`.
 
 **Por dónde empieza:** por Recetas (§6.3). No es una pantalla aparte de esta
 zona — es su primera pieza, y el molde del resto.
+
+**DECISIONES DE JHON sobre el plan (2026-08-05), y mandan sobre lo de arriba:**
+
+| | |
+|---|---|
+| Por dónde se parte | **Los pares vitrina/congelador.** *"fue un error real que costó dinero"* |
+| Quién la usa | **Solo Jhon al principio.** Después se despliega a administración |
+| Dónde vive | **Panel aparte, con su propio ícono.** No una ventana emergente |
+| El interruptor `prueba`/`real` | **SÍ entra**, contra mi recomendación. Su razón, y es buena: *"existe la posibilidad de que yo un día me vaya y necesito entregar un sistema que sea completamente manejable"* — un sistema que solo Claude puede operar no es entregable |
+
+### 6.4 LO QUE VIENE DESPUÉS — anotado a pedido de Jhon (2026-08-05)
+
+**1. El panel de análisis.** Gráficas y tablero: a dónde se van los recursos,
+qué es lo que más sale y lo que menos, y **poder ofertar lo que está en
+sobre-stock**. Depende de tener la cobertura de recetas alta — un tablero sobre
+datos incompletos miente con autoridad. No empezar antes de cerrar §6.3.
+Análisis previo en `docs/dashboard-analisis-posibles.md`.
+
+**2. La planilla del café.** Jhon la pidió así: *"que yo le pusiera los kilos
+que tiene y la receta, es decir, los gramos de café que utilizo por cada
+espresso, y el mismo calculara el descuento."*
+
+Es §10 convertido en pantalla, y **la base ya lo soporta**: `receta_items.cantidad`
+es `numeric` y `productos.stock_actual` es `double precision` (verificado en
+producción el 2026-07-31), así que una receta puede descontar `0,018`. Lo que
+falta es la columna de **unidad de medida** en `productos` y la pantalla que
+haga la división. Dato ya corregido por Jhon: **el bulto es de 30 kg, no 60** —
+son ~1.667 dosis, no 3.333.
+
+### ✅ Lo que NO está en riesgo
 
 ### 6.3 RECETAS — el rediseño, con las decisiones ya tomadas
 
