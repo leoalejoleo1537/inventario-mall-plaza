@@ -2916,7 +2916,7 @@ function repItemHTML(it){
   if(it.estado==='pendiente'){
     const btnSi = perec
       ? `<button type="button" class="rep-bt si" data-fechas="${it.id}">✓ Llegó · fechas</button>`
-      : `<button type="button" class="rep-bt si" data-recibir="${it.id}">✓ Llegó</button>
+      : `<button type="button" class="rep-bt si" data-recibir="${it.id}">✓ Llegó · suma a Fudo</button>
          <input type="number" class="rep-cant" step="0.5" min="0" value="${fmt(cantInicial(it))}" data-cant="${it.id}" aria-label="Cantidad recibida">`;
     return `<div class="rep-fila" data-item="${it.id}">
       <div class="lin1"><span class="nm">${esc(it.producto)}</span><span class="ped">${pedidoTxt(it)}</span></div>
@@ -3008,6 +3008,56 @@ $('view-reparto').addEventListener('click', e=>{
 });
 
 /* ---- confirmar / rechazar / deshacer ---- */
+/* Busca la línea de un reparto entre los abiertos: hace falta saber QUÉ
+   producto y cuánto, para poder sumárselo a Fudo después de recibirlo. */
+function itemDeReparto(itemId){
+  for(const r of REPARTOS){
+    const it = (r.items||[]).find(i=>i.id===itemId);
+    if(it) return it;
+  }
+  return null;
+}
+
+/* ---------------- sumar a Fudo lo que acaba de llegar ----------------
+
+   LA REGLA, y es la razón de que esto no use el botón rojo de siempre:
+   se le SUMA a lo que Fudo ya tiene, no se le manda el total del
+   inventario. Ejemplo de Jhon: llegan 2 cachitos, Fudo tiene 3, queda
+   en 5 — da igual lo que diga el inventario.
+
+   Por qué: el inventario va con retraso. Puede haber 3 cachitos en la
+   vitrina y 1 en una mesa abierta; el inventario dice 4 porque esa venta
+   no se ha cerrado, pero en el estante hay 3. Mandar ese 4 sería empujar
+   el retraso al sistema que decide qué se puede vender.
+
+   Va en SILENCIO a propósito (pedido de Jhon: "que fluya"). Solo habla
+   si algo falla — y ahí con un aviso suave, porque lo más probable es
+   que sea la señal y se arregla solo. Lo que NO puede pasar es que falle
+   y nadie se entere: por eso queda anotado y se reintenta.            */
+const FUDO_PENDIENTE = [];
+async function sumarAFudo(productoId, cantidad, itemId){
+  if(!productoId || !(+cantidad > 0)) return;
+  const r = await sb.functions.invoke('fudo-sumar-stock',
+    {body:{sede:SEDE, producto_id:productoId, cantidad:+cantidad, reparto_item_id:itemId}});
+  if(r.error || (r.data && r.data.error)){
+    console.error('No se pudo sumar a Fudo', r.error || r.data.error);
+    FUDO_PENDIENTE.push({productoId, cantidad:+cantidad, itemId});
+    aviso('Sin conexión con Fudo · se actualiza al reconectar', 4000);
+    return;
+  }
+  /* Un "ok" con 0 actualizados no es un problema: significa que ese
+     insumo no es el único de ninguna receta (un combo), así que Fudo no
+     le lleva la cuenta por separado. No se avisa porque no hay nada que
+     hacer al respecto. */
+}
+/* Reintento: cuando vuelve la señal se manda lo que quedó pendiente. */
+async function reintentarFudo(){
+  if(!FUDO_PENDIENTE.length || !navigator.onLine) return;
+  const cola = FUDO_PENDIENTE.splice(0, FUDO_PENDIENTE.length);
+  for(const p of cola) await sumarAFudo(p.productoId, p.cantidad, p.itemId);
+}
+window.addEventListener('online', reintentarFudo);
+
 async function llamarReparto(fn, args, exito){
   const {data,error} = await sb.rpc(fn, args);
   if(error){
@@ -3038,7 +3088,9 @@ $('repartos-abiertos').addEventListener('click', async e=>{
     const inp=$('repartos-abiertos').querySelector(`[data-cant="${id}"]`);
     const cant=inp?Math.max(0,+inp.value||0):null;
     rec.disabled=true;
-    await llamarReparto('reparto_recibir',{p_item_id:id, p_cantidad:cant, p_lotes:null, p_quien:NOMBRE},'✓ Sumado al inventario');
+    const item = itemDeReparto(id);
+    const ok = await llamarReparto('reparto_recibir',{p_item_id:id, p_cantidad:cant, p_lotes:null, p_quien:NOMBRE},'✓ Sumado al inventario');
+    if(ok && item) sumarAFudo(item.producto_id, cant!=null ? cant : item.cantidad_pedida, id);
     return;
   }
   const fec = e.target.closest('[data-fechas]');
@@ -3176,8 +3228,11 @@ $('rec-confirmar').addEventListener('click', async()=>{
   if(new Set(fechas).size!==fechas.length){ avisar('Hay una fecha repetida. Déjala en una sola línea con la cantidad total.'); return; }
   const btn=$('rec-confirmar'); btn.disabled=true;
   const id=recItemId;
+  const item = itemDeReparto(id);
+  const total = lotes.reduce((t,l)=>t+(+l.cantidad||0),0);
   cerrarRecibir();
-  await llamarReparto('reparto_recibir',{p_item_id:id, p_cantidad:null, p_lotes:lotes, p_quien:NOMBRE},'✓ Sumado al inventario');
+  const ok = await llamarReparto('reparto_recibir',{p_item_id:id, p_cantidad:null, p_lotes:lotes, p_quien:NOMBRE},'✓ Sumado al inventario');
+  if(ok && item) sumarAFudo(item.producto_id, total, id);
   btn.disabled=false;
 });
 

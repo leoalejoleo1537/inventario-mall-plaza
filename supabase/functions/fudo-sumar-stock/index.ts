@@ -1,0 +1,207 @@
+// ================================================================
+// Edge Function: fudo-sumar-stock
+//
+// SUMA a Fudo lo que acaba de llegar en un reparto. No manda el total
+// del inventario: lee lo que Fudo tiene AHORA y le suma la cantidad
+// recibida.
+//
+// POR QUÉ NO SE MANDA EL TOTAL DEL INVENTARIO — y es la razón de que
+// esta función exista aparte de `fudo-empujar-stock`:
+//
+//   El inventario va con retraso respecto a la realidad. Puede haber 3
+//   cachitos en la vitrina y 1 en una mesa abierta: el inventario dice 4
+//   porque esa venta todavía no se cerró, pero en el estante hay 3.
+//   Si mandáramos ese 4 a Fudo, estaríamos empujando el retraso al
+//   sistema que decide qué se puede vender.
+//
+//   Llegaron 2 y Fudo tenía 3  ->  Fudo queda en 5. Da lo mismo lo que
+//   diga el inventario. Fudo lleva su propia cuenta y la va bajando al
+//   vender; lo único que le falta saber es que entró mercadería nueva.
+//
+// SIGUE SIENDO UN VALOR ABSOLUTO. La regla del proyecto —nunca mandar
+// una diferencia— se respeta: la resta la hace Fudo al vender, y acá se
+// manda `actual + recibido`, un número entero, no un "+2".
+//
+// QUÉ PRODUCTOS DE FUDO SE TOCAN, y esto es una decisión:
+//   Solo aquellos cuya receta usa ESTE insumo y NINGÚN otro, con
+//   cantidad 1. O sea, los 1:1 — el cachito que se vende como cachito.
+//   Un combo que además lleva un café NO se toca: cuántos combos se
+//   pueden vender depende también del café, y eso lo calcula bien la
+//   otra función (`fudo_stock_calculado`, con su min()). Sumarle 2 a un
+//   combo porque llegaron 2 sándwiches diría que se pueden vender 2 más
+//   sin mirar la bebida.
+//
+// Cómo se llama:
+//   POST { sede, producto_id, cantidad, reparto_item_id? }
+//
+// Quién puede: los correos con puede_fudo en public.app_permisos, igual
+// que el resto. La lista se edita en SQL, no acá.
+// ================================================================
+
+const VERSION = "2026-08-06";
+const AUTH_URL = "https://auth.fu.do/api";
+const API_BASE = "https://api.fu.do/v1alpha1";
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  try {
+    const SB_URL = Deno.env.get("SUPABASE_URL");
+    const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+                ?? Deno.env.get("SUPABASE_SECRET_KEY");
+    if (!SB_URL || !SB_KEY) return json({ error: "Falta la configuración de Supabase." }, 500);
+    const cab = { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` };
+
+    // ---------- el candado, contra la sesión real ----------
+    const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    if (!jwt) return json({ error: "Falta la sesión." }, 401);
+    const uRes = await fetch(`${SB_URL}/auth/v1/user`, {
+      headers: { "Authorization": `Bearer ${jwt}`, "apikey": SB_KEY },
+    });
+    let correo: string | null = null;
+    try { correo = ((await uRes.json())?.email ?? "").toLowerCase() || null; } catch { /* no-JSON */ }
+    if (!uRes.ok || !correo) return json({ error: "Tu sesión caducó. Sal y vuelve a entrar." }, 401);
+
+    const pRes = await fetch(
+      `${SB_URL}/rest/v1/app_permisos?correo=eq.${encodeURIComponent(correo)}&select=puede_fudo`, { headers: cab });
+    const permisos = pRes.ok ? await pRes.json() : [];
+    if (!permisos?.[0]?.puede_fudo) {
+      return json({ error: "Esta cuenta no puede actualizar el stock de Fudo." }, 403);
+    }
+
+    // ---------- qué se pidió ----------
+    const body = await req.json().catch(() => ({}));
+    const sede = String(body?.sede ?? "plaza").toLowerCase();
+    const productoId = Number(body?.producto_id);
+    const cantidad = Number(body?.cantidad);
+    const itemId = body?.reparto_item_id != null ? Number(body.reparto_item_id) : null;
+    if (!productoId || !Number.isFinite(cantidad) || cantidad <= 0) {
+      return json({ version: VERSION, ok: true, sin_efecto: "no llegó cantidad que sumar" });
+    }
+
+    // ---------- a qué productos de Fudo les toca ----------
+    // Se piden las recetas de la sede con sus líneas, y se dejan solo las
+    // que tienen UNA línea, que sea este insumo, con cantidad 1.
+    const rRes = await fetch(
+      `${SB_URL}/rest/v1/recetas?sede=eq.${encodeURIComponent(sede)}&activo=eq.true`
+      + `&select=id,fudo_product_id,fudo_product_nombre,receta_items(producto_id,cantidad)`,
+      { headers: cab });
+    if (!rRes.ok) return json({ error: "No se pudieron leer las recetas.", detalle: (await rRes.text()).slice(0, 200) }, 500);
+    const recetas = await rRes.json();
+
+    const objetivos = (recetas ?? []).filter((r: any) => {
+      const its = r.receta_items ?? [];
+      return its.length === 1
+        && Number(its[0].producto_id) === productoId
+        && Number(its[0].cantidad) === 1;
+    });
+
+    if (!objetivos.length) {
+      return json({
+        version: VERSION, ok: true, sumados: 0,
+        sin_efecto: "ese producto no es el único insumo de ninguna receta, así que Fudo no lleva su cuenta por separado",
+      });
+    }
+
+    // ---------- Fudo ----------
+    const apiKey = Deno.env.get(`FUDO_${sede.toUpperCase()}_APIKEY`);
+    const apiSecret = Deno.env.get(`FUDO_${sede.toUpperCase()}_APISECRET`);
+    if (!apiKey || !apiSecret) return json({ error: `Faltan credenciales de Fudo para "${sede}".` }, 400);
+
+    const authRes = await fetch(AUTH_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ apiKey, apiSecret }),
+    });
+    if (!authRes.ok) return json({ error: `Fudo rechazó la autenticación (${authRes.status}).` }, 502);
+    const token = (await authRes.json())?.token;
+    if (!token) return json({ error: "Fudo no devolvió un token." }, 502);
+    const conFudo = { "Authorization": `Bearer ${token}`, "Accept": "application/json" };
+
+    const lote = crypto.randomUUID();
+    const hechos: unknown[] = [], fallados: unknown[] = [], bitacora: unknown[] = [];
+
+    for (const r of objetivos) {
+      const fpid = String(r.fudo_product_id);
+      let anterior: number | null = null, enviado: number | null = null;
+      let ok = false, detalle = "";
+      try {
+        // 1) Cuánto tiene Fudo AHORA. Este es el paso que hace que no se
+        //    empuje el retraso del inventario.
+        const gRes = await fetch(`${API_BASE}/products/${fpid}`, { headers: conFudo });
+        if (!gRes.ok) throw new Error(`no se pudo leer el producto en Fudo (${gRes.status})`);
+        anterior = (await gRes.json())?.data?.attributes?.stock ?? null;
+
+        if (anterior === null) {
+          // Fudo nunca le ha llevado stock: se vende sin límite. Ponerle un
+          // número lo empezaría a bloquear al llegar a 0, y eso es un cambio
+          // de comportamiento en el mesón que nadie pidió acá.
+          detalle = "Fudo no le lleva stock a este producto: se deja como está.";
+          bitacora.push({ sede, lote, fudo_product_id: fpid, producto_fudo: r.fudo_product_nombre,
+                          stock_anterior: null, stock_enviado: null, ok: true,
+                          detalle, quien: correo });
+          hechos.push({ producto: r.fudo_product_nombre, sin_cambio: detalle });
+          continue;
+        }
+
+        enviado = Number(anterior) + cantidad;
+
+        // 2) Se manda el TOTAL nuevo, no la diferencia.
+        const pRes2 = await fetch(`${API_BASE}/products/${fpid}`, {
+          method: "PATCH",
+          headers: { ...conFudo, "Content-Type": "application/json" },
+          body: JSON.stringify({ data: { type: "Product", id: fpid, attributes: { stock: enviado } } }),
+        });
+        const txt = await pRes2.text();
+        if (!pRes2.ok) throw new Error(`Fudo rechazó el cambio (${pRes2.status}): ${txt.slice(0, 150)}`);
+
+        // 3) Se comprueba releyendo lo que Fudo devuelve, no el 200.
+        let confirmado: number | null = null;
+        try { confirmado = JSON.parse(txt)?.data?.attributes?.stock ?? null; } catch { /* no-JSON */ }
+        ok = confirmado === null || Number(confirmado) === enviado;
+        if (!ok) detalle = `Fudo respondió OK pero quedó en ${confirmado}, no en ${enviado}.`;
+      } catch (e) {
+        detalle = String(e instanceof Error ? e.message : e);
+      }
+
+      const fila = { producto: r.fudo_product_nombre, de: anterior, a: enviado,
+                     ...(ok ? {} : { error: detalle }) };
+      (ok ? hechos : fallados).push(fila);
+      bitacora.push({
+        sede, lote, fudo_product_id: fpid, producto_fudo: r.fudo_product_nombre,
+        stock_anterior: anterior, stock_enviado: enviado, ok,
+        detalle: detalle || `+${cantidad} por reparto${itemId ? ` (línea ${itemId})` : ""}`,
+        quien: correo,
+      });
+    }
+
+    // Bitácora: sin esto un envío equivocado no deja rastro ni se puede deshacer.
+    if (bitacora.length) {
+      await fetch(`${SB_URL}/rest/v1/fudo_stock_push`, {
+        method: "POST",
+        headers: { ...cab, "Content-Type": "application/json", "Prefer": "return=minimal" },
+        body: JSON.stringify(bitacora),
+      }).catch(() => { /* que un fallo de bitácora no oculte el resultado */ });
+    }
+
+    return json({
+      version: VERSION, ok: fallados.length === 0,
+      sede, quien: correo, sumado: cantidad,
+      actualizados: hechos.length, con_error: fallados.length,
+      cambios: hechos, errores: fallados,
+    });
+  } catch (e) {
+    return json({ error: "Error inesperado.", detalle: String(e) }, 500);
+  }
+});
+
+function json(obj: unknown, status = 200): Response {
+  return new Response(JSON.stringify(obj, null, 2), {
+    status, headers: { "Content-Type": "application/json", ...CORS },
+  });
+}
