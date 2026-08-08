@@ -69,7 +69,10 @@ select net.http_post(
 -- algo falló, prefiero que salga el error a la vista antes que una tabla
 -- vacía que no dice por qué. La fila de arriba es la más reciente.
 --
--- Si las 3 filas son viejas (mira "cuando"), la prueba todavía no
+-- ⚠️ El "not like" saca de en medio al cron de ventas, que también deja
+-- su respuesta acá cada 15 minutos y se cuela como la fila más nueva.
+--
+-- Si las filas son viejas (mira "cuando"), la prueba todavía no
 -- contesta: esperar otro poco y volver a correr ESTE bloque, no el 1.
 -- ================================================================
 select created                                        as cuando,
@@ -79,6 +82,7 @@ select created                                        as cuando,
        case when content ~ '^\s*\{' then content::jsonb ->> 'ojo'        end as ojo,
        content                                        as respuesta_completa
 from net._http_response
+where content is null or content not like '%ventas_leidas%'
 order by created desc
 limit 3;
 
