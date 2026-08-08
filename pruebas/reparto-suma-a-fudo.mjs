@@ -66,7 +66,7 @@ await page.addInitScript(({PRODUCTOS, REPARTOS, ITEMS}) => {
     removeChannel(){},
     functions:{ invoke: async(nombre, opt) => {
       window.__fudo.push({nombre, body: opt && opt.body});
-      if(window.__fudoFalla) return {data:null, error:{message:'sin señal'}};
+      if(window.__fudoFalla) return {data:null, error:{message:'Failed to send a request'}};
       return {data:{ok:true, actualizados:1}, error:null};
     }},
   })};
@@ -87,6 +87,7 @@ const caso = async (nombre, fn) => {
 
 await page.click('.gate-btn[data-sede="plaza"]');
 await page.waitForTimeout(300);
+await page.evaluate(()=>{ PERMISOS.correo='jefe@cafe.cl'; PERMISOS.puede_fudo=true; });
 await page.click('.tab[data-tab="reparto"]');
 await page.waitForTimeout(400);
 

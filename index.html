@@ -3037,18 +3037,50 @@ function itemDeReparto(itemId){
 const FUDO_PENDIENTE = [];
 async function sumarAFudo(productoId, cantidad, itemId){
   if(!productoId || !(+cantidad > 0)) return;
-  const r = await sb.functions.invoke('fudo-sumar-stock',
-    {body:{sede:SEDE, producto_id:productoId, cantidad:+cantidad, reparto_item_id:itemId}});
-  if(r.error || (r.data && r.data.error)){
-    console.error('No se pudo sumar a Fudo', r.error || r.data.error);
-    FUDO_PENDIENTE.push({productoId, cantidad:+cantidad, itemId});
-    aviso('Sin conexión con Fudo · se actualiza al reconectar', 4000);
+  /* La app funciona sin sesión iniciada (§6.1), pero escribir en Fudo NO:
+     la Edge Function comprueba el correo contra app_permisos. Sin sesión el
+     error que llega es "tu sesión caducó", que no le dice a nadie qué hacer.
+     Mejor decirlo antes y con la instrucción. */
+  if(!PERMISOS.correo){
+    avisar('El inventario se actualizó, pero Fudo no\n\n'
+      + 'Para que el reparto suba a Fudo hay que entrar con la cuenta. '
+      + 'Abre el menú ☰ e inicia sesión.');
     return;
   }
-  /* Un "ok" con 0 actualizados no es un problema: significa que ese
-     insumo no es el único de ninguna receta (un combo), así que Fudo no
-     le lleva la cuenta por separado. No se avisa porque no hay nada que
-     hacer al respecto. */
+  const r = await sb.functions.invoke('fudo-sumar-stock',
+    {body:{sede:SEDE, producto_id:productoId, cantidad:+cantidad, reparto_item_id:itemId}});
+  /* Un fallo acá tenía UN solo mensaje —"sin conexión"— y eso escondía la
+     causa real: puede ser la señal, pero también una sesión caducada, una
+     cuenta sin permiso o una receta que no calza. La primera prueba en el
+     local se perdió justo por eso. Ahora el motivo se dice tal cual. */
+  const err = r.error || (r.data && r.data.error);
+  if(err){
+    const msg = String((err && err.message) || err);
+    console.error('No se pudo sumar a Fudo:', msg, r);
+    const sinRed = !navigator.onLine || /fetch|network|failed to send/i.test(msg);
+    if(sinRed){
+      FUDO_PENDIENTE.push({productoId, cantidad:+cantidad, itemId});
+      aviso('Sin conexión con Fudo · se actualiza al reconectar', 4000);
+    } else {
+      // No es la red: reintentar no lo va a arreglar y esconderlo sí hace daño.
+      avisar('Fudo no se actualizó\n\n' + msg);
+    }
+    return;
+  }
+  /* Que la función conteste "ok" pero no haya cambiado nada NO puede pasar
+     en silencio. La primera prueba en el local falló justo así: el reparto
+     subió al inventario, Fudo se quedó igual, y no hubo forma de saber por
+     qué. Un sistema que falla callado es peor que uno que se cae (§0.5). */
+  const d = r.data || {};
+  if(!d.actualizados){
+    console.warn('Fudo no cambió:', d);
+    aviso(d.sin_efecto ? 'Fudo no cambió · ' + d.sin_efecto : 'Fudo no cambió · revisa la receta', 6000);
+    return;
+  }
+  if(d.con_error){
+    console.error('Fudo rechazó parte del envío:', d.errores);
+    aviso('Fudo rechazó el cambio · revisa el historial', 6000);
+  }
 }
 /* Reintento: cuando vuelve la señal se manda lo que quedó pendiente. */
 async function reintentarFudo(){
