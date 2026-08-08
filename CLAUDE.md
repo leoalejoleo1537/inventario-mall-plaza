@@ -1393,6 +1393,47 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 | "Ya está al día" cuando no lo estaba: el espejo local de Fudo estaba viejo | Se corre la sync de catálogo **antes** de cada revisión | `index.html` (`refrescarEspejoFudo`) | 07-29 |
 | Un empuje equivocado no dejaba rastro ni se podía revertir | Bitácora `fudo_stock_push` con valor anterior, agrupada por lote, y deshacer del último | `2026-07-permisos-y-deshacer.sql` + `fudo-deshacer-stock` | 07-28 |
 
+#### Qué deja hacer la API de Fudo con el CATÁLOGO — medido, no supuesto
+
+*(Prueba aislada `fudo-probar-catalogo`, Angamos, 2026-08-08. Antes de
+proponer cualquier cosa que toque el catálogo, mirar esta tabla.)*
+
+| Operación | ¿Se puede? | Evidencia |
+|---|---|---|
+| **Leer** productos | ✅ | ya se usaba (`fudo-sync-productos`) |
+| **Cambiar el stock** | ✅ | ya se usaba (`fudo-empujar-stock`) |
+| **CREAR un producto** | ✅ | `POST /products` → **201**, producto id 917 |
+| **DESACTIVAR** (`active: false`) | ✅ | `PATCH` → **200**, el campo queda en false |
+| **BORRAR** | ❌ **no existe la operación** | ver abajo |
+
+**Cómo se supo que borrar no existe, porque el dato engaña:** `DELETE
+/products/917` devolvió **404** — pero ese producto EXISTÍA (se acababa de
+crear, y al releerlo contestó 200 y seguía ahí). Un producto que existe no
+puede dar "no encontrado" al borrarlo: **ese 404 es de ruta, no de
+registro.** La segunda huella está en la forma de la respuesta:
+
+| Llamada | Respuesta |
+|---|---|
+| `PATCH` a un id inexistente | `{"status":"404","code":"not-found"}` |
+| `DELETE`, a cualquier id | `{"status":404}` — pelado, sin `code` |
+
+Son dos capas distintas contestando. **Ni el 404 ni el 405 se pueden leer
+solos**: la única forma de distinguir "no está el producto" de "no está la
+operación" es intentarlo sobre algo que sí exista y **releer después**.
+
+**Hipótesis de por qué**, y encaja con que Adriana tampoco pueda desde la
+pantalla: el historial de ventas apunta a los productos, y borrar uno
+rompería los informes de meses pasados. Si es eso, no es una limitación
+que pelear — **desactivar es la respuesta que el sistema tiene prevista**.
+
+**Lo que esto habilita** (§6.3 y §6.0 dependían de saberlo): crear
+productos en Fudo desde el taller de recetas, y apagar los duplicados que
+Adriana arrastra hace 4 años. **Lo que NO**: prometerle "borrar".
+
+⚠️ **Quedó en el catálogo de Angamos el producto 917 "ZZZ PRUEBA CLAUDE -
+ignorar", desactivado.** No se puede sacar por la API. Es el ejemplo vivo
+del problema.
+
 ### Datos y lecturas
 
 | Qué fallaba | Cómo se resolvió | Dónde vive | Fecha |
@@ -1894,6 +1935,45 @@ donde se edita el stock— y no en cada fila de la lista.
 ---
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-08-08** — **Se midió qué deja hacer Fudo con el catálogo, y una
+  falsa alarma mía de por medio.** Jhon lo pidió porque es el problema de
+  fondo de Adriana: 4 años de catálogo sucio que la pantalla de Fudo no la
+  deja limpiar. Él lo llamó *"la joya de la corona"*. El resultado está en
+  §8; acá va cómo se llegó, que es la parte que sirve.
+  1. **La v1 de la prueba dio un veredicto FALSO.** Intentó crear un
+     producto de mentira, crear falló con un 400 de esquema —el campo
+     `active` no va en un alta— y al fallar crear se saltó desactivar y
+     borrar, devolviendo *"la API no deja tocar el catálogo"*. **Nunca lo
+     intentó.** Es la regla 0.1.5 incumplida por mí: concluir desde algo
+     que no se probó. Por poco le cierra a Jhon la puerta más importante
+     que tiene abierta el proyecto.
+     **La regla que sale de ahí, y vale para cualquier diagnóstico:**
+     un informe tiene que distinguir **"no se pudo probar"** de **"no se
+     puede"**. La v2 tiene esas dos palabras distintas en la respuesta, a
+     propósito.
+  2. **La técnica que sí sirvió: preguntar sin tocar.** Para saber si un
+     endpoint acepta una operación no hace falta ejecutarla — se le pide
+     sobre un **id que no existe** y se lee qué contesta. Cuesta cero y no
+     puede romper nada. Es la lección de la impresora (§7) llevada a su
+     forma más barata.
+  3. **Pero el 404 engaña, y esa es la trampa que hay que recordar.** Yo
+     leí el 404 del DELETE como *"la operación existe, solo que ese
+     producto no está"*. Falso: el DELETE sobre un producto **que sí
+     existía** devolvió el mismo 404, y al releerlo seguía ahí. Era un 404
+     **de ruta**. Lo que separó las dos lecturas no fue una consulta más
+     lista: fue **releer después de actuar** — el mismo patrón que ya se
+     usaba para el empuje de stock ("se comprueba releyendo lo que Fudo
+     devuelve, no el 200") y que acá volvió a ser lo único concluyente.
+  4. **Lo medido:** crear ✅ (201), desactivar ✅ (200), borrar ❌ (no
+     existe). Y eso **habilita dos cosas que estaban esperando**: crear
+     productos en Fudo desde el taller de recetas (§6.3) y apagar los
+     duplicados de Adriana. Lo que no habilita es prometerle "borrar".
+  5. **Falta la comprobación del mesón, y no la puede dar la API:** que
+     un producto con `active: false` de verdad desaparezca de la pantalla
+     de venta. El producto 917 "ZZZ PRUEBA CLAUDE - ignorar" quedó
+     desactivado en el Fudo de Angamos justamente para eso — se mira y se
+     sabe. **No se puede borrar, así que ahí se queda.**
 
 - **2026-07-30 (noche)** — **El archivo madre, reforzado para el salto a
   Angamos.** Jhon va a abrir un chat nuevo (las skills que instaló no cargan en

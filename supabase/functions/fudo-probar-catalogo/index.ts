@@ -1,7 +1,42 @@
 // ================================================================
 // Edge Function: fudo-probar-catalogo   —   PRUEBA AISLADA  ·  v2
 //
-// LA PREGUNTA QUE VIENE A CONTESTAR:
+// ★★★ YA CORRIÓ. ESTE ES EL RESULTADO (Angamos, 2026-08-08) ★★★
+//
+//     CREAR      ✅  201, producto id 917
+//     DESACTIVAR ✅  200, active pasa a false
+//     BORRAR     ❌  la API NO tiene esa operación
+//
+//   Cómo se supo que borrar no existe, y esto es lo que vale: el DELETE
+//   sobre el producto 917 —que acabábamos de crear y que al releerlo
+//   contestó 200— devolvió 404. Un producto que existe no puede dar
+//   "no encontrado" al borrarlo: ese 404 es de RUTA, no de registro.
+//
+//   La segunda huella está en la forma de la respuesta:
+//     PATCH  a un id inexistente -> {"status":"404","code":"not-found"}
+//     DELETE (cualquiera)        -> {"status":404}   pelado, sin code
+//   Son dos capas distintas contestando. La primera es Fudo diciendo
+//   "ese producto no existe"; la segunda es el servidor diciendo "esa
+//   puerta no está".
+//
+//   ⚠️ Por eso el clasificador del paso 2 de más abajo ESTÁ MAL y quedó
+//   corregido: yo había supuesto que un 404 en DELETE probaba que la
+//   operación existía y que la cuenta pasaba el permiso. No prueba nada
+//   de eso. Lo único que distingue las dos cosas es intentarlo sobre un
+//   producto que de verdad exista y releer después.
+//
+//   Hipótesis de por qué Fudo no deja borrar —y explica que Adriana
+//   tampoco pueda desde la pantalla—: el historial de ventas apunta a
+//   los productos. Borrar uno rompería los informes de meses pasados.
+//   Si es eso, no es una limitación que pelear: desactivar ES la
+//   respuesta que el sistema tiene prevista.
+//
+//   QUEDÓ EN EL CATÁLOGO DE ANGAMOS: producto 917
+//   "ZZZ PRUEBA CLAUDE - ignorar", desactivado. No se puede sacar por
+//   la API. Sirve de ejemplo vivo del problema.
+//
+// ---------------------------------------------------------------
+// LA PREGUNTA QUE VINO A CONTESTAR:
 //   ¿Se pueden BORRAR productos del catálogo de Fudo desde la API?
 //   Adriana lleva 4 años sin poder limpiar el catálogo porque la
 //   pantalla de Fudo no la deja. Si la API sí deja, eso cambia todo.
@@ -138,11 +173,16 @@ Deno.serve(async (req) => {
     //    existe, así la pregunta no puede romper nada.
     // ============================================================
     const delFantasma = await pedir(`/products/${ID_FANTASMA}`, { method: "DELETE", headers: H });
+    // ⚠️ CORREGIDO el 2026-08-08 con datos en la mano: un 404 acá NO prueba
+    // que borrar exista. Fudo contesta 404 tanto cuando el producto no está
+    // como cuando la operación no está. Lo único que separa las dos cosas es
+    // el paso 5: borrar algo que SÍ existe y releer. Por eso este paso pasa
+    // de "veredicto" a "pista".
     const borrarSoportado =
-      delFantasma.status === 405 ? "NO — la API no tiene borrar"
-      : delFantasma.status === 401 || delFantasma.status === 403 ? "SÍ existe, pero esta cuenta no tiene permiso"
-      : delFantasma.status === 404 ? "SÍ — existe y la cuenta pasa el permiso"
-      : delFantasma.ok ? "SÍ (contestó que borró algo que no existía, raro pero permisivo)"
+      delFantasma.status === 405 ? "NO — la API no tiene borrar (405, definitivo)"
+      : delFantasma.status === 401 || delFantasma.status === 403 ? "existe, pero esta cuenta no tiene permiso"
+      : delFantasma.status === 404 ? "no concluyente — 404 puede ser 'no está el producto' o 'no está la operación'. Lo decide el paso 5"
+      : delFantasma.ok ? "contestó que borró algo que no existía, raro pero permisivo"
       : `sin clasificar (HTTP ${delFantasma.status})`;
     pasos.push({
       paso: "2 · ¿existe BORRAR? (pregunta sobre un id inventado)",
@@ -248,7 +288,9 @@ Deno.serve(async (req) => {
     const veredicto = sePuedeBorrar
       ? "✅ SÍ SE PUEDE BORRAR, comprobado de punta a punta. La limpieza definitiva del catálogo es posible."
       : borrarProbado
-        ? "🟡 Se creó el producto de prueba pero NO se pudo borrar. Mira el paso 5b."
+        ? (seguiaAhi
+            ? "❌ BORRAR NO EXISTE en la API. Se creó el producto de prueba, se borró, y al releerlo SIGUE AHÍ — un producto que existe no puede dar 'no encontrado' al borrarlo: ese 404 es de ruta. Lo que sí funciona es desactivar."
+            : "🟡 Se creó el producto de prueba pero el borrado no se pudo confirmar. Mira los pasos 5b y 5c.")
         : delFantasma.status === 405
           ? "❌ La API NO tiene borrar productos (405). Esto sí es definitivo: no depende de permisos."
           : delFantasma.status === 401 || delFantasma.status === 403
