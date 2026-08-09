@@ -1421,14 +1421,42 @@ Son dos capas distintas contestando. **Ni el 404 ni el 405 se pueden leer
 solos**: la única forma de distinguir "no está el producto" de "no está la
 operación" es intentarlo sobre algo que sí exista y **releer después**.
 
-**Hipótesis de por qué**, y encaja con que Adriana tampoco pueda desde la
-pantalla: el historial de ventas apunta a los productos, y borrar uno
-rompería los informes de meses pasados. Si es eso, no es una limitación
-que pelear — **desactivar es la respuesta que el sistema tiene prevista**.
+**Por qué — CONFIRMADO el mismo día por la propia pantalla de Fudo**, y
+corrige lo que yo había escrito. Jhon intentó borrar `Crema Zapallo` desde
+Fudo y salió este mensaje textual:
+
+> *"No se puede eliminar este producto. Está siendo usado en un combo o
+> está adicionado en una venta. Para eliminarlo, primero desvincúlalo de
+> esos lugares."*
+
+Entonces el cuadro real es más fino que "Fudo no deja borrar":
+
+| | |
+|---|---|
+| Borrar **existe** en la pantalla de Fudo | ✅ el botón está ahí |
+| Pero se niega si el producto **está en un combo o ya se vendió** | ✅ ese es el candado |
+| Y **no está expuesto en la API** en `/products/{id}` | ✅ medido acá |
+
+O sea: **lo que Adriana sí puede borrar a mano son los productos vírgenes;
+lo que estorba —4 años de catálogo que alguna vez se vendió— no lo puede
+borrar nadie, ni ella ni nosotros.** El candado es el historial de ventas,
+no un permiso que falte.
+
+**Y de la misma pantalla sale un dato útil:** el formulario del producto
+tiene una casilla **"Activo"**. Desactivar desde nuestro sistema es
+destildar esa casilla — no es un rodeo nuestro, es el interruptor que Fudo
+ya usa. Por eso **desactivar es la respuesta que el sistema tiene
+prevista** para lo que no se puede borrar.
 
 **Lo que esto habilita** (§6.3 y §6.0 dependían de saberlo): crear
 productos en Fudo desde el taller de recetas, y apagar los duplicados que
 Adriana arrastra hace 4 años. **Lo que NO**: prometerle "borrar".
+
+**DECISIÓN DE JHON (2026-08-08): crear y desactivar se implementan en el
+área nueva de BODEGA**, no ahora y no sueltos. *"dejalo en el registro que
+podemos crear y desactivar cosas, lo implementaremos en toda el area nueva
+que vamos a crear de bodega."* Hasta entonces esto es un hallazgo
+guardado, no una función a medio hacer.
 
 ⚠️ **Quedó en el catálogo de Angamos el producto 917 "ZZZ PRUEBA CLAUDE -
 ignorar", desactivado.** No se puede sacar por la API. Es el ejemplo vivo
@@ -1612,7 +1640,11 @@ vez que Jhon corrija alguna desde la app, deja de ser reversible en bloque.
     bloque de `2026-07-cron-automatico-ventas.sql` con `?sede=angamos`, y en los
     3 pasos ya probados: agendar → comprobar a los 20 min que
     `ultima_corrida_por` diga `cron` → recién ahí `cron_activo = true`.
-16. **El empuje de stock hacia Fudo NO se enciende en Angamos.**
+16. ~~**El empuje de stock hacia Fudo NO se enciende en Angamos.**~~
+    ⚠️ **SUPERADO el 2026-08-06.** Angamos SÍ le escribe a Fudo: Jhon lo
+    probó a mano (alfajor artesanal, de 8 a 9) y desde entonces el reparto
+    empuja al confirmarlo, en las dos sedes, con `fudo-sumar-stock`. Se deja
+    tachado y no borrado para que nadie "arregle" algo que ya funciona.
 
 ### 9.2 Las trampas que ya conocemos, aplicadas a Angamos
 
@@ -1625,9 +1657,10 @@ vez que Jhon corrija alguna desde la app, deja de ser reversible en bloque.
   seis o siete veces. Ninguno sirve tal cual. **Revisar cada aparición** — no
   reemplazar a ciegas: en varios, `plaza` es el ORIGEN a copiar (como en
   `replicar-secciones-plaza-a-angamos.sql`) y cambiarlo rompe el sentido.
-- **El empuje de stock hacia Fudo NO se enciende de entrada.** Primero
-  descontar, y solo cuando eso sea confiable, considerar escribir. En plaza
-  fueron dos meses entre una cosa y la otra, y con razón.
+- ~~**El empuje de stock hacia Fudo NO se enciende de entrada.**~~ Valió
+  mientras Angamos se encendía; **desde el 2026-08-06 ya está encendido** y
+  probado (ver fase 5, punto 16). El criterio de fondo sigue en pie para la
+  próxima sede: primero descontar, y escribir solo cuando eso sea confiable.
 - **`app_permisos` no tiene columna `sede`**, y eso es una **decisión**, no un
   descuido: la mecánica está construida (`sql/2026-08-permiso-por-sede.sql` +
   `permisosDeLaSede()`) pero **Jhon decidió el 2026-08-04 no correrla** — ver
@@ -1974,6 +2007,22 @@ donde se edita el stock— y no en cada fila de la lista.
      de venta. El producto 917 "ZZZ PRUEBA CLAUDE - ignorar" quedó
      desactivado en el Fudo de Angamos justamente para eso — se mira y se
      sabe. **No se puede borrar, así que ahí se queda.**
+  6. **Y la propia pantalla de Fudo corrigió mi hipótesis, el mismo día.**
+     Yo había escrito que Fudo no deja borrar productos porque el
+     historial de ventas apunta a ellos. El motivo era correcto; el
+     alcance, no. Jhon intentó borrar `Crema Zapallo` y Fudo contestó
+     *"está siendo usado en un combo o está adicionado en una venta"* —
+     o sea que **borrar existe y funciona con productos vírgenes**; lo
+     que no se puede borrar es lo que ya se vendió. Después de 4 años,
+     eso es justamente todo lo que estorba.
+     **La lección de método es la de siempre y van tres en un día:** la
+     API contestó *qué* pasa, la pantalla contestó *por qué*. Ninguna
+     consulta más lista habría dado ese mensaje — estaba en la interfaz
+     que usa la gente. Cuando algo del lado de Fudo no cuadre, mirar
+     también la pantalla, no solo el endpoint.
+     De ahí sale además que la casilla **"Activo"** es un campo del
+     propio formulario de Fudo: desactivar desde nuestro sistema no es un
+     rodeo, es destildar esa casilla.
 
 - **2026-07-30 (noche)** — **El archivo madre, reforzado para el salto a
   Angamos.** Jhon va a abrir un chat nuevo (las skills que instaló no cargan en
