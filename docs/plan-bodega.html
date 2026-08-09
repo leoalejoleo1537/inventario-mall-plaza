@@ -1,0 +1,448 @@
+<title>Bodega · el cuadro de mando de Adriana</title>
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Paleta: la de la casa (CLAUDE.md §2). No se inventa nada.
+   Azul pizarra estructura, naranja SOLO decisión y acción.
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --ground:#FFFFFF;   --surface:#F7F8F9;  --sunken:#EFF1F3;
+  --ink:#1C2733;      --muted:#6B7684;    --border:#E3E5E8;
+  --pizarra:#2F4A6D;  --pizarra-soft:#EDF1F6;
+  --orange:#DC4405;   --orange-deep:#B93A04;
+  --ok:#2E7D32;       --ok-bg:#E6F4E6;
+  --warn:#B26A00;     --warn-bg:#FFF3E0;
+  --bad:#C0392B;      --bad-bg:#FDECEA;
+  --shadow:0 1px 2px rgba(15,30,49,.05), 0 6px 20px rgba(15,30,49,.06);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1E31;  --surface:#16283F;  --sunken:#1C3350;
+    --ink:#E8EDF3;     --muted:#9AAABC;    --border:#27405E;
+    --pizarra:#8FB0D6; --pizarra-soft:#1B3050;
+    --orange:#FF7A45;  --orange-deep:#FF9B72;
+    --ok:#7FC784;      --ok-bg:#16321B;
+    --warn:#E9AE5A;    --warn-bg:#33260F;
+    --bad:#F08579;     --bad-bg:#3A1B18;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.28);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1E31;  --surface:#16283F;  --sunken:#1C3350;
+  --ink:#E8EDF3;     --muted:#9AAABC;    --border:#27405E;
+  --pizarra:#8FB0D6; --pizarra-soft:#1B3050;
+  --orange:#FF7A45;  --orange-deep:#FF9B72;
+  --ok:#7FC784;      --ok-bg:#16321B;
+  --warn:#E9AE5A;    --warn-bg:#33260F;
+  --bad:#F08579;     --bad-bg:#3A1B18;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.28);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--sans); font-size:17px; line-height:1.65;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:820px; margin:0 auto; padding:0 24px 96px}
+p{margin:0 0 1em; max-width:68ch}
+strong{font-weight:640}
+code{
+  font-family:var(--mono); font-size:.88em;
+  background:var(--sunken); padding:.12em .38em; border-radius:5px;
+  border:1px solid var(--border);
+}
+
+/* ── cabecera ───────────────────────────────────────────────── */
+header{padding:64px 0 40px; border-bottom:1px solid var(--border); margin-bottom:44px}
+.eyebrow{
+  font-size:12px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--pizarra); margin:0 0 14px;
+}
+h1{
+  font-size:clamp(38px,7vw,58px); line-height:1.02; letter-spacing:-.032em;
+  font-weight:760; margin:0 0 10px; text-wrap:balance;
+}
+.lede{font-size:clamp(19px,2.6vw,22px); color:var(--muted); margin:0; max-width:30ch; line-height:1.35}
+
+/* ── secciones ──────────────────────────────────────────────── */
+section{margin:0 0 56px}
+h2{
+  font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--pizarra); margin:0 0 6px;
+}
+h2 + .sub{font-size:26px; font-weight:680; letter-spacing:-.02em; margin:0 0 20px; line-height:1.2; text-wrap:balance}
+h3{font-size:17px; font-weight:680; margin:28px 0 8px; letter-spacing:-.01em}
+
+/* ── la tesis ───────────────────────────────────────────────── */
+.tesis{
+  background:var(--pizarra-soft); border-left:3px solid var(--pizarra);
+  border-radius:0 12px 12px 0; padding:22px 26px; margin:0 0 8px;
+}
+.tesis p{margin:0; font-size:19px; line-height:1.5}
+.tesis .hoy{margin-top:12px; font-size:15px; color:var(--muted)}
+
+/* ── el recorrido ───────────────────────────────────────────── */
+.flujo{
+  margin:8px 0 0; padding:26px 22px; background:var(--surface);
+  border:1px solid var(--border); border-radius:12px; overflow-x:auto;
+}
+.flujo svg{display:block; min-width:560px; width:100%; height:auto}
+/* El SVG se pinta desde el CSS y no con atributos: var() dentro de un
+   atributo de presentación no es fiable en todos los navegadores, y un
+   diagrama que se cae en uno solo no sirve. */
+.flujo .caja{fill:var(--surface); stroke:var(--border)}
+.flujo .caja-transito{fill:var(--warn-bg); stroke:var(--warn); stroke-dasharray:4 3}
+.flujo .caja-vacia{fill:none; stroke:var(--border)}
+.flujo .rot{font-family:var(--sans); font-size:15px; font-weight:640; fill:var(--ink)}
+.flujo .pie{font-family:var(--sans); font-size:12.5px}
+.flujo .pie-baja{fill:var(--bad)} .flujo .pie-sube{fill:var(--ok)}
+.flujo .pie-aviso{fill:var(--warn)} .flujo .rot-aviso{fill:var(--warn)}
+.flujo .tenue{font-family:var(--sans); font-size:12.5px; fill:var(--muted)}
+.flujo .linea{stroke:var(--muted); stroke-width:1.5; fill:none}
+.flujo .linea-vuelta{stroke:var(--muted); stroke-width:1.3; stroke-dasharray:3 3; fill:none}
+.flujo .punta{fill:var(--muted)}
+.flujo figcaption{
+  margin-top:16px; font-size:14.5px; color:var(--muted); line-height:1.55; max-width:64ch;
+}
+
+/* ── tablas ─────────────────────────────────────────────────── */
+.tabla{overflow-x:auto; margin:0 0 12px; border:1px solid var(--border); border-radius:12px}
+table{border-collapse:collapse; width:100%; min-width:520px; font-size:15.5px}
+th{
+  text-align:left; font-size:11.5px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--muted); font-weight:700; padding:12px 16px; background:var(--surface);
+  border-bottom:1px solid var(--border); white-space:nowrap;
+}
+td{padding:12px 16px; border-bottom:1px solid var(--border); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.nota{color:var(--muted); font-size:14.5px}
+
+/* ── píldoras de estado ─────────────────────────────────────── */
+.pill{
+  display:inline-block; font-size:12px; font-weight:680; letter-spacing:.02em;
+  padding:3px 11px; border-radius:999px; white-space:nowrap;
+}
+.pill.si{background:var(--ok-bg); color:var(--ok)}
+.pill.no{background:var(--bad-bg); color:var(--bad)}
+.pill.ojo{background:var(--warn-bg); color:var(--warn)}
+
+/* ── tarjetas de decisión ───────────────────────────────────── */
+.decisiones{display:grid; gap:14px}
+.dec{
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:20px 22px; box-shadow:var(--shadow);
+}
+.dec-cab{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:8px}
+.dec-cab h3{margin:0; font-size:17.5px}
+.dec p{margin:0 0 .7em; font-size:15.5px}
+.dec p:last-child{margin-bottom:0}
+.dec .porque{
+  margin-top:12px; padding-top:12px; border-top:1px dashed var(--border);
+  font-size:14.5px; color:var(--muted);
+}
+
+/* ── etapas ─────────────────────────────────────────────────── */
+.etapas{list-style:none; margin:0; padding:0; counter-reset:et}
+.etapa{
+  display:grid; grid-template-columns:52px 1fr; gap:20px;
+  padding:22px 0; border-bottom:1px solid var(--border);
+}
+.etapa:last-child{border-bottom:0}
+.num{
+  font-family:var(--mono); font-variant-numeric:tabular-nums;
+  font-size:26px; font-weight:600; color:var(--pizarra);
+  line-height:1; padding-top:3px;
+}
+.etapa h3{margin:0 0 6px; font-size:18px}
+.etapa p{margin:0; font-size:15.5px; color:var(--muted)}
+.etapa .marca{
+  display:inline-block; margin-top:9px; font-size:12.5px; font-weight:660;
+  color:var(--orange);
+}
+.etapa.riesgo .num{color:var(--bad)}
+
+/* ── lo que necesito ────────────────────────────────────────── */
+.pedidos{display:grid; gap:12px; margin-top:4px}
+.pedido{
+  display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:start;
+  padding:18px 20px; background:var(--surface);
+  border:1px solid var(--border); border-left:3px solid var(--orange);
+  border-radius:0 12px 12px 0;
+}
+.pedido .n{
+  font-family:var(--mono); font-weight:700; color:var(--orange); font-size:15px;
+  font-variant-numeric:tabular-nums; padding-top:1px;
+}
+.pedido p{margin:0; font-size:15.5px}
+.pedido p + p{margin-top:5px; color:var(--muted); font-size:14.5px}
+
+footer{
+  margin-top:64px; padding-top:24px; border-top:1px solid var(--border);
+  font-size:14px; color:var(--muted);
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important; transition:none !important}
+}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Plan · 9 de agosto de 2026</p>
+  <h1>Bodega</h1>
+  <p class="lede">El cuadro de mando de Adriana</p>
+</header>
+
+<section>
+  <h2>El giro</h2>
+  <p class="sub">Bodega deja de ser una sede más y pasa a ser un puesto de trabajo</p>
+
+  <p>Hoy bodega tiene las pantallas de un local: inventario, reparto y recetas.
+  Pero bodega no vende, no tiene Fudo y no tiene vitrina — así que la mitad de
+  eso no significa nada ahí. Y lo que Adriana sí hace todos los días no tiene
+  dónde vivir.</p>
+
+  <div class="tesis">
+    <p>El reparto tiene que <strong>restar de bodega</strong> al salir, y
+    <strong>sumar en la sede</strong> al ser aceptado.</p>
+    <p class="hoy">Hoy solo suma en el destino. Bodega nunca baja.</p>
+  </div>
+</section>
+
+<section>
+  <h2>El recorrido</h2>
+  <p class="sub">Dónde está el producto en cada momento</p>
+
+  <figure class="flujo">
+    <svg viewBox="0 0 660 150" role="img"
+         aria-label="Recorrido de un producto: sale de bodega, queda en tránsito, y al confirmarlo entra a la sede y se suma en Fudo.">
+      <defs>
+        <marker id="pta" viewBox="0 0 10 10" refX="9" refY="5"
+                markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path class="punta" d="M0,0 L10,5 L0,10 z"/>
+        </marker>
+      </defs>
+
+      <line class="linea" x1="150" y1="52" x2="235" y2="52" marker-end="url(#pta)"/>
+      <line class="linea" x1="360" y1="52" x2="445" y2="52" marker-end="url(#pta)"/>
+
+      <!-- bodega -->
+      <rect class="caja" x="10" y="24" width="140" height="56" rx="11"/>
+      <text class="rot"  x="80" y="48" text-anchor="middle">Bodega</text>
+      <text class="pie pie-baja" x="80" y="67" text-anchor="middle">baja al enviar</text>
+
+      <!-- tránsito -->
+      <rect class="caja-transito" x="235" y="24" width="125" height="56" rx="11"/>
+      <text class="rot rot-aviso" x="297" y="48" text-anchor="middle">En tránsito</text>
+      <text class="pie pie-aviso" x="297" y="67" text-anchor="middle">visible, no escondido</text>
+
+      <!-- sede -->
+      <rect class="caja" x="445" y="24" width="140" height="56" rx="11"/>
+      <text class="rot" x="515" y="48" text-anchor="middle">La sede</text>
+      <text class="pie pie-sube" x="515" y="67" text-anchor="middle">sube al confirmar</text>
+
+      <!-- fudo -->
+      <line class="linea" x1="515" y1="80" x2="515" y2="108" marker-end="url(#pta)"/>
+      <rect class="caja-vacia" x="452" y="108" width="126" height="32" rx="9"/>
+      <text class="tenue" x="515" y="129" text-anchor="middle">Fudo · ya funciona</text>
+
+      <!-- vuelta -->
+      <path class="linea-vuelta" d="M297 80 L297 124 L155 124" marker-end="url(#pta)"/>
+      <text class="tenue" x="228" y="141" text-anchor="middle">si no llegó, vuelve</text>
+    </svg>
+    <figcaption>El estado del medio importa: si sale de bodega al enviar y entra
+    a la sede al confirmar, entremedio las unidades no están en ninguna parte.
+    Un inventario que esconde unidades miente. El reparto pendiente <em>es</em>
+    el lugar donde están.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Los módulos</h2>
+  <p class="sub">Qué se queda y qué se va</p>
+
+  <div class="tabla">
+  <table>
+    <thead><tr><th>Módulo</th><th>Decisión</th><th>Nota</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Entrada de proveedor</strong></td><td><span class="pill si">se queda</span></td><td class="nota">Nuevo. Es el corazón — hoy no existe en ninguna parte</td></tr>
+      <tr><td><strong>Salida / Reparto</strong></td><td><span class="pill si">se transforma</span></td><td class="nota">El cambio central</td></tr>
+      <tr><td><strong>Mermas y bajas</strong></td><td><span class="pill si">módulo aparte</span></td><td class="nota">Separado de las salidas, para distinguir lo perdido de lo repartido</td></tr>
+      <tr><td><strong>Inventario (contar)</strong></td><td><span class="pill si">se queda</span></td><td class="nota">Distinto: sin vitrina/congelador y sin turnos AM/PM. Acá se cuentan bultos y kilos</td></tr>
+      <tr><td><strong>Historial diario</strong></td><td><span class="pill si">se queda</span></td><td class="nota">Ya existe y funciona</td></tr>
+      <tr><td><strong>Zona de administración</strong></td><td><span class="pill si">se queda</span></td><td class="nota">Obliga a resolver el selector de sede</td></tr>
+      <tr><td><strong>Estadísticas</strong></td><td><span class="pill si">se queda</span></td><td class="nota">Al final: necesita el libro de movimientos primero</td></tr>
+      <tr><td><strong>Crear/desactivar en Fudo</strong></td><td><span class="pill si">vive acá</span></td><td class="nota">Medido el 8 de agosto: crear y desactivar sí, borrar no</td></tr>
+      <tr><td><strong>Recetas</strong></td><td><span class="pill no">fuera</span></td><td class="nota">Bodega no vende</td></tr>
+      <tr><td><strong>Lista de tareas del turno</strong></td><td><span class="pill no">fuera</span></td><td class="nota">Sigue apagada</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>Las decisiones</h2>
+  <p class="sub">Cuatro cerradas, dos abiertas</p>
+
+  <div class="decisiones">
+
+    <article class="dec">
+      <div class="dec-cab"><h3>Cómo se sabe qué producto de bodega es el gemelo</h3>
+        <span class="pill si">cerrada</span></div>
+      <p>Una tabla de equivalencias que se llena <strong>una vez</strong>: el
+      programa propone los pares por nombre y tú los confirmas.</p>
+      <p class="porque">Se descartó el emparejado automático. Es lo que falló con
+      los macarrons: la relación vivía escondida dentro del nombre del producto,
+      alguien lo escribió distinto, y se rompió sin que nadie lo viera. Costó un
+      sobre-stock que hubo que devolver.</p>
+    </article>
+
+    <article class="dec">
+      <div class="dec-cab"><h3>Dónde está mientras viaja</h3>
+        <span class="pill si">cerrada</span></div>
+      <p>En el reparto pendiente, y se ve como <strong>“en tránsito”</strong>.
+      Si el jefe marca que no llegó, las unidades vuelven a bodega.</p>
+      <p class="porque">La regla de la casa: el sistema no puede simular un
+      movimiento que nadie hizo. Acá sí lo hicieron dos personas — Adriana envía
+      y el jefe confirma — pero el estado del medio tiene que verse.</p>
+    </article>
+
+    <article class="dec">
+      <div class="dec-cab"><h3>Si bodega no tiene suficiente</h3>
+        <span class="pill si">cerrada</span></div>
+      <p>Se avisa <strong>al armar el pedido</strong>, no al enviarlo. Y si aun
+      así no alcanza, el mensaje dice cuál producto y cuánto falta.</p>
+      <p class="porque">El stock no puede quedar negativo — eso está bloqueado en
+      la base misma, no es algo que se pueda saltar.</p>
+    </article>
+
+    <article class="dec">
+      <div class="dec-cab"><h3>Las fechas de los perecederos</h3>
+        <span class="pill si">cerrada</span></div>
+      <p>Si un sándwich sale de bodega, sus fechas <strong>viajan con él</strong>
+      y llegan propuestas al destino. El jefe confirma en vez de tipear.</p>
+      <p class="porque">Menos tipeo y menos error en el punto más delicado de la
+      cafetería.</p>
+    </article>
+
+    <article class="dec">
+      <div class="dec-cab"><h3>Sobre qué sede actúa el botón de Fudo</h3>
+        <span class="pill ojo">abierta</span></div>
+      <p>Parado en un local, la sede se sobreentiende. Parado en bodega, no.
+      Hay que elegir: Plaza, Angamos, o las dos.</p>
+      <p class="porque">No puede quedar implícito, o alguien le va a escribir a
+      la sede equivocada. Se resuelve en la etapa 6.</p>
+    </article>
+
+    <article class="dec">
+      <div class="dec-cab"><h3>El módulo que quedó sin nombre</h3>
+        <span class="pill ojo">abierta</span></div>
+      <p>Marcaste “otra cosa” en la lista de módulos y no alcanzó a quedar
+      escrito cuál era. Hay algo más que quieres y todavía no está acá.</p>
+      <p class="porque">Hace falta saberlo antes de la etapa 4, que es donde
+      entraría.</p>
+    </article>
+
+  </div>
+</section>
+
+<section>
+  <h2>El orden</h2>
+  <p class="sub">Cada etapa deja algo usable</p>
+
+  <ol class="etapas">
+    <li class="etapa">
+      <div class="num">1</div>
+      <div>
+        <h3>Limpiar y enlazar</h3>
+        <p>Sacar de Angamos los productos que son de bodega, armar la tabla de
+        equivalencias, y agregarle a los productos la unidad de medida — porque
+        “café 8” no dice si son 8 bultos, 8 kilos u 8 paquetes.</p>
+        <span class="marca">el informe ya está listo para correr</span>
+      </div>
+    </li>
+    <li class="etapa">
+      <div class="num">2</div>
+      <div>
+        <h3>El libro de movimientos y la entrada</h3>
+        <p>Un registro donde queda anotado todo lo que entra, sale, se pierde o
+        se ajusta. Y la pantalla de entrada de proveedor, que es lo primero que
+        escribe ahí.</p>
+      </div>
+    </li>
+    <li class="etapa riesgo">
+      <div class="num">3</div>
+      <div>
+        <h3>El reparto que resta</h3>
+        <p>El cambio central. Con vista previa, registro de quién lo hizo y
+        deshacer.</p>
+        <span class="marca">la etapa de más riesgo · toca algo que ya está
+        funcionando, va con respaldo antes</span>
+      </div>
+    </li>
+    <li class="etapa">
+      <div class="num">4</div>
+      <div>
+        <h3>El cuadro de mando</h3>
+        <p>La pantalla propiamente tal, con la estética de la casa. Se construye
+        cuando los datos que tiene que mostrar ya existen.</p>
+      </div>
+    </li>
+    <li class="etapa">
+      <div class="num">5</div>
+      <div>
+        <h3>Las estadísticas</h3>
+        <p>Ingreso, egreso, repartos y mermas, leídos del libro de movimientos.</p>
+      </div>
+    </li>
+    <li class="etapa">
+      <div class="num">6</div>
+      <div>
+        <h3>Crear y desactivar en Fudo</h3>
+        <p>Apagar los duplicados que Adriana arrastra hace cuatro años, y crear
+        los productos que faltan.</p>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<section>
+  <h2>Lo que necesito de ti</h2>
+  <p class="sub">Tres cosas, y la primera ya está lista</p>
+
+  <div class="pedidos">
+    <div class="pedido">
+      <div class="n">1</div>
+      <div>
+        <p><strong>Correr el informe</strong> <code>2026-08-bodega-informe-enlaces.sql</code>
+        y mandarme los 5 resultados.</p>
+        <p>No escribe nada: solo mira y cuenta. Son 5 bloques, uno por uno.</p>
+      </div>
+    </div>
+    <div class="pedido">
+      <div class="n">2</div>
+      <div>
+        <p><strong>Decirme qué era el módulo</strong> que marcaste como “otra cosa”.</p>
+        <p>Quedó marcado pero sin nombre.</p>
+      </div>
+    </div>
+    <div class="pedido">
+      <div class="n">3</div>
+      <div>
+        <p><strong>Qué hacemos con los productos de bodega que están dentro de
+        Angamos</strong>: moverlos a bodega, apagarlos, o dejarlos.</p>
+        <p>El bloque 2 del informe te los va a listar con su stock. No los toco
+        yo — es decisión tuya.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Café del Desierto · plan de trabajo. Las decisiones cerradas quedan anotadas en
+  el archivo madre; las abiertas esperan tu respuesta.
+</footer>
+
+</div>
