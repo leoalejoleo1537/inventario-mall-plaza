@@ -789,7 +789,7 @@
     <p class="gate-sub">Elige tu local para comenzar</p>
     <button class="gate-btn" data-sede="plaza">Café Mall Plaza</button>
     <button class="gate-btn" data-sede="angamos">Parque Angamos</button>
-    <button class="gate-btn" data-sede="bodega">Bodega</button>
+    <button class="gate-btn" data-sede="central">Bodega</button>
     <div class="gate-foot" id="gateUser">Sincronizado en tiempo real</div>
     <button class="gate-link" id="btnSalir">Cerrar sesión</button>
   </div>
@@ -1272,10 +1272,16 @@ const SUPABASE_KEY = 'sb_publishable_P5TfG3nhMG3oNT9VLs16_w_iKHvktwl';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ---------------- sedes ---------------- */
+/* ⚠️ La bodega es `central`, NO `bodega`. La clave `bodega` quedó ocupada
+   para siempre por la bodega vieja —la que en julio había sido `angamos`— y
+   reciclarla otra vez sería repetir la causa del incidente del 9 de agosto
+   (§0.6): una misma palabra significando dos cosas según la fecha.
+   La vieja sigue en la base con todo su historial, pero ya no se ofrece acá,
+   y como SEDE solo se fija al tocar un botón, nadie puede entrar a ella. */
 const SEDES = {
   plaza:   { label:'Café Mall Plaza',  excel:'plaza'   },
   angamos: { label:'Parque Angamos',   excel:'angamos' },
-  bodega:  { label:'Bodega',           excel:'bodega'  },
+  central: { label:'Bodega',           excel:'bodega'  },
 };
 /* el título de la barra dice en qué estás, como en Fudo */
 const TITULOS = {inv:'Inventario', reparto:'Reparto', hist:'Historial', recetas:'Recetas'};
@@ -1477,7 +1483,7 @@ function aplicarPermisos(){
      verdad está la ✕ de su fila.
    · Se enciende por sede en FLAGS. El día que exista el panel de configuración
      esto pasa a ser un interruptor (§6.2).                                    */
-const FLAGS = { tareas: { angamos:true, plaza:false, bodega:false } };
+const FLAGS = { tareas: { angamos:true, plaza:false, central:false } };
 const hayTareas = () => !!(SEDE && FLAGS.tareas[SEDE]);
 
 let TAREAS = [];
