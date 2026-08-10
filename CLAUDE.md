@@ -24,6 +24,7 @@
 | 0.3.1 | Quién manda cuando el stock y las fechas no cuadran | tocar perecederos |
 | **0.4** | Un perecedero entra solo por fechas | sumar stock desde cualquier camino |
 | **0.5** | La falla de las 15 horas · cómo tocar el motor | tocar el motor o cualquier función SQL |
+| **0.6** | **El día que Angamos quedó en cero** · saca la foto antes | **siempre, antes de escribir en una sede** |
 | 1 | Qué es esto y para quién | contexto general |
 | 2 | Estética · paleta y formas | tocar la pantalla |
 | 2.0 | Que sea bella, no solo que funcione | tocar la pantalla |
@@ -67,7 +68,13 @@ Este es el orden en que conviene usarlas:
 | Poner recetas a insumos a granel (té, café, naranja) | **§10** — el marco y los datos ya medidos |
 | Entender por qué algo está hecho así | §11, la bitácora |
 
-**Las tres cosas que más caro han costado**, para no repetirlas:
+**Las cuatro cosas que más caro han costado**, para no repetirlas:
+
+0. **Escribir sobre una sede viva sin sacarle antes una foto.** El 2026-08-09
+   Angamos quedó en cero y **no se pudo restaurar nada**, porque nunca se había
+   guardado un inventario de esa sede. Lo que tenía copia se recuperó; lo que
+   no, se cargó a mano. (§0.6 · el error más caro del proyecto)
+
 
 1. **Suponer el estado de producción leyendo el repo.** Un `.sql` en git dice
    lo que se corrió alguna vez, no lo que está ahora. Se consulta con un
@@ -559,6 +566,98 @@ sync lee ventas y no descuenta ninguna, la app abre una ventana que dice
 del "✓" de siempre. Cualquier cambio futuro al aviso de sincronización
 mantiene esto: **un sistema que falla en silencio es peor que uno que se
 cae**, porque nadie va a buscar lo que parece estar bien.
+
+---
+
+## 0.6 REGLA DURA — antes de escribir en una sede viva, SACA LA FOTO
+
+> **El error más caro del proyecto. 2026-08-09.** Jhon: *"creo que estamos
+> frente a una de las meteduras de pata más grandes que hemos metido durante
+> todo este proyecto."* Y tenía razón.
+
+### Qué pasó
+
+El 9 de agosto, a las 17:00, **260 productos de Angamos quedaron en cero de
+una sola vez** (ids 730–1018, o sea prácticamente toda la sede). Se perdió el
+stock. Jhon tuvo que volver a cargarlo entero a mano.
+
+**No se pudo restaurar nada.** No por falta de herramienta: porque **no había
+ninguna foto de Angamos que restaurar.** La tabla `historial` estaba vacía para
+esa sede — nadie había apretado nunca "Guardar inventario de hoy" ahí.
+
+### La causa que de verdad importa
+
+No es "qué comando lo hizo". Sigue **sin determinarse** qué produjo el cero
+masivo, y **no hay que inventar una explicación** — se comprobó que ninguno de
+los scripts entregados ese día tenía un `update` ni un `delete` sobre
+`productos` (solo un `insert` de 9 filas), pero eso descarta un culpable, no
+identifica al otro.
+
+**La causa real es que se dirigió una tanda de escrituras sobre una sede en
+producción sin haber sacado antes una copia de esa sede.** El plan sí decía
+"respaldo antes del paso 7" — y las escrituras ocurrieron en el paso 3.
+El respaldo llegaba tarde en el propio plan.
+
+### El latigazo — por qué el daño no se mide el día que pasa
+
+Jhon lo nombró mejor que yo: *"este error tiene latigazo… las repercusiones
+vienen mañana."* El inventario volvió a un estado viejo, así que **Adriana iba
+a armar el reparto del día siguiente mirando lo que faltaba el 07, no el 09.**
+
+**Un dato malo en un inventario no hace daño cuando se corrompe: hace daño
+cuando alguien toma una decisión con él.** Ese retraso —de horas o de un día—
+es lo que hace que estos errores se descubran tarde y cuesten el doble.
+
+### LAS REGLAS
+
+1. **Antes de cualquier tanda de escrituras sobre una sede, esa sede tiene que
+   tener una foto del día.** El mecanismo ya existe y es el botón **"Guardar
+   inventario de hoy"** de la app, que escribe en `historial` el nombre, la
+   **sección**, el stock, el mínimo y el máximo de cada producto, por
+   `producto_id`. Es la copia más barata que tiene el proyecto.
+   **Si `historial` de esa sede está vacío, NO se escribe nada hasta que haya
+   una foto.** Se comprueba con una línea:
+   ```sql
+   select fecha, count(*) from public.historial where sede='<la sede>'
+    group by fecha order by fecha desc limit 5;
+   ```
+2. **El respaldo va ANTES del primer paso que escribe, no antes del paso más
+   riesgoso.** El paso "inofensivo" que corre primero es el que te deja sin
+   red para todos los demás.
+3. **`activo = 'SÍ'` es un filtro peligroso cuando se busca "si algo ya
+   existe".** Eliminar en esta app **no borra: desactiva** (`index.html:2792`).
+   Una comprobación de existencia que solo mira activos **no ve lo que el
+   equipo eliminó a propósito**, y crea duplicados. Pasó dos veces el mismo
+   día: en el `insert` de productos y en la vista previa del repunte de
+   recetas — donde además hizo que la vista previa **mintiera por omisión**,
+   mostrando 206 casos cuando eran 215.
+   **Una vista previa y su comprobación tienen que usar exactamente el mismo
+   filtro.** Si no, la vista previa no es una vista previa.
+4. **Una sede en `real` sin foto es una sede sin red.** Angamos estaba en
+   `real` por decisión de Jhon (§9.5) y con buenas razones — el problema no
+   fue el modo, fue que no había copia.
+
+### Lo que sí sobrevivió, y por qué
+
+| | |
+|---|---|
+| **Recetas** | ✅ 170 recetas, 214 renglones. El repunte funcionó |
+| **Mínimos** | ✅ solo 8 de 249 productos los perdieron |
+| **Productos eliminados** | ✅ nunca se borran, quedan `activo='NO'` |
+| **Stock** | ❌ **irrecuperable** — no había foto |
+
+La diferencia entre las tres primeras filas y la última es exactamente esta
+regla: **de lo que había copia, se recuperó; de lo que no, no.**
+
+### El estado de la bodega quedó en pausa
+
+Jhon, el mismo día: *"el costo de oportunidad de seguir con la bodega actual es
+de alto riesgo, y actualmente tengo una alta aversión al riesgo… este proyecto
+tiene fecha de entrega, y es el 27."*
+
+**Nada de bodega se retoma sin cerrar antes esta regla.** Y la decisión entre
+reconstruir bodega desde cero o seguir con la actual **es suya y está
+pendiente** — no se avanza por defecto.
 
 ---
 
@@ -1393,6 +1492,75 @@ archivo esté en el repo no significa que esté aplicado en producción.**
 | "Ya está al día" cuando no lo estaba: el espejo local de Fudo estaba viejo | Se corre la sync de catálogo **antes** de cada revisión | `index.html` (`refrescarEspejoFudo`) | 07-29 |
 | Un empuje equivocado no dejaba rastro ni se podía revertir | Bitácora `fudo_stock_push` con valor anterior, agrupada por lote, y deshacer del último | `2026-07-permisos-y-deshacer.sql` + `fudo-deshacer-stock` | 07-28 |
 
+#### Qué deja hacer la API de Fudo con el CATÁLOGO — medido, no supuesto
+
+*(Prueba aislada `fudo-probar-catalogo`, Angamos, 2026-08-08. Antes de
+proponer cualquier cosa que toque el catálogo, mirar esta tabla.)*
+
+| Operación | ¿Se puede? | Evidencia |
+|---|---|---|
+| **Leer** productos | ✅ | ya se usaba (`fudo-sync-productos`) |
+| **Cambiar el stock** | ✅ | ya se usaba (`fudo-empujar-stock`) |
+| **CREAR un producto** | ✅ | `POST /products` → **201**, producto id 917 |
+| **DESACTIVAR** (`active: false`) | ✅ | `PATCH` → **200**, el campo queda en false |
+| **BORRAR** | ❌ **no existe la operación** | ver abajo |
+
+**Cómo se supo que borrar no existe, porque el dato engaña:** `DELETE
+/products/917` devolvió **404** — pero ese producto EXISTÍA (se acababa de
+crear, y al releerlo contestó 200 y seguía ahí). Un producto que existe no
+puede dar "no encontrado" al borrarlo: **ese 404 es de ruta, no de
+registro.** La segunda huella está en la forma de la respuesta:
+
+| Llamada | Respuesta |
+|---|---|
+| `PATCH` a un id inexistente | `{"status":"404","code":"not-found"}` |
+| `DELETE`, a cualquier id | `{"status":404}` — pelado, sin `code` |
+
+Son dos capas distintas contestando. **Ni el 404 ni el 405 se pueden leer
+solos**: la única forma de distinguir "no está el producto" de "no está la
+operación" es intentarlo sobre algo que sí exista y **releer después**.
+
+**Por qué — CONFIRMADO el mismo día por la propia pantalla de Fudo**, y
+corrige lo que yo había escrito. Jhon intentó borrar `Crema Zapallo` desde
+Fudo y salió este mensaje textual:
+
+> *"No se puede eliminar este producto. Está siendo usado en un combo o
+> está adicionado en una venta. Para eliminarlo, primero desvincúlalo de
+> esos lugares."*
+
+Entonces el cuadro real es más fino que "Fudo no deja borrar":
+
+| | |
+|---|---|
+| Borrar **existe** en la pantalla de Fudo | ✅ el botón está ahí |
+| Pero se niega si el producto **está en un combo o ya se vendió** | ✅ ese es el candado |
+| Y **no está expuesto en la API** en `/products/{id}` | ✅ medido acá |
+
+O sea: **lo que Adriana sí puede borrar a mano son los productos vírgenes;
+lo que estorba —4 años de catálogo que alguna vez se vendió— no lo puede
+borrar nadie, ni ella ni nosotros.** El candado es el historial de ventas,
+no un permiso que falte.
+
+**Y de la misma pantalla sale un dato útil:** el formulario del producto
+tiene una casilla **"Activo"**. Desactivar desde nuestro sistema es
+destildar esa casilla — no es un rodeo nuestro, es el interruptor que Fudo
+ya usa. Por eso **desactivar es la respuesta que el sistema tiene
+prevista** para lo que no se puede borrar.
+
+**Lo que esto habilita** (§6.3 y §6.0 dependían de saberlo): crear
+productos en Fudo desde el taller de recetas, y apagar los duplicados que
+Adriana arrastra hace 4 años. **Lo que NO**: prometerle "borrar".
+
+**DECISIÓN DE JHON (2026-08-08): crear y desactivar se implementan en el
+área nueva de BODEGA**, no ahora y no sueltos. *"dejalo en el registro que
+podemos crear y desactivar cosas, lo implementaremos en toda el area nueva
+que vamos a crear de bodega."* Hasta entonces esto es un hallazgo
+guardado, no una función a medio hacer.
+
+⚠️ **Quedó en el catálogo de Angamos el producto 917 "ZZZ PRUEBA CLAUDE -
+ignorar", desactivado.** No se puede sacar por la API. Es el ejemplo vivo
+del problema.
+
 ### Datos y lecturas
 
 | Qué fallaba | Cómo se resolvió | Dónde vive | Fecha |
@@ -1571,7 +1739,11 @@ vez que Jhon corrija alguna desde la app, deja de ser reversible en bloque.
     bloque de `2026-07-cron-automatico-ventas.sql` con `?sede=angamos`, y en los
     3 pasos ya probados: agendar → comprobar a los 20 min que
     `ultima_corrida_por` diga `cron` → recién ahí `cron_activo = true`.
-16. **El empuje de stock hacia Fudo NO se enciende en Angamos.**
+16. ~~**El empuje de stock hacia Fudo NO se enciende en Angamos.**~~
+    ⚠️ **SUPERADO el 2026-08-06.** Angamos SÍ le escribe a Fudo: Jhon lo
+    probó a mano (alfajor artesanal, de 8 a 9) y desde entonces el reparto
+    empuja al confirmarlo, en las dos sedes, con `fudo-sumar-stock`. Se deja
+    tachado y no borrado para que nadie "arregle" algo que ya funciona.
 
 ### 9.2 Las trampas que ya conocemos, aplicadas a Angamos
 
@@ -1584,9 +1756,10 @@ vez que Jhon corrija alguna desde la app, deja de ser reversible en bloque.
   seis o siete veces. Ninguno sirve tal cual. **Revisar cada aparición** — no
   reemplazar a ciegas: en varios, `plaza` es el ORIGEN a copiar (como en
   `replicar-secciones-plaza-a-angamos.sql`) y cambiarlo rompe el sentido.
-- **El empuje de stock hacia Fudo NO se enciende de entrada.** Primero
-  descontar, y solo cuando eso sea confiable, considerar escribir. En plaza
-  fueron dos meses entre una cosa y la otra, y con razón.
+- ~~**El empuje de stock hacia Fudo NO se enciende de entrada.**~~ Valió
+  mientras Angamos se encendía; **desde el 2026-08-06 ya está encendido** y
+  probado (ver fase 5, punto 16). El criterio de fondo sigue en pie para la
+  próxima sede: primero descontar, y escribir solo cuando eso sea confiable.
 - **`app_permisos` no tiene columna `sede`**, y eso es una **decisión**, no un
   descuido: la mecánica está construida (`sql/2026-08-permiso-por-sede.sql` +
   `permisosDeLaSede()`) pero **Jhon decidió el 2026-08-04 no correrla** — ver
@@ -1894,6 +2067,104 @@ donde se edita el stock— y no en cada fila de la lista.
 ---
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-08-09** — **Angamos quedó en cero y no se pudo recuperar. El error más
+  caro del proyecto.** La regla completa está en §0.6; acá va cómo se llegó,
+  que es la parte que sirve.
+  1. **El trabajo del día.** Se empezó el área de bodega. Un informe de solo
+     lectura destapó que **bodega tiene 117 productos duplicados** y que **las
+     recetas de Angamos apuntaban a productos de bodega** — 228 ventas habían
+     descontado 254 unidades de la sede equivocada entre el 5 y el 8. El
+     repunte de recetas funcionó: 206 de 215 renglones corregidos, y los 9
+     restantes salieron en la comprobación.
+  2. **Y a las 17:00, 260 productos de Angamos quedaron en cero.** Sigue **sin
+     determinarse qué lo causó**, y no hay que inventarlo. Lo comprobado: de
+     los 7 archivos entregados ese día, había **una sola escritura sobre
+     `productos` y era un `insert`** de 9 filas — ningún `update`, ningún
+     `delete`. Eso descarta un culpable; no identifica al otro.
+  3. **Lo irrecuperable no fue culpa del comando, fue culpa de la falta de
+     copia.** `historial` estaba **vacío para Angamos**: nadie había apretado
+     nunca "Guardar inventario de hoy" en esa sede. Sin foto no hay vuelta
+     atrás, y el stock se cargó de nuevo a mano.
+     La lección general: **el respaldo va antes del primer paso que escribe,
+     no antes del paso que parece más peligroso.** El plan tenía el respaldo
+     en el paso 7 y las escrituras empezaron en el 3.
+  4. **El latigazo, que es el concepto que hay que quedarse.** Jhon: *"este
+     error tiene latigazo… las repercusiones vienen mañana"* — Adriana iba a
+     armar el reparto mirando lo que faltaba el 07 y no el 09. **Un dato malo
+     no hace daño cuando se corrompe: hace daño cuando alguien decide con
+     él.**
+  5. **Dos veces el mismo descuido en un día: filtrar por `activo = 'SÍ'`
+     donde no correspondía.** Eliminar en esta app desactiva, no borra. Una
+     comprobación de existencia que solo mira activos no ve lo que el equipo
+     eliminó a propósito. En el repunte hizo que **la vista previa mintiera
+     por omisión** — mostró 206 casos cuando eran 215, y los 9 que faltaban
+     solo aparecieron en la comprobación final, que sí miraba todo.
+     De ahí sale la regla: **la vista previa y su comprobación tienen que usar
+     exactamente el mismo filtro.**
+  6. **Una hipótesis mía que los datos desmintieron, y conviene dejarla
+     escrita.** Supuse que mi `insert` había duplicado productos que Jhon
+     tenía eliminados. El bloque 4 del diagnóstico dijo que **no**: los 9
+     creados no tenían ninguna copia desactivada. Anotarlo importa porque casi
+     le hago revisar 9 productos que estaban bien (regla 0.1.5).
+  7. **Bodega queda EN PAUSA por decisión de Jhon**, con la entrega del 27
+     encima y alta aversión al riesgo. La decisión entre reconstruirla desde
+     cero o seguir con la actual es suya y está pendiente.
+
+- **2026-08-08** — **Se midió qué deja hacer Fudo con el catálogo, y una
+  falsa alarma mía de por medio.** Jhon lo pidió porque es el problema de
+  fondo de Adriana: 4 años de catálogo sucio que la pantalla de Fudo no la
+  deja limpiar. Él lo llamó *"la joya de la corona"*. El resultado está en
+  §8; acá va cómo se llegó, que es la parte que sirve.
+  1. **La v1 de la prueba dio un veredicto FALSO.** Intentó crear un
+     producto de mentira, crear falló con un 400 de esquema —el campo
+     `active` no va en un alta— y al fallar crear se saltó desactivar y
+     borrar, devolviendo *"la API no deja tocar el catálogo"*. **Nunca lo
+     intentó.** Es la regla 0.1.5 incumplida por mí: concluir desde algo
+     que no se probó. Por poco le cierra a Jhon la puerta más importante
+     que tiene abierta el proyecto.
+     **La regla que sale de ahí, y vale para cualquier diagnóstico:**
+     un informe tiene que distinguir **"no se pudo probar"** de **"no se
+     puede"**. La v2 tiene esas dos palabras distintas en la respuesta, a
+     propósito.
+  2. **La técnica que sí sirvió: preguntar sin tocar.** Para saber si un
+     endpoint acepta una operación no hace falta ejecutarla — se le pide
+     sobre un **id que no existe** y se lee qué contesta. Cuesta cero y no
+     puede romper nada. Es la lección de la impresora (§7) llevada a su
+     forma más barata.
+  3. **Pero el 404 engaña, y esa es la trampa que hay que recordar.** Yo
+     leí el 404 del DELETE como *"la operación existe, solo que ese
+     producto no está"*. Falso: el DELETE sobre un producto **que sí
+     existía** devolvió el mismo 404, y al releerlo seguía ahí. Era un 404
+     **de ruta**. Lo que separó las dos lecturas no fue una consulta más
+     lista: fue **releer después de actuar** — el mismo patrón que ya se
+     usaba para el empuje de stock ("se comprueba releyendo lo que Fudo
+     devuelve, no el 200") y que acá volvió a ser lo único concluyente.
+  4. **Lo medido:** crear ✅ (201), desactivar ✅ (200), borrar ❌ (no
+     existe). Y eso **habilita dos cosas que estaban esperando**: crear
+     productos en Fudo desde el taller de recetas (§6.3) y apagar los
+     duplicados de Adriana. Lo que no habilita es prometerle "borrar".
+  5. **Falta la comprobación del mesón, y no la puede dar la API:** que
+     un producto con `active: false` de verdad desaparezca de la pantalla
+     de venta. El producto 917 "ZZZ PRUEBA CLAUDE - ignorar" quedó
+     desactivado en el Fudo de Angamos justamente para eso — se mira y se
+     sabe. **No se puede borrar, así que ahí se queda.**
+  6. **Y la propia pantalla de Fudo corrigió mi hipótesis, el mismo día.**
+     Yo había escrito que Fudo no deja borrar productos porque el
+     historial de ventas apunta a ellos. El motivo era correcto; el
+     alcance, no. Jhon intentó borrar `Crema Zapallo` y Fudo contestó
+     *"está siendo usado en un combo o está adicionado en una venta"* —
+     o sea que **borrar existe y funciona con productos vírgenes**; lo
+     que no se puede borrar es lo que ya se vendió. Después de 4 años,
+     eso es justamente todo lo que estorba.
+     **La lección de método es la de siempre y van tres en un día:** la
+     API contestó *qué* pasa, la pantalla contestó *por qué*. Ninguna
+     consulta más lista habría dado ese mensaje — estaba en la interfaz
+     que usa la gente. Cuando algo del lado de Fudo no cuadre, mirar
+     también la pantalla, no solo el endpoint.
+     De ahí sale además que la casilla **"Activo"** es un campo del
+     propio formulario de Fudo: desactivar desde nuestro sistema no es un
+     rodeo, es destildar esa casilla.
 
 - **2026-07-30 (noche)** — **El archivo madre, reforzado para el salto a
   Angamos.** Jhon va a abrir un chat nuevo (las skills que instaló no cargan en
