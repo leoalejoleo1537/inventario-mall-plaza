@@ -24,6 +24,7 @@
 | 0.3.1 | Quién manda cuando el stock y las fechas no cuadran | tocar perecederos |
 | **0.4** | Un perecedero entra solo por fechas | sumar stock desde cualquier camino |
 | **0.5** | La falla de las 15 horas · cómo tocar el motor | tocar el motor o cualquier función SQL |
+| **0.6** | **El día que Angamos quedó en cero** · saca la foto antes | **siempre, antes de escribir en una sede** |
 | 1 | Qué es esto y para quién | contexto general |
 | 2 | Estética · paleta y formas | tocar la pantalla |
 | 2.0 | Que sea bella, no solo que funcione | tocar la pantalla |
@@ -67,7 +68,13 @@ Este es el orden en que conviene usarlas:
 | Poner recetas a insumos a granel (té, café, naranja) | **§10** — el marco y los datos ya medidos |
 | Entender por qué algo está hecho así | §11, la bitácora |
 
-**Las tres cosas que más caro han costado**, para no repetirlas:
+**Las cuatro cosas que más caro han costado**, para no repetirlas:
+
+0. **Escribir sobre una sede viva sin sacarle antes una foto.** El 2026-08-09
+   Angamos quedó en cero y **no se pudo restaurar nada**, porque nunca se había
+   guardado un inventario de esa sede. Lo que tenía copia se recuperó; lo que
+   no, se cargó a mano. (§0.6 · el error más caro del proyecto)
+
 
 1. **Suponer el estado de producción leyendo el repo.** Un `.sql` en git dice
    lo que se corrió alguna vez, no lo que está ahora. Se consulta con un
@@ -559,6 +566,98 @@ sync lee ventas y no descuenta ninguna, la app abre una ventana que dice
 del "✓" de siempre. Cualquier cambio futuro al aviso de sincronización
 mantiene esto: **un sistema que falla en silencio es peor que uno que se
 cae**, porque nadie va a buscar lo que parece estar bien.
+
+---
+
+## 0.6 REGLA DURA — antes de escribir en una sede viva, SACA LA FOTO
+
+> **El error más caro del proyecto. 2026-08-09.** Jhon: *"creo que estamos
+> frente a una de las meteduras de pata más grandes que hemos metido durante
+> todo este proyecto."* Y tenía razón.
+
+### Qué pasó
+
+El 9 de agosto, a las 17:00, **260 productos de Angamos quedaron en cero de
+una sola vez** (ids 730–1018, o sea prácticamente toda la sede). Se perdió el
+stock. Jhon tuvo que volver a cargarlo entero a mano.
+
+**No se pudo restaurar nada.** No por falta de herramienta: porque **no había
+ninguna foto de Angamos que restaurar.** La tabla `historial` estaba vacía para
+esa sede — nadie había apretado nunca "Guardar inventario de hoy" ahí.
+
+### La causa que de verdad importa
+
+No es "qué comando lo hizo". Sigue **sin determinarse** qué produjo el cero
+masivo, y **no hay que inventar una explicación** — se comprobó que ninguno de
+los scripts entregados ese día tenía un `update` ni un `delete` sobre
+`productos` (solo un `insert` de 9 filas), pero eso descarta un culpable, no
+identifica al otro.
+
+**La causa real es que se dirigió una tanda de escrituras sobre una sede en
+producción sin haber sacado antes una copia de esa sede.** El plan sí decía
+"respaldo antes del paso 7" — y las escrituras ocurrieron en el paso 3.
+El respaldo llegaba tarde en el propio plan.
+
+### El latigazo — por qué el daño no se mide el día que pasa
+
+Jhon lo nombró mejor que yo: *"este error tiene latigazo… las repercusiones
+vienen mañana."* El inventario volvió a un estado viejo, así que **Adriana iba
+a armar el reparto del día siguiente mirando lo que faltaba el 07, no el 09.**
+
+**Un dato malo en un inventario no hace daño cuando se corrompe: hace daño
+cuando alguien toma una decisión con él.** Ese retraso —de horas o de un día—
+es lo que hace que estos errores se descubran tarde y cuesten el doble.
+
+### LAS REGLAS
+
+1. **Antes de cualquier tanda de escrituras sobre una sede, esa sede tiene que
+   tener una foto del día.** El mecanismo ya existe y es el botón **"Guardar
+   inventario de hoy"** de la app, que escribe en `historial` el nombre, la
+   **sección**, el stock, el mínimo y el máximo de cada producto, por
+   `producto_id`. Es la copia más barata que tiene el proyecto.
+   **Si `historial` de esa sede está vacío, NO se escribe nada hasta que haya
+   una foto.** Se comprueba con una línea:
+   ```sql
+   select fecha, count(*) from public.historial where sede='<la sede>'
+    group by fecha order by fecha desc limit 5;
+   ```
+2. **El respaldo va ANTES del primer paso que escribe, no antes del paso más
+   riesgoso.** El paso "inofensivo" que corre primero es el que te deja sin
+   red para todos los demás.
+3. **`activo = 'SÍ'` es un filtro peligroso cuando se busca "si algo ya
+   existe".** Eliminar en esta app **no borra: desactiva** (`index.html:2792`).
+   Una comprobación de existencia que solo mira activos **no ve lo que el
+   equipo eliminó a propósito**, y crea duplicados. Pasó dos veces el mismo
+   día: en el `insert` de productos y en la vista previa del repunte de
+   recetas — donde además hizo que la vista previa **mintiera por omisión**,
+   mostrando 206 casos cuando eran 215.
+   **Una vista previa y su comprobación tienen que usar exactamente el mismo
+   filtro.** Si no, la vista previa no es una vista previa.
+4. **Una sede en `real` sin foto es una sede sin red.** Angamos estaba en
+   `real` por decisión de Jhon (§9.5) y con buenas razones — el problema no
+   fue el modo, fue que no había copia.
+
+### Lo que sí sobrevivió, y por qué
+
+| | |
+|---|---|
+| **Recetas** | ✅ 170 recetas, 214 renglones. El repunte funcionó |
+| **Mínimos** | ✅ solo 8 de 249 productos los perdieron |
+| **Productos eliminados** | ✅ nunca se borran, quedan `activo='NO'` |
+| **Stock** | ❌ **irrecuperable** — no había foto |
+
+La diferencia entre las tres primeras filas y la última es exactamente esta
+regla: **de lo que había copia, se recuperó; de lo que no, no.**
+
+### El estado de la bodega quedó en pausa
+
+Jhon, el mismo día: *"el costo de oportunidad de seguir con la bodega actual es
+de alto riesgo, y actualmente tengo una alta aversión al riesgo… este proyecto
+tiene fecha de entrega, y es el 27."*
+
+**Nada de bodega se retoma sin cerrar antes esta regla.** Y la decisión entre
+reconstruir bodega desde cero o seguir con la actual **es suya y está
+pendiente** — no se avanza por defecto.
 
 ---
 
@@ -1968,6 +2067,49 @@ donde se edita el stock— y no en cada fila de la lista.
 ---
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-08-09** — **Angamos quedó en cero y no se pudo recuperar. El error más
+  caro del proyecto.** La regla completa está en §0.6; acá va cómo se llegó,
+  que es la parte que sirve.
+  1. **El trabajo del día.** Se empezó el área de bodega. Un informe de solo
+     lectura destapó que **bodega tiene 117 productos duplicados** y que **las
+     recetas de Angamos apuntaban a productos de bodega** — 228 ventas habían
+     descontado 254 unidades de la sede equivocada entre el 5 y el 8. El
+     repunte de recetas funcionó: 206 de 215 renglones corregidos, y los 9
+     restantes salieron en la comprobación.
+  2. **Y a las 17:00, 260 productos de Angamos quedaron en cero.** Sigue **sin
+     determinarse qué lo causó**, y no hay que inventarlo. Lo comprobado: de
+     los 7 archivos entregados ese día, había **una sola escritura sobre
+     `productos` y era un `insert`** de 9 filas — ningún `update`, ningún
+     `delete`. Eso descarta un culpable; no identifica al otro.
+  3. **Lo irrecuperable no fue culpa del comando, fue culpa de la falta de
+     copia.** `historial` estaba **vacío para Angamos**: nadie había apretado
+     nunca "Guardar inventario de hoy" en esa sede. Sin foto no hay vuelta
+     atrás, y el stock se cargó de nuevo a mano.
+     La lección general: **el respaldo va antes del primer paso que escribe,
+     no antes del paso que parece más peligroso.** El plan tenía el respaldo
+     en el paso 7 y las escrituras empezaron en el 3.
+  4. **El latigazo, que es el concepto que hay que quedarse.** Jhon: *"este
+     error tiene latigazo… las repercusiones vienen mañana"* — Adriana iba a
+     armar el reparto mirando lo que faltaba el 07 y no el 09. **Un dato malo
+     no hace daño cuando se corrompe: hace daño cuando alguien decide con
+     él.**
+  5. **Dos veces el mismo descuido en un día: filtrar por `activo = 'SÍ'`
+     donde no correspondía.** Eliminar en esta app desactiva, no borra. Una
+     comprobación de existencia que solo mira activos no ve lo que el equipo
+     eliminó a propósito. En el repunte hizo que **la vista previa mintiera
+     por omisión** — mostró 206 casos cuando eran 215, y los 9 que faltaban
+     solo aparecieron en la comprobación final, que sí miraba todo.
+     De ahí sale la regla: **la vista previa y su comprobación tienen que usar
+     exactamente el mismo filtro.**
+  6. **Una hipótesis mía que los datos desmintieron, y conviene dejarla
+     escrita.** Supuse que mi `insert` había duplicado productos que Jhon
+     tenía eliminados. El bloque 4 del diagnóstico dijo que **no**: los 9
+     creados no tenían ninguna copia desactivada. Anotarlo importa porque casi
+     le hago revisar 9 productos que estaban bien (regla 0.1.5).
+  7. **Bodega queda EN PAUSA por decisión de Jhon**, con la entrega del 27
+     encima y alta aversión al riesgo. La decisión entre reconstruirla desde
+     cero o seguir con la actual es suya y está pendiente.
 
 - **2026-08-08** — **Se midió qué deja hacer Fudo con el catálogo, y una
   falsa alarma mía de por medio.** Jhon lo pidió porque es el problema de
