@@ -232,6 +232,35 @@
   .mcard .n{font-size:22px;font-weight:700}
   .mcard .l{font-size:11px;color:var(--muted);margin-top:2px}
 
+  /* ---- las tres sedes, vistas desde Bodega ----
+     Adriana no cuenta en bodega para saber cómo está bodega: cuenta para
+     saber QUÉ MANDAR. Por eso lo primero de la pantalla es cuánto le falta a
+     cada local. Solo existe en Bodega; en Plaza y Angamos ni se dibuja.
+     Se distinguen de las tarjetas de abajo por lo que HACEN: estas abren una
+     lista, las de abajo filtran la de esta misma pantalla. Por eso llevan la
+     jerarquía al revés —el nombre arriba, el número abajo— y una flecha. */
+  .csedes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .csede{position:relative;display:block;width:100%;font:inherit;text-align:center;
+         background:var(--card);border:1px solid var(--border);border-radius:12px;
+         padding:9px 6px 10px;cursor:pointer;user-select:none;color:var(--text);
+         transition:transform .12s ease}
+  .csede:active{transform:scale(.94)}
+  .csede .sd{display:block;font-size:11px;font-weight:700;color:var(--muted);
+             white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .csede .cn{display:block;font-size:22px;font-weight:700;color:var(--red-fg);
+             margin-top:3px;line-height:1.1}
+  .csede .ch{position:absolute;top:5px;right:8px;font-size:14px;color:var(--muted);opacity:.5}
+  /* la lista que se abre al tocar una tarjeta */
+  .cs-lista{max-height:56vh;overflow-y:auto;overscroll-behavior:contain;margin:2px -4px 0}
+  .cs-fila{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+           padding:9px 6px;border-bottom:1px solid var(--border)}
+  .cs-fila:last-child{border-bottom:none}
+  .cs-nm{font-size:14.5px;font-weight:600;min-width:0}
+  .cs-sec{display:block;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:1px}
+  .cs-hay{flex-shrink:0;font-size:13px;font-weight:700;color:var(--red-fg);white-space:nowrap}
+  .cs-vacio{text-align:center;font-size:14px;font-weight:600;padding:26px 10px;color:var(--green-fg)}
+  .cs-error{text-align:center;font-size:14px;font-weight:600;padding:26px 10px;color:var(--red-fg)}
+
   /* ---- franja de tipos: el otro eje del producto ----
      Las secciones dicen DÓNDE está; el tipo dice QUÉ ES. Una torta está en
      Vitrina de tortas y es una torta; un cinnamon roll está en Congelador y
@@ -259,6 +288,8 @@
     #list.brota{animation:none}
     .tipo{transition:none}
     .tipo:active{transform:none}
+    .csede{transition:none}
+    .csede:active{transform:none}
   }
   .count{font-size:12px;color:var(--muted);margin:6px 0}
   /* turnos: el inventario de la mañana y el de la tarde son dos rondas
@@ -980,6 +1011,8 @@
   <div class="controls busca" data-busca="inv">
     <input type="text" id="q" placeholder="Buscar producto…">
   </div>
+  <!-- solo en Bodega: cuánto le falta a cada local. Ver .csedes en el estilo -->
+  <div class="csedes" id="critSedes" style="display:none"></div>
   <div class="metrics" id="metrics">
     <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
     <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
@@ -1278,10 +1311,12 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
    (§0.6): una misma palabra significando dos cosas según la fecha.
    La vieja sigue en la base con todo su historial, pero ya no se ofrece acá,
    y como SEDE solo se fija al tocar un botón, nadie puede entrar a ella. */
+/* `corto` es para las tarjetas de crítico, donde no cabe el nombre entero.
+   Es el mismo nombre, no uno nuevo: el largo sigue mandando en todas partes. */
 const SEDES = {
-  plaza:   { label:'Café Mall Plaza',  excel:'plaza'   },
-  angamos: { label:'Parque Angamos',   excel:'angamos' },
-  central: { label:'Bodega',           excel:'bodega'  },
+  plaza:   { label:'Café Mall Plaza',  corto:'Mall Plaza', excel:'plaza'   },
+  angamos: { label:'Parque Angamos',   corto:'Angamos',    excel:'angamos' },
+  central: { label:'Bodega',           corto:'Bodega',     excel:'bodega'  },
 };
 /* el título de la barra dice en qué estás, como en Fudo */
 const TITULOS = {inv:'Inventario', reparto:'Reparto', hist:'Historial', recetas:'Recetas'};
@@ -1792,6 +1827,10 @@ function pickSede(s){
   $('footText').textContent = SEDES[s].label + ' · sincronizado en tiempo real';
   // reset estado/filtros
   DATA=[]; filterState=null; modalProd=null; carrito=[];
+  /* los conteos de las otras sedes se descartan al cambiar de sede: si no, al
+     volver a Bodega se verían un instante los números de la visita anterior */
+  CRITICOS={}; CRIT_TOPE={};
+  $('critSedes').style.display='none'; $('critSedes').innerHTML='';
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
   qEl.value=''; openSecs=new Set();
   $('rq').value=''; $('reparto-results').innerHTML=''; $('carrito-box').style.display='none';
@@ -1912,6 +1951,129 @@ function metrics(){
   DATA.forEach(p=>m[estado(p)]++);
   for(const k in m){ const el=$('c-'+k); if(el) el.textContent=m[k]; }
 }
+
+/* ---------------- lo que le falta a cada sede (solo en Bodega) ----------------
+   Es lo primero que Adriana necesita para armar un reparto: no cómo está
+   bodega, sino qué le falta a cada local.
+
+   REUTILIZA estado() tal cual, sin copiarla. La regla de qué es crítico vive
+   en un solo lugar; si mañana cambia, cambia acá y en la pantalla del local a
+   la vez. Una segunda copia en SQL o en otra función es justo la clase de
+   cosa que se desincroniza sin que nadie lo note.
+
+   Los números de los otros dos locales NO llegan en vivo: la suscripción está
+   filtrada por sede a propósito (`sede=eq.SEDE`). Se releen al entrar a
+   Bodega, al apretar ⟳ y al volver a la app. Para decidir un reparto eso
+   alcanza; en vivo obligaría a escuchar las tres sedes desde las tres. */
+const SEDES_TARJETA = ['angamos','plaza','central'];
+let CRITICOS = {};          // sede -> [productos criticos]  ·  null = no se pudo leer
+let CRIT_TOPE = {};         // sede -> true si la lectura chocó con el tope de 1000
+
+async function cargarCriticos(){
+  const cont = $('critSedes');
+  if(SEDE !== 'central'){ cont.style.display='none'; return; }
+  cont.style.display='';
+  // la propia se calcula al toque; las otras dos tardan lo que tarde la red
+  CRITICOS[SEDE] = DATA.filter(p=>estado(p)==='critico');
+  pintarCriticos();
+
+  const otras = SEDES_TARJETA.filter(s=>s!==SEDE);
+  /* .limit(1000) no es un adorno: Supabase corta en 1000 y no avisa (bloque A
+     del archivo madre). Hoy la sede más grande tiene 240, así que sobra —
+     pero si algún día se llegara al tope, el número saldría con un `+` en vez
+     de mentir por lo bajo. */
+  const res = await Promise.all(otras.map(s => sb.from('productos')
+    .select('id,producto,rubro,stock_actual,stock_min,stock_max')
+    .eq('sede',s).eq('activo','SÍ').order('producto').limit(1000)));
+
+  otras.forEach((s,i)=>{
+    if(res[i].error){
+      // si falla la lectura la tarjeta queda sin número. Un 0 acá sería peor
+      // que no mostrar nada: diría "no le falta nada" justo cuando no sabemos
+      CRITICOS[s] = null; CRIT_TOPE[s] = false;
+      console.error('crítico '+s, res[i].error);
+      return;
+    }
+    const filas = res[i].data || [];
+    CRITICOS[s]  = filas.filter(p=>estado(p)==='critico');
+    CRIT_TOPE[s] = filas.length >= 1000;
+  });
+  pintarCriticos();
+}
+
+/* El número que va en la tarjeta. Está aparte por una sola razón, y es la
+   regla que no se puede romper: una lectura que FALLÓ muestra "—", nunca 0.
+   Un 0 acá diría "no le falta nada a esa sede" justo cuando no lo sabemos —
+   y Adriana armaría el reparto sin ese local. Es la falla callada de §0.5 en
+   versión chica. Probada en pruebas/critico-por-sede.mjs. */
+function numeroTarjeta(lista, tope){
+  if(lista === undefined) return '·';        // todavía viene en camino
+  if(lista === null)      return '—';        // no se pudo leer
+  return lista.length + (tope ? '+' : '');   // "+" = chocó con el tope de 1000
+}
+
+function pintarCriticos(){
+  $('critSedes').innerHTML = SEDES_TARJETA.map(s=>
+    `<button type="button" class="csede" data-crit="${s}">
+        <span class="ch" aria-hidden="true">›</span>
+        <span class="sd">${esc(SEDES[s].corto)}</span>
+        <span class="cn">${numeroTarjeta(CRITICOS[s], CRIT_TOPE[s])}</span>
+      </button>`).join('');
+}
+
+/* Cuánto le falta a un producto para llegar a su mínimo. Ordena la lista por
+   urgencia real, que es el orden en que Adriana decide qué mandar primero. */
+const faltaPara = p => (p.stock_min==null ? 0 : +p.stock_min) - (+p.stock_actual||0);
+
+function abrirCriticos(sede){
+  const lista = CRITICOS[sede];
+  const ordenada = (lista||[]).slice().sort((a,b)=>
+    faltaPara(b)-faltaPara(a)
+    || (+a.stock_actual||0)-(+b.stock_actual||0)
+    || a.producto.localeCompare(b.producto,'es'));
+
+  const hayTxt = p => 'hay ' + fmt(p.stock_actual)
+    + (p.stock_min!=null ? ' · mín ' + fmt(p.stock_min) : '');
+
+  const cuerpo = lista===null
+    ? '<div class="cs-error">No se pudo leer esta sede</div>'
+    : !ordenada.length
+      ? '<div class="cs-vacio">Nada en crítico</div>'
+      : ordenada.map(p=>`<div class="cs-fila">
+            <span class="cs-nm">${esc(p.producto)}
+              <span class="cs-sec">${esc(p.rubro||'Sin sección')}</span></span>
+            <span class="cs-hay">${esc(hayTxt(p))}</span>
+          </div>`).join('');
+
+  const ov=document.createElement('div');
+  ov.className='overlay overlay-blur overlay-prop open';
+  ov.innerHTML = `<div class="modal globo">
+      <h2 style="margin:2px 0 12px;font-size:19px">${esc(SEDES[sede].label)}</h2>
+      <div class="cs-lista">${cuerpo}</div>
+      <div class="mbtns">
+        ${ordenada.length?'<button class="btn btn-gris" data-a="copiar">Copiar</button>':''}
+        <button class="btn" data-a="cerrar">Cerrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+
+  const caja = ov.querySelector('.modal');
+  const cerrar = ()=>{ caja.classList.add('cerrando'); setTimeout(()=>ov.remove(),160); };
+  ov.addEventListener('click', async e=>{
+    if(e.target===ov){ cerrar(); return; }
+    const b=e.target.closest('[data-a]'); if(!b) return;
+    if(b.dataset.a==='cerrar'){ cerrar(); return; }
+    const txt = 'Crítico · '+SEDES[sede].label+'\n'
+      + ordenada.map(p=>nombreResumen(p.producto)+' — '+hayTxt(p)).join('\n');
+    b.textContent = await copiarTexto(txt) ? '✓ Copiado' : 'No se pudo';
+    setTimeout(()=>{ b.textContent='Copiar'; }, 1400);
+  });
+}
+
+$('critSedes').addEventListener('click', e=>{
+  const b = e.target.closest('[data-crit]');
+  if(b) abrirCriticos(b.dataset.crit);
+});
 function rowHTML(p, conSeccion){
   const e=estado(p),cf=CFG[e];
   const t=totalProducto(p.producto);
@@ -2052,6 +2214,9 @@ async function loadData(){
   $('m-tipo-row').style.display = hasTipo ? 'flex' : 'none';
   await loadLotes();
   metrics(); renderTipos(); render();
+  /* sin await: las otras dos sedes son dos lecturas más y no tienen por qué
+     retrasar el pintado de esta. Las tarjetas se llenan solas al llegar. */
+  cargarCriticos();
   $('liveText').textContent='en vivo'; $('live').classList.remove('off');
 }
 /* trae los lotes de vencimiento de los productos de la sede.
