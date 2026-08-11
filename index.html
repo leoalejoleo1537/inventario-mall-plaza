@@ -239,17 +239,20 @@
      Se distinguen de las tarjetas de abajo por lo que HACEN: estas abren una
      lista, las de abajo filtran la de esta misma pantalla. Por eso llevan la
      jerarquía al revés —el nombre arriba, el número abajo— y una flecha. */
-  .csedes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .csedes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
   .csede{position:relative;display:block;width:100%;font:inherit;text-align:center;
          background:var(--card);border:1px solid var(--border);border-radius:12px;
          padding:9px 6px 10px;cursor:pointer;user-select:none;color:var(--text);
          transition:transform .12s ease}
   .csede:active{transform:scale(.94)}
   .csede .sd{display:block;font-size:11px;font-weight:700;color:var(--muted);
-             white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
   .csede .cn{display:block;font-size:22px;font-weight:700;color:var(--red-fg);
              margin-top:3px;line-height:1.1}
   .csede .ch{position:absolute;top:5px;right:8px;font-size:14px;color:var(--muted);opacity:.5}
+  /* lo urgente lo marcó una persona: va en el naranja de acción, igual que la
+     píldora que ya lleva el producto en la lista del local */
+  .csede-urg{display:inline-block;margin-top:5px;font-size:10.5px;padding:2px 8px}
   /* la lista que se abre al tocar una tarjeta */
   .cs-lista{max-height:56vh;overflow-y:auto;overscroll-behavior:contain;margin:2px -4px 0}
   .cs-fila{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
@@ -259,6 +262,11 @@
   .cs-sec{display:block;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:1px}
   .cs-hay{flex-shrink:0;font-size:13px;font-weight:700;color:var(--red-fg);white-space:nowrap}
   .cs-vacio{text-align:center;font-size:14px;font-weight:600;padding:26px 10px;color:var(--green-fg)}
+  /* el bloque de urgentes, con la misma forma que el de la lista del local */
+  .cs-grupo{background:var(--gray-bg);border-radius:12px;padding:8px 8px 2px;margin:0 4px 10px}
+  .cs-lbl{font-size:11px;font-weight:800;letter-spacing:.7px;padding:0 4px 6px;color:var(--gray-fg)}
+  .cs-grupo-urg .cs-lbl{color:var(--orange)}
+  .cs-grupo .cs-fila:last-child{border-bottom:none}
   .cs-error{text-align:center;font-size:14px;font-weight:600;padding:26px 10px;color:var(--red-fg)}
 
   /* ---- franja de tipos: el otro eje del producto ----
@@ -1338,6 +1346,19 @@ function esPerec(p){ return hasPerec ? !!p.perecedero : p.rubro==='Sándwiches';
 /* Marcado a mano por el personal para que Adriana lo vea: no es un estado
    calculado como crítico/sobre-stock, convive con ellos. */
 function esUrgente(p){ return hasUrgente && !!p.urgente; }
+/* La misma pregunta que la de arriba, pero para un producto de OTRA sede: no
+   puede apoyarse en `hasUrgente`, que describe la sede que está abierta. Si la
+   columna no existe, `p.urgente` es undefined y da false igual. */
+const urgenteDe = p => !!p.urgente;
+
+/* QUÉ ENTRA EN "CRÍTICO" — una sola definición para toda la app.
+   El semáforo lo marca, O alguien lo marcó urgente a mano. Lo urgente entra
+   aunque el número no lo pida: es un aviso de una persona y no se puede
+   perder detrás de la aritmética.
+   Vive acá y no dentro del filtro de la lista porque ahora la usan DOS
+   pantallas —la del local y las tarjetas de Bodega— y una segunda copia sería
+   exactamente la forma de que Bodega dejara de ver lo que el local marcó. */
+const entraEnCritico = p => estado(p)==='critico' || urgenteDe(p);
 
 const $ = id => document.getElementById(id);
 const qEl=$('q'), listEl=$('list');
@@ -1834,6 +1855,10 @@ function pickSede(s){
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
   qEl.value=''; openSecs=new Set();
   $('rq').value=''; $('reparto-results').innerHTML=''; $('carrito-box').style.display='none';
+  /* Bodega no vende, así que no tiene recetas: la pestaña ni se ofrece.
+     Es solo esconder el botón — no se toca ni una receta de nadie, y en Plaza
+     y Angamos la barra queda igual que siempre. */
+  document.querySelector('.tab[data-tab="recetas"]').style.display = s==='central' ? 'none' : '';
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
   $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none';
@@ -1965,28 +1990,28 @@ function metrics(){
    filtrada por sede a propósito (`sede=eq.SEDE`). Se releen al entrar a
    Bodega, al apretar ⟳ y al volver a la app. Para decidir un reparto eso
    alcanza; en vivo obligaría a escuchar las tres sedes desde las tres. */
-const SEDES_TARJETA = ['angamos','plaza','central'];
-let CRITICOS = {};          // sede -> [productos criticos]  ·  null = no se pudo leer
+/* Solo los dos LOCALES. Bodega no lleva tarjeta propia: su crítico ya está
+   dos centímetros más abajo, en la tarjeta "Crítico" de siempre. */
+const SEDES_TARJETA = ['angamos','plaza'];
+let CRITICOS = {};          // sede -> [lo que entra en crítico]  ·  null = no se pudo leer
 let CRIT_TOPE = {};         // sede -> true si la lectura chocó con el tope de 1000
 
 async function cargarCriticos(){
   const cont = $('critSedes');
   if(SEDE !== 'central'){ cont.style.display='none'; return; }
   cont.style.display='';
-  // la propia se calcula al toque; las otras dos tardan lo que tarde la red
-  CRITICOS[SEDE] = DATA.filter(p=>estado(p)==='critico');
-  pintarCriticos();
+  pintarCriticos();          // el marco, mientras llegan los números
 
-  const otras = SEDES_TARJETA.filter(s=>s!==SEDE);
-  /* .limit(1000) no es un adorno: Supabase corta en 1000 y no avisa (bloque A
-     del archivo madre). Hoy la sede más grande tiene 240, así que sobra —
-     pero si algún día se llegara al tope, el número saldría con un `+` en vez
-     de mentir por lo bajo. */
-  const res = await Promise.all(otras.map(s => sb.from('productos')
-    .select('id,producto,rubro,stock_actual,stock_min,stock_max')
-    .eq('sede',s).eq('activo','SÍ').order('producto').limit(1000)));
+  /* select('*') y no una lista de columnas: así trae `urgente` sin que la
+     consulta se caiga en una base donde esa columna todavía no exista.
+     Es lo mismo que hace loadData() para la sede abierta.
+     .limit(1000) no es adorno: Supabase corta en 1000 y no avisa (bloque A).
+     Hoy la sede más grande tiene 240; si algún día se llegara al tope, el
+     número sale con un "+" en vez de mentir por lo bajo. */
+  const res = await Promise.all(SEDES_TARJETA.map(s => sb.from('productos')
+    .select('*').eq('sede',s).eq('activo','SÍ').order('producto').limit(1000)));
 
-  otras.forEach((s,i)=>{
+  SEDES_TARJETA.forEach((s,i)=>{
     if(res[i].error){
       // si falla la lectura la tarjeta queda sin número. Un 0 acá sería peor
       // que no mostrar nada: diría "no le falta nada" justo cuando no sabemos
@@ -1995,7 +2020,7 @@ async function cargarCriticos(){
       return;
     }
     const filas = res[i].data || [];
-    CRITICOS[s]  = filas.filter(p=>estado(p)==='critico');
+    CRITICOS[s]  = filas.filter(entraEnCritico);
     CRIT_TOPE[s] = filas.length >= 1000;
   });
   pintarCriticos();
@@ -2013,12 +2038,21 @@ function numeroTarjeta(lista, tope){
 }
 
 function pintarCriticos(){
-  $('critSedes').innerHTML = SEDES_TARJETA.map(s=>
-    `<button type="button" class="csede" data-crit="${s}">
+  $('critSedes').innerHTML = SEDES_TARJETA.map(s=>{
+    const lista = CRITICOS[s];
+    /* El número grande cuenta SOLO los que el semáforo marca crítico, para que
+       sea el mismo número que ve el jefe de turno parado en su local. Lo
+       urgente se cuenta aparte, en su propia píldora: son dos cosas distintas
+       y sumarlas haría que Bodega y el local mostraran cifras que no calzan. */
+    const soloCrit = lista && lista.filter(p=>estado(p)==='critico');
+    const urg      = lista ? lista.filter(urgenteDe).length : 0;
+    return `<button type="button" class="csede" data-crit="${s}">
         <span class="ch" aria-hidden="true">›</span>
-        <span class="sd">${esc(SEDES[s].corto)}</span>
-        <span class="cn">${numeroTarjeta(CRITICOS[s], CRIT_TOPE[s])}</span>
-      </button>`).join('');
+        <span class="sd">Críticos en ${esc(SEDES[s].corto)}</span>
+        <span class="cn">${numeroTarjeta(soloCrit, CRIT_TOPE[s])}</span>
+        ${urg?`<span class="pill pill-urg csede-urg">${urg} urgente${urg===1?'':'s'}</span>`:''}
+      </button>`;
+  }).join('');
 }
 
 /* Cuánto le falta a un producto para llegar a su mínimo. Ordena la lista por
@@ -2027,23 +2061,33 @@ const faltaPara = p => (p.stock_min==null ? 0 : +p.stock_min) - (+p.stock_actual
 
 function abrirCriticos(sede){
   const lista = CRITICOS[sede];
-  const ordenada = (lista||[]).slice().sort((a,b)=>
+  const porFalta = (a,b) =>
     faltaPara(b)-faltaPara(a)
     || (+a.stock_actual||0)-(+b.stock_actual||0)
-    || a.producto.localeCompare(b.producto,'es'));
+    || a.producto.localeCompare(b.producto,'es');
+  /* Lo URGENTE va arriba del todo y aparte, igual que en la lista del local:
+     lo marcó una persona porque hacía falta, y no puede quedar sepultado en
+     el puesto 40 de una lista de 101. */
+  const todos    = (lista||[]).slice().sort(porFalta);
+  const urgentes = todos.filter(urgenteDe);
+  const criticos = todos.filter(p=>!urgenteDe(p));
 
   const hayTxt = p => 'hay ' + fmt(p.stock_actual)
     + (p.stock_min!=null ? ' · mín ' + fmt(p.stock_min) : '');
+  const fila = p => `<div class="cs-fila">
+      <span class="cs-nm">${esc(p.producto)}
+        <span class="cs-sec">${esc(p.rubro||'Sin sección')}</span></span>
+      <span class="cs-hay">${esc(hayTxt(p))}</span>
+    </div>`;
 
   const cuerpo = lista===null
     ? '<div class="cs-error">No se pudo leer esta sede</div>'
-    : !ordenada.length
+    : !todos.length
       ? '<div class="cs-vacio">Nada en crítico</div>'
-      : ordenada.map(p=>`<div class="cs-fila">
-            <span class="cs-nm">${esc(p.producto)}
-              <span class="cs-sec">${esc(p.rubro||'Sin sección')}</span></span>
-            <span class="cs-hay">${esc(hayTxt(p))}</span>
-          </div>`).join('');
+      : (urgentes.length
+          ? `<div class="cs-grupo cs-grupo-urg"><div class="cs-lbl">URGENTE</div>${urgentes.map(fila).join('')}</div>`
+          : '')
+        + criticos.map(fila).join('');
 
   const ov=document.createElement('div');
   ov.className='overlay overlay-blur overlay-prop open';
@@ -2051,7 +2095,7 @@ function abrirCriticos(sede){
       <h2 style="margin:2px 0 12px;font-size:19px">${esc(SEDES[sede].label)}</h2>
       <div class="cs-lista">${cuerpo}</div>
       <div class="mbtns">
-        ${ordenada.length?'<button class="btn btn-gris" data-a="copiar">Copiar</button>':''}
+        ${todos.length?'<button class="btn btn-gris" data-a="copiar">Copiar</button>':''}
         <button class="btn" data-a="cerrar">Cerrar</button>
       </div>
     </div>`;
@@ -2063,8 +2107,11 @@ function abrirCriticos(sede){
     if(e.target===ov){ cerrar(); return; }
     const b=e.target.closest('[data-a]'); if(!b) return;
     if(b.dataset.a==='cerrar'){ cerrar(); return; }
-    const txt = 'Crítico · '+SEDES[sede].label+'\n'
-      + ordenada.map(p=>nombreResumen(p.producto)+' — '+hayTxt(p)).join('\n');
+    /* El resumen que se pega en WhatsApp respeta el mismo orden de la pantalla
+       y marca lo urgente, que es lo que hay que leer primero. */
+    const linea = p => (urgenteDe(p)?'⚠ ':'') + nombreResumen(p.producto) + ' — ' + hayTxt(p);
+    const txt = 'Críticos en '+SEDES[sede].label+'\n'
+      + urgentes.concat(criticos).map(linea).join('\n');
     b.textContent = await copiarTexto(txt) ? '✓ Copiado' : 'No se pudo';
     setTimeout(()=>{ b.textContent='Copiar'; }, 1400);
   });
@@ -2114,7 +2161,7 @@ function pasaFiltro(p){
   // equipo marcó a mano tiene que estar ahí también, aunque el semáforo no lo
   // marque — si no, lo urgente se queda escondido. Ya no hay tarjeta Urgente
   // aparte justamente porque todo lo urgente sale acá, arriba del todo.
-  if(filterState==='critico') return estado(p)==='critico' || esUrgente(p);
+  if(filterState==='critico') return entraEnCritico(p);
   return estado(p)===filterState;
 }
 const tipoDe = p => (p.tipo||'').trim();

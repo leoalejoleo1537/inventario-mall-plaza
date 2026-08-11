@@ -34,8 +34,14 @@ const trozo = (desde, hasta, comoSeLlama) => {
   return html.slice(i, f);
 };
 
-const estado = new Function(
-  trozo('function maxOk(p)', 'const CFG =', 'estado()') + '; return estado;')();
+/* Se arma un solo trozo con las dos partes que se necesitan: el semáforo y la
+   regla de qué entra en Crítico. `hasUrgente` se declara acá porque en la app
+   es una variable de la sede abierta y no viene en estos trozos. */
+const { estado, entraEnCritico, urgenteDe } = new Function(
+  'let hasUrgente = true;\n'
+  + trozo('function maxOk(p)', 'const CFG =', 'estado()')
+  + trozo('function esUrgente(p)', 'const $ = id =>', 'entraEnCritico()')
+  + '; return {estado, entraEnCritico, urgenteDe};')();
 const faltaPara = new Function(
   trozo('const faltaPara =', 'function abrirCriticos', 'faltaPara()') + '; return faltaPara;')();
 const numeroTarjeta = new Function(
@@ -65,6 +71,22 @@ caso('por debajo del mínimo es crítico',         estado(p(2, 5, 20)),    'crit
 caso('uno por encima del mínimo NO es crítico',  estado(p(6, 5, 20)),    'ok');
 caso('sin dato no es crítico, es sin dato',      estado(p(null, 5, 20)), 'sindato');
 caso('por encima del máximo es sobre-stock',     estado(p(30, 5, 20)),   'sobre');
+
+console.log('\nLo URGENTE viaja de la sede a la tarjeta de Bodega');
+const u = (stock, min, urgente) => ({ producto: 'x', stock_actual: stock, stock_min: min, urgente });
+caso('marcado urgente entra aunque el número esté sano', entraEnCritico(u(20, 5, true)),  true);
+caso('urgente Y crítico entra igual',                    entraEnCritico(u(1, 5, true)),   true);
+caso('crítico sin marcar entra por el semáforo',         entraEnCritico(u(1, 5, false)),  true);
+caso('sano y sin marcar NO entra',                       entraEnCritico(u(20, 5, false)), false);
+caso('sin la columna urgente manda solo el semáforo',    entraEnCritico(p(20, 5, 50)),    false);
+caso('lo reconoce como urgente',                         urgenteDe(u(20, 5, true)),       true);
+
+console.log('\nEl número grande NO se infla con los urgentes que están sanos');
+const sede = [u(0, 5, false), u(2, 5, false), u(30, 5, true)];
+caso('a la lista entran los 3', sede.filter(entraEnCritico).length, 3);
+caso('pero el número de la tarjeta dice 2, igual que en el local',
+     numeroTarjeta(sede.filter(x => estado(x) === 'critico'), false), '2');
+caso('y la píldora naranja cuenta 1 urgente', sede.filter(urgenteDe).length, 1);
 
 console.log('\nEl orden: primero lo que más falta');
 const bandeja = { producto: 'Bandeja', stock_actual: 0, stock_min: 50 };
