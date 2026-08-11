@@ -28,6 +28,7 @@ dice qué caso falló.
 | `alarma-de-ventas.mjs` | Que la alarma del motor suene cuando tiene que sonar, y **que no suene cuando no** — que es la mitad que suele no probarse. Incluye el caso real de Mall Plaza (1685 ítems, cero errores) y el de releer ventas ya procesadas, que da 0 movimientos y es normal. |
 | `aviso-del-motor.mjs` | La franja que avisa sin que nadie apriete ⟳. Cubre las dos reglas anti-falsa-alarma: sin cron, "hace 5 horas" es normal; y una sede que nunca corrió está recién encendida, no rota. |
 | `pantalla-sana.mjs` | Que no haya dos elementos con el mismo `id` y que todo `$('algo')` apunte a algo que existe. Sale del bug de `rec-cancelar` duplicado: el Cancelar del editor de recetas se quedó sin manejador, no dio error en ninguna parte, y simplemente no cerraba. |
+| `mermas.mjs` | La vista previa de la merma: el renglón que se lee justo antes de apretar. Que no deje mermar más de lo que hay (regla 0.2) y que la cuenta de "quedan N de M" no mienta, decimales incluidos. |
 | `critico-por-sede.mjs` | Las tarjetas de Bodega. Sobre todo **que una lectura fallida muestre "—" y nunca 0**: un 0 diría "a esa sede no le falta nada" justo cuando no lo sabemos, y el reparto se armaría dejando ese local afuera. Además comprueba que la tarjeta use la MISMA regla de crítico que la pantalla del local, extrayendo `estado()` del archivo real. |
 
 > ⚠️ Esta tabla venía **cinco archivos atrasada** (`permiso-por-sede`,

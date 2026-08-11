@@ -267,6 +267,12 @@
   .cs-lbl{font-size:11px;font-weight:800;letter-spacing:.7px;padding:0 4px 6px;color:var(--gray-fg)}
   .cs-grupo-urg .cs-lbl{color:var(--orange)}
   .cs-grupo .cs-fila:last-child{border-bottom:none}
+  /* una merma deshecha no se borra del libro: se apaga y se marca */
+  .cs-off{opacity:.55}
+  .cs-off .cs-hay{color:var(--muted);text-decoration:line-through}
+  .cs-des{display:block;font-size:10.5px;font-weight:700;color:var(--muted);
+          text-decoration:none;margin-top:2px}
+  .cs-hay .rep-deshacer{display:block;margin-top:3px}
   .cs-error{text-align:center;font-size:14px;font-weight:600;padding:26px 10px;color:var(--red-fg)}
 
   /* ---- franja de tipos: el otro eje del producto ----
@@ -729,6 +735,37 @@
   .btn-urg.on{border-color:var(--orange);background:var(--orange);color:#fff}
   .btn-urg:active{background:var(--orange-dark);border-color:var(--orange-dark);color:#fff}
   .btn-urg svg{width:17px;height:17px}
+  /* ---- mermar ----
+     Ámbar, que en esta paleta es el aviso: ni el rojo de eliminar (que borra
+     el producto) ni el naranja de urgente (que es un pedido). Mermar saca
+     unidades que se perdieron, y eso es su propia categoría. */
+  .btn-merma{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+             height:44px;margin-top:14px;border-radius:10px;border:1.5px solid var(--amber-fg);
+             background:var(--amber-bg);color:var(--amber-fg);font-size:14.5px;font-weight:700;
+             cursor:pointer;font-family:inherit}
+  .btn-merma:active{background:#FFE6C4}
+  .btn-merma svg{width:17px;height:17px}
+  /* los cuatro motivos: se toca uno y queda marcado. Botones y no un
+     desplegable, porque son cuatro y el dedo llega directo */
+  .mot{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:6px}
+  .mot button{height:44px;border-radius:10px;border:1.5px solid var(--border);background:#fff;
+              color:var(--text);font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer;
+              transition:transform .12s ease}
+  .mot button:active{transform:scale(.96)}
+  .mot button.on{border-color:var(--amber-fg);background:var(--amber-bg);color:var(--amber-fg);font-weight:800}
+  /* una fila por fecha, para mermar de la fecha exacta que se botó */
+  .mlote{display:flex;align-items:center;justify-content:space-between;gap:10px;
+         padding:8px 4px;border-bottom:1px solid var(--border)}
+  .mlote:last-child{border-bottom:none}
+  .mlote .fch{font-size:14px;font-weight:600}
+  .mlote .hay{display:block;font-size:11.5px;color:var(--muted);font-weight:500}
+  .mlote input{width:78px;height:40px;text-align:center;font-size:17px;font-weight:700;
+               border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text)}
+  /* la vista previa: qué va a quedar, antes de tocar nada */
+  .mprev{margin-top:14px;padding:10px 12px;border-radius:10px;background:var(--gray-bg);
+         font-size:14px;font-weight:600;text-align:center;color:var(--text)}
+  .mprev.mal{background:var(--red-bg);color:var(--red-fg)}
+  @media (prefers-reduced-motion: reduce){ .mot button{transition:none} .mot button:active{transform:none} }
   .fab{position:fixed;right:18px;bottom:24px;width:58px;height:58px;border-radius:50%;background:var(--orange);color:#fff;border:none;font-size:32px;font-weight:600;line-height:1;box-shadow:0 6px 18px rgba(220,68,5,.45);cursor:pointer;z-index:30;display:flex;align-items:center;justify-content:center}
   .fab:active{background:var(--orange-dark)}
   .chkrow{display:flex;align-items:center;gap:10px;margin:14px 0;cursor:pointer;user-select:none}
@@ -866,6 +903,8 @@
     </button>
     <button class="tab" data-tab="reparto">Reparto <span class="tab-nuevo" id="tabNuevo" style="display:none">NUEVO</span><span class="tab-badge" id="repBadge" style="display:none"></span></button>
     <button class="tab" data-tab="recetas">Recetas <span class="tab-nuevo late" id="tabNuevoRec" style="display:none">NUEVO</span></button>
+    <!-- solo en Bodega, igual que la franja de crítico -->
+    <button class="tab" data-tab="mermas" id="tabMermas" style="display:none">Mermas</button>
   </div>
 </div>
 
@@ -1136,6 +1175,15 @@
   </div>
 </div>
 
+<!-- ================= MERMAS (solo Bodega) ================= -->
+<div class="wrap" id="view-mermas" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+    <div style="flex:1;font-weight:800;font-size:16px" id="mermas-total">—</div>
+    <button class="btn btn-orange btn-sm" id="btnMermasExcel">Descargar Excel</button>
+  </div>
+  <div id="mermas-list"><div class="empty">Cargando…</div></div>
+</div>
+
 <!-- ================= RECETAS ================= -->
 <div class="wrap" id="view-recetas" style="display:none">
 
@@ -1249,6 +1297,13 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
       <span id="m-urgente-txt">Marcar urgente</span>
     </button>
+    <!-- Mermar está en la ficha, a un toque de cualquier producto, porque es
+         algo que pasa todos los días y tiene que estar siempre a la mano.
+         Solo aparece en Bodega. -->
+    <button type="button" class="btn-merma" id="m-mermar" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M14 11l-4 6"></path><path d="M10 11l4 6"></path></svg>
+      <span>Mermar</span>
+    </button>
     <!-- Solo administración. Un producto del inventario puede afectar a
          VARIOS de Fudo (un selladito está en el combo KIDS y se vende solo),
          así que el botón muestra cuáles antes de escribir nada. -->
@@ -1327,7 +1382,7 @@ const SEDES = {
   central: { label:'Bodega',           corto:'Bodega',     excel:'bodega'  },
 };
 /* el título de la barra dice en qué estás, como en Fudo */
-const TITULOS = {inv:'Inventario', reparto:'Reparto', hist:'Historial', recetas:'Recetas'};
+const TITULOS = {inv:'Inventario', reparto:'Reparto', hist:'Historial', recetas:'Recetas', mermas:'Mermas'};
 let SEDE = null;
 let channel = null;
 
@@ -1859,9 +1914,12 @@ function pickSede(s){
      Es solo esconder el botón — no se toca ni una receta de nadie, y en Plaza
      y Angamos la barra queda igual que siempre. */
   document.querySelector('.tab[data-tab="recetas"]').style.display = s==='central' ? 'none' : '';
+  // y al revés con Mermas: por ahora vive solo en Bodega
+  $('tabMermas').style.display = s==='central' ? '' : 'none';
+  MERMAS=[];
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
-  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none';
+  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none';
   vistaActual='inv';
   listEl.innerHTML='';
   $('gate').classList.add('hidden');
@@ -2120,6 +2178,225 @@ function abrirCriticos(sede){
 $('critSedes').addEventListener('click', e=>{
   const b = e.target.closest('[data-crit]');
   if(b) abrirCriticos(b.dataset.crit);
+});
+
+/* ================= MERMAS (solo Bodega) =================
+   Mermar es sacar del inventario lo que se perdió: se dañó, lo robaron, se
+   venció. Pasa todos los días, así que está a un toque desde la ficha de
+   cualquier producto, y no escondido en un menú.
+
+   Las dos cosas que la hacen segura, y son las que pide §6.2 para todo lo que
+   destruye: se ve lo que va a quedar ANTES de aplicar, y se puede deshacer.
+
+   La resta y la anotación en el libro ocurren juntas dentro de mermar() en la
+   base — nunca desde acá. Si se hicieran en dos llamadas y se cortara la
+   señal en el medio, quedaría stock bajado sin anotar. */
+/* MOTIVOS_MERMA y no MOTIVOS: ese nombre ya lo usa Recetas para los motivos
+   de "no lleva receta". Son dos listas distintas que se llaman parecido. */
+const MOTIVOS_MERMA = [['daño','Daño'],['robo','Robo'],['vencimiento','Vencimiento'],['otro','Otro']];
+
+/* Cuánto se puede mermar de un producto: si tiene fechas, la suma de las
+   fechas; si no, su stock. Nunca más que eso (regla 0.2). */
+const disponibleDe = p => {
+  const ls = lotesDe(p.id);
+  return ls.length ? ls.reduce((a,l)=>a+(+l.cantidad||0),0) : (+p.stock_actual||0);
+};
+
+/* El texto de la vista previa. Aparte para poder probarlo: es lo que la
+   persona lee justo antes de apretar, y tiene que decir la verdad. */
+function textoPrevio(disponible, aMermar){
+  if(aMermar <= 0)          return {txt:'¿Cuánto se merma?', mal:false, puede:false};
+  if(aMermar > disponible)  return {txt:`Solo hay ${fmt(disponible)}`, mal:true, puede:false};
+  return {txt:`Quedan ${fmt(disponible-aMermar)} de ${fmt(disponible)}`, mal:false, puede:true};
+}
+
+function abrirMerma(prod){
+  const lotes = lotesDe(prod.id);          // si tiene fechas, se merma por fecha
+  const disponible = disponibleDe(prod);
+  let motivo = null, nota = '', cant = 0;
+  const porLote = {};                      // lote_id -> cantidad
+
+  const ov=document.createElement('div');
+  ov.className='overlay overlay-blur overlay-prop open';
+  ov.innerHTML = `<div class="modal globo">
+      <h2 style="margin:2px 0 2px;font-size:19px">Mermar</h2>
+      <p class="mr">${esc(prod.producto)} · hay ${fmt(disponible)}</p>
+      <div class="field" style="margin-top:0">
+        <label>Motivo</label>
+        <div class="mot">${MOTIVOS_MERMA.map(([k,t])=>
+          `<button type="button" data-mot="${k}">${t}</button>`).join('')}</div>
+      </div>
+      <div class="field" id="mm-nota-row" style="display:none">
+        <label>¿Qué pasó?</label>
+        <input type="text" id="mm-nota" maxlength="120" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>${lotes.length?'De qué fecha':'Cuánto'}</label>
+        ${lotes.length
+          ? lotes.map(l=>`<div class="mlote">
+                <span><span class="fch">${l.vencimiento?fmtPildora(l.vencimiento):'sin fecha'}</span>
+                  <span class="hay">hay ${fmt(l.cantidad)}</span></span>
+                <input type="number" step="0.5" min="0" max="${l.cantidad}" value="0"
+                       data-lote="${l.id}" aria-label="Cantidad a mermar">
+              </div>`).join('')
+          : `<div class="stepper">
+               <button type="button" data-paso="-1">−</button>
+               <input type="number" step="0.5" min="0" id="mm-cant" value="0">
+               <button type="button" data-paso="1">+</button>
+             </div>`}
+      </div>
+      <div class="mprev" id="mm-prev"></div>
+      <div class="mbtns">
+        <button class="btn btn-outline" data-a="cancelar">Cancelar</button>
+        <button class="btn btn-orange" data-a="aplicar" disabled>Mermar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+
+  const caja = ov.querySelector('.modal');
+  const cerrar = ()=>{ caja.classList.add('cerrando'); setTimeout(()=>ov.remove(),160); };
+
+  const repintar = ()=>{
+    cant = lotes.length
+      ? Object.values(porLote).reduce((a,b)=>a+b,0)
+      : (+ov.querySelector('#mm-cant').value || 0);
+    const v = textoPrevio(disponible, cant);
+    const pv = ov.querySelector('#mm-prev');
+    pv.textContent = v.txt; pv.classList.toggle('mal', v.mal);
+    // hacen falta las dos cosas: un motivo y una cantidad que quepa
+    ov.querySelector('[data-a="aplicar"]').disabled = !(v.puede && motivo);
+  };
+  repintar();
+
+  ov.addEventListener('input', e=>{
+    const li = e.target.closest('[data-lote]');
+    if(li){
+      const max = +li.max || 0;
+      if((+li.value||0) > max) li.value = max;     // no se puede botar más de lo que hay
+      porLote[li.dataset.lote] = +li.value || 0;
+    }
+    if(e.target.id === 'mm-nota') nota = e.target.value;
+    repintar();
+  });
+
+  ov.addEventListener('click', async e=>{
+    if(e.target===ov){ cerrar(); return; }
+
+    const paso = e.target.closest('[data-paso]');
+    if(paso){
+      const i = ov.querySelector('#mm-cant');
+      i.value = Math.max(0, (+i.value||0) + (+paso.dataset.paso));
+      repintar(); return;
+    }
+    const mb = e.target.closest('[data-mot]');
+    if(mb){
+      motivo = mb.dataset.mot;
+      ov.querySelectorAll('[data-mot]').forEach(x=>x.classList.toggle('on', x===mb));
+      ov.querySelector('#mm-nota-row').style.display = motivo==='otro' ? 'block' : 'none';
+      if(motivo==='otro') ov.querySelector('#mm-nota').focus();
+      repintar(); return;
+    }
+    const b = e.target.closest('[data-a]'); if(!b) return;
+    if(b.dataset.a==='cancelar'){ cerrar(); return; }
+
+    b.disabled=true; b.textContent='Mermando…';
+    const args = {
+      p_producto_id: prod.id, p_motivo: motivo,
+      p_nota: motivo==='otro' ? nota : null, p_quien: NOMBRE,
+      p_cantidad: lotes.length ? null : cant,
+      p_lotes: lotes.length
+        ? Object.entries(porLote).filter(([,c])=>c>0).map(([id,c])=>({lote_id:+id, cantidad:c}))
+        : null,
+    };
+    const {error} = await sb.rpc('mermar', args);
+    if(error){
+      b.disabled=false; b.textContent='Mermar';
+      // el mensaje viene de la base y está escrito para leerse tal cual
+      avisar(error.message || 'No se pudo mermar. Revisa tu señal e inténtalo de nuevo.');
+      return;
+    }
+    cerrar(); closeModal();
+    avisar('✓ Mermado · ' + fmt(cant) + ' de ' + prod.producto);
+    await loadData(); await loadLotes(); metrics(); render();
+    if(vistaActual==='mermas') loadMermas();
+  });
+}
+
+$('m-mermar').addEventListener('click', ()=>{ if(modalProd) abrirMerma(modalProd); });
+
+/* ---------------- la pestaña ---------------- */
+let MERMAS = [];
+async function loadMermas(){
+  if(SEDE!=='central') return;
+  const {data,error} = await sb.from('movimientos').select('*')
+    .eq('sede','central').eq('tipo','merma')
+    .order('created_at',{ascending:false}).limit(500);
+  if(error){
+    MERMAS=[];
+    $('mermas-list').innerHTML='<div class="empty">No se pudo leer el registro de mermas.</div>';
+    $('mermas-total').textContent='—';
+    console.error('mermas', error); return;
+  }
+  MERMAS = data||[];
+  pintarMermas();
+}
+
+const MOT_MERMA_TXT = Object.fromEntries(MOTIVOS_MERMA);
+
+function pintarMermas(){
+  const vivas = MERMAS.filter(m=>!m.deshecha_at);
+  $('mermas-total').textContent = vivas.length
+    ? vivas.length + (vivas.length===1?' merma':' mermas')
+    : 'Sin mermas';
+  if(!MERMAS.length){
+    $('mermas-list').innerHTML='<div class="empty">Todavía no hay mermas registradas.</div>';
+    return;
+  }
+  // agrupadas por día: es como se lee un libro de registro
+  const dias = [...new Set(MERMAS.map(m=>m.created_at.slice(0,10)))];
+  $('mermas-list').innerHTML = dias.map(d=>{
+    const delDia = MERMAS.filter(m=>m.created_at.slice(0,10)===d);
+    return `<div class="turno">
+      <div class="turno-lbl">${fmtFecha(d).toUpperCase()}</div>
+      ${delDia.map(m=>`<div class="cs-fila${m.deshecha_at?' cs-off':''}">
+        <span class="cs-nm">${esc(m.producto)}
+          <span class="cs-sec">${esc(MOT_MERMA_TXT[m.motivo]||m.motivo||'—')}${
+            m.nota?' · '+esc(m.nota):''}${m.quien?' · '+esc(m.quien):''}</span></span>
+        <span class="cs-hay">${fmt(Math.abs(m.cantidad))}${
+          m.deshecha_at
+            ? '<span class="cs-des">deshecha</span>'
+            : `<button type="button" class="rep-deshacer" data-desmerma="${m.id}">Deshacer</button>`}</span>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+$('mermas-list').addEventListener('click', async e=>{
+  const b = e.target.closest('[data-desmerma]'); if(!b) return;
+  if(!await preguntar('Deshacer esta merma','Las unidades vuelven al inventario de Bodega.','Deshacer')) return;
+  b.disabled=true; b.textContent='…';
+  const {error} = await sb.rpc('deshacer_merma',{p_movimiento_id:+b.dataset.desmerma, p_quien:NOMBRE});
+  if(error){ b.disabled=false; b.textContent='Deshacer'; avisar(error.message||'No se pudo deshacer.'); return; }
+  await loadMermas(); await loadData(); await loadLotes(); metrics(); render();
+});
+
+$('btnMermasExcel').addEventListener('click',()=>{
+  if(!MERMAS.length){ avisar('No hay mermas que descargar.'); return; }
+  const rows = MERMAS.map(m=>({
+    'Fecha': fmtFecha(m.created_at.slice(0,10)),
+    'Hora': new Date(m.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}),
+    'Producto': m.producto,
+    'Cantidad': Math.abs(m.cantidad),
+    'Motivo': MOT_MERMA_TXT[m.motivo]||m.motivo||'',
+    'Detalle': m.nota||'',
+    'Quién': m.quien||'',
+    'Deshecha': m.deshecha_at ? 'SÍ' : '',
+  }));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:11},{wch:7},{wch:34},{wch:9},{wch:13},{wch:28},{wch:16},{wch:9}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Mermas');
+  XLSX.writeFile(wb,`mermas-bodega-${hoyISO()}.xlsx`);
 });
 function rowHTML(p, conSeccion){
   const e=estado(p),cf=CFG[e];
@@ -2811,6 +3088,9 @@ function openModal(id){
   if(hasPerec) $('m-perec').checked = !!modalProd.perecedero;
   $('m-urgente').style.display = hasUrgente ? 'flex' : 'none';
   setUrgente(!!modalProd.urgente);
+  /* Mermar solo en Bodega. La base lo vuelve a comprobar dentro de mermar(),
+     así que esconder el botón es comodidad y no la única defensa. */
+  $('m-mermar').style.display = SEDE==='central' ? 'flex' : 'none';
   setModoEdicion(modoEdicion);
   // Solo se ofrece el editor de VARIAS fechas si la tabla que las guarda
   // (producto_lotes) existe de verdad en la base. Si no, se cae al campo
@@ -3648,7 +3928,9 @@ function pickTab(tab){
   $('view-reparto').style.display = tab==='reparto'?'block':'none';
   $('view-hist').style.display = tab==='hist'?'block':'none';
   $('view-recetas').style.display = tab==='recetas'?'block':'none';
+  $('view-mermas').style.display = tab==='mermas'?'block':'none';
   vistaActual=tab; $('topTitle').textContent=TITULOS[tab]||TITULOS.inv;
+  if(tab==='mermas') loadMermas();
   // Inicio devuelve la pantalla a como se abre: sin búsqueda, sin filtros y
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();
