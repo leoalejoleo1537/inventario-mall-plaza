@@ -43,5 +43,28 @@ if (fantasmas.length) {
   console.log(`  ✓ los ${usados.size} elementos que busca el código existen`);
 }
 
+// ---------- 3. que el guion se pueda leer entero ----------
+/* Agregado el 2026-08-10 después de romper la app entera con una línea.
+   Se declaró `const MOTIVOS` para las mermas sin ver que Recetas ya tenía uno.
+   Dos `const` con el mismo nombre no son un error de esa línea: el navegador
+   se niega a leer el archivo COMPLETO, así que no se ejecutó ni una función.
+   La pantalla se dibujaba igual —el HTML está sano— y no hacía nada.
+
+   Las dos comprobaciones de arriba pasaron en verde con la app muerta, porque
+   miran el HTML y no el guion. Esta lo intenta leer de verdad: no lo ejecuta
+   (necesitaría un navegador), pero un nombre repetido, una llave sin cerrar o
+   un paréntesis de más aparecen al intentar interpretarlo. */
+const guiones = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+let malos = 0;
+guiones.forEach((codigo, i) => {
+  try { new Function(codigo); }
+  catch (e) {
+    malos++; fallos++;
+    console.log(`  ✗ el guion ${i + 1} no se puede leer: ${e.message}`);
+    console.log('      con esto el navegador NO ejecuta nada del archivo: la app se abre y no responde.');
+  }
+});
+if (!malos) console.log(`  ✓ los ${guiones.length} guiones se leen sin error de sintaxis`);
+
 console.log(fallos ? `\n${fallos} problema(s)` : '\nla pantalla está sana');
 process.exit(fallos ? 1 : 0);

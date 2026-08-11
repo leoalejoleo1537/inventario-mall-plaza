@@ -232,6 +232,49 @@
   .mcard .n{font-size:22px;font-weight:700}
   .mcard .l{font-size:11px;color:var(--muted);margin-top:2px}
 
+  /* ---- las tres sedes, vistas desde Bodega ----
+     Adriana no cuenta en bodega para saber cómo está bodega: cuenta para
+     saber QUÉ MANDAR. Por eso lo primero de la pantalla es cuánto le falta a
+     cada local. Solo existe en Bodega; en Plaza y Angamos ni se dibuja.
+     Se distinguen de las tarjetas de abajo por lo que HACEN: estas abren una
+     lista, las de abajo filtran la de esta misma pantalla. Por eso llevan la
+     jerarquía al revés —el nombre arriba, el número abajo— y una flecha. */
+  .csedes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .csede{position:relative;display:block;width:100%;font:inherit;text-align:center;
+         background:var(--card);border:1px solid var(--border);border-radius:12px;
+         padding:9px 6px 10px;cursor:pointer;user-select:none;color:var(--text);
+         transition:transform .12s ease}
+  .csede:active{transform:scale(.94)}
+  .csede .sd{display:block;font-size:11px;font-weight:700;color:var(--muted);
+             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
+  .csede .cn{display:block;font-size:22px;font-weight:700;color:var(--red-fg);
+             margin-top:3px;line-height:1.1}
+  .csede .ch{position:absolute;top:5px;right:8px;font-size:14px;color:var(--muted);opacity:.5}
+  /* lo urgente lo marcó una persona: va en el naranja de acción, igual que la
+     píldora que ya lleva el producto en la lista del local */
+  .csede-urg{display:inline-block;margin-top:5px;font-size:10.5px;padding:2px 8px}
+  /* la lista que se abre al tocar una tarjeta */
+  .cs-lista{max-height:56vh;overflow-y:auto;overscroll-behavior:contain;margin:2px -4px 0}
+  .cs-fila{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+           padding:9px 6px;border-bottom:1px solid var(--border)}
+  .cs-fila:last-child{border-bottom:none}
+  .cs-nm{font-size:14.5px;font-weight:600;min-width:0}
+  .cs-sec{display:block;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:1px}
+  .cs-hay{flex-shrink:0;font-size:13px;font-weight:700;color:var(--red-fg);white-space:nowrap}
+  .cs-vacio{text-align:center;font-size:14px;font-weight:600;padding:26px 10px;color:var(--green-fg)}
+  /* el bloque de urgentes, con la misma forma que el de la lista del local */
+  .cs-grupo{background:var(--gray-bg);border-radius:12px;padding:8px 8px 2px;margin:0 4px 10px}
+  .cs-lbl{font-size:11px;font-weight:800;letter-spacing:.7px;padding:0 4px 6px;color:var(--gray-fg)}
+  .cs-grupo-urg .cs-lbl{color:var(--orange)}
+  .cs-grupo .cs-fila:last-child{border-bottom:none}
+  /* una merma deshecha no se borra del libro: se apaga y se marca */
+  .cs-off{opacity:.55}
+  .cs-off .cs-hay{color:var(--muted);text-decoration:line-through}
+  .cs-des{display:block;font-size:10.5px;font-weight:700;color:var(--muted);
+          text-decoration:none;margin-top:2px}
+  .cs-hay .rep-deshacer{display:block;margin-top:3px}
+  .cs-error{text-align:center;font-size:14px;font-weight:600;padding:26px 10px;color:var(--red-fg)}
+
   /* ---- franja de tipos: el otro eje del producto ----
      Las secciones dicen DÓNDE está; el tipo dice QUÉ ES. Una torta está en
      Vitrina de tortas y es una torta; un cinnamon roll está en Congelador y
@@ -259,6 +302,8 @@
     #list.brota{animation:none}
     .tipo{transition:none}
     .tipo:active{transform:none}
+    .csede{transition:none}
+    .csede:active{transform:none}
   }
   .count{font-size:12px;color:var(--muted);margin:6px 0}
   /* turnos: el inventario de la mañana y el de la tarde son dos rondas
@@ -690,6 +735,37 @@
   .btn-urg.on{border-color:var(--orange);background:var(--orange);color:#fff}
   .btn-urg:active{background:var(--orange-dark);border-color:var(--orange-dark);color:#fff}
   .btn-urg svg{width:17px;height:17px}
+  /* ---- mermar ----
+     Ámbar, que en esta paleta es el aviso: ni el rojo de eliminar (que borra
+     el producto) ni el naranja de urgente (que es un pedido). Mermar saca
+     unidades que se perdieron, y eso es su propia categoría. */
+  .btn-merma{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+             height:44px;margin-top:14px;border-radius:10px;border:1.5px solid var(--amber-fg);
+             background:var(--amber-bg);color:var(--amber-fg);font-size:14.5px;font-weight:700;
+             cursor:pointer;font-family:inherit}
+  .btn-merma:active{background:#FFE6C4}
+  .btn-merma svg{width:17px;height:17px}
+  /* los cuatro motivos: se toca uno y queda marcado. Botones y no un
+     desplegable, porque son cuatro y el dedo llega directo */
+  .mot{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:6px}
+  .mot button{height:44px;border-radius:10px;border:1.5px solid var(--border);background:#fff;
+              color:var(--text);font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer;
+              transition:transform .12s ease}
+  .mot button:active{transform:scale(.96)}
+  .mot button.on{border-color:var(--amber-fg);background:var(--amber-bg);color:var(--amber-fg);font-weight:800}
+  /* una fila por fecha, para mermar de la fecha exacta que se botó */
+  .mlote{display:flex;align-items:center;justify-content:space-between;gap:10px;
+         padding:8px 4px;border-bottom:1px solid var(--border)}
+  .mlote:last-child{border-bottom:none}
+  .mlote .fch{font-size:14px;font-weight:600}
+  .mlote .hay{display:block;font-size:11.5px;color:var(--muted);font-weight:500}
+  .mlote input{width:78px;height:40px;text-align:center;font-size:17px;font-weight:700;
+               border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text)}
+  /* la vista previa: qué va a quedar, antes de tocar nada */
+  .mprev{margin-top:14px;padding:10px 12px;border-radius:10px;background:var(--gray-bg);
+         font-size:14px;font-weight:600;text-align:center;color:var(--text)}
+  .mprev.mal{background:var(--red-bg);color:var(--red-fg)}
+  @media (prefers-reduced-motion: reduce){ .mot button{transition:none} .mot button:active{transform:none} }
   .fab{position:fixed;right:18px;bottom:24px;width:58px;height:58px;border-radius:50%;background:var(--orange);color:#fff;border:none;font-size:32px;font-weight:600;line-height:1;box-shadow:0 6px 18px rgba(220,68,5,.45);cursor:pointer;z-index:30;display:flex;align-items:center;justify-content:center}
   .fab:active{background:var(--orange-dark)}
   .chkrow{display:flex;align-items:center;gap:10px;margin:14px 0;cursor:pointer;user-select:none}
@@ -827,6 +903,8 @@
     </button>
     <button class="tab" data-tab="reparto">Reparto <span class="tab-nuevo" id="tabNuevo" style="display:none">NUEVO</span><span class="tab-badge" id="repBadge" style="display:none"></span></button>
     <button class="tab" data-tab="recetas">Recetas <span class="tab-nuevo late" id="tabNuevoRec" style="display:none">NUEVO</span></button>
+    <!-- solo en Bodega, igual que la franja de crítico -->
+    <button class="tab" data-tab="mermas" id="tabMermas" style="display:none">Mermas</button>
   </div>
 </div>
 
@@ -980,6 +1058,8 @@
   <div class="controls busca" data-busca="inv">
     <input type="text" id="q" placeholder="Buscar producto…">
   </div>
+  <!-- solo en Bodega: cuánto le falta a cada local. Ver .csedes en el estilo -->
+  <div class="csedes" id="critSedes" style="display:none"></div>
   <div class="metrics" id="metrics">
     <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
     <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
@@ -1095,6 +1175,15 @@
   </div>
 </div>
 
+<!-- ================= MERMAS (solo Bodega) ================= -->
+<div class="wrap" id="view-mermas" style="display:none">
+  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+    <div style="flex:1;font-weight:800;font-size:16px" id="mermas-total">—</div>
+    <button class="btn btn-orange btn-sm" id="btnMermasExcel">Descargar Excel</button>
+  </div>
+  <div id="mermas-list"><div class="empty">Cargando…</div></div>
+</div>
+
 <!-- ================= RECETAS ================= -->
 <div class="wrap" id="view-recetas" style="display:none">
 
@@ -1208,6 +1297,13 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
       <span id="m-urgente-txt">Marcar urgente</span>
     </button>
+    <!-- Mermar está en la ficha, a un toque de cualquier producto, porque es
+         algo que pasa todos los días y tiene que estar siempre a la mano.
+         Solo aparece en Bodega. -->
+    <button type="button" class="btn-merma" id="m-mermar" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M14 11l-4 6"></path><path d="M10 11l4 6"></path></svg>
+      <span>Mermar</span>
+    </button>
     <!-- Solo administración. Un producto del inventario puede afectar a
          VARIOS de Fudo (un selladito está en el combo KIDS y se vende solo),
          así que el botón muestra cuáles antes de escribir nada. -->
@@ -1278,13 +1374,15 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
    (§0.6): una misma palabra significando dos cosas según la fecha.
    La vieja sigue en la base con todo su historial, pero ya no se ofrece acá,
    y como SEDE solo se fija al tocar un botón, nadie puede entrar a ella. */
+/* `corto` es para las tarjetas de crítico, donde no cabe el nombre entero.
+   Es el mismo nombre, no uno nuevo: el largo sigue mandando en todas partes. */
 const SEDES = {
-  plaza:   { label:'Café Mall Plaza',  excel:'plaza'   },
-  angamos: { label:'Parque Angamos',   excel:'angamos' },
-  central: { label:'Bodega',           excel:'bodega'  },
+  plaza:   { label:'Café Mall Plaza',  corto:'Mall Plaza', excel:'plaza'   },
+  angamos: { label:'Parque Angamos',   corto:'Angamos',    excel:'angamos' },
+  central: { label:'Bodega',           corto:'Bodega',     excel:'bodega'  },
 };
 /* el título de la barra dice en qué estás, como en Fudo */
-const TITULOS = {inv:'Inventario', reparto:'Reparto', hist:'Historial', recetas:'Recetas'};
+const TITULOS = {inv:'Inventario', reparto:'Reparto', hist:'Historial', recetas:'Recetas', mermas:'Mermas'};
 let SEDE = null;
 let channel = null;
 
@@ -1303,6 +1401,19 @@ function esPerec(p){ return hasPerec ? !!p.perecedero : p.rubro==='Sándwiches';
 /* Marcado a mano por el personal para que Adriana lo vea: no es un estado
    calculado como crítico/sobre-stock, convive con ellos. */
 function esUrgente(p){ return hasUrgente && !!p.urgente; }
+/* La misma pregunta que la de arriba, pero para un producto de OTRA sede: no
+   puede apoyarse en `hasUrgente`, que describe la sede que está abierta. Si la
+   columna no existe, `p.urgente` es undefined y da false igual. */
+const urgenteDe = p => !!p.urgente;
+
+/* QUÉ ENTRA EN "CRÍTICO" — una sola definición para toda la app.
+   El semáforo lo marca, O alguien lo marcó urgente a mano. Lo urgente entra
+   aunque el número no lo pida: es un aviso de una persona y no se puede
+   perder detrás de la aritmética.
+   Vive acá y no dentro del filtro de la lista porque ahora la usan DOS
+   pantallas —la del local y las tarjetas de Bodega— y una segunda copia sería
+   exactamente la forma de que Bodega dejara de ver lo que el local marcó. */
+const entraEnCritico = p => estado(p)==='critico' || urgenteDe(p);
 
 const $ = id => document.getElementById(id);
 const qEl=$('q'), listEl=$('list');
@@ -1792,12 +1903,23 @@ function pickSede(s){
   $('footText').textContent = SEDES[s].label + ' · sincronizado en tiempo real';
   // reset estado/filtros
   DATA=[]; filterState=null; modalProd=null; carrito=[];
+  /* los conteos de las otras sedes se descartan al cambiar de sede: si no, al
+     volver a Bodega se verían un instante los números de la visita anterior */
+  CRITICOS={}; CRIT_TOPE={};
+  $('critSedes').style.display='none'; $('critSedes').innerHTML='';
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
   qEl.value=''; openSecs=new Set();
   $('rq').value=''; $('reparto-results').innerHTML=''; $('carrito-box').style.display='none';
+  /* Bodega no vende, así que no tiene recetas: la pestaña ni se ofrece.
+     Es solo esconder el botón — no se toca ni una receta de nadie, y en Plaza
+     y Angamos la barra queda igual que siempre. */
+  document.querySelector('.tab[data-tab="recetas"]').style.display = s==='central' ? 'none' : '';
+  // y al revés con Mermas: por ahora vive solo en Bodega
+  $('tabMermas').style.display = s==='central' ? '' : 'none';
+  MERMAS=[];
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
-  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none';
+  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none';
   vistaActual='inv';
   listEl.innerHTML='';
   $('gate').classList.add('hidden');
@@ -1912,6 +2034,370 @@ function metrics(){
   DATA.forEach(p=>m[estado(p)]++);
   for(const k in m){ const el=$('c-'+k); if(el) el.textContent=m[k]; }
 }
+
+/* ---------------- lo que le falta a cada sede (solo en Bodega) ----------------
+   Es lo primero que Adriana necesita para armar un reparto: no cómo está
+   bodega, sino qué le falta a cada local.
+
+   REUTILIZA estado() tal cual, sin copiarla. La regla de qué es crítico vive
+   en un solo lugar; si mañana cambia, cambia acá y en la pantalla del local a
+   la vez. Una segunda copia en SQL o en otra función es justo la clase de
+   cosa que se desincroniza sin que nadie lo note.
+
+   Los números de los otros dos locales NO llegan en vivo: la suscripción está
+   filtrada por sede a propósito (`sede=eq.SEDE`). Se releen al entrar a
+   Bodega, al apretar ⟳ y al volver a la app. Para decidir un reparto eso
+   alcanza; en vivo obligaría a escuchar las tres sedes desde las tres. */
+/* Solo los dos LOCALES. Bodega no lleva tarjeta propia: su crítico ya está
+   dos centímetros más abajo, en la tarjeta "Crítico" de siempre. */
+const SEDES_TARJETA = ['angamos','plaza'];
+let CRITICOS = {};          // sede -> [lo que entra en crítico]  ·  null = no se pudo leer
+let CRIT_TOPE = {};         // sede -> true si la lectura chocó con el tope de 1000
+
+async function cargarCriticos(){
+  const cont = $('critSedes');
+  if(SEDE !== 'central'){ cont.style.display='none'; return; }
+  cont.style.display='';
+  pintarCriticos();          // el marco, mientras llegan los números
+
+  /* select('*') y no una lista de columnas: así trae `urgente` sin que la
+     consulta se caiga en una base donde esa columna todavía no exista.
+     Es lo mismo que hace loadData() para la sede abierta.
+     .limit(1000) no es adorno: Supabase corta en 1000 y no avisa (bloque A).
+     Hoy la sede más grande tiene 240; si algún día se llegara al tope, el
+     número sale con un "+" en vez de mentir por lo bajo. */
+  const res = await Promise.all(SEDES_TARJETA.map(s => sb.from('productos')
+    .select('*').eq('sede',s).eq('activo','SÍ').order('producto').limit(1000)));
+
+  SEDES_TARJETA.forEach((s,i)=>{
+    if(res[i].error){
+      // si falla la lectura la tarjeta queda sin número. Un 0 acá sería peor
+      // que no mostrar nada: diría "no le falta nada" justo cuando no sabemos
+      CRITICOS[s] = null; CRIT_TOPE[s] = false;
+      console.error('crítico '+s, res[i].error);
+      return;
+    }
+    const filas = res[i].data || [];
+    CRITICOS[s]  = filas.filter(entraEnCritico);
+    CRIT_TOPE[s] = filas.length >= 1000;
+  });
+  pintarCriticos();
+}
+
+/* El número que va en la tarjeta. Está aparte por una sola razón, y es la
+   regla que no se puede romper: una lectura que FALLÓ muestra "—", nunca 0.
+   Un 0 acá diría "no le falta nada a esa sede" justo cuando no lo sabemos —
+   y Adriana armaría el reparto sin ese local. Es la falla callada de §0.5 en
+   versión chica. Probada en pruebas/critico-por-sede.mjs. */
+function numeroTarjeta(lista, tope){
+  if(lista === undefined) return '·';        // todavía viene en camino
+  if(lista === null)      return '—';        // no se pudo leer
+  return lista.length + (tope ? '+' : '');   // "+" = chocó con el tope de 1000
+}
+
+function pintarCriticos(){
+  $('critSedes').innerHTML = SEDES_TARJETA.map(s=>{
+    const lista = CRITICOS[s];
+    /* El número grande cuenta SOLO los que el semáforo marca crítico, para que
+       sea el mismo número que ve el jefe de turno parado en su local. Lo
+       urgente se cuenta aparte, en su propia píldora: son dos cosas distintas
+       y sumarlas haría que Bodega y el local mostraran cifras que no calzan. */
+    const soloCrit = lista && lista.filter(p=>estado(p)==='critico');
+    const urg      = lista ? lista.filter(urgenteDe).length : 0;
+    return `<button type="button" class="csede" data-crit="${s}">
+        <span class="ch" aria-hidden="true">›</span>
+        <span class="sd">Críticos en ${esc(SEDES[s].corto)}</span>
+        <span class="cn">${numeroTarjeta(soloCrit, CRIT_TOPE[s])}</span>
+        ${urg?`<span class="pill pill-urg csede-urg">${urg} urgente${urg===1?'':'s'}</span>`:''}
+      </button>`;
+  }).join('');
+}
+
+/* Cuánto le falta a un producto para llegar a su mínimo. Ordena la lista por
+   urgencia real, que es el orden en que Adriana decide qué mandar primero. */
+const faltaPara = p => (p.stock_min==null ? 0 : +p.stock_min) - (+p.stock_actual||0);
+
+function abrirCriticos(sede){
+  const lista = CRITICOS[sede];
+  const porFalta = (a,b) =>
+    faltaPara(b)-faltaPara(a)
+    || (+a.stock_actual||0)-(+b.stock_actual||0)
+    || a.producto.localeCompare(b.producto,'es');
+  /* Lo URGENTE va arriba del todo y aparte, igual que en la lista del local:
+     lo marcó una persona porque hacía falta, y no puede quedar sepultado en
+     el puesto 40 de una lista de 101. */
+  const todos    = (lista||[]).slice().sort(porFalta);
+  const urgentes = todos.filter(urgenteDe);
+  const criticos = todos.filter(p=>!urgenteDe(p));
+
+  const hayTxt = p => 'hay ' + fmt(p.stock_actual)
+    + (p.stock_min!=null ? ' · mín ' + fmt(p.stock_min) : '');
+  const fila = p => `<div class="cs-fila">
+      <span class="cs-nm">${esc(p.producto)}
+        <span class="cs-sec">${esc(p.rubro||'Sin sección')}</span></span>
+      <span class="cs-hay">${esc(hayTxt(p))}</span>
+    </div>`;
+
+  const cuerpo = lista===null
+    ? '<div class="cs-error">No se pudo leer esta sede</div>'
+    : !todos.length
+      ? '<div class="cs-vacio">Nada en crítico</div>'
+      : (urgentes.length
+          ? `<div class="cs-grupo cs-grupo-urg"><div class="cs-lbl">URGENTE</div>${urgentes.map(fila).join('')}</div>`
+          : '')
+        + criticos.map(fila).join('');
+
+  const ov=document.createElement('div');
+  ov.className='overlay overlay-blur overlay-prop open';
+  ov.innerHTML = `<div class="modal globo">
+      <h2 style="margin:2px 0 12px;font-size:19px">${esc(SEDES[sede].label)}</h2>
+      <div class="cs-lista">${cuerpo}</div>
+      <div class="mbtns">
+        ${todos.length?'<button class="btn btn-gris" data-a="copiar">Copiar</button>':''}
+        <button class="btn" data-a="cerrar">Cerrar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+
+  const caja = ov.querySelector('.modal');
+  const cerrar = ()=>{ caja.classList.add('cerrando'); setTimeout(()=>ov.remove(),160); };
+  ov.addEventListener('click', async e=>{
+    if(e.target===ov){ cerrar(); return; }
+    const b=e.target.closest('[data-a]'); if(!b) return;
+    if(b.dataset.a==='cerrar'){ cerrar(); return; }
+    /* El resumen que se pega en WhatsApp respeta el mismo orden de la pantalla
+       y marca lo urgente, que es lo que hay que leer primero. */
+    const linea = p => (urgenteDe(p)?'⚠ ':'') + nombreResumen(p.producto) + ' — ' + hayTxt(p);
+    const txt = 'Críticos en '+SEDES[sede].label+'\n'
+      + urgentes.concat(criticos).map(linea).join('\n');
+    b.textContent = await copiarTexto(txt) ? '✓ Copiado' : 'No se pudo';
+    setTimeout(()=>{ b.textContent='Copiar'; }, 1400);
+  });
+}
+
+$('critSedes').addEventListener('click', e=>{
+  const b = e.target.closest('[data-crit]');
+  if(b) abrirCriticos(b.dataset.crit);
+});
+
+/* ================= MERMAS (solo Bodega) =================
+   Mermar es sacar del inventario lo que se perdió: se dañó, lo robaron, se
+   venció. Pasa todos los días, así que está a un toque desde la ficha de
+   cualquier producto, y no escondido en un menú.
+
+   Las dos cosas que la hacen segura, y son las que pide §6.2 para todo lo que
+   destruye: se ve lo que va a quedar ANTES de aplicar, y se puede deshacer.
+
+   La resta y la anotación en el libro ocurren juntas dentro de mermar() en la
+   base — nunca desde acá. Si se hicieran en dos llamadas y se cortara la
+   señal en el medio, quedaría stock bajado sin anotar. */
+/* MOTIVOS_MERMA y no MOTIVOS: ese nombre ya lo usa Recetas para los motivos
+   de "no lleva receta". Son dos listas distintas que se llaman parecido. */
+const MOTIVOS_MERMA = [['daño','Daño'],['robo','Robo'],['vencimiento','Vencimiento'],['otro','Otro']];
+
+/* Cuánto se puede mermar de un producto: si tiene fechas, la suma de las
+   fechas; si no, su stock. Nunca más que eso (regla 0.2). */
+const disponibleDe = p => {
+  const ls = lotesDe(p.id);
+  return ls.length ? ls.reduce((a,l)=>a+(+l.cantidad||0),0) : (+p.stock_actual||0);
+};
+
+/* El texto de la vista previa. Aparte para poder probarlo: es lo que la
+   persona lee justo antes de apretar, y tiene que decir la verdad. */
+function textoPrevio(disponible, aMermar){
+  if(aMermar <= 0)          return {txt:'¿Cuánto se merma?', mal:false, puede:false};
+  if(aMermar > disponible)  return {txt:`Solo hay ${fmt(disponible)}`, mal:true, puede:false};
+  return {txt:`Quedan ${fmt(disponible-aMermar)} de ${fmt(disponible)}`, mal:false, puede:true};
+}
+
+function abrirMerma(prod){
+  const lotes = lotesDe(prod.id);          // si tiene fechas, se merma por fecha
+  const disponible = disponibleDe(prod);
+  let motivo = null, nota = '', cant = 0;
+  const porLote = {};                      // lote_id -> cantidad
+
+  const ov=document.createElement('div');
+  ov.className='overlay overlay-blur overlay-prop open';
+  ov.innerHTML = `<div class="modal globo">
+      <h2 style="margin:2px 0 2px;font-size:19px">Mermar</h2>
+      <p class="mr">${esc(prod.producto)} · hay ${fmt(disponible)}</p>
+      <div class="field" style="margin-top:0">
+        <label>Motivo</label>
+        <div class="mot">${MOTIVOS_MERMA.map(([k,t])=>
+          `<button type="button" data-mot="${k}">${t}</button>`).join('')}</div>
+      </div>
+      <div class="field" id="mm-nota-row" style="display:none">
+        <label>¿Qué pasó?</label>
+        <input type="text" id="mm-nota" maxlength="120" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>${lotes.length?'De qué fecha':'Cuánto'}</label>
+        ${lotes.length
+          ? lotes.map(l=>`<div class="mlote">
+                <span><span class="fch">${l.vencimiento?fmtPildora(l.vencimiento):'sin fecha'}</span>
+                  <span class="hay">hay ${fmt(l.cantidad)}</span></span>
+                <input type="number" step="0.5" min="0" max="${l.cantidad}" value="0"
+                       data-lote="${l.id}" aria-label="Cantidad a mermar">
+              </div>`).join('')
+          : `<div class="stepper">
+               <button type="button" data-paso="-1">−</button>
+               <input type="number" step="0.5" min="0" id="mm-cant" value="0">
+               <button type="button" data-paso="1">+</button>
+             </div>`}
+      </div>
+      <div class="mprev" id="mm-prev"></div>
+      <div class="mbtns">
+        <button class="btn btn-outline" data-a="cancelar">Cancelar</button>
+        <button class="btn btn-orange" data-a="aplicar" disabled>Mermar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+
+  const caja = ov.querySelector('.modal');
+  const cerrar = ()=>{ caja.classList.add('cerrando'); setTimeout(()=>ov.remove(),160); };
+
+  const repintar = ()=>{
+    cant = lotes.length
+      ? Object.values(porLote).reduce((a,b)=>a+b,0)
+      : (+ov.querySelector('#mm-cant').value || 0);
+    const v = textoPrevio(disponible, cant);
+    const pv = ov.querySelector('#mm-prev');
+    pv.textContent = v.txt; pv.classList.toggle('mal', v.mal);
+    // hacen falta las dos cosas: un motivo y una cantidad que quepa
+    ov.querySelector('[data-a="aplicar"]').disabled = !(v.puede && motivo);
+  };
+  repintar();
+
+  ov.addEventListener('input', e=>{
+    const li = e.target.closest('[data-lote]');
+    if(li){
+      const max = +li.max || 0;
+      if((+li.value||0) > max) li.value = max;     // no se puede botar más de lo que hay
+      porLote[li.dataset.lote] = +li.value || 0;
+    }
+    if(e.target.id === 'mm-nota') nota = e.target.value;
+    repintar();
+  });
+
+  ov.addEventListener('click', async e=>{
+    if(e.target===ov){ cerrar(); return; }
+
+    const paso = e.target.closest('[data-paso]');
+    if(paso){
+      const i = ov.querySelector('#mm-cant');
+      i.value = Math.max(0, (+i.value||0) + (+paso.dataset.paso));
+      repintar(); return;
+    }
+    const mb = e.target.closest('[data-mot]');
+    if(mb){
+      motivo = mb.dataset.mot;
+      ov.querySelectorAll('[data-mot]').forEach(x=>x.classList.toggle('on', x===mb));
+      ov.querySelector('#mm-nota-row').style.display = motivo==='otro' ? 'block' : 'none';
+      if(motivo==='otro') ov.querySelector('#mm-nota').focus();
+      repintar(); return;
+    }
+    const b = e.target.closest('[data-a]'); if(!b) return;
+    if(b.dataset.a==='cancelar'){ cerrar(); return; }
+
+    b.disabled=true; b.textContent='Mermando…';
+    const args = {
+      p_producto_id: prod.id, p_motivo: motivo,
+      p_nota: motivo==='otro' ? nota : null, p_quien: NOMBRE,
+      p_cantidad: lotes.length ? null : cant,
+      p_lotes: lotes.length
+        ? Object.entries(porLote).filter(([,c])=>c>0).map(([id,c])=>({lote_id:+id, cantidad:c}))
+        : null,
+    };
+    const {error} = await sb.rpc('mermar', args);
+    if(error){
+      b.disabled=false; b.textContent='Mermar';
+      // el mensaje viene de la base y está escrito para leerse tal cual
+      avisar(error.message || 'No se pudo mermar. Revisa tu señal e inténtalo de nuevo.');
+      return;
+    }
+    cerrar(); closeModal();
+    avisar('✓ Mermado · ' + fmt(cant) + ' de ' + prod.producto);
+    await loadData(); await loadLotes(); metrics(); render();
+    if(vistaActual==='mermas') loadMermas();
+  });
+}
+
+$('m-mermar').addEventListener('click', ()=>{ if(modalProd) abrirMerma(modalProd); });
+
+/* ---------------- la pestaña ---------------- */
+let MERMAS = [];
+async function loadMermas(){
+  if(SEDE!=='central') return;
+  const {data,error} = await sb.from('movimientos').select('*')
+    .eq('sede','central').eq('tipo','merma')
+    .order('created_at',{ascending:false}).limit(500);
+  if(error){
+    MERMAS=[];
+    $('mermas-list').innerHTML='<div class="empty">No se pudo leer el registro de mermas.</div>';
+    $('mermas-total').textContent='—';
+    console.error('mermas', error); return;
+  }
+  MERMAS = data||[];
+  pintarMermas();
+}
+
+const MOT_MERMA_TXT = Object.fromEntries(MOTIVOS_MERMA);
+
+function pintarMermas(){
+  const vivas = MERMAS.filter(m=>!m.deshecha_at);
+  $('mermas-total').textContent = vivas.length
+    ? vivas.length + (vivas.length===1?' merma':' mermas')
+    : 'Sin mermas';
+  if(!MERMAS.length){
+    $('mermas-list').innerHTML='<div class="empty">Todavía no hay mermas registradas.</div>';
+    return;
+  }
+  // agrupadas por día: es como se lee un libro de registro
+  const dias = [...new Set(MERMAS.map(m=>m.created_at.slice(0,10)))];
+  $('mermas-list').innerHTML = dias.map(d=>{
+    const delDia = MERMAS.filter(m=>m.created_at.slice(0,10)===d);
+    return `<div class="turno">
+      <div class="turno-lbl">${fmtFecha(d).toUpperCase()}</div>
+      ${delDia.map(m=>`<div class="cs-fila${m.deshecha_at?' cs-off':''}">
+        <span class="cs-nm">${esc(m.producto)}
+          <span class="cs-sec">${esc(MOT_MERMA_TXT[m.motivo]||m.motivo||'—')}${
+            m.nota?' · '+esc(m.nota):''}${m.quien?' · '+esc(m.quien):''}</span></span>
+        <span class="cs-hay">${fmt(Math.abs(m.cantidad))}${
+          m.deshecha_at
+            ? '<span class="cs-des">deshecha</span>'
+            : `<button type="button" class="rep-deshacer" data-desmerma="${m.id}">Deshacer</button>`}</span>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+$('mermas-list').addEventListener('click', async e=>{
+  const b = e.target.closest('[data-desmerma]'); if(!b) return;
+  if(!await preguntar('Deshacer esta merma','Las unidades vuelven al inventario de Bodega.','Deshacer')) return;
+  b.disabled=true; b.textContent='…';
+  const {error} = await sb.rpc('deshacer_merma',{p_movimiento_id:+b.dataset.desmerma, p_quien:NOMBRE});
+  if(error){ b.disabled=false; b.textContent='Deshacer'; avisar(error.message||'No se pudo deshacer.'); return; }
+  await loadMermas(); await loadData(); await loadLotes(); metrics(); render();
+});
+
+$('btnMermasExcel').addEventListener('click',()=>{
+  if(!MERMAS.length){ avisar('No hay mermas que descargar.'); return; }
+  const rows = MERMAS.map(m=>({
+    'Fecha': fmtFecha(m.created_at.slice(0,10)),
+    'Hora': new Date(m.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}),
+    'Producto': m.producto,
+    'Cantidad': Math.abs(m.cantidad),
+    'Motivo': MOT_MERMA_TXT[m.motivo]||m.motivo||'',
+    'Detalle': m.nota||'',
+    'Quién': m.quien||'',
+    'Deshecha': m.deshecha_at ? 'SÍ' : '',
+  }));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:11},{wch:7},{wch:34},{wch:9},{wch:13},{wch:28},{wch:16},{wch:9}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Mermas');
+  XLSX.writeFile(wb,`mermas-bodega-${hoyISO()}.xlsx`);
+});
 function rowHTML(p, conSeccion){
   const e=estado(p),cf=CFG[e];
   const t=totalProducto(p.producto);
@@ -1952,7 +2438,7 @@ function pasaFiltro(p){
   // equipo marcó a mano tiene que estar ahí también, aunque el semáforo no lo
   // marque — si no, lo urgente se queda escondido. Ya no hay tarjeta Urgente
   // aparte justamente porque todo lo urgente sale acá, arriba del todo.
-  if(filterState==='critico') return estado(p)==='critico' || esUrgente(p);
+  if(filterState==='critico') return entraEnCritico(p);
   return estado(p)===filterState;
 }
 const tipoDe = p => (p.tipo||'').trim();
@@ -2052,6 +2538,9 @@ async function loadData(){
   $('m-tipo-row').style.display = hasTipo ? 'flex' : 'none';
   await loadLotes();
   metrics(); renderTipos(); render();
+  /* sin await: las otras dos sedes son dos lecturas más y no tienen por qué
+     retrasar el pintado de esta. Las tarjetas se llenan solas al llegar. */
+  cargarCriticos();
   $('liveText').textContent='en vivo'; $('live').classList.remove('off');
 }
 /* trae los lotes de vencimiento de los productos de la sede.
@@ -2599,6 +3088,9 @@ function openModal(id){
   if(hasPerec) $('m-perec').checked = !!modalProd.perecedero;
   $('m-urgente').style.display = hasUrgente ? 'flex' : 'none';
   setUrgente(!!modalProd.urgente);
+  /* Mermar solo en Bodega. La base lo vuelve a comprobar dentro de mermar(),
+     así que esconder el botón es comodidad y no la única defensa. */
+  $('m-mermar').style.display = SEDE==='central' ? 'flex' : 'none';
   setModoEdicion(modoEdicion);
   // Solo se ofrece el editor de VARIAS fechas si la tabla que las guarda
   // (producto_lotes) existe de verdad en la base. Si no, se cae al campo
@@ -3436,7 +3928,9 @@ function pickTab(tab){
   $('view-reparto').style.display = tab==='reparto'?'block':'none';
   $('view-hist').style.display = tab==='hist'?'block':'none';
   $('view-recetas').style.display = tab==='recetas'?'block':'none';
+  $('view-mermas').style.display = tab==='mermas'?'block':'none';
   vistaActual=tab; $('topTitle').textContent=TITULOS[tab]||TITULOS.inv;
+  if(tab==='mermas') loadMermas();
   // Inicio devuelve la pantalla a como se abre: sin búsqueda, sin filtros y
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();

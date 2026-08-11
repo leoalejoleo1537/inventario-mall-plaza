@@ -25,6 +25,7 @@
 | **0.4** | Un perecedero entra solo por fechas | sumar stock desde cualquier camino |
 | **0.5** | La falla de las 15 horas · cómo tocar el motor | tocar el motor o cualquier función SQL |
 | **0.6** | **El día que Angamos quedó en cero** · saca la foto antes | **siempre, antes de escribir en una sede** |
+| **0.7** | **La bodega es `central`; `bodega` es la vieja** · y las 3 reglas de esta etapa | **siempre, mientras se trabaje en bodega** |
 | 1 | Qué es esto y para quién | contexto general |
 | 2 | Estética · paleta y formas | tocar la pantalla |
 | 2.0 | Que sea bella, no solo que funcione | tocar la pantalla |
@@ -661,6 +662,72 @@ pendiente** — no se avanza por defecto.
 
 ---
 
+## 0.7 REGLA DURA — la bodega es `central`, y `bodega` es la vieja
+
+> Decisión de Jhon del 2026-08-10, después del incidente de §0.6: en vez de
+> depurar la bodega que existía, **construir una nueva desde cero sin heredar
+> nada**. *"mejor construirlo desde cero, no heredar nada, así tienes el
+> control de todo."*
+
+**El problema de la bodega vieja nunca fue que estuviera sucia:** sus filas
+**SON** las de la Angamos vieja renombrada en julio, y por eso las recetas, los
+repartos y el historial de ventas apuntan ahí. Una sede nueva nace sin una sola
+herencia: nada viejo la señala.
+
+| | |
+|---|---|
+| Clave interna | **`central`** |
+| En pantalla | dice **"Bodega"** — para el equipo no cambió nada |
+| Nació con | 236 productos depurados (de 351 activos, quitando 117 duplicados). Quedaron **234** |
+| Stock | **0 a propósito.** El de la vieja arrastra el descuadre de las 254 unidades del problema de las recetas; copiarlo sería heredar un error sin saber de cuánto es |
+| La vieja | intacta, oculta del portal. **Ni un update, ni un delete** |
+
+**POR QUÉ LA CLAVE NO ES `bodega`, y esto es lo más importante del diseño.** La
+palabra `bodega` quedó ocupada para siempre por la vieja. Reciclarla sería
+repetir **exactamente** la causa del incidente: una misma palabra significando
+dos cosas según la fecha, y alguien teniendo que adivinar cuál. **Una fila que
+diga `bodega` es la vieja. Siempre. Sin excepción.**
+
+**Por qué no se borra la vieja:** verificado, no supuesto —
+`reparto_items.producto_id` tiene llave foránea a `productos` sin cascada, así
+que cualquier producto que aparezca en un reparto no se puede borrar. Se oculta
+sacándola del portal, que es un cambio en `index.html` y no en la base.
+
+### Las reglas de esta etapa (Jhon, 2026-08-10), y no se negocian
+
+1. **No se toca, modifica, edita, borra ni agrega nada en ninguna sede que no
+   sea `central`** — salvo que él lo pida explícitamente y por escrito en el
+   momento. Lo repitió dos veces: *"insisto en que no quiero que elimines nada
+   de ninguna sede"*. Los productos con "bodega" en el nombre metidos en
+   Angamos **los depura él**, no nosotros.
+2. **Nada de la bodega vieja.** Es un apéndice y qué hacer con él se decide
+   después.
+3. Única excepción autorizada: **agregar** el aviso de reparto en Angamos —
+   agregar, nunca modificar ni quitar.
+
+### El reparto descuenta al ACEPTAR, no al enviar
+
+*(Decisión de Jhon del 2026-08-10, y cambia lo que decía `docs/plan-bodega.html`.)*
+
+**El producto no se mueve de ningún lado hasta que alguien lo acepta en
+destino.** Al aceptar en Angamos o Plaza: se descuenta de `central` y se suma en
+la sede, en el mismo momento. Si se rechaza o no llega, no pasa nada — porque
+nunca se movió nada.
+
+Se evaluó la otra opción —restar al enviar y mostrar "en tránsito"— y se
+descartó. **La razón de fondo es la regla de §0.2.1:** el sistema no puede
+simular un movimiento que nadie hizo. Al enviar actuó una sola persona y la caja
+todavía puede quedarse en el pasillo; al aceptar actuaron dos, y ahí sí hay
+evidencia. Además desaparece el limbo y con él la posibilidad de descontar dos
+veces.
+
+**El costo aceptado:** entre que sale y que se confirma, `central` muestra
+producto que ya salió físicamente. Se resuelve **sin tocar el stock**: al armar
+un reparto, junto al "hay 12" va "· 5 comprometidos". El número no miente
+porque nada se movió.
+
+---
+
 ## 1. Qué es esto y para quién
 
 Sistema de **inventario multi-sede** para una cadena de cafés ("Café del Desierto"),
@@ -676,7 +743,10 @@ stock real de las 3 sedes en tiempo real desde el teléfono.
 **Sedes actuales:**
 - `plaza` — Café Mall Plaza
 - `angamos` — Parque Angamos
-- `bodega` — Bodega central
+- `central` — **la bodega. En pantalla dice "Bodega"** (§0.7)
+- `bodega` — ⚠️ **la bodega VIEJA.** Sigue en la base con todo su historial pero
+  **ya no se ofrece en el portal**. Una fila que diga `bodega` es la vieja.
+  Siempre. No se toca (§0.7)
 
 ---
 
@@ -852,7 +922,49 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 
 ## 6. Estado actual y pendientes
 
-### 6.0 DÓNDE QUEDAMOS — al 2026-08-05, fin del día
+### 6.0 DÓNDE QUEDAMOS — al 2026-08-10
+
+> **Se está construyendo la BODEGA (`central`).** El plan de fondo está en
+> `docs/plan-bodega.html`, pero **la etapa 3 de ese documento quedó al revés**:
+> el descuento va al aceptar, no al enviar (§0.7). Las reglas duras de esta
+> etapa también están en §0.7 y se leen antes de tocar nada.
+
+**El orden de trabajo acordado con Jhon**, y el estado:
+
+| | Qué | Estado |
+|---|---|---|
+| a | Catálogo maestro de insumos | 🔵 **Es trabajo humano.** 234 productos, **todos en 0**. Adriana está contando. Todo lo real depende de esto |
+| b | Tarjetas de crítico por sede | ✅ hecho |
+| d | **Mermas** | ✅ hecho · SQL corrido y probado de punta a punta |
+| — | Los gemelos (`producto_enlace`) | ⬜ **lo siguiente.** Sin esto el reparto no sabe a qué producto sumarle |
+| c+f | El reparto que resta, y su pantalla | ⬜ la pieza grande |
+| e | Aviso de reparto en Angamos | ⬜ lo único fuera de `central` |
+| g | Seguridad y usuarios nuevos | ⬜ al final, por decisión suya |
+
+**Lo que ya corrió en la base:** los cimientos (`unidad`, `producto_enlace`,
+`movimientos`), la bodega nueva, y las mermas (`mermar` + `deshacer_merma`).
+**`central` ya tiene foto en `historial`** — se cumple §0.6.
+
+**Pendientes del encargo que todavía no están, anotados para que no se
+pierdan:** llenar la unidad de medida por producto, las estadísticas de bodega
+leídas del libro de movimientos, y crear/desactivar productos en Fudo desde
+bodega (medido en §8, decidido que vive acá).
+
+**Dos cosas de método que salieron caras esta semana y valen para cualquier
+sesión:**
+
+1. **El editor de Supabase muestra solo el resultado de la ÚLTIMA consulta.**
+   Un bloque con dos `select` entrega uno solo y el otro se pierde en silencio.
+   **Un resultado por Run.**
+2. **Un nombre repetido en `index.html` mata la app entera.** Declarar un
+   `const` que ya existía dejó el archivo sin ejecutar: la pantalla se dibujaba
+   igual y no hacía nada, y las pruebas de pantalla pasaban en verde porque
+   miraban el HTML y no el guion. Ahora `pruebas/pantalla-sana.mjs` intenta
+   leer el guion y lo atrapa.
+
+---
+
+### 6.0.1 Lo anterior — al 2026-08-05, fin del día
 
 > Esto es lo que un chat nuevo necesita saber antes que nada. **Actualizar
 > esta sección cada vez que se cierre una etapa**, y borrar lo que ya no
@@ -2067,6 +2179,50 @@ donde se edita el stock— y no en cada fila de la lista.
 ---
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-08-10** — **La bodega nueva arranca: `central`, sus tarjetas y las
+  mermas.** La decisión que estaba pendiente desde el 9 se tomó — construir
+  desde cero, sin heredar nada (§0.7).
+  1. **El archivo madre estaba mintiendo por omisión.** `central` se creó el
+     10 y esta bitácora seguía diciendo *"bodega queda EN PAUSA, la decisión
+     es de Jhon y está pendiente"*. Un chat nuevo habría leído eso con toda
+     confianza y replanificado sobre una bodega que ya no existe. **Es el
+     mismo error del clon local atrasado, pero adentro del propio archivo:**
+     una sección de estado que envejece engaña más que no tenerla.
+  2. **Los cimientos NO estaban corridos, y el cuaderno no tenía la culpa.**
+     Yo lo acusé de mentir al ver "2 scripts de bodega anotados" sin las
+     tablas puestas; los dos anotados eran **informes de solo lectura**. El
+     cuaderno se queda corto —`bodega-nueva-desde-cero` sí corrió y no quedó
+     anotado— pero no se pasa de largo. **Sirve para saber qué se hizo; no
+     sirve para concluir que algo no se hizo.**
+  3. **Las tarjetas de crítico, y el hueco que encontró Jhon.** La lista del
+     local define Crítico como *"el semáforo lo marca O alguien lo marcó
+     urgente a mano"*, y la tarjeta solo miraba el semáforo: un producto
+     marcado urgente que no estuviera bajo el mínimo era **invisible desde
+     bodega**, que es justo donde se arma el reparto. La definición dejó de
+     vivir dentro del filtro de la lista y pasa a ser `entraEnCritico()`,
+     usada por las dos pantallas. **Una regla escrita dos veces es cómo se
+     produjo el hueco.**
+  4. **Mermas, con la resta y la anotación adentro de una sola función.** Si
+     se hicieran en dos llamadas desde el teléfono y se cortara la señal en el
+     medio, quedaría stock bajado sin anotar. La función se niega a mermar
+     fuera de `central`, a dejar negativo, y a mermar un perecedero sin decir
+     de qué fecha — **en la base, no en la pantalla**, para que no dependa de
+     que un botón esté escondido.
+  5. **Probada de punta a punta antes de publicarla**, con dos productos de
+     mentira que nacen y mueren en el propio script. No se usó uno real a
+     propósito: Adriana estaba contando, y tocarle el stock a algo que acaba
+     de contar es borrarle el trabajo. Lo que confirmó: el de fechas bajó de
+     10 a 6 quitando la fecha entera, `detalle` guardó de qué día era, y al
+     deshacer **la fecha borrada se volvió a crear con su día original** y el
+     motivo siguió diciendo `robo` y no `deshecha`.
+  6. **Rompí la app entera con una línea, y de ahí salió una prueba.**
+     `const MOTIVOS` para las mermas chocó con el de Recetas. Dos `const` con
+     el mismo nombre no son un error de esa línea: el navegador **no lee el
+     archivo completo**. La pantalla se dibujaba igual y no hacía nada, y las
+     dos comprobaciones de `pantalla-sana.mjs` pasaron en verde con la app
+     muerta, porque miran el HTML y no el guion. La tercera comprobación ya
+     existe y está probada en las dos direcciones.
 
 - **2026-08-09** — **Angamos quedó en cero y no se pudo recuperar. El error más
   caro del proyecto.** La regla completa está en §0.6; acá va cómo se llegó,
