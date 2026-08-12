@@ -273,6 +273,85 @@
   .cs-des{display:block;font-size:10.5px;font-weight:700;color:var(--muted);
           text-decoration:none;margin-top:2px}
   .cs-hay .rep-deshacer{display:block;margin-top:3px}
+
+  /* ---- ENLACES (solo Bodega) ----
+     Copiado de la maqueta que Jhon aprobó (docs/propuesta-enlaces.html).
+     Es una PÁGINA, no una ventana emergente: él lo pidió así y tiene razón,
+     porque emparejar 76 productos con una ventana que se abre y se cierra
+     cada vez es agotador. */
+  .enl-chips{display:flex;gap:7px;margin:0 0 13px;flex-wrap:wrap}
+  .chip{padding:6px 13px;border-radius:999px;border:1px solid var(--border);background:var(--card);
+        color:var(--muted);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .chip.on{background:var(--sec-bg);border-color:var(--sec-bg);color:#fff}
+
+  .enl-fila{display:flex;align-items:center;gap:10px;padding:12px 13px;border-bottom:1px solid var(--border);
+            cursor:pointer;background:none;border-left:none;border-right:none;border-top:none;width:100%;
+            font:inherit;text-align:left;color:var(--text)}
+  .enl-fila:last-child{border-bottom:none}
+  .enl-fila:active{background:var(--gray-bg)}
+  .enl-fila .nm{flex:1;font-size:14.5px;font-weight:600;min-width:0}
+  .enl-fila .chev{color:var(--muted);opacity:.5;font-size:15px}
+  .enl-est{display:flex;gap:5px;flex-shrink:0}
+  .enl-p{font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:999px}
+  .enl-p.si{background:var(--green-bg);color:var(--green-fg)}
+  .enl-p.no{background:var(--gray-bg);color:var(--gray-fg)}
+
+  .enl-volver{border:none;background:none;font:inherit;font-size:14px;font-weight:700;
+              color:var(--muted);padding:4px 0;margin-bottom:8px;cursor:pointer}
+  .enl-tit{font-size:19px;font-weight:800;margin:0 0 2px}
+  .enl-sub{font-size:12.5px;color:var(--muted);margin:0 0 15px}
+  /* en teléfono una sede sobre otra; en pantalla ancha lado a lado */
+  .enl-dos{display:grid;gap:12px;grid-template-columns:1fr}
+  .enl-destinos{display:grid;gap:9px;grid-template-columns:1fr}
+  @media (min-width:680px){
+    .enl-dos{grid-template-columns:1fr 1fr}
+    .enl-destinos{grid-template-columns:1fr 1fr}
+  }
+  .enl-caja{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .enl-cab{background:var(--sec-bg);color:var(--sec-tx);font-size:12px;font-weight:800;
+           letter-spacing:.5px;padding:9px 13px}
+  .enl-cuerpo{padding:12px 13px}
+
+  .enl-ligado{display:flex;align-items:center;gap:9px;background:var(--green-bg);border-radius:10px;padding:10px 12px}
+  .enl-ligado .ok{color:var(--green-fg);font-weight:800;font-size:15px}
+  .enl-ligado .nm{flex:1;font-size:14px;font-weight:700;color:var(--green-fg)}
+  .enl-ligado .id{font-size:11px;color:var(--green-fg);opacity:.75;display:block;font-weight:600;margin-top:1px}
+  .enl-quitar{border:none;background:none;font:inherit;font-size:12.5px;font-weight:700;
+              color:var(--muted);cursor:pointer;padding:4px 2px;margin-top:8px}
+
+  .enl-cand{display:flex;align-items:center;gap:9px;width:100%;padding:10px 11px;margin-bottom:7px;
+            border:1.5px solid var(--border);background:var(--card);border-radius:10px;cursor:pointer;
+            font:inherit;text-align:left;color:var(--text);transition:transform .12s ease}
+  .enl-cand:active{transform:scale(.98)}
+  .enl-cand .nm{flex:1;font-size:14px;font-weight:600}
+  .enl-cand .id{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-top:1px}
+  /* el del congelador va marcado, pero el otro sigue tocándose: sugiere, no obliga */
+  .enl-rec{font-size:10px;font-weight:800;background:var(--amber-bg);color:var(--amber-fg);
+           padding:3px 8px;border-radius:999px;flex-shrink:0}
+  .enl-vacio{font-size:13.5px;color:var(--muted);padding:6px 2px}
+
+  .enl-dest{border:1.5px solid var(--border);border-radius:12px;padding:12px 13px;background:var(--card);
+            cursor:pointer;user-select:none}
+  .enl-dest.on{border-color:var(--orange);background:#FFF8F5}
+  .enl-dest.fijo{border-style:dashed;cursor:default;background:var(--gray-bg)}
+  .enl-dest .top{display:flex;align-items:center;gap:9px}
+  .enl-dest .cbox{width:20px;height:20px;border-radius:6px;border:1.8px solid var(--border);
+                  display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;flex-shrink:0}
+  .enl-dest.on .cbox{background:var(--orange);border-color:var(--orange);color:#fff}
+  .enl-dest.fijo .cbox{background:var(--gray-fg);border-color:var(--gray-fg);color:#fff}
+  .enl-dest .nm{font-size:14.5px;font-weight:700;flex:1}
+  .enl-dest .sub2{font-size:11.5px;color:var(--muted);font-weight:600}
+  .enl-dest .sec{margin-top:10px;display:none}
+  .enl-dest.on .sec,.enl-dest.fijo .sec{display:block}
+  .enl-dest .sec label{display:block;font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:4px}
+  .enl-dest .sec select{width:100%;height:38px;padding:0 10px;border:1px solid var(--border);
+                        border-radius:9px;font-size:14px;background:var(--card);color:var(--text);font-family:inherit}
+
+  .enl-aviso{display:flex;gap:10px;background:var(--amber-bg);border-radius:10px;padding:11px 13px;
+             margin-top:12px;font-size:13.5px;color:var(--amber-fg);font-weight:600;line-height:1.45}
+  .enl-resumen{margin-top:14px;padding:11px 13px;border-radius:10px;background:var(--gray-bg);
+               font-size:13.5px;font-weight:600;text-align:center}
+  @media (prefers-reduced-motion: reduce){ .enl-cand{transition:none} .enl-cand:active{transform:none} }
   .cs-error{text-align:center;font-size:14px;font-weight:600;padding:26px 10px;color:var(--red-fg)}
 
   /* ---- franja de tipos: el otro eje del producto ----
@@ -905,6 +984,7 @@
     <button class="tab" data-tab="recetas">Recetas <span class="tab-nuevo late" id="tabNuevoRec" style="display:none">NUEVO</span></button>
     <!-- solo en Bodega, igual que la franja de crítico -->
     <button class="tab" data-tab="mermas" id="tabMermas" style="display:none">Mermas</button>
+    <button class="tab" data-tab="enlaces" id="tabEnlaces" style="display:none">Enlaces</button>
   </div>
 </div>
 
@@ -1175,6 +1255,73 @@
   </div>
 </div>
 
+<!-- ================= ENLACES (solo Bodega) =================
+     Le dice al sistema qué producto de cada local es el mismo que el de
+     bodega. Sin esto el reparto no sabe a qué sumarle al llegar.
+     Maqueta aprobada por Jhon: docs/propuesta-enlaces.html            -->
+<div class="wrap" id="view-enlaces" style="display:none">
+
+  <div class="rec-modos" id="enl-modos">
+    <button class="rec-modo active" data-enlmodo="enlazar">Enlazar</button>
+    <button class="rec-modo" data-enlmodo="nuevo">Producto nuevo</button>
+  </div>
+
+  <!-- ---- modo enlazar: la lista ---- -->
+  <div id="enl-lista-vista">
+    <div class="controls busca" data-busca="enlaces">
+      <input type="text" id="enl-q" placeholder="Buscar producto de bodega…">
+    </div>
+    <div class="enl-chips" id="enl-chips">
+      <button type="button" class="chip on" data-enlfiltro="faltan">Sin enlazar</button>
+      <button type="button" class="chip" data-enlfiltro="todos">Todos</button>
+    </div>
+    <div id="enl-lista"></div>
+  </div>
+
+  <!-- ---- modo enlazar: un producto ---- -->
+  <div id="enl-detalle" style="display:none">
+    <button type="button" class="enl-volver" id="enl-volver">‹ Volver</button>
+    <h2 class="enl-tit" id="enl-nombre">—</h2>
+    <p class="enl-sub" id="enl-subtit"></p>
+    <div class="enl-dos" id="enl-sedes"></div>
+  </div>
+
+  <!-- ---- modo producto nuevo ---- -->
+  <div id="enl-nuevo" style="display:none">
+    <div class="enl-caja">
+      <div class="enl-cab">EL PRODUCTO</div>
+      <div class="enl-cuerpo">
+        <div class="field" style="margin-top:0">
+          <label>Nombre</label>
+          <input type="text" id="enl-n-nombre" maxlength="60" autocomplete="off" placeholder="Ej: Torta de naranja">
+        </div>
+        <div class="field">
+          <label>Sección en Bodega</label>
+          <select id="enl-n-rubro"></select>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div class="field" style="flex:1"><label>Mínimo en Bodega</label>
+            <input type="number" step="0.5" min="0" id="enl-n-min"></div>
+          <div class="field" style="flex:1"><label>Máximo en Bodega</label>
+            <input type="number" step="0.5" min="0" id="enl-n-max"></div>
+        </div>
+        <label class="chkrow"><input type="checkbox" id="enl-n-perec"><span>Producto perecedero</span></label>
+        <div id="enl-dup"></div>
+      </div>
+    </div>
+
+    <div class="enl-caja" style="margin-top:12px">
+      <div class="enl-cab">DÓNDE SE CREA</div>
+      <div class="enl-cuerpo">
+        <div class="enl-destinos" id="enl-destinos"></div>
+        <div class="enl-resumen" id="enl-resumen"></div>
+        <button type="button" class="btn btn-orange btn-block" id="enl-crear" style="margin-top:12px" disabled>Crear y enlazar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 <!-- ================= MERMAS (solo Bodega) ================= -->
 <div class="wrap" id="view-mermas" style="display:none">
   <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
@@ -1382,7 +1529,7 @@ const SEDES = {
   central: { label:'Bodega',           corto:'Bodega',     excel:'bodega'  },
 };
 /* el título de la barra dice en qué estás, como en Fudo */
-const TITULOS = {inv:'Inventario', reparto:'Reparto', hist:'Historial', recetas:'Recetas', mermas:'Mermas'};
+const TITULOS = {inv:'Inventario', reparto:'Reparto', hist:'Historial', recetas:'Recetas', mermas:'Mermas', enlaces:'Enlaces'};
 let SEDE = null;
 let channel = null;
 
@@ -1916,10 +2063,11 @@ function pickSede(s){
   document.querySelector('.tab[data-tab="recetas"]').style.display = s==='central' ? 'none' : '';
   // y al revés con Mermas: por ahora vive solo en Bodega
   $('tabMermas').style.display = s==='central' ? '' : 'none';
-  MERMAS=[];
+  $('tabEnlaces').style.display = s==='central' ? '' : 'none';
+  MERMAS=[]; ENLACES=[]; SEDE_PROD={}; enlProd=null;
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
-  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none';
+  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none'; $('view-enlaces').style.display='none';
   vistaActual='inv';
   listEl.innerHTML='';
   $('gate').classList.add('hidden');
@@ -2053,6 +2201,9 @@ function metrics(){
 const SEDES_TARJETA = ['angamos','plaza'];
 let CRITICOS = {};          // sede -> [lo que entra en crítico]  ·  null = no se pudo leer
 let CRIT_TOPE = {};         // sede -> true si la lectura chocó con el tope de 1000
+/* La lista COMPLETA de cada local, no solo sus críticos. La usa Enlaces para
+   proponer gemelos sin volver a pedirle lo mismo a la base. */
+let SEDE_PROD = {};         // sede -> [productos activos]
 
 async function cargarCriticos(){
   const cont = $('critSedes');
@@ -2073,15 +2224,17 @@ async function cargarCriticos(){
     if(res[i].error){
       // si falla la lectura la tarjeta queda sin número. Un 0 acá sería peor
       // que no mostrar nada: diría "no le falta nada" justo cuando no sabemos
-      CRITICOS[s] = null; CRIT_TOPE[s] = false;
+      CRITICOS[s] = null; CRIT_TOPE[s] = false; SEDE_PROD[s] = [];
       console.error('crítico '+s, res[i].error);
       return;
     }
     const filas = res[i].data || [];
+    SEDE_PROD[s] = filas;
     CRITICOS[s]  = filas.filter(entraEnCritico);
     CRIT_TOPE[s] = filas.length >= 1000;
   });
   pintarCriticos();
+  if(vistaActual==='enlaces') pintarEnlaces();   // por si estaba abierta
 }
 
 /* El número que va en la tarjeta. Está aparte por una sola razón, y es la
@@ -2378,6 +2531,313 @@ $('mermas-list').addEventListener('click', async e=>{
   const {error} = await sb.rpc('deshacer_merma',{p_movimiento_id:+b.dataset.desmerma, p_quien:NOMBRE});
   if(error){ b.disabled=false; b.textContent='Deshacer'; avisar(error.message||'No se pudo deshacer.'); return; }
   await loadMermas(); await loadData(); await loadLotes(); metrics(); render();
+});
+
+/* ================= ENLACES (solo Bodega) =================
+   Le dice al sistema qué producto de cada local es el MISMO que el de bodega.
+   Sin eso, un reparto que sale de bodega no sabe a qué sumarle al llegar.
+
+   LA REGLA QUE MANDA ACÁ, y es la que Jhon repitió: el enlace se GUARDA por
+   id. El nombre se usa solo para PROPONER candidatos, y siempre los confirma
+   una persona. Renombrar un producto no rompe un enlace ya hecho — la tabla
+   guarda dos números y ninguna palabra.                                     */
+/* Plaza primero en toda esta pantalla, como en la maqueta aprobada. Aparte de
+   SEDES_TARJETA a propósito: aquella ordena las tarjetas de crítico, que Jhon
+   ya revisó al revés, y cambiarla sería mover algo que él ya dio por bueno. */
+const SEDES_ENLACE = ['plaza','angamos'];
+let ENLACES = [];          // filas de producto_enlace de bodega
+let enlProd  = null;       // producto de bodega abierto en el detalle
+let enlFiltro = 'faltan';
+
+async function loadEnlaces(){
+  if(SEDE!=='central') return;
+  const {data,error} = await sb.from('producto_enlace').select('*').limit(1000);
+  if(error){ console.error('enlaces', error); ENLACES=[]; }
+  else ENLACES = data||[];
+  if(!SEDE_PROD.plaza || !SEDE_PROD.angamos) await cargarCriticos();
+  pintarEnlaces();
+}
+
+const enlaceDe = (bid, sede) => ENLACES.find(e=>e.producto_bodega_id===bid && e.sede===sede);
+/* un producto del local ya tomado por OTRO producto de bodega: la base no deja
+   que tenga dos orígenes, así que no se ofrece como candidato */
+const tomado = (sid, sede) => ENLACES.some(e=>e.sede===sede && e.producto_sede_id===sid);
+/* el nombre sin el estante, para reconocer los pares vitrina/congelador */
+const sinEstante = s => normNombre(s).replace(/\s+(vitrina|congelador)$/,'');
+
+/* Propone candidatos. PROPONE: la lista puede traer de más a propósito, porque
+   el que decide es una persona. Lo que nunca se hace es escribir un par por
+   parecido sin que alguien lo toque. */
+/* candidatosEnlace y no `candidatos`: ese nombre ya lo usa Recetas. Dos
+   funciones con el mismo nombre no dan error — la última gana y la primera
+   deja de existir. Esta pantalla mostraba "no hay ninguno parecido" para
+   productos que sí tenían gemelo, y la consola no decía nada. */
+function candidatosEnlace(prodBodega, sede){
+  const lista = SEDE_PROD[sede] || [];
+  const clave = normNombre(prodBodega.producto);
+  const base  = sinEstante(prodBodega.producto);
+  const hit = p => {
+    const c = normNombre(p.producto), b = sinEstante(p.producto);
+    if(c===clave || b===clave || b===base) return true;
+    return clave.length>=4 && (c.includes(clave) || clave.includes(c));
+  };
+  const halla = lista.filter(p=>hit(p) && !tomado(p.id, sede));
+  /* Si hay pareja vitrina/congelador, el del congelador va primero y marcado:
+     lo que viene de bodega entra al congelador (regla de Jhon, 2026-08-12). */
+  const esCong = p => /\s+congelador$/.test(normNombre(p.producto));
+  const hayPar = halla.some(esCong) && halla.some(p=>!esCong(p));
+  return halla
+    .map(p=>({p, rec: hayPar && esCong(p)}))
+    .sort((a,b)=> (b.rec-a.rec) || a.p.producto.localeCompare(b.p.producto,'es'));
+}
+
+function pintarEnlaces(){
+  if(enlProd) return pintarEnlaceDetalle();
+  const q = normNombre($('enl-q').value);
+  const filas = DATA
+    .filter(p => enlFiltro==='todos'
+      || !enlaceDe(p.id,'plaza') || !enlaceDe(p.id,'angamos'))
+    .filter(p => !q || normNombre(p.producto).includes(q))
+    .sort((a,b)=> (a.rubro||'').localeCompare(b.rubro||'','es')
+               || a.producto.localeCompare(b.producto,'es'));
+
+  const faltan = DATA.filter(p=>!enlaceDe(p.id,'plaza')||!enlaceDe(p.id,'angamos')).length;
+  $('enl-chips').querySelector('[data-enlfiltro="faltan"]').textContent = 'Sin enlazar · '+faltan;
+  $('enl-chips').querySelector('[data-enlfiltro="todos"]').textContent  = 'Todos · '+DATA.length;
+
+  if(!filas.length){
+    $('enl-lista').innerHTML = '<div class="empty">'+
+      (q ? 'Ningún producto con ese nombre.' : '✓ Todos los productos están enlazados.')+'</div>';
+    return;
+  }
+  const pill = (p,sede,txt) => enlaceDe(p.id,sede)
+    ? `<span class="enl-p si">${txt} ✓</span>` : `<span class="enl-p no">${txt} —</span>`;
+  const secs = [...new Set(filas.map(p=>p.rubro||'Sin sección'))];
+  $('enl-lista').innerHTML = secs.map(s=>`
+    <div class="sec open"><div class="sec-head"><div class="sec-btn sec-fija">
+        <span>${esc(s)}</span></div></div>
+      <div class="sec-body" style="padding-top:0">
+      ${filas.filter(p=>(p.rubro||'Sin sección')===s).map(p=>`
+        <button type="button" class="enl-fila" data-enlabrir="${p.id}">
+          <span class="nm">${esc(p.producto)}</span>
+          <span class="enl-est">${pill(p,'plaza','Plaza')}${pill(p,'angamos','Angamos')}</span>
+          <span class="chev">›</span>
+        </button>`).join('')}
+      </div></div>`).join('');
+}
+
+function pintarEnlaceDetalle(){
+  const p = enlProd;
+  $('enl-nombre').textContent = p.producto;
+  $('enl-subtit').textContent = 'Bodega · ' + (p.rubro||'Sin sección') + ' · hay ' + fmt(p.stock_actual);
+  $('enl-sedes').innerHTML = SEDES_ENLACE.map(sede=>{
+    const e = enlaceDe(p.id, sede);
+    let cuerpo;
+    if(e){
+      const dest = (SEDE_PROD[sede]||[]).find(x=>x.id===e.producto_sede_id);
+      cuerpo = `<div class="enl-ligado"><span class="ok">✓</span>
+          <span class="nm">${esc(dest?dest.producto:'(producto #'+e.producto_sede_id+')')}
+            <span class="id">enlazado por #${e.producto_sede_id}</span></span></div>
+        <button type="button" class="enl-quitar" data-enlquitar="${sede}">Quitar enlace</button>`;
+    } else {
+      const cands = candidatosEnlace(p, sede);
+      cuerpo = cands.length
+        ? cands.map(c=>`<button type="button" class="enl-cand" data-enlelegir="${sede}" data-sid="${c.p.id}">
+              <span class="nm">${esc(c.p.producto)}<span class="id">#${c.p.id} · ${esc(c.p.rubro||'Sin sección')}</span></span>
+              ${c.rec?'<span class="enl-rec">CONGELADOR</span>':''}
+            </button>`).join('')
+        : '<div class="enl-vacio">No hay ninguno parecido en esta sede.</div>';
+    }
+    return `<div class="enl-caja"><div class="enl-cab">${esc(SEDES[sede].corto.toUpperCase())}</div>
+      <div class="enl-cuerpo">${cuerpo}</div></div>`;
+  }).join('');
+}
+
+/* ---- guardar y quitar. Dos números, ninguna palabra ---- */
+async function enlazar(sede, sid){
+  const {error} = await sb.from('producto_enlace').insert({
+    producto_bodega_id: enlProd.id, sede, producto_sede_id: sid,
+    factor: 1, creado_por: NOMBRE || 'desde bodega' });
+  if(error){
+    // el choque más probable: ese producto del local ya viene de otro de bodega
+    avisar(/duplicate|unique/i.test(error.message||'')
+      ? 'Ese producto del local ya está enlazado a otro de bodega.'
+      : 'No se pudo guardar el enlace. Revisa tu señal e inténtalo de nuevo.');
+    console.error(error); return;
+  }
+  await loadEnlaces();
+}
+async function quitarEnlace(sede){
+  if(!await preguntar('Quitar el enlace','El reparto ya no va a poder mover este producto a esa sede.','Quitar')) return;
+  const {error} = await sb.from('producto_enlace').delete()
+    .eq('producto_bodega_id', enlProd.id).eq('sede', sede);
+  if(error){ avisar('No se pudo quitar el enlace.'); console.error(error); return; }
+  await loadEnlaces();
+}
+
+$('view-enlaces').addEventListener('click', async e=>{
+  const modo = e.target.closest('[data-enlmodo]');
+  if(modo){ enlModo(modo.dataset.enlmodo); return; }
+  const filtro = e.target.closest('[data-enlfiltro]');
+  if(filtro){
+    enlFiltro = filtro.dataset.enlfiltro;
+    $('enl-chips').querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===filtro));
+    pintarEnlaces(); return;
+  }
+  const abrir = e.target.closest('[data-enlabrir]');
+  if(abrir){
+    enlProd = DATA.find(d=>d.id===+abrir.dataset.enlabrir);
+    $('enl-lista-vista').style.display='none'; $('enl-detalle').style.display='block';
+    pintarEnlaceDetalle(); return;
+  }
+  const elegir = e.target.closest('[data-enlelegir]');
+  if(elegir){ await enlazar(elegir.dataset.enlelegir, +elegir.dataset.sid); return; }
+  const quitar = e.target.closest('[data-enlquitar]');
+  if(quitar){ await quitarEnlace(quitar.dataset.enlquitar); return; }
+});
+$('enl-volver').addEventListener('click', ()=>{
+  enlProd = null;
+  $('enl-detalle').style.display='none'; $('enl-lista-vista').style.display='block';
+  pintarEnlaces();
+});
+$('enl-q').addEventListener('input', ()=>{ if(!enlProd) pintarEnlaces(); });
+
+function enlModo(m){
+  enlProd = null;
+  $('enl-modos').querySelectorAll('[data-enlmodo]')
+    .forEach(b=>b.classList.toggle('active', b.dataset.enlmodo===m));
+  $('enl-lista-vista').style.display = m==='enlazar' ? 'block' : 'none';
+  $('enl-detalle').style.display = 'none';
+  $('enl-nuevo').style.display = m==='nuevo' ? 'block' : 'none';
+  if(m==='enlazar') pintarEnlaces(); else prepararNuevo();
+}
+
+/* ---- producto nuevo: se crea en bodega y en las sedes que se elijan ---- */
+const secDe = lista => [...new Set((lista||[]).map(p=>p.rubro).filter(Boolean))]
+                        .sort((a,b)=>a.localeCompare(b,'es'));
+let enlDest = {plaza:false, angamos:false};
+
+function prepararNuevo(){
+  $('enl-n-nombre').value=''; $('enl-n-min').value=''; $('enl-n-max').value='';
+  $('enl-n-perec').checked=false; $('enl-dup').innerHTML='';
+  enlDest = {plaza:false, angamos:false};
+  /* La sección arranca SIN elegir. Si se dejara la primera de la lista, una
+     torta terminaría creada en "Aseo" por no tocar el desplegable — y un
+     producto en la sección equivocada no lo encuentra nadie. */
+  const elegir = '<option value="">— Elegir sección —</option>';
+  $('enl-n-rubro').innerHTML = elegir + secDe(DATA).map(s=>`<option>${esc(s)}</option>`).join('');
+  /* Cada sede elige su propia sección: bodega tiene "Pastelería" y el local
+     "Vitrina de tortas". Copiar la de bodega inventaría secciones que allá no
+     existen, y un producto en una sección inventada no aparece en la lista. */
+  $('enl-destinos').innerHTML = `
+    <div class="enl-dest fijo">
+      <div class="top"><span class="cbox">✓</span><span class="nm">Bodega</span>
+        <span class="sub2">siempre</span></div>
+    </div>` + SEDES_ENLACE.map(s=>`
+    <div class="enl-dest" data-enldest="${s}">
+      <div class="top"><span class="cbox">✓</span><span class="nm">${esc(SEDES[s].label)}</span></div>
+      <div class="sec"><label>Sección en ${esc(SEDES[s].corto)}</label>
+        <select data-enlrubro="${s}">${elegir}${secDe(SEDE_PROD[s]).map(r=>`<option>${esc(r)}</option>`).join('')}</select></div>
+    </div>`).join('');
+  pintarResumenNuevo();
+}
+
+/* Al elegir la sección de bodega, se preselecciona la del mismo nombre en cada
+   local si allá existe. Suele acertar y ahorra dos toques; si no calza, queda
+   sin elegir y hay que decirlo — nunca se inventa una. */
+$('enl-n-rubro').addEventListener('change', ()=>{
+  const b = normNombre($('enl-n-rubro').value);
+  $('enl-destinos').querySelectorAll('[data-enlrubro]').forEach(sel=>{
+    if(sel.value) return;                       // si ya eligieron, no se pisa
+    const op = [...sel.options].find(o=>o.value && normNombre(o.value)===b);
+    if(op) sel.value = op.value;
+  });
+  pintarResumenNuevo();
+});
+
+function pintarResumenNuevo(){
+  const on = SEDES_ENLACE.filter(s=>enlDest[s]);
+  const nombres = ['Bodega', ...on.map(s=>SEDES[s].corto)];
+  /* "A, B y C" — dos "y" seguidos se leen como una lista mal escrita */
+  const lista = nombres.length>2
+    ? nombres.slice(0,-1).join(', ')+' y '+nombres[nombres.length-1]
+    : nombres.join(' y ');
+  /* Falta algo por elegir: se dice cuál. Un botón apagado sin motivo deja a la
+     persona tocándolo sin entender por qué no pasa nada. */
+  const sinSeccion = on.filter(s=>!($('enl-destinos').querySelector(`[data-enlrubro="${s}"]`)||{}).value);
+  const falta = !$('enl-n-nombre').value.trim() ? 'Falta el nombre'
+              : !$('enl-n-rubro').value        ? 'Falta la sección en Bodega'
+              : sinSeccion.length              ? 'Falta la sección en '+sinSeccion.map(s=>SEDES[s].corto).join(' y ')
+              : null;
+  $('enl-resumen').textContent = falta ? falta
+    : on.length ? 'Se crea en '+lista+' · quedan enlazados'
+                : 'Se crea solo en Bodega · sin enlace';
+  $('enl-resumen').style.color = falta ? 'var(--muted)' : '';
+  $('enl-crear').disabled = !!falta;
+}
+
+$('enl-destinos').addEventListener('click', e=>{
+  const d = e.target.closest('[data-enldest]'); if(!d) return;
+  if(e.target.closest('select')) return;         // elegir sección no apaga el destino
+  const s = d.dataset.enldest;
+  enlDest[s] = !enlDest[s];
+  d.classList.toggle('on', enlDest[s]);
+  pintarResumenNuevo();
+});
+$('enl-destinos').addEventListener('change', pintarResumenNuevo);
+
+/* Busca si ya existe algo parecido ANTES de crear, y busca también entre los
+   APAGADOS: eliminar en esta app desactiva, no borra, así que una búsqueda
+   que solo mira los activos no ve lo que el equipo eliminó a propósito y
+   termina creando el duplicado (§0.6.3). */
+let dupTimer = null;
+$('enl-n-nombre').addEventListener('input', ()=>{
+  pintarResumenNuevo();
+  clearTimeout(dupTimer);
+  dupTimer = setTimeout(buscarParecidos, 350);
+});
+async function buscarParecidos(){
+  const t = $('enl-n-nombre').value.trim();
+  const caja = $('enl-dup');
+  if(t.length < 3){ caja.innerHTML=''; return; }
+  const {data,error} = await sb.from('productos')
+    .select('id,sede,producto,activo')
+    .in('sede',['central','plaza','angamos'])
+    .ilike('producto', '%'+t+'%').limit(12);
+  /* Si mientras viajaba la respuesta el nombre cambió, esta ya no sirve: se
+     descarta. Sin esto, escribir "Brownie" y corregir a otra cosa dejaba el
+     aviso de Brownie en pantalla — una falsa alarma sobre un nombre que ya no
+     existe, y una alarma que miente se deja de mirar. */
+  if($('enl-n-nombre').value.trim() !== t) return;
+  if(error || !data || !data.length){ caja.innerHTML=''; return; }
+  caja.innerHTML = `<div class="enl-aviso"><span>⚠</span><span>
+      <b>Ya existe algo parecido.</b><br>${data.map(p=>
+        esc(p.producto)+' · '+esc(SEDES[p.sede]?SEDES[p.sede].corto:p.sede)+
+        (p.activo!=='SÍ'?' · <b>apagado</b>':'')).join('<br>')}</span></div>`;
+}
+
+$('enl-crear').addEventListener('click', async ()=>{
+  const btn=$('enl-crear'), nombre=$('enl-n-nombre').value.trim();
+  if(!nombre) return;
+  const destinos = SEDES_ENLACE.filter(s=>enlDest[s]).map(s=>({
+    sede: s,
+    rubro: ($('enl-destinos').querySelector(`[data-enlrubro="${s}"]`)||{}).value || null }));
+  btn.disabled=true; btn.textContent='Creando…';
+  const {data,error} = await sb.rpc('crear_producto_enlazado',{
+    p_nombre: nombre,
+    p_seccion: $('enl-n-rubro').value || null,
+    p_min: $('enl-n-min').value===''?null:+$('enl-n-min').value,
+    p_max: $('enl-n-max').value===''?null:+$('enl-n-max').value,
+    p_perecedero: $('enl-n-perec').checked,
+    p_destinos: destinos,
+    p_quien: NOMBRE });
+  btn.disabled=false; btn.textContent='Crear y enlazar';
+  if(error){ avisar(error.message || 'No se pudo crear. Revisa tu señal e inténtalo de nuevo.'); return; }
+  const det = (data && data.detalle) || [];
+  avisar('✓ '+nombre+'\n'+det.map(d=>
+    (SEDES[d.sede]?SEDES[d.sede].corto:d.sede)+': '+d.estado).join(' · '));
+  await loadData(); await loadEnlaces();
+  enlModo('enlazar');
 });
 
 $('btnMermasExcel').addEventListener('click',()=>{
@@ -3929,8 +4389,10 @@ function pickTab(tab){
   $('view-hist').style.display = tab==='hist'?'block':'none';
   $('view-recetas').style.display = tab==='recetas'?'block':'none';
   $('view-mermas').style.display = tab==='mermas'?'block':'none';
+  $('view-enlaces').style.display = tab==='enlaces'?'block':'none';
   vistaActual=tab; $('topTitle').textContent=TITULOS[tab]||TITULOS.inv;
   if(tab==='mermas') loadMermas();
+  if(tab==='enlaces'){ enlModo('enlazar'); loadEnlaces(); }
   // Inicio devuelve la pantalla a como se abre: sin búsqueda, sin filtros y
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();

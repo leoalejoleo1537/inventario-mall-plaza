@@ -66,5 +66,27 @@ guiones.forEach((codigo, i) => {
 });
 if (!malos) console.log(`  ✓ los ${guiones.length} guiones se leen sin error de sintaxis`);
 
+// ---------- 4. dos funciones con el mismo nombre ----------
+/* Agregado el 2026-08-12, y sale de un bug peor que el de la comprobación 3.
+   Se escribió `function candidatos()` para Enlaces sin ver que Recetas ya
+   tenía una. Dos `const` iguales al menos revientan el archivo y se notan;
+   dos `function` iguales NO dan ningún error: la última gana en silencio y
+   la primera deja de existir. La pantalla de Enlaces mostraba "no hay ningún
+   candidato" para productos que sí tenían, y nada en la consola.
+
+   Solo mira las declaraciones de primer nivel (las que empiezan en la columna
+   0). Las de adentro de otra función pueden repetirse sin problema. */
+const nivel1 = [...html.matchAll(/^function\s+([A-Za-z_$][\w$]*)\s*\(/gm)].map(m => m[1]);
+const cuenta = new Map();
+nivel1.forEach(n => cuenta.set(n, (cuenta.get(n) || 0) + 1));
+const dobles = [...cuenta].filter(([, n]) => n > 1).map(([f]) => f);
+if (dobles.length) {
+  fallos++;
+  console.log('  ✗ dos funciones con el mismo nombre: ' + dobles.join(', '));
+  console.log('      no da error en ninguna parte: la última gana y la primera se pierde.');
+} else {
+  console.log(`  ✓ las ${nivel1.length} funciones tienen nombres distintos`);
+}
+
 console.log(fallos ? `\n${fallos} problema(s)` : '\nla pantalla está sana');
 process.exit(fallos ? 1 : 0);
