@@ -39,6 +39,18 @@ producto escrito de otra forma. Ejemplos reales:
 | `Jarabe Almendra`, `Jarabe Canela`, `Jarabe de coco`… | los `Syrup …` |
 | `Pizza peperoni` | `Pizza pepperoni` |
 | `Pan Foccacia Aceituna` | `Pan Focaccia Aceituna` |
+| `Sprite cero` *(confirmado 2026-08-13)* | `Sprite zero` — que ya está enlazado en las dos sedes |
+| `Syrup de Mora (blackberry)` | `Syrup de mora` — que ya está enlazado |
+
+**El caso `Sprite cero` es el ejemplo más limpio de por qué esto no es un bug
+de la pantalla.** `Sprite zero` (con z) ya tiene su gemelo en Plaza y en
+Angamos. `Sprite cero` (con c, un error de tipeo en bodega) es harina de otro
+costal para el sistema: `clave_nombre()` no corrige errores de tipeo, solo
+tildes/mayúsculas/espacios. Como el producto de Plaza ya está tomado por el
+`Sprite zero` correcto, no hay ningún candidato que ofrecerle a `Sprite cero`
+— ni por nombre ni buscando a mano. **No es que falte enlazarlo: es que
+sobra.** La decisión (fusionarlo con el bueno, renombrarlo, o desactivarlo) es
+del equipo, no del sistema.
 
 Ojo: **varios de estos son duplicados dentro de la propia bodega** — la misma
 cosa escrita dos veces, donde una grafía ya quedó emparejada y la otra sobró.

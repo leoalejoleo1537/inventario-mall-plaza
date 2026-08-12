@@ -330,6 +330,19 @@
            padding:3px 8px;border-radius:999px;flex-shrink:0}
   .enl-vacio{font-size:13.5px;color:var(--muted);padding:6px 2px}
 
+  /* La salida manual: cuando el parecido de nombres no encuentra lo que sí
+     existe, o simplemente porque la persona prefiere buscar. Siempre está,
+     no solo cuando la lista de arriba viene vacía — el algoritmo propone,
+     nunca es la única puerta. */
+  .enl-manual{margin-top:9px;padding-top:9px;border-top:1px dashed var(--border)}
+  .enl-manual-toggle{border:none;background:none;font:inherit;font-size:13px;font-weight:700;
+                     color:var(--sec-bg);cursor:pointer;padding:4px 2px}
+  .enl-manual-busca{margin-top:8px}
+  .enl-manual-busca input{width:100%;height:40px;padding:0 12px;border:1px solid var(--border);
+       border-radius:9px;font-size:14px;background:var(--card);color:var(--text);font-family:inherit}
+  .enl-manual-lista{max-height:220px;overflow-y:auto;margin-top:7px}
+  .enl-manual-lista .enl-cand{margin-bottom:5px}
+
   .enl-dest{border:1.5px solid var(--border);border-radius:12px;padding:12px 13px;background:var(--card);
             cursor:pointer;user-select:none}
   .enl-dest.on{border-color:var(--orange);background:#FFF8F5}
@@ -2641,12 +2654,23 @@ function pintarEnlaceDetalle(){
         <button type="button" class="enl-quitar" data-enlquitar="${sede}">Quitar enlace</button>`;
     } else {
       const cands = candidatosEnlace(p, sede);
-      cuerpo = cands.length
+      cuerpo = (cands.length
         ? cands.map(c=>`<button type="button" class="enl-cand" data-enlelegir="${sede}" data-sid="${c.p.id}">
               <span class="nm">${esc(c.p.producto)}<span class="id">#${c.p.id} · ${esc(c.p.rubro||'Sin sección')}</span></span>
               ${c.rec?'<span class="enl-rec">CONGELADOR</span>':''}
             </button>`).join('')
-        : '<div class="enl-vacio">No hay ninguno parecido en esta sede.</div>';
+        : '<div class="enl-vacio">No hay ninguno parecido en esta sede.</div>')
+        /* La salida manual SIEMPRE está, no solo cuando el parecido de
+           nombres viene vacío. El nombre solo propone (§0.7): si el que
+           decide no encuentra lo que busca en la propuesta, tiene que poder
+           buscarlo él mismo sin quedar en un callejón sin salida. */
+        + `<div class="enl-manual">
+             <button type="button" class="enl-manual-toggle" data-enlmanual="${sede}">🔍 Buscar otro producto</button>
+             <div class="enl-manual-busca" id="enl-manual-${sede}" style="display:none">
+               <input type="text" placeholder="Buscar en ${esc(SEDES[sede].corto)}…" data-enlmanualq="${sede}">
+               <div class="enl-manual-lista" data-enlmanuallista="${sede}"></div>
+             </div>
+           </div>`;
     }
     return `<div class="enl-caja"><div class="enl-cab">${esc(SEDES[sede].corto.toUpperCase())}</div>
       <div class="enl-cuerpo">${cuerpo}</div></div>`;
@@ -2694,6 +2718,38 @@ $('view-enlaces').addEventListener('click', async e=>{
   if(elegir){ await enlazar(elegir.dataset.enlelegir, +elegir.dataset.sid); return; }
   const quitar = e.target.closest('[data-enlquitar]');
   if(quitar){ await quitarEnlace(quitar.dataset.enlquitar); return; }
+  const manual = e.target.closest('[data-enlmanual]');
+  if(manual){
+    const caja = $('enl-manual-'+manual.dataset.enlmanual);
+    const abre = caja.style.display==='none';
+    caja.style.display = abre ? 'block' : 'none';
+    manual.textContent = abre ? 'Ocultar búsqueda' : '🔍 Buscar otro producto';
+    if(abre){
+      pintarBusquedaManual(manual.dataset.enlmanual, '');
+      caja.querySelector('input').focus();
+    }
+    return;
+  }
+});
+/* La lista manual: TODO lo de esa sede que no esté ya tomado por otro producto
+   de bodega, filtrado por lo que se escriba. Sin adivinar por nombre — es la
+   persona buscando lo que ella sabe que existe. */
+function pintarBusquedaManual(sede, texto){
+  const q = normNombre(texto);
+  const disponibles = (SEDE_PROD[sede]||[]).filter(x=>!tomado(x.id, sede));
+  const filtrados = q ? disponibles.filter(x=>normNombre(x.producto).includes(q)) : disponibles;
+  const cont = document.querySelector(`[data-enlmanuallista="${sede}"]`);
+  if(!cont) return;
+  cont.innerHTML = !filtrados.length
+    ? '<div class="enl-vacio">'+(q?'Nada con ese nombre.':'No queda ningún producto libre en esta sede.')+'</div>'
+    : filtrados.slice(0,40).sort((a,b)=>a.producto.localeCompare(b.producto,'es'))
+        .map(c=>`<button type="button" class="enl-cand" data-enlelegir="${sede}" data-sid="${c.id}">
+            <span class="nm">${esc(c.producto)}<span class="id">#${c.id} · ${esc(c.rubro||'Sin sección')}</span></span>
+          </button>`).join('');
+}
+$('view-enlaces').addEventListener('input', e=>{
+  const q = e.target.closest('[data-enlmanualq]');
+  if(q) pintarBusquedaManual(q.dataset.enlmanualq, q.value);
 });
 $('enl-volver').addEventListener('click', ()=>{
   enlProd = null;
