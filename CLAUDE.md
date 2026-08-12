@@ -747,6 +747,28 @@ señales disponibles son el nombre y el criterio de una persona.
    faltan. La distinción importa, porque decir "córrelo cada vez que renombres"
    suena a que los enlaces dependen del nombre, y no es así.
 
+### La pantalla de Enlaces — dónde se arreglan los gemelos
+
+*(Construida el 2026-08-12. Maqueta aprobada por Jhon antes de escribir código:
+`docs/propuesta-enlaces.html`.)*
+
+Pestaña **Enlaces**, solo en Bodega. Es una página, no una ventana emergente —
+emparejar setenta productos abriendo y cerrando una ventana cada vez es
+agotador. Dos modos:
+
+| | |
+|---|---|
+| **Enlazar** | Los 234 con su estado por sede. Al entrar a uno, propone candidatos del local y se toca el gemelo. Cuando hay doble, el del congelador va primero y marcado — sugiere, no obliga |
+| **Producto nuevo** | Crea el producto en bodega y en las sedes elegidas, y los enlaza. Una sola operación en la base (`crear_producto_enlazado`) |
+
+**Lo que la hace segura, y sale de reglas viejas:** la sección se elige de las
+que YA existen en esa sede (nunca se inventa una); el stock nace en 0; el
+mínimo y el máximo **no se copian** al local porque allá significan otra cosa;
+busca duplicados **incluyendo los apagados** antes de crear; y si el producto
+ya existe apagado, se detiene y avisa en vez de revivirlo (§0.6.3).
+
+**Desde acá no se borra ni se apaga nada.** Solo se agrega.
+
 ### El reparto descuenta al ACEPTAR, no al enviar
 
 *(Decisión de Jhon del 2026-08-10, y cambia lo que decía `docs/plan-bodega.html`.)*
@@ -978,8 +1000,9 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 | a | Catálogo maestro de insumos | 🔵 **Es trabajo humano.** 234 productos, **todos en 0**. Adriana está contando. Todo lo real depende de esto |
 | b | Tarjetas de crítico por sede | ✅ hecho |
 | d | **Mermas** | ✅ hecho · SQL corrido y probado de punta a punta |
-| — | Los gemelos (`producto_enlace`) | ⬜ **lo siguiente.** Sin esto el reparto no sabe a qué producto sumarle |
-| c+f | El reparto que resta, y su pantalla | ⬜ la pieza grande |
+| — | Los gemelos (`producto_enlace`) | ✅ **290 escritos** · 144 con Angamos, 146 con Plaza |
+| — | **Enlaces** (la pantalla) | ✅ hecha · emparejar y crear productos en las sedes, sin SQL |
+| c+f | El reparto que resta, y su pantalla | ⬜ **lo siguiente.** La última pieza grande |
 | e | Aviso de reparto en Angamos | ⬜ lo único fuera de `central` |
 | g | Seguridad y usuarios nuevos | ⬜ al final, por decisión suya |
 
@@ -2221,6 +2244,38 @@ donde se edita el stock— y no en cada fila de la lista.
 ---
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-08-12** — **Los gemelos, y la pantalla de Enlaces.** Bodega ya sabe qué
+  producto de cada local es el mismo que el suyo, y de ahora en adelante eso se
+  arregla desde la app y no con un SQL mío.
+  1. **290 pares escritos**: 144 con Angamos, 146 con Plaza. Se propusieron por
+     nombre exacto y se guardaron por id. La vista previa y la escritura usan
+     **la misma vista** (`gemelos_propuestos`), no dos consultas parecidas —
+     que es la regla que salió del 9 de agosto.
+  2. **El informe dijo 148 para Plaza y se escribieron 146.** No se rompió
+     nada: esos dos nunca llegaron a existir, porque Jhon renombró productos
+     entremedio y dejaron de calzar. Cuáles eran exactamente **no se puede
+     saber** —el informe no se guardó— y eso quedó escrito así en
+     `docs/pendiente-gemelos-sin-pareja.md` en vez de inventar dos nombres
+     plausibles.
+  3. **Jhon reclamó, con razón aparente, que yo estaba enlazando por nombre.**
+     No era así —la tabla guarda dos ids y ninguna palabra— pero mi forma de
+     contarlo lo hacía parecer. La aclaración quedó en §0.7: el nombre PROPONE
+     una vez, el id GUARDA para siempre.
+  4. **La pantalla de Enlaces**, con maqueta aprobada antes de construir
+     (`docs/propuesta-enlaces.html`). Pedirla fue idea suya y ahorró la
+     iteración de estética que siempre viene después.
+  5. **Dos funciones con el mismo nombre no dan error, y esa es la lección.**
+     Escribí `candidatos()` sin ver que Recetas ya tenía una: la última gana,
+     la primera deja de existir, y la pantalla decía "no hay ninguno parecido"
+     para productos que sí tenían gemelo. **Es peor que el choque de `const`
+     del 10**, porque aquel al menos reventaba el archivo y se notaba al
+     instante. `pruebas/pantalla-sana.mjs` ahora tiene cuatro comprobaciones:
+     ids repetidos, `$()` que apunta al vacío, que el guion se pueda leer
+     entero, y **nombres de función repetidos**.
+  6. **Una alarma que miente se deja de mirar.** El aviso de "ya existe algo
+     parecido" se quedaba pegado del nombre anterior cuando la respuesta
+     llegaba tarde. Ahora se descarta si el nombre cambió mientras viajaba.
 
 - **2026-08-10** — **La bodega nueva arranca: `central`, sus tarjetas y las
   mermas.** La decisión que estaba pendiente desde el 9 se tomó — construir
