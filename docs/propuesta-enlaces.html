@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Enlaces · propuesta</title>
+<style>
+  /* La paleta es la misma del index.html, copiada sin cambiar un valor.
+     Si algo acá se ve distinto a la app, es un error de esta maqueta. */
+  :root{
+    --navy:#0F1E31; --navy2:#16283F;
+    --orange:#DC4405; --orange-dark:#B93A04;
+    --bg:#F2F3F5; --card:#ffffff; --border:#E3E5E8;
+    --text:#1C2733; --muted:#6B7684;
+    --red-bg:#FDECEA; --red-fg:#C0392B;
+    --green-bg:#E6F4E6; --green-fg:#2E7D32;
+    --amber-bg:#FFF3E0; --amber-fg:#B26A00;
+    --gray-bg:#EDEEF0; --gray-fg:#5F6670;
+    --sec-bg:#2F4A6D; --sec-tx:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       -webkit-font-smoothing:antialiased}
+
+  /* ---------- envoltorio del documento (esto NO es la app) ---------- */
+  .doc{max-width:1100px;margin:0 auto;padding:22px 16px 80px}
+  .doc h1{font-size:26px;margin:0 0 4px}
+  .doc .lede{color:var(--muted);font-size:15px;margin:0 0 22px}
+  .nota{background:#fff;border:1px solid var(--border);border-left:3px solid var(--sec-bg);
+        border-radius:0 12px 12px 0;padding:13px 16px;margin:0 0 18px;font-size:14.5px;line-height:1.5}
+  .nota b{color:var(--sec-bg)}
+  .doc h2{font-size:17px;margin:30px 0 10px}
+
+  /* selector teléfono / computador */
+  .tam{display:inline-flex;gap:6px;background:#fff;border:1px solid var(--border);
+       border-radius:999px;padding:4px;margin-bottom:16px}
+  .tam button{border:none;background:none;font:inherit;font-size:13.5px;font-weight:700;
+              color:var(--muted);padding:7px 16px;border-radius:999px;cursor:pointer}
+  .tam button.on{background:var(--sec-bg);color:#fff}
+
+  /* ---------- el marco: de acá para adentro es la app ---------- */
+  .marco{margin:0 auto;background:var(--bg);border:1px solid var(--border);border-radius:18px;
+         overflow:hidden;box-shadow:0 10px 34px rgba(15,30,49,.10);transition:max-width .25s ease}
+  .marco.tel{max-width:390px}
+  .marco.pc{max-width:1000px}
+
+  .topbar{background:var(--navy);color:#fff;padding:11px 15px;display:flex;align-items:center;gap:10px}
+  .topbar .tt{font-size:16px;font-weight:800;flex:1}
+  .topbar .sd{font-size:11.5px;opacity:.72;display:block;font-weight:600}
+  .ico{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.12);
+       display:flex;align-items:center;justify-content:center;font-size:15px}
+  .tabs{display:flex;background:var(--navy2);padding:0 8px;gap:2px;overflow-x:auto}
+  .tabs button{border:none;background:none;color:rgba(255,255,255,.62);font:inherit;font-size:13.5px;
+               font-weight:700;padding:11px 12px;cursor:pointer;white-space:nowrap;
+               border-bottom:2.5px solid transparent}
+  .tabs button.on{color:#fff;border-bottom-color:var(--orange)}
+  .wrap{padding:14px 16px 24px}
+
+  /* ---------- piezas de la app ---------- */
+  .modos{display:flex;gap:6px;margin-bottom:14px}
+  .modo{flex:1;padding:9px 10px;border:1px solid var(--border);background:var(--card);color:var(--muted);
+        border-radius:999px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:transform .12s ease}
+  .modo.on{background:var(--orange);border-color:var(--orange);color:#fff}
+  .modo:active{transform:scale(.97)}
+
+  .busca input{width:100%;height:42px;padding:0 14px;border:1px solid var(--border);
+               border-radius:10px;font-size:15px;background:var(--card);color:var(--text);font-family:inherit}
+  .chips{display:flex;gap:7px;margin:11px 0 13px;flex-wrap:wrap}
+  .chip{padding:6px 13px;border-radius:999px;border:1px solid var(--border);background:var(--card);
+        color:var(--muted);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+  .chip.on{background:var(--sec-bg);border-color:var(--sec-bg);color:#fff}
+
+  .sechead{background:var(--sec-bg);color:var(--sec-tx);font-size:11.5px;font-weight:800;
+           letter-spacing:.6px;padding:8px 13px;border-radius:10px 10px 0 0}
+  .lista{background:var(--card);border:1px solid var(--border);border-top:none;
+         border-radius:0 0 12px 12px;overflow:hidden;margin-bottom:14px}
+  .fila{display:flex;align-items:center;gap:10px;padding:12px 13px;border-bottom:1px solid var(--border);
+        cursor:pointer;background:none;border-left:none;border-right:none;border-top:none;width:100%;
+        font:inherit;text-align:left;color:var(--text);transition:background .13s ease}
+  .fila:last-child{border-bottom:none}
+  .fila:hover{background:#FAFBFC}
+  .fila:active{background:var(--gray-bg)}
+  .fila .nm{flex:1;font-size:14.5px;font-weight:600;min-width:0}
+  .fila .sec{display:block;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:2px}
+  .fila .chev{color:var(--muted);opacity:.5;font-size:15px}
+  .est{display:flex;gap:5px;flex-shrink:0}
+  .p{font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:999px;letter-spacing:.2px}
+  .p.si{background:var(--green-bg);color:var(--green-fg)}
+  .p.no{background:var(--gray-bg);color:var(--gray-fg)}
+
+  /* detalle */
+  .volver{border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--muted);
+          padding:4px 0;margin-bottom:8px;cursor:pointer}
+  .tit{font-size:19px;font-weight:800;margin:0 0 2px}
+  .sub{font-size:12.5px;color:var(--muted);margin:0 0 15px}
+  .dos{display:grid;gap:12px;grid-template-columns:1fr}
+  .marco.pc .dos{grid-template-columns:1fr 1fr}
+  .caja{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .caja .cab{background:var(--sec-bg);color:#fff;font-size:12px;font-weight:800;letter-spacing:.5px;padding:9px 13px}
+  .caja .cuerpo{padding:12px 13px}
+
+  .ligado{display:flex;align-items:center;gap:9px;background:var(--green-bg);border-radius:10px;padding:10px 12px}
+  .ligado .ok{color:var(--green-fg);font-weight:800;font-size:15px}
+  .ligado .nm{flex:1;font-size:14px;font-weight:700;color:var(--green-fg)}
+  .ligado .id{font-size:11px;color:var(--green-fg);opacity:.75;display:block;font-weight:600;margin-top:1px}
+  .quitar{border:none;background:none;font:inherit;font-size:12.5px;font-weight:700;
+          color:var(--muted);cursor:pointer;padding:4px 2px;margin-top:8px}
+
+  .cand{display:flex;align-items:center;gap:9px;width:100%;padding:10px 11px;margin-bottom:7px;
+        border:1.5px solid var(--border);background:var(--card);border-radius:10px;cursor:pointer;
+        font:inherit;text-align:left;color:var(--text);transition:transform .12s ease,border-color .12s ease}
+  .cand:last-of-type{margin-bottom:0}
+  .cand:active{transform:scale(.98)}
+  .cand:hover{border-color:var(--sec-bg)}
+  .cand .nm{flex:1;font-size:14px;font-weight:600}
+  .cand .id{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-top:1px}
+  .rec{font-size:10px;font-weight:800;background:var(--amber-bg);color:var(--amber-fg);
+       padding:3px 8px;border-radius:999px;letter-spacing:.2px}
+  .crear-aqui{width:100%;margin-top:9px;height:42px;border-radius:10px;border:1.5px dashed var(--border);
+              background:none;color:var(--muted);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
+  .crear-aqui:hover{border-color:var(--orange);color:var(--orange)}
+
+  /* formulario */
+  .campo{margin-bottom:12px}
+  .campo label{display:block;font-size:12.5px;color:var(--muted);font-weight:700;margin-bottom:5px}
+  .campo input,.campo select{width:100%;height:44px;padding:0 12px;border:1px solid var(--border);
+       border-radius:10px;font-size:15px;background:var(--card);color:var(--text);font-family:inherit}
+  .fila2{display:flex;gap:10px}
+  .fila2 .campo{flex:1}
+  .chk{display:flex;align-items:center;gap:10px;margin:2px 0 14px;font-size:14.5px;font-weight:600;cursor:pointer}
+  .chk input{width:20px;height:20px;accent-color:var(--orange)}
+
+  .destinos{display:grid;gap:9px;grid-template-columns:1fr}
+  .marco.pc .destinos{grid-template-columns:1fr 1fr}
+  .dest{border:1.5px solid var(--border);border-radius:12px;padding:12px 13px;background:var(--card);
+        cursor:pointer;transition:border-color .14s ease,background .14s ease}
+  .dest.on{border-color:var(--orange);background:#FFF8F5}
+  .dest.fijo{border-style:dashed;cursor:default;background:var(--gray-bg)}
+  .dest .top{display:flex;align-items:center;gap:9px}
+  .dest .cbox{width:20px;height:20px;border-radius:6px;border:1.8px solid var(--border);
+              display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0}
+  .dest.on .cbox{background:var(--orange);border-color:var(--orange)}
+  .dest.fijo .cbox{background:var(--gray-fg);border-color:var(--gray-fg)}
+  .dest .nm{font-size:14.5px;font-weight:700;flex:1}
+  .dest .sub2{font-size:11.5px;color:var(--muted);font-weight:600}
+  .dest .seccion{margin-top:10px;display:none}
+  .dest.on .seccion,.dest.fijo .seccion{display:block}
+  .dest .seccion label{display:block;font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:4px}
+  .dest .seccion select{width:100%;height:38px;padding:0 10px;border:1px solid var(--border);
+       border-radius:9px;font-size:14px;background:var(--card);color:var(--text);font-family:inherit}
+
+  .aviso{display:flex;gap:10px;background:var(--amber-bg);border-radius:10px;padding:11px 13px;
+         margin:12px 0 0;font-size:13.5px;color:var(--amber-fg);font-weight:600;line-height:1.45}
+  .aviso b{font-weight:800}
+  .resumen{margin-top:14px;padding:11px 13px;border-radius:10px;background:var(--gray-bg);
+           font-size:13.5px;font-weight:600;text-align:center}
+  .btn{width:100%;height:46px;border:none;border-radius:10px;background:var(--orange);color:#fff;
+       font:inherit;font-size:15px;font-weight:800;cursor:pointer;margin-top:12px;transition:transform .12s ease}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{background:var(--gray-bg);color:var(--muted);cursor:default}
+  .listo{text-align:center;padding:26px 14px}
+  .listo .tick{width:56px;height:56px;border-radius:50%;background:var(--green-bg);color:var(--green-fg);
+               font-size:28px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-weight:800}
+  .listo h3{margin:0 0 6px;font-size:18px}
+  .listo p{margin:0;color:var(--muted);font-size:14px}
+  .listo .ln{display:block;margin-top:5px}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <h1>Enlaces</h1>
+  <p class="lede">Maqueta para revisar antes de construir · 12 de agosto de 2026</p>
+
+  <div class="nota">
+    <b>Qué estás mirando.</b> De aquí para abajo, dentro del marco, es cómo se
+    vería la app. Se puede tocar: cambia de modo, entra a un producto, elige un
+    gemelo y crea uno nuevo. Nada de esto guarda nada — es una maqueta.
+    Usa el botón de arriba para ver cómo queda en teléfono y en computador.
+  </div>
+
+  <div class="tam">
+    <button class="on" data-tam="tel">Teléfono</button>
+    <button data-tam="pc">Computador</button>
+  </div>
+
+  <div class="marco tel" id="marco">
+    <div class="topbar">
+      <div class="ico">☰</div>
+      <div class="tt">Enlaces<span class="sd">Bodega</span></div>
+      <div class="ico">⟳</div>
+    </div>
+    <div class="tabs">
+      <button>Inventario</button>
+      <button>Reparto</button>
+      <button>Mermas</button>
+      <button class="on">Enlaces</button>
+    </div>
+
+    <div class="wrap">
+
+      <!-- ============ MODO ENLAZAR — lista ============ -->
+      <div id="v-lista">
+        <div class="modos">
+          <button class="modo on" data-modo="enlazar">Enlazar</button>
+          <button class="modo" data-modo="nuevo">Producto nuevo</button>
+        </div>
+        <div class="busca"><input type="text" placeholder="Buscar producto de bodega…"></div>
+        <div class="chips">
+          <button class="chip on">Sin enlazar · 78</button>
+          <button class="chip">Todos · 234</button>
+        </div>
+        <div class="sechead">VITRINA DE TORTAS</div>
+        <div class="lista">
+          <button class="fila" data-abrir="Mini muffin">
+            <span class="nm">Mini muffin<span class="sec">Vitrina de tortas</span></span>
+            <span class="est"><span class="p no">Plaza —</span><span class="p no">Angamos —</span></span>
+            <span class="chev">›</span>
+          </button>
+          <button class="fila" data-abrir="Cinnamon rolls">
+            <span class="nm">Cinnamon rolls<span class="sec">Vitrina de tortas</span></span>
+            <span class="est"><span class="p no">Plaza —</span><span class="p si">Angamos ✓</span></span>
+            <span class="chev">›</span>
+          </button>
+          <button class="fila" data-abrir="Muffin de zanahoria">
+            <span class="nm">Muffin de zanahoria<span class="sec">Vitrina de tortas</span></span>
+            <span class="est"><span class="p no">Plaza —</span><span class="p no">Angamos —</span></span>
+            <span class="chev">›</span>
+          </button>
+        </div>
+        <div class="sechead">PASTELERÍA</div>
+        <div class="lista">
+          <button class="fila" data-abrir="Brownie">
+            <span class="nm">Brownie<span class="sec">Pastelería</span></span>
+            <span class="est"><span class="p no">Plaza —</span><span class="p no">Angamos —</span></span>
+            <span class="chev">›</span>
+          </button>
+          <button class="fila" data-abrir="Macarrons">
+            <span class="nm">Macarrons<span class="sec">Pastelería</span></span>
+            <span class="est"><span class="p no">Plaza —</span><span class="p no">Angamos —</span></span>
+            <span class="chev">›</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ============ MODO ENLAZAR — detalle ============ -->
+      <div id="v-detalle" style="display:none">
+        <button class="volver" data-volver>‹ Volver</button>
+        <h2 class="tit" id="d-nombre">Mini muffin</h2>
+        <p class="sub" id="d-sub">Bodega · Vitrina de tortas · hay 0</p>
+
+        <div class="dos">
+          <div class="caja">
+            <div class="cab">MALL PLAZA</div>
+            <div class="cuerpo" id="d-plaza">
+              <button class="cand" data-elegir="plaza">
+                <span class="nm">Mini muffin Congelador<span class="id">#688</span></span>
+                <span class="rec">RECOMENDADO</span>
+              </button>
+              <button class="cand" data-elegir="plaza">
+                <span class="nm">Mini muffin Vitrina<span class="id">#83</span></span>
+              </button>
+              <button class="crear-aqui">+ No existe allá · crearlo</button>
+            </div>
+          </div>
+
+          <div class="caja">
+            <div class="cab">PARQUE ANGAMOS</div>
+            <div class="cuerpo" id="d-angamos">
+              <button class="cand" data-elegir="angamos">
+                <span class="nm">Mini muffin<span class="id">#764</span></span>
+              </button>
+              <button class="crear-aqui">+ No existe allá · crearlo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ MODO PRODUCTO NUEVO ============ -->
+      <div id="v-nuevo" style="display:none">
+        <div class="modos">
+          <button class="modo" data-modo="enlazar">Enlazar</button>
+          <button class="modo on" data-modo="nuevo">Producto nuevo</button>
+        </div>
+
+        <div class="caja" style="margin-bottom:14px">
+          <div class="cab">EL PRODUCTO</div>
+          <div class="cuerpo">
+            <div class="campo">
+              <label>Nombre</label>
+              <input type="text" id="n-nombre" placeholder="Ej: Torta de naranja" value="Torta de naranja">
+            </div>
+            <div class="fila2">
+              <div class="campo"><label>Mínimo</label><input type="number" value="2"></div>
+              <div class="campo"><label>Máximo</label><input type="number" value="12"></div>
+            </div>
+            <label class="chk"><input type="checkbox"> Producto perecedero</label>
+            <div id="dup" style="display:none">
+              <div class="aviso">
+                <span>⚠</span>
+                <span><b>Ya existe algo parecido.</b> «Torta naranja» está en Mall Plaza,
+                      apagado. Revísalo antes de crear uno nuevo.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="caja">
+          <div class="cab">DÓNDE SE CREA</div>
+          <div class="cuerpo">
+            <div class="destinos">
+              <div class="dest fijo">
+                <div class="top"><span class="cbox">✓</span>
+                  <span class="nm">Bodega</span>
+                  <span class="sub2">siempre</span></div>
+                <div class="seccion"><label>Sección</label>
+                  <select><option>Vitrina de tortas</option><option>Pastelería</option></select></div>
+              </div>
+              <div class="dest on" data-dest="plaza">
+                <div class="top"><span class="cbox">✓</span>
+                  <span class="nm">Mall Plaza</span></div>
+                <div class="seccion"><label>Sección en Mall Plaza</label>
+                  <select><option>Vitrina de tortas</option><option>Congelador</option></select></div>
+              </div>
+              <div class="dest" data-dest="angamos">
+                <div class="top"><span class="cbox">✓</span>
+                  <span class="nm">Parque Angamos</span></div>
+                <div class="seccion"><label>Sección en Parque Angamos</label>
+                  <select><option>Vitrina de tortas</option><option>Congelador</option></select></div>
+              </div>
+            </div>
+            <div class="resumen" id="resumen">Se crea en Bodega y Mall Plaza · quedan enlazados</div>
+            <button class="btn" id="btn-crear">Crear y enlazar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ CONFIRMACIÓN ============ -->
+      <div id="v-listo" style="display:none">
+        <div class="listo">
+          <div class="tick">✓</div>
+          <h3>Torta de naranja</h3>
+          <p>
+            <span class="ln">Creada en Bodega · Mall Plaza</span>
+            <span class="ln">Enlazada por id · stock en 0</span>
+          </p>
+          <button class="btn" style="max-width:260px;margin:18px auto 0" data-volver>Crear otro</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <h2>Lo que quiero que revises</h2>
+  <div class="nota">
+    <b>1. Que se entienda sin explicación.</b> Entra a «Mini muffin» y fíjate si
+    queda claro qué te está pidiendo. Si dudaste, la forma está mal resuelta.
+  </div>
+  <div class="nota">
+    <b>2. El recomendado.</b> Cuando el producto tiene doble, el del congelador
+    sale marcado — pero igual puedes tocar el otro. Sugiere, no obliga.
+  </div>
+  <div class="nota">
+    <b>3. La sección por sede.</b> Al crear en varias sedes, cada una elige su
+    propia sección, porque bodega y los locales no las llaman igual. Dime si
+    prefieres que se elija una sola y se copie.
+  </div>
+  <div class="nota">
+    <b>4. El aviso de repetido.</b> Borra una letra del nombre para verlo.
+    Busca también entre los productos apagados, que es donde se esconden los
+    duplicados.
+  </div>
+  <div class="nota">
+    <b>5. En computador.</b> Cambia el tamaño arriba: las dos sedes se ponen
+    lado a lado en vez de una sobre otra.
+  </div>
+
+</div>
+
+<script>
+  const $ = s => document.querySelector(s);
+  const ver = id => ['v-lista','v-detalle','v-nuevo','v-listo']
+        .forEach(v => $('#'+v).style.display = (v===id?'block':'none'));
+
+  document.querySelectorAll('[data-tam]').forEach(b => b.onclick = () => {
+    document.querySelectorAll('[data-tam]').forEach(x => x.classList.toggle('on', x===b));
+    $('#marco').className = 'marco ' + b.dataset.tam;
+  });
+
+  document.querySelectorAll('[data-modo]').forEach(b => b.onclick = () =>
+    ver(b.dataset.modo === 'nuevo' ? 'v-nuevo' : 'v-lista'));
+
+  document.querySelectorAll('[data-abrir]').forEach(b => b.onclick = () => {
+    $('#d-nombre').textContent = b.dataset.abrir;
+    ver('v-detalle');
+  });
+
+  document.querySelectorAll('[data-volver]').forEach(b => b.onclick = () => ver('v-lista'));
+
+  /* elegir un gemelo: la caja pasa a mostrarlo enlazado, ahí mismo */
+  document.querySelectorAll('[data-elegir]').forEach(b => b.onclick = () => {
+    const caja = b.closest('.cuerpo');
+    const nm = b.querySelector('.nm').childNodes[0].textContent.trim();
+    const id = b.querySelector('.id').textContent;
+    caja.innerHTML = `<div class="ligado"><span class="ok">✓</span>
+        <span class="nm">${nm}<span class="id">enlazado por ${id}</span></span></div>
+      <button class="quitar">Quitar enlace</button>`;
+  });
+
+  /* destinos */
+  const pintarResumen = () => {
+    const on = [...document.querySelectorAll('.dest[data-dest].on')]
+      .map(d => d.querySelector('.nm').textContent);
+    const todos = ['Bodega', ...on];
+    /* "A, B y C" — con dos "y" seguidos se lee como una lista mal escrita */
+    const lista = todos.length > 2
+      ? todos.slice(0,-1).join(', ') + ' y ' + todos[todos.length-1]
+      : todos.join(' y ');
+    $('#resumen').textContent = on.length
+      ? `Se crea en ${lista} · quedan enlazados`
+      : 'Se crea solo en Bodega · sin enlace';
+  };
+  document.querySelectorAll('.dest[data-dest]').forEach(d => d.onclick = () => {
+    d.classList.toggle('on'); pintarResumen();
+  });
+
+  /* aviso de repetido: aparece cuando el nombre se parece a algo que ya existe */
+  $('#n-nombre').oninput = e => {
+    const t = e.target.value.toLowerCase();
+    $('#dup').style.display = (t.includes('naranj') && t !== 'torta de naranja') ? 'block' : 'none';
+  };
+
+  $('#btn-crear').onclick = () => ver('v-listo');
+</script>
+</body>
+</html>
