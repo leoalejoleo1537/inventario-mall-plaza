@@ -1274,33 +1274,12 @@
      Maqueta aprobada por Jhon: docs/propuesta-enlaces.html            -->
 <div class="wrap" id="view-enlaces" style="display:none">
 
-  <div class="rec-modos" id="enl-modos">
-    <button class="rec-modo active" data-enlmodo="enlazar">Enlazar</button>
-    <button class="rec-modo" data-enlmodo="nuevo">Producto nuevo</button>
-  </div>
-
-  <!-- ---- modo enlazar: la lista ---- -->
-  <div id="enl-lista-vista">
-    <div class="controls busca" data-busca="enlaces">
-      <input type="text" id="enl-q" placeholder="Buscar producto de bodega…">
-    </div>
-    <div class="enl-chips" id="enl-chips">
-      <button type="button" class="chip on" data-enlfiltro="faltan">Sin enlazar</button>
-      <button type="button" class="chip" data-enlfiltro="todos">Todos</button>
-    </div>
-    <div id="enl-lista"></div>
-  </div>
-
-  <!-- ---- modo enlazar: un producto ---- -->
-  <div id="enl-detalle" style="display:none">
-    <button type="button" class="enl-volver" id="enl-volver">‹ Volver</button>
-    <h2 class="enl-tit" id="enl-nombre">—</h2>
-    <p class="enl-sub" id="enl-subtit"></p>
-    <div class="enl-dos" id="enl-sedes"></div>
-  </div>
-
-  <!-- ---- modo producto nuevo ---- -->
-  <div id="enl-nuevo" style="display:none">
+  <!-- Esta pantalla es SOLO para crear productos nuevos.
+       Tuvo un rato una lista de "94 pendientes de enlazar" que nadie pidió:
+       hacía parecer que emparejar el catálogo entero era una tarea del
+       equipo, y no lo es. Emparejar un producto se resuelve solo, en el
+       reparto, la primera vez que ese producto se envía. -->
+  <div id="enl-nuevo">
     <div class="enl-caja">
       <div class="enl-cab">EL PRODUCTO</div>
       <div class="enl-cuerpo">
@@ -2077,7 +2056,7 @@ function pickSede(s){
   // y al revés con Mermas: por ahora vive solo en Bodega
   $('tabMermas').style.display = s==='central' ? '' : 'none';
   $('tabEnlaces').style.display = s==='central' ? '' : 'none';
-  MERMAS=[]; ENLACES=[]; SEDE_PROD={}; enlProd=null;
+  MERMAS=[]; ENLACES=[]; SEDE_PROD={};
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
   $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none'; $('view-enlaces').style.display='none';
@@ -2247,7 +2226,6 @@ async function cargarCriticos(){
     CRIT_TOPE[s] = filas.length >= 1000;
   });
   pintarCriticos();
-  if(vistaActual==='enlaces') pintarEnlaces();   // por si estaba abierta
 }
 
 /* El número que va en la tarjeta. Está aparte por una sola razón, y es la
@@ -2558,9 +2536,7 @@ $('mermas-list').addEventListener('click', async e=>{
    SEDES_TARJETA a propósito: aquella ordena las tarjetas de crítico, que Jhon
    ya revisó al revés, y cambiarla sería mover algo que él ya dio por bueno. */
 const SEDES_ENLACE = ['plaza','angamos'];
-let ENLACES = [];          // filas de producto_enlace de bodega
-let enlProd  = null;       // producto de bodega abierto en el detalle
-let enlFiltro = 'faltan';
+let ENLACES = [];          // filas de producto_enlace
 
 async function loadEnlaces(){
   if(SEDE!=='central') return;
@@ -2568,204 +2544,41 @@ async function loadEnlaces(){
   if(error){ console.error('enlaces', error); ENLACES=[]; }
   else ENLACES = data||[];
   if(!SEDE_PROD.plaza || !SEDE_PROD.angamos) await cargarCriticos();
-  pintarEnlaces();
 }
 
-const enlaceDe = (bid, sede) => ENLACES.find(e=>e.producto_bodega_id===bid && e.sede===sede);
-/* un producto del local ya tomado por OTRO producto de bodega: la base no deja
-   que tenga dos orígenes, así que no se ofrece como candidato */
-const tomado = (sid, sede) => ENLACES.some(e=>e.sede===sede && e.producto_sede_id===sid);
+/* LA BÚSQUEDA VA DEL LOCAL HACIA BODEGA, y esa dirección es la que importa.
+   Adriana arma el reparto mirando lo que le falta a Plaza, así que parte de un
+   producto de Plaza; lo que el sistema necesita averiguar es de cuál de SUS
+   productos descontar. `unique(sede, producto_sede_id)` hace que esta búsqueda
+   devuelva uno solo, siempre. */
+const bodegaDe = (sid, sede) => ENLACES.find(e=>e.sede===sede && e.producto_sede_id===sid);
+
 /* el nombre sin el estante, para reconocer los pares vitrina/congelador */
 const sinEstante = s => normNombre(s).replace(/\s+(vitrina|congelador)$/,'');
 
-/* Propone candidatos. PROPONE: la lista puede traer de más a propósito, porque
-   el que decide es una persona. Lo que nunca se hace es escribir un par por
-   parecido sin que alguien lo toque. */
-/* candidatosEnlace y no `candidatos`: ese nombre ya lo usa Recetas. Dos
-   funciones con el mismo nombre no dan error — la última gana y la primera
-   deja de existir. Esta pantalla mostraba "no hay ninguno parecido" para
-   productos que sí tenían gemelo, y la consola no decía nada. */
-function candidatosEnlace(prodBodega, sede){
-  const lista = SEDE_PROD[sede] || [];
-  const clave = normNombre(prodBodega.producto);
-  const base  = sinEstante(prodBodega.producto);
-  const hit = p => {
-    const c = normNombre(p.producto), b = sinEstante(p.producto);
-    if(c===clave || b===clave || b===base) return true;
-    return clave.length>=4 && (c.includes(clave) || clave.includes(c));
-  };
-  const halla = lista.filter(p=>hit(p) && !tomado(p.id, sede));
-  /* Si hay pareja vitrina/congelador, el del congelador va primero y marcado:
-     lo que viene de bodega entra al congelador (regla de Jhon, 2026-08-12). */
-  const esCong = p => /\s+congelador$/.test(normNombre(p.producto));
-  const hayPar = halla.some(esCong) && halla.some(p=>!esCong(p));
-  return halla
-    .map(p=>({p, rec: hayPar && esCong(p)}))
-    .sort((a,b)=> (b.rec-a.rec) || a.p.producto.localeCompare(b.p.producto,'es'));
-}
-
-function pintarEnlaces(){
-  if(enlProd) return pintarEnlaceDetalle();
-  const q = normNombre($('enl-q').value);
-  const filas = DATA
-    .filter(p => enlFiltro==='todos'
-      || !enlaceDe(p.id,'plaza') || !enlaceDe(p.id,'angamos'))
-    .filter(p => !q || normNombre(p.producto).includes(q))
-    .sort((a,b)=> (a.rubro||'').localeCompare(b.rubro||'','es')
-               || a.producto.localeCompare(b.producto,'es'));
-
-  const faltan = DATA.filter(p=>!enlaceDe(p.id,'plaza')||!enlaceDe(p.id,'angamos')).length;
-  $('enl-chips').querySelector('[data-enlfiltro="faltan"]').textContent = 'Sin enlazar · '+faltan;
-  $('enl-chips').querySelector('[data-enlfiltro="todos"]').textContent  = 'Todos · '+DATA.length;
-
-  if(!filas.length){
-    $('enl-lista').innerHTML = '<div class="empty">'+
-      (q ? 'Ningún producto con ese nombre.' : '✓ Todos los productos están enlazados.')+'</div>';
-    return;
-  }
-  const pill = (p,sede,txt) => enlaceDe(p.id,sede)
-    ? `<span class="enl-p si">${txt} ✓</span>` : `<span class="enl-p no">${txt} —</span>`;
-  const secs = [...new Set(filas.map(p=>p.rubro||'Sin sección'))];
-  $('enl-lista').innerHTML = secs.map(s=>`
-    <div class="sec open"><div class="sec-head"><div class="sec-btn sec-fija">
-        <span>${esc(s)}</span></div></div>
-      <div class="sec-body" style="padding-top:0">
-      ${filas.filter(p=>(p.rubro||'Sin sección')===s).map(p=>`
-        <button type="button" class="enl-fila" data-enlabrir="${p.id}">
-          <span class="nm">${esc(p.producto)}</span>
-          <span class="enl-est">${pill(p,'plaza','Plaza')}${pill(p,'angamos','Angamos')}</span>
-          <span class="chev">›</span>
-        </button>`).join('')}
-      </div></div>`).join('');
-}
-
-function pintarEnlaceDetalle(){
-  const p = enlProd;
-  $('enl-nombre').textContent = p.producto;
-  $('enl-subtit').textContent = 'Bodega · ' + (p.rubro||'Sin sección') + ' · hay ' + fmt(p.stock_actual);
-  $('enl-sedes').innerHTML = SEDES_ENLACE.map(sede=>{
-    const e = enlaceDe(p.id, sede);
-    let cuerpo;
-    if(e){
-      const dest = (SEDE_PROD[sede]||[]).find(x=>x.id===e.producto_sede_id);
-      cuerpo = `<div class="enl-ligado"><span class="ok">✓</span>
-          <span class="nm">${esc(dest?dest.producto:'(producto #'+e.producto_sede_id+')')}
-            <span class="id">enlazado por #${e.producto_sede_id}</span></span></div>
-        <button type="button" class="enl-quitar" data-enlquitar="${sede}">Quitar enlace</button>`;
-    } else {
-      const cands = candidatosEnlace(p, sede);
-      cuerpo = (cands.length
-        ? cands.map(c=>`<button type="button" class="enl-cand" data-enlelegir="${sede}" data-sid="${c.p.id}">
-              <span class="nm">${esc(c.p.producto)}<span class="id">#${c.p.id} · ${esc(c.p.rubro||'Sin sección')}</span></span>
-              ${c.rec?'<span class="enl-rec">CONGELADOR</span>':''}
-            </button>`).join('')
-        : '<div class="enl-vacio">No hay ninguno parecido en esta sede.</div>')
-        /* La salida manual SIEMPRE está, no solo cuando el parecido de
-           nombres viene vacío. El nombre solo propone (§0.7): si el que
-           decide no encuentra lo que busca en la propuesta, tiene que poder
-           buscarlo él mismo sin quedar en un callejón sin salida. */
-        + `<div class="enl-manual">
-             <button type="button" class="enl-manual-toggle" data-enlmanual="${sede}">🔍 Buscar otro producto</button>
-             <div class="enl-manual-busca" id="enl-manual-${sede}" style="display:none">
-               <input type="text" placeholder="Buscar en ${esc(SEDES[sede].corto)}…" data-enlmanualq="${sede}">
-               <div class="enl-manual-lista" data-enlmanuallista="${sede}"></div>
-             </div>
-           </div>`;
-    }
-    return `<div class="enl-caja"><div class="enl-cab">${esc(SEDES[sede].corto.toUpperCase())}</div>
-      <div class="enl-cuerpo">${cuerpo}</div></div>`;
-  }).join('');
-}
-
-/* ---- guardar y quitar. Dos números, ninguna palabra ---- */
-async function enlazar(sede, sid){
-  const {error} = await sb.from('producto_enlace').insert({
-    producto_bodega_id: enlProd.id, sede, producto_sede_id: sid,
-    factor: 1, creado_por: NOMBRE || 'desde bodega' });
-  if(error){
-    // el choque más probable: ese producto del local ya viene de otro de bodega
-    avisar(/duplicate|unique/i.test(error.message||'')
-      ? 'Ese producto del local ya está enlazado a otro de bodega.'
-      : 'No se pudo guardar el enlace. Revisa tu señal e inténtalo de nuevo.');
-    console.error(error); return;
-  }
-  await loadEnlaces();
-}
-async function quitarEnlace(sede){
-  if(!await preguntar('Quitar el enlace','El reparto ya no va a poder mover este producto a esa sede.','Quitar')) return;
-  const {error} = await sb.from('producto_enlace').delete()
-    .eq('producto_bodega_id', enlProd.id).eq('sede', sede);
-  if(error){ avisar('No se pudo quitar el enlace.'); console.error(error); return; }
-  await loadEnlaces();
-}
-
-$('view-enlaces').addEventListener('click', async e=>{
-  const modo = e.target.closest('[data-enlmodo]');
-  if(modo){ enlModo(modo.dataset.enlmodo); return; }
-  const filtro = e.target.closest('[data-enlfiltro]');
-  if(filtro){
-    enlFiltro = filtro.dataset.enlfiltro;
-    $('enl-chips').querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===filtro));
-    pintarEnlaces(); return;
-  }
-  const abrir = e.target.closest('[data-enlabrir]');
-  if(abrir){
-    enlProd = DATA.find(d=>d.id===+abrir.dataset.enlabrir);
-    $('enl-lista-vista').style.display='none'; $('enl-detalle').style.display='block';
-    pintarEnlaceDetalle(); return;
-  }
-  const elegir = e.target.closest('[data-enlelegir]');
-  if(elegir){ await enlazar(elegir.dataset.enlelegir, +elegir.dataset.sid); return; }
-  const quitar = e.target.closest('[data-enlquitar]');
-  if(quitar){ await quitarEnlace(quitar.dataset.enlquitar); return; }
-  const manual = e.target.closest('[data-enlmanual]');
-  if(manual){
-    const caja = $('enl-manual-'+manual.dataset.enlmanual);
-    const abre = caja.style.display==='none';
-    caja.style.display = abre ? 'block' : 'none';
-    manual.textContent = abre ? 'Ocultar búsqueda' : '🔍 Buscar otro producto';
-    if(abre){
-      pintarBusquedaManual(manual.dataset.enlmanual, '');
-      caja.querySelector('input').focus();
-    }
-    return;
-  }
-});
-/* La lista manual: TODO lo de esa sede que no esté ya tomado por otro producto
-   de bodega, filtrado por lo que se escriba. Sin adivinar por nombre — es la
-   persona buscando lo que ella sabe que existe. */
-function pintarBusquedaManual(sede, texto){
-  const q = normNombre(texto);
-  const disponibles = (SEDE_PROD[sede]||[]).filter(x=>!tomado(x.id, sede));
-  const filtrados = q ? disponibles.filter(x=>normNombre(x.producto).includes(q)) : disponibles;
-  const cont = document.querySelector(`[data-enlmanuallista="${sede}"]`);
-  if(!cont) return;
-  cont.innerHTML = !filtrados.length
-    ? '<div class="enl-vacio">'+(q?'Nada con ese nombre.':'No queda ningún producto libre en esta sede.')+'</div>'
-    : filtrados.slice(0,40).sort((a,b)=>a.producto.localeCompare(b.producto,'es'))
-        .map(c=>`<button type="button" class="enl-cand" data-enlelegir="${sede}" data-sid="${c.id}">
-            <span class="nm">${esc(c.producto)}<span class="id">#${c.id} · ${esc(c.rubro||'Sin sección')}</span></span>
-          </button>`).join('');
-}
-$('view-enlaces').addEventListener('input', e=>{
-  const q = e.target.closest('[data-enlmanualq]');
-  if(q) pintarBusquedaManual(q.dataset.enlmanualq, q.value);
-});
-$('enl-volver').addEventListener('click', ()=>{
-  enlProd = null;
-  $('enl-detalle').style.display='none'; $('enl-lista-vista').style.display='block';
-  pintarEnlaces();
-});
-$('enl-q').addEventListener('input', ()=>{ if(!enlProd) pintarEnlaces(); });
-
-function enlModo(m){
-  enlProd = null;
-  $('enl-modos').querySelectorAll('[data-enlmodo]')
-    .forEach(b=>b.classList.toggle('active', b.dataset.enlmodo===m));
-  $('enl-lista-vista').style.display = m==='enlazar' ? 'block' : 'none';
-  $('enl-detalle').style.display = 'none';
-  $('enl-nuevo').style.display = m==='nuevo' ? 'block' : 'none';
-  if(m==='enlazar') pintarEnlaces(); else prepararNuevo();
+/* Propone qué producto de bodega puede ser el gemelo de uno del local.
+   PROPONE: puede traer de más a propósito, porque el que decide es una
+   persona. Nunca se escribe un par por parecido sin que alguien lo toque —
+   esa es la lección del `Croissant manjar` que se propuso para el
+   `Croissant Jamon Queso`, insumo de once recetas. */
+function candidatosBodega(prodSede, sede){
+  const clave = normNombre(prodSede.producto);
+  const base  = sinEstante(prodSede.producto);   // "Mini muffin Vitrina" -> "mini muffin"
+  const yaUsado = new Set(ENLACES.filter(e=>e.sede===sede).map(e=>e.producto_bodega_id));
+  return DATA
+    .filter(b=>{
+      if(yaUsado.has(b.id)) return false;        // ese de bodega ya tiene gemelo acá
+      const c = normNombre(b.producto);
+      if(c===clave || c===base) return true;
+      return base.length>=4 && (c.includes(base) || base.includes(c));
+    })
+    .sort((a,b)=>{
+      // primero el que calza exacto con el nombre sin estante
+      const ea = normNombre(a.producto)===base ? 0 : 1;
+      const eb = normNombre(b.producto)===base ? 0 : 1;
+      return ea-eb || a.producto.localeCompare(b.producto,'es');
+    })
+    .slice(0,8);
 }
 
 /* ---- producto nuevo: se crea en bodega y en las sedes que se elijan ---- */
@@ -2893,7 +2706,7 @@ $('enl-crear').addEventListener('click', async ()=>{
   avisar('✓ '+nombre+'\n'+det.map(d=>
     (SEDES[d.sede]?SEDES[d.sede].corto:d.sede)+': '+d.estado).join(' · '));
   await loadData(); await loadEnlaces();
-  enlModo('enlazar');
+  prepararNuevo();          // el formulario queda limpio para el siguiente
 });
 
 $('btnMermasExcel').addEventListener('click',()=>{
@@ -4448,7 +4261,7 @@ function pickTab(tab){
   $('view-enlaces').style.display = tab==='enlaces'?'block':'none';
   vistaActual=tab; $('topTitle').textContent=TITULOS[tab]||TITULOS.inv;
   if(tab==='mermas') loadMermas();
-  if(tab==='enlaces'){ enlModo('enlazar'); loadEnlaces(); }
+  if(tab==='enlaces'){ prepararNuevo(); loadEnlaces(); }
   // Inicio devuelve la pantalla a como se abre: sin búsqueda, sin filtros y
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();
