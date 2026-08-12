@@ -769,6 +769,22 @@ ya existe apagado, se detiene y avisa en vez de revivirlo (§0.6.3).
 
 **Desde acá no se borra ni se apaga nada.** Solo se agrega.
 
+**Enlaces ≠ Recetas, y no comparten trabajo.** `producto_enlace` solo le sirve
+al REPARTO: que un envío de bodega sepa a qué producto del local sumarle.
+**No tiene nada que ver con que Fudo descuente al vender** — eso lo hacen las
+`recetas`, por sede, y existían antes de que `central` naciera. Un producto de
+bodega "sin enlace" hoy no deja de descontarse nada en ningún local: el
+reparto todavía no está construido, así que un enlace que falta no bloquea
+nada del día a día. Aclarado el 2026-08-13 porque los dos nombres se prestan
+a confusión y Jhon preguntó exactamente esto.
+
+**Si un producto de bodega no propone candidatos NI a mano, revisar si sobra
+un duplicado antes de asumir que falta un enlace.** Caso real: `Sprite cero`
+(error de tipeo) no tiene destino posible porque `Sprite zero` —el correcto—
+ya está enlazado, y la base no deja que un producto del local tenga dos
+orígenes. La solución ahí no es un enlace, es que el equipo decida qué hacer
+con el duplicado (ver `docs/pendiente-gemelos-sin-pareja.md`).
+
 ### El reparto descuenta al ACEPTAR, no al enviar
 
 *(Decisión de Jhon del 2026-08-10, y cambia lo que decía `docs/plan-bodega.html`.)*
@@ -2244,6 +2260,36 @@ donde se edita el stock— y no en cada fila de la lista.
 ---
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-08-13** — **Enlaces no tenía salida manual, y Jhon lo encontró
+  probando.** Abrió un producto de bodega que él reconocía como "Sprite
+  Zero" y la pantalla decía que no había ningún candidato en ninguna sede.
+  Sin buscador, sin forma de decirle al sistema "es este".
+  1. **El diagnóstico, comprobado contra la base real y no supuesto:** el
+     producto que abrió era **`Sprite cero`** (con c), un error de tipeo
+     dentro de bodega, distinto de `Sprite zero` (con z) — que **sí** está
+     enlazado en las dos sedes desde el 12. `clave_nombre()` corrige
+     tildes/mayúsculas/espacios, no errores de tipeo, así que nunca iba a
+     proponer nada. Y buscando a mano tampoco aparece nada, porque el
+     `Sprite zero` de Plaza ya tiene dueño: la base no deja que un producto
+     del local tenga dos orígenes de bodega. **No faltaba un enlace — sobraba
+     un producto.** Es la misma familia de duplicados que ya documentaba
+     `docs/pendiente-gemelos-sin-pareja.md`, y quedó agregado ahí.
+  2. **Aun así, la pantalla estaba coja: no había manera de buscar a mano.**
+     El algoritmo propone por nombre, pero cuando falla —por un tipeo, o
+     porque en verdad no hay candidato— la persona quedaba sin salida.
+     Se agregó **"🔍 Buscar otro producto"** en cada sede, siempre visible
+     (no solo cuando el automático viene vacío): un buscador de texto libre
+     sobre TODO lo que no esté ya tomado en esa sede. Sigue guardando por
+     id — la búsqueda solo arma la lista, nunca escribe un par sin que se
+     toque.
+  3. **La pregunta de fondo, contestada:** `producto_enlace` es solo para el
+     REPARTO — que un envío de bodega sepa a qué producto del local sumarle.
+     **No tiene nada que ver con el descuento de Fudo.** Eso lo hacen las
+     `recetas`, que son por sede y ya existían antes de bodega. Un producto
+     "sin enlace" hoy no deja de descontar nada — el reparto ni siquiera
+     está construido todavía. Vale la pena decirlo así de claro porque los
+     dos sistemas se llaman parecido y es fácil confundirlos.
 
 - **2026-08-12** — **Los gemelos, y la pantalla de Enlaces.** Bodega ya sabe qué
   producto de cada local es el mismo que el suyo, y de ahora en adelante eso se
