@@ -705,6 +705,48 @@ sacándola del portal, que es un cambio en `index.html` y no en la base.
 3. Única excepción autorizada: **agregar** el aviso de reparto en Angamos —
    agregar, nunca modificar ni quitar.
 
+### REGLA — el reparto llega SIEMPRE al congelador
+
+*(Jhon, 2026-08-12.)* En Mall Plaza varios productos están duplicados a
+propósito: uno vive en el **Congelador** y su gemelo en la **Vitrina** (`Mini
+muffin Congelador` / `Mini muffin Vitrina`). Es el fenómeno de §0.2.1.
+
+> **Todo producto que tenga doble en vitrina y congelador: lo que viene de
+> bodega entra al CONGELADOR, siempre.**
+
+`producto_enlace` solo admite **un gemelo por sede**, así que hay que elegir —
+y la respuesta es el del congelador, porque es donde la caja aterriza de
+verdad. Apuntar a la vitrina sumaría stock a un estante que nadie llenó, que
+es exactamente el error que hizo apagar la reposición automática.
+
+Comprobado el 2026-08-12: de los 290 pares escritos, **uno solo** apuntaba
+mal (`Alfajor artesanal` → vitrina #76 en vez de congelador #687).
+
+### El enlace se GUARDA por id; el nombre solo sirve para PROPONER
+
+*(Aclaración pedida por Jhon el 2026-08-12, y vale para cualquier
+emparejamiento futuro — recetas, gemelos, lo que venga.)*
+
+`producto_enlace` guarda **dos números** (`producto_bodega_id`,
+`producto_sede_id`) y **ninguna columna de nombre**. Renombrar un producto no
+rompe un enlace ya escrito. Nunca.
+
+El nombre se usa **una sola vez**, para adivinar qué par proponer, porque
+entre un producto de bodega y uno del local **no existe ninguna relación
+previa**: son filas creadas en momentos distintos, sin código común, sin id de
+Fudo compartido. Alguien tiene que crear esa relación de cero, y las únicas
+señales disponibles son el nombre y el criterio de una persona.
+
+**Las dos consecuencias que hay que decir en voz alta, porque confunden:**
+
+1. Si el nombre cambia **entre que se propone y que se escribe**, el par no se
+   escribe. No se rompe nada — nunca llegó a existir. Pasó el 2026-08-12: el
+   informe dijo 148 pares para Plaza y se escribieron 146, porque Jhon estuvo
+   renombrando productos entremedio.
+2. Volver a correr el script de gemelos **no repara** enlaces: agrega los que
+   faltan. La distinción importa, porque decir "córrelo cada vez que renombres"
+   suena a que los enlaces dependen del nombre, y no es así.
+
 ### El reparto descuenta al ACEPTAR, no al enviar
 
 *(Decisión de Jhon del 2026-08-10, y cambia lo que decía `docs/plan-bodega.html`.)*
