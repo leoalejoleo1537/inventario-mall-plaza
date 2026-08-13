@@ -2738,8 +2738,12 @@ $('view-repcentral').addEventListener('click', async e=>{
   if(add){
     const p = (SEDE_PROD[repcDestino]||[]).find(x=>x.id===+add.dataset.repcadd); if(!p) return;
     const b = repcBodega(p.id);
+    /* Arranca en 1, NO en lo que falta para el máximo. Sugerir 25 porque la
+       repisa da para 30 es poner un número grande a un toque de distancia de
+       enviarse: en un apuro salen 25 trozos que nadie pidió. El "llenar N"
+       sigue estando, pero hay que tocarlo a propósito. */
     repcCarrito.push({sedeId:p.id, bodegaId:b?b.id:null, producto:p.producto,
-                      rubro:p.rubro, cantidad: repcFalta(p) || 1});
+                      rubro:p.rubro, cantidad: 1});
     $('repc-q').value=''; repcPintarResultados(); repcPintarCarrito(); return;
   }
   const ll = e.target.closest('[data-repcllenar]');
