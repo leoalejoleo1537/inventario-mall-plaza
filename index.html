@@ -344,6 +344,30 @@
   .repc-bod.poco{color:var(--amber-fg)}
   .repc-bod.nada{color:var(--red-fg)}
 
+  /* Las dos sedes a la vista al mismo tiempo. Nada detrás de un botón: Adriana
+     tiene que ver de un vistazo qué le está mandando a cada una. */
+  .repc-cajas{display:grid;gap:12px;grid-template-columns:1fr;margin-top:12px}
+  @media (min-width:760px){ .repc-cajas{grid-template-columns:1fr 1fr} }
+  /* a qué sede mandar: dos botones en cada resultado del buscador */
+  .repc-ir{display:flex;gap:6px;flex-shrink:0}
+  .repc-ir button{border:1.5px solid var(--border);background:var(--card);color:var(--text);
+                  font:inherit;font-size:12px;font-weight:800;padding:7px 11px;border-radius:999px;
+                  cursor:pointer;white-space:nowrap;transition:transform .12s ease}
+  .repc-ir button:active{transform:scale(.94)}
+  .repc-ir button.on{background:var(--orange);border-color:var(--orange);color:#fff}
+  .repc-ir button:disabled{opacity:.45;cursor:default}
+  /* la cabecera de cada sede: crítico y urgentes, sin abrir nada */
+  .repc-cab2{display:flex;align-items:center;gap:8px;padding:9px 13px;background:var(--gray-bg);
+             border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--gray-fg)}
+  .repc-cab2 .cn2{color:var(--red-fg);font-weight:800}
+  .repc-cab2 .lupa{margin-left:auto;border:none;background:none;font:inherit;font-size:12px;
+                   font-weight:700;color:var(--sec-bg);cursor:pointer;padding:2px 4px}
+  .repc-vacia{font-size:13.5px;color:var(--muted);padding:14px 4px;text-align:center}
+  .repc-tot{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:9px;
+            border-top:1px solid var(--border);font-size:13px;font-weight:700}
+  .repc-tot .lbl{flex:1;color:var(--muted)}
+  @media (prefers-reduced-motion: reduce){ .repc-ir button{transition:none} .repc-ir button:active{transform:none} }
+
   /* La salida manual: cuando el parecido de nombres no encuentra lo que sí
      existe, o simplemente porque la persona prefiere buscar. Siempre está,
      no solo cuando la lista de arriba viene vacía — el algoritmo propone,
@@ -594,6 +618,10 @@
     font-size:30px;font-weight:600;line-height:1;pointer-events:none;
     box-shadow:0 4px 18px rgba(220,68,5,.5)}
   #swipe-icono.ver{display:flex}
+  /* En bodega el lado decide la sede, así que el símbolo deja de ser un "+" y
+     dice el nombre: la píldora se ensancha para que quepa. */
+  #swipe-icono.ancho{width:auto;min-width:104px;height:44px;border-radius:999px;
+    font-size:13.5px;font-weight:800;padding:0 16px;letter-spacing:.2px}
   /* ya está en el reparto: para no agregarlo dos veces sin darse cuenta */
   /* el único botón rojo fuera de la zona de administración: escribe en Fudo */
   .btn-fudo{display:block;width:100%;margin:10px 0 0;padding:11px;border-radius:10px;
@@ -1298,37 +1326,24 @@
   </div>
 
   <div id="repc-salida">
-  <div class="rec-modos" id="repc-destinos"></div>
 
-  <div class="repc-critico" id="repc-critico"></div>
-
-  <div class="sec open">
-    <div class="sec-head"><div class="sec-btn sec-fija">
-      <span class="sec-ico"><span class="mas-fab" aria-hidden="true">+</span>
-        <span id="repc-titulo">Armar envío</span></span>
-    </div></div>
-    <div class="sec-body">
-      <div class="controls busca" style="margin-bottom:8px;margin-top:2px">
+  <!-- El buscador, en su propio recuadro. Un producto se manda tocando la sede
+       a la que va: nada de elegir destino primero y perder de vista la otra. -->
+  <div class="enl-caja">
+    <div class="enl-cab">QUÉ MANDAR</div>
+    <div class="enl-cuerpo">
+      <div class="controls busca" style="margin:0 0 8px">
         <input type="text" id="repc-q" placeholder="Buscar producto…">
       </div>
       <div id="repc-results"></div>
-      <div id="repc-carrito-box" style="display:none">
-        <div class="cart-title">Va en este envío</div>
-        <input type="text" id="repc-nombre" maxlength="40" autocomplete="off"
-               placeholder="Nombre del envío (opcional)">
-        <div id="repc-carrito"></div>
-        <div class="mbtns" style="margin-top:10px">
-          <button class="btn btn-gris" id="repc-copiar">Copiar</button>
-          <button class="btn btn-orange" id="repc-enviar">Enviar</button>
-        </div>
-      </div>
     </div>
   </div>
 
-  <!-- lo que ese local ya tiene sin confirmar, armado desde acá o desde allá.
-       Existe para que no se mande dos veces lo mismo. -->
-  <div id="repc-abiertos"></div>
-  </div><!-- /repc-salida -->
+  <!-- Las dos sedes, lado a lado en pantalla ancha y una sobre otra en el
+       teléfono. Todo a la vista: el crítico, lo que va, y lo que ya salió. -->
+  <div class="repc-cajas" id="repc-cajas"></div>
+
+    </div><!-- /repc-salida -->
 
   <!-- ---- ENTRADA: lo que llega del proveedor ----
        Hasta ahora bodega solo sabía restar. Lo que llegaba había que corregirlo
@@ -2151,7 +2166,7 @@ function pickSede(s){
   $('tabMermas').style.display = s==='central' ? '' : 'none';
   $('tabEnlaces').style.display = s==='central' ? '' : 'none';
   MERMAS=[]; ENLACES=[]; SEDE_PROD={};
-  repcCarrito=[]; repcAbiertos=[]; repcDestino='plaza';
+  repcCarritos={plaza:[],angamos:[]}; repcAbiertos={plaza:[],angamos:[]};
   entCarrito=[]; entUltimas=[];
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
@@ -2632,140 +2647,180 @@ $('mermas-list').addEventListener('click', async e=>{
    los productos de bodega hay que descontar. Se resuelve acá, al armar, con la
    libreta de enlaces — no al recibir, para que el jefe de turno nunca vea nada
    de esto.                                                                   */
-let repcDestino  = 'plaza';
-let repcCarrito  = [];      // {sedeId, bodegaId, producto, rubro, cantidad}
-let repcAbiertos = [];      // repartos sin cerrar de ese local
+/* Dos carros a la vez, uno por sede. Antes había que elegir destino primero y
+   la otra sede desaparecía de la pantalla: Adriana armaba a ciegas la mitad
+   del trabajo. Ahora las dos están a la vista y un producto se manda tocando
+   la sede a la que va. */
+let repcCarritos = {plaza:[], angamos:[]};
+let repcAbiertos = {plaza:[], angamos:[]};
 
-/* Del producto del local a lo que bodega tiene de él. Sin totales de
-   vitrina/congelador: el enlace ya apunta al congelador, así que el número de
-   esa ficha es el que corresponde. */
-function repcBodega(sedeId){
-  const e = bodegaDe(sedeId, repcDestino);
+function repcBodega(sedeId, sede){
+  const e = bodegaDe(sedeId, sede);
   if(!e) return null;
   const b = DATA.find(d=>d.id===e.producto_bodega_id);
   return b ? {id:b.id, producto:b.producto, hay:+b.stock_actual||0} : null;
 }
-/* Cuánto falta para llenar la repisa del local, que es el pedido natural. */
 const repcFalta = p => maxOk(p) ? Math.max(0,(+p.stock_max||0)-(+p.stock_actual||0)) : 0;
-/* Lo ya comprometido en envíos sin confirmar, para no mandar dos veces. */
-function repcComprometido(sedeId){
-  return repcAbiertos.reduce((n,r)=>n + (r.items||[])
-    .filter(i=>i.producto_id===sedeId && i.estado==='pendiente')
-    .reduce((m,i)=>m+(+i.cantidad_pedida||0),0), 0);
-}
-
-function repcPintarDestinos(){
-  $('repc-destinos').innerHTML = SEDES_ENLACE.map(s=>
-    `<button type="button" class="rec-modo${s===repcDestino?' active':''}" data-repcdest="${s}">
-       ${esc(SEDES[s].label)}</button>`).join('');
-  $('repc-titulo').textContent = 'Armar envío a ' + SEDES[repcDestino].corto;
-}
-
-function repcPintarCritico(){
-  const lista = CRITICOS[repcDestino];
-  const n = lista==null ? '—' : lista.filter(p=>estado(p)==='critico').length;
-  $('repc-critico').innerHTML =
-    `<span class="n">${n}</span>
-     <span class="t">en crítico en ${esc(SEDES[repcDestino].corto)}</span>
-     <button type="button" data-repccrit="1">Ver la lista</button>`;
+/* Lo que ya está comprometido en los dos carros para ese producto de bodega:
+   si el mismo insumo va a las dos sedes, bodega tiene que alcanzar para ambas. */
+function repcComprometido(bodegaId, excepto){
+  let n = 0;
+  for(const s of SEDES_ENLACE)
+    for(const c of repcCarritos[s])
+      if(c.bodegaId===bodegaId && c!==excepto) n += (+c.cantidad||0);
+  return n;
 }
 
 function repcPintarResultados(){
   const q = normNombre($('repc-q').value);
   if(!q){ $('repc-results').innerHTML=''; return; }
-  const yaEsta = new Set(repcCarrito.map(c=>c.sedeId));
-  const rows = (SEDE_PROD[repcDestino]||[])
-    .filter(p=>normNombre(p.producto).includes(q) && !yaEsta.has(p.id)).slice(0,15);
-  $('repc-results').innerHTML = rows.length ? rows.map(p=>{
-    const cf = CFG[estado(p)], b = repcBodega(p.id);
-    /* Si bodega no tiene de dónde sacarlo se dice acá, antes de agregarlo. No
-       se prohíbe: el envío igual puede salir y el local igual va a sumar — lo
-       que no va a pasar es que bodega baje. Mejor decirlo que esconderlo. */
+  /* Se busca en las DOS sedes a la vez y se junta por nombre: un mismo producto
+     suele existir en las dos, y mostrarlo dos veces confundiría. */
+  const vistos = new Map();
+  for(const s of SEDES_ENLACE)
+    for(const p of (SEDE_PROD[s]||[]))
+      if(normNombre(p.producto).includes(q)){
+        const k = normNombre(p.producto);
+        if(!vistos.has(k)) vistos.set(k, {nombre:p.producto, rubro:p.rubro, en:{}});
+        vistos.get(k).en[s] = p;
+      }
+  const filas = [...vistos.values()].slice(0,12);
+  if(!filas.length){ $('repc-results').innerHTML='<div class="empty">Nada con ese nombre en los locales.</div>'; return; }
+
+  $('repc-results').innerHTML = filas.map(f=>{
+    const botones = SEDES_ENLACE.map(s=>{
+      const p = f.en[s];
+      if(!p) return `<button type="button" disabled title="No existe en ${esc(SEDES[s].corto)}">${esc(SEDES[s].corto)}</button>`;
+      const ya = repcCarritos[s].some(c=>c.sedeId===p.id);
+      return `<button type="button" class="${ya?'on':''}" data-repcir="${s}" data-sid="${p.id}">
+        ${ya?'✓ ':'+ '}${esc(SEDES[s].corto)}</button>`;
+    }).join('');
+    /* El estado en cada local, en el propio renglón: sin esto hay que
+       acordarse de cuánto tenía cada uno mientras se decide. */
+    const donde = SEDES_ENLACE.filter(s=>f.en[s]).map(s=>{
+      const p = f.en[s], cf = CFG[estado(p)];
+      return `<span style="color:${cf.fg};font-weight:700">${esc(SEDES[s].corto)} ${fmt(p.stock_actual)}</span>`;
+    }).join(' · ');
+    const algun = SEDES_ENLACE.map(s=>f.en[s]).find(Boolean);
+    const b = algun ? repcBodega(algun.id, SEDES_ENLACE.find(s=>f.en[s])) : null;
     const bod = !b ? '<span class="repc-bod nada">bodega no lo tiene enlazado</span>'
       : `<span class="repc-bod${b.hay<=0?' nada':(b.hay<3?' poco':'')}">bodega: ${fmt(b.hay)}</span>`;
-    return `<div class="rep-result" data-repcadd="${p.id}">
-      <div style="min-width:0">
-        <div class="rn">${esc(p.producto)}</div>
-        <div class="rs">${esc(p.rubro||'Sin sección')} · mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div>
+    return `<div class="rep-result" style="align-items:flex-start">
+      <div style="min-width:0;flex:1">
+        <div class="rn">${esc(f.nombre)}</div>
+        <div class="rs">${donde}</div>
         ${bod}
       </div>
-      <div class="rep-fin">
-        <span class="rep-hay" style="background:${cf.bg};color:${cf.fg}">${fmt(p.stock_actual)}</span>
-        <span class="add">+</span>
-      </div>
+      <div class="repc-ir">${botones}</div>
     </div>`;
-  }).join('') : '<div class="empty">Nada con ese nombre en '+esc(SEDES[repcDestino].corto)+'.</div>';
+  }).join('');
 }
 
-function repcPintarCarrito(){
-  $('repc-carrito-box').style.display = repcCarrito.length ? 'block' : 'none';
-  $('repc-carrito').innerHTML = repcCarrito.map((c,i)=>{
-    const p = (SEDE_PROD[repcDestino]||[]).find(x=>x.id===c.sedeId);
-    const b = repcBodega(c.sedeId);
-    let sub = '';
-    if(p){
-      const cf = CFG[estado(p)], falta = repcFalta(p);
-      const llenar = (falta>0 && +c.cantidad!==falta)
-        ? `<button type="button" class="cart-llenar" data-repcllenar="${i}" data-cant="${falta}">llenar ${fmt(falta)}</button>` : '';
-      /* "bodega: 12 → 8" es la vista previa del descuento, en el renglón donde
-         se decide. Sin esto Adriana promete algo que bodega no tiene. */
-      const queda = b ? Math.max(0, b.hay - (+c.cantidad||0)) : null;
+/* ---- PROPUESTA AUTOMÁTICA ----
+   Mira qué está en crítico en esa sede, cuánto le falta para su máximo, y
+   cuánto tiene bodega. Propone el menor de los dos: no se promete lo que no
+   hay. PROPONE — queda en el carro para revisar y ajustar, no se envía. */
+function repcProponer(sede){
+  const lista = CRITICOS[sede] || [];
+  let puestos = 0, sinBodega = 0;
+  for(const p of lista){
+    if(repcCarritos[sede].some(c=>c.sedeId===p.id)) continue;
+    const b = repcBodega(p.id, sede);
+    if(!b){ sinBodega++; continue; }
+    const libre = b.hay - repcComprometido(b.id);
+    const falta = repcFalta(p) || 1;
+    const cant  = Math.min(falta, libre);
+    if(cant <= 0) continue;
+    repcCarritos[sede].push({sedeId:p.id, bodegaId:b.id, producto:p.producto,
+                             rubro:p.rubro, cantidad:cant});
+    puestos++;
+  }
+  repcPintarCajas(); repcPintarResultados();
+  avisar(puestos
+    ? '✓ '+puestos+' producto(s) propuestos para '+SEDES[sede].corto
+      + (sinBodega ? '\n\n'+sinBodega+' en crítico no están enlazados a bodega' : '')
+    : 'No hay nada que proponer: o bodega está en 0, o ya está todo en el envío.');
+}
+
+function repcPintarCajas(){
+  $('repc-cajas').innerHTML = SEDES_ENLACE.map(sede=>{
+    const car = repcCarritos[sede];
+    const lista = CRITICOS[sede];
+    const nCrit = lista==null ? '—' : lista.filter(p=>estado(p)==='critico').length;
+    const nUrg  = lista==null ? 0   : lista.filter(urgenteDe).length;
+    const total = car.reduce((n,c)=>n+(+c.cantidad||0),0);
+
+    const filas = car.length ? car.map((c,i)=>{
+      const p = (SEDE_PROD[sede]||[]).find(x=>x.id===c.sedeId);
+      const b = repcBodega(c.sedeId, sede);
+      const libre = b ? b.hay - repcComprometido(b.id, c) : 0;
+      const queda = b ? Math.max(0, libre - (+c.cantidad||0)) : null;
       const bod = !b ? '<span class="repc-bod nada">bodega no baja</span>'
-        : `<span class="repc-bod${queda<=0?' poco':''}">bodega: ${fmt(b.hay)} → ${fmt(queda)}`
-          + ((+c.cantidad||0) > b.hay ? ' · pide más de lo que hay' : '') + '</span>';
-      sub = `<div class="cns">allá hay <b style="color:${cf.fg}">${fmt(p.stock_actual)}</b>`
-          + `${maxOk(p)?' · máx '+fmt(p.stock_max):''}${llenar}</div>${bod}`;
-    }
-    const esUno = (+c.cantidad||0) <= 1;
-    return `<div class="cart-row">
-      <div class="cn"><div class="cnn">${esc(c.producto)}</div>${sub}</div>
-      <div class="qty">
-        <button type="button" class="qbtn qleft ${esUno?'is-trash':''}" data-repcleft="${i}" aria-label="${esUno?'Quitar':'Restar'}">${esUno?TRASH_SVG:'−'}</button>
-        <input type="number" step="0.5" min="0" value="${c.cantidad}" data-repcidx="${i}" aria-label="Cantidad de ${esc(c.producto)}">
-        <button type="button" class="qbtn qplus" data-repcinc="${i}" aria-label="Sumar">+</button>
+        : `<span class="repc-bod${queda<=0?' poco':''}">bodega: ${fmt(libre)} → ${fmt(queda)}`
+          + ((+c.cantidad||0) > libre ? ' · pide más de lo que hay' : '') + '</span>';
+      const cf = p ? CFG[estado(p)] : CFG.sindato;
+      const falta = p ? repcFalta(p) : 0;
+      const llenar = (falta>0 && +c.cantidad!==falta)
+        ? `<button type="button" class="cart-llenar" data-repcllenar="${sede}-${i}" data-cant="${falta}">llenar ${fmt(falta)}</button>` : '';
+      const esUno = (+c.cantidad||0) <= 1;
+      return `<div class="cart-row">
+        <div class="cn"><div class="cnn">${esc(c.producto)}</div>
+          <div class="cns">allá hay <b style="color:${cf.fg}">${p?fmt(p.stock_actual):'—'}</b>${llenar}</div>${bod}</div>
+        <div class="qty">
+          <button type="button" class="qbtn qleft ${esUno?'is-trash':''}" data-repcleft="${sede}-${i}" aria-label="${esUno?'Quitar':'Restar'}">${esUno?TRASH_SVG:'−'}</button>
+          <input type="number" step="0.5" min="0" value="${c.cantidad}" data-repcidx="${sede}-${i}" aria-label="Cantidad de ${esc(c.producto)}">
+          <button type="button" class="qbtn qplus" data-repcinc="${sede}-${i}" aria-label="Sumar">+</button>
+        </div>
+      </div>`;
+    }).join('') : '<div class="repc-vacia">Nada todavía. Busca arriba o toca Proponer.</div>';
+
+    const abiertos = repcAbiertos[sede] || [];
+    const enCamino = abiertos.length ? `<div class="repc-tot" style="border-top:none;padding-top:4px">
+        <span class="lbl" style="color:var(--amber-fg)">Ya en camino: ${
+          abiertos.reduce((n,r)=>n+(r.items||[]).filter(i=>i.estado==='pendiente').length,0)
+        } sin confirmar</span></div>` : '';
+
+    return `<div class="enl-caja">
+      <div class="enl-cab">${esc(SEDES[sede].label.toUpperCase())}</div>
+      <div class="repc-cab2">
+        <span><span class="cn2">${nCrit}</span> en crítico</span>
+        ${nUrg?`<span class="pill pill-urg" style="font-size:10px;padding:2px 8px">${nUrg} urgente${nUrg===1?'':'s'}</span>`:''}
+        <button type="button" class="lupa" data-repccrit="${sede}">ver lista</button>
+      </div>
+      <div class="enl-cuerpo">
+        <button type="button" class="btn btn-outline btn-block" data-repcprop="${sede}" style="margin-bottom:10px">Proponer según el crítico</button>
+        ${filas}
+        <div class="repc-tot"><span class="lbl">${car.length} producto(s)</span>
+          <b>${fmt(total)} unidades</b></div>
+        ${enCamino}
+        <div class="mbtns" style="margin-top:10px">
+          <button class="btn btn-gris" data-repccopiar="${sede}" ${car.length?'':'disabled'}>Copiar</button>
+          <button class="btn btn-orange" data-repcenviar="${sede}" ${car.length?'':'disabled'}>Enviar</button>
+        </div>
       </div>
     </div>`;
   }).join('');
 }
 
-/* Los envíos que ese local todavía no confirmó, vengan de acá o armados allá.
-   Es la respuesta a "que no se dupliquen": Adriana ve lo que ya está en camino
-   antes de armar otro. */
 async function repcCargarAbiertos(){
-  const r = await sb.from('repartos').select('*').eq('sede',repcDestino)
-              .eq('estado','abierto').order('created_at',{ascending:false});
-  if(r.error){ repcAbiertos=[]; console.error('repartos abiertos', r.error); }
-  else {
+  for(const sede of SEDES_ENLACE){
+    const r = await sb.from('repartos').select('*').eq('sede',sede)
+                .eq('estado','abierto').order('created_at',{ascending:false});
+    if(r.error){ repcAbiertos[sede]=[]; console.error('abiertos '+sede, r.error); continue; }
     const ids = (r.data||[]).map(x=>x.id);
     let items = [];
     if(ids.length){
-      const ri = await sb.from('reparto_items').select('*').in('reparto_id',ids).order('id');
+      const ri = await sb.from('reparto_items').select('*').in('reparto_id',ids);
       items = ri.data||[];
     }
-    repcAbiertos = (r.data||[]).map(x=>({...x, items:items.filter(i=>i.reparto_id===x.id)}));
+    repcAbiertos[sede] = (r.data||[]).map(x=>({...x, items:items.filter(i=>i.reparto_id===x.id)}));
   }
-  repcPintarAbiertos();
-  repcPintarCarrito();      // el "comprometido" depende de esto
-}
-function repcPintarAbiertos(){
-  if(!repcAbiertos.length){ $('repc-abiertos').innerHTML=''; return; }
-  $('repc-abiertos').innerHTML = `<div class="turno"><div class="turno-lbl">
-      YA EN CAMINO A ${esc(SEDES[repcDestino].corto.toUpperCase())}</div>`
-    + repcAbiertos.map(r=>{
-        const pend = (r.items||[]).filter(i=>i.estado==='pendiente');
-        return `<div class="cs-fila">
-          <span class="cs-nm">${r.nombre?esc(r.nombre):'Envío'}
-            <span class="cs-sec">${r.creado_por?esc(r.creado_por)+' · ':''}${
-              new Date(r.created_at).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span></span>
-          <span class="cs-hay">${pend.length} sin confirmar</span>
-        </div>`;
-      }).join('') + '</div>';
+  repcPintarCajas();
 }
 
 function repcAbrir(){
-  repcPintarDestinos(); repcPintarCritico();
   $('repc-q').value=''; $('repc-results').innerHTML='';
-  repcPintarCarrito(); repcCargarAbiertos();
+  repcPintarCajas(); repcCargarAbiertos();
 }
 
 /* Salida y entrada en la misma pestaña: son el mismo trabajo al revés. Abre
@@ -2780,98 +2835,96 @@ function repcModo(m){
          entPintarCarrito(); entCargarUltimas(); }
 }
 
-$('view-repcentral').addEventListener('click', async e=>{
-  const m = e.target.closest('[data-repcmodo]');
-  if(m){
-    if(m.dataset.repcmodo==='entrada' && repcCarrito.length
-       && !await preguntar('Cambiar a entrada','El envío que estabas armando se va a descartar.','Cambiar')) return;
-    if(m.dataset.repcmodo==='salida' && entCarrito.length
-       && !await preguntar('Cambiar a envíos','La entrada que estabas registrando se va a descartar.','Cambiar')) return;
-    if(m.dataset.repcmodo==='entrada') repcCarrito=[]; else entCarrito=[];
-    repcModo(m.dataset.repcmodo); return;
-  }
-  const d = e.target.closest('[data-repcdest]');
-  if(d){
-    if(d.dataset.repcdest!==repcDestino && repcCarrito.length
-       && !await preguntar('Cambiar de local','Lo que ya agregaste a este envío se va a descartar.','Cambiar')) return;
-    repcDestino = d.dataset.repcdest; repcCarrito=[];
-    repcAbrir(); return;
-  }
-  if(e.target.closest('[data-repccrit]')){ abrirCriticos(repcDestino); return; }
-  const add = e.target.closest('[data-repcadd]');
-  if(add){
-    const p = (SEDE_PROD[repcDestino]||[]).find(x=>x.id===+add.dataset.repcadd); if(!p) return;
-    const b = repcBodega(p.id);
-    /* Arranca en 1, NO en lo que falta para el máximo. Sugerir 25 porque la
-       repisa da para 30 es poner un número grande a un toque de distancia de
-       enviarse: en un apuro salen 25 trozos que nadie pidió. El "llenar N"
-       sigue estando, pero hay que tocarlo a propósito. */
-    repcCarrito.push({sedeId:p.id, bodegaId:b?b.id:null, producto:p.producto,
-                      rubro:p.rubro, cantidad: 1});
-    $('repc-q').value=''; repcPintarResultados(); repcPintarCarrito(); return;
-  }
-  const ll = e.target.closest('[data-repcllenar]');
-  if(ll){ repcCarrito[+ll.dataset.repcllenar].cantidad = +ll.dataset.cant; repcPintarCarrito(); return; }
-  const inc = e.target.closest('[data-repcinc]');
-  if(inc){ const i=+inc.dataset.repcinc; repcCarrito[i].cantidad=(+repcCarrito[i].cantidad||0)+1; repcPintarCarrito(); return; }
-  const left = e.target.closest('[data-repcleft]');
-  if(left){
-    const i=+left.dataset.repcleft;
-    if((+repcCarrito[i].cantidad||0)>1) repcCarrito[i].cantidad=+repcCarrito[i].cantidad-1;
-    else repcCarrito.splice(i,1);
-    repcPintarCarrito(); return;
-  }
-});
-$('view-repcentral').addEventListener('input', e=>{
-  if(e.target.id==='repc-q'){ repcPintarResultados(); return; }
-  const idx = e.target.closest('[data-repcidx]');
-  if(idx){ repcCarrito[+idx.dataset.repcidx].cantidad = +idx.value || 0; repcPintarCarrito(); }
-});
+/* Agregar desde el buscador o desde el gesto de deslizar, un solo camino. */
+function repcAgregar(sede, sedeId, cant){
+  if(repcCarritos[sede].some(c=>c.sedeId===sedeId)) return false;
+  const p = (SEDE_PROD[sede]||[]).find(x=>x.id===sedeId); if(!p) return false;
+  const b = repcBodega(p.id, sede);
+  repcCarritos[sede].push({sedeId:p.id, bodegaId:b?b.id:null, producto:p.producto,
+                           rubro:p.rubro, cantidad: cant || 1});
+  return true;
+}
 
-/* El resumen para WhatsApp, el mismo gesto que ya existe en el reparto de los
-   locales. Sirve para mandarlo por adelantado antes de que la caja salga. */
-$('repc-copiar').addEventListener('click', async ()=>{
-  const items = repcCarrito.filter(c=>c.cantidad>0);
-  if(!items.length){ avisar('Agrega una cantidad mayor a 0.'); return; }
-  const btn=$('repc-copiar');
-  const titulo = ($('repc-nombre').value||'').trim() || 'Envío a '+SEDES[repcDestino].corto;
-  const txt = titulo+'\n'+items.map(c=>fmt(c.cantidad)+'  '+nombreResumen(c.producto)).join('\n');
-  btn.textContent = await copiarTexto(txt) ? '✓ Copiado' : 'No se pudo';
-  setTimeout(()=>{ btn.textContent='Copiar'; }, 1400);
-});
-
-$('repc-enviar').addEventListener('click', async ()=>{
-  const items = repcCarrito.filter(c=>c.cantidad>0);
-  if(!items.length){ avisar('Agrega una cantidad mayor a 0.'); return; }
+async function repcEnviar(sede){
+  const items = repcCarritos[sede].filter(c=>c.cantidad>0);
+  if(!items.length) return;
   const sinEnlace = items.filter(c=>!c.bodegaId).length;
   if(sinEnlace && !await preguntar('Enviar igual',
       sinEnlace+' producto(s) no están enlazados a bodega. El local los va a recibir y sumar, pero el stock de bodega no va a bajar por ellos.','Enviar')) return;
-
-  const btn=$('repc-enviar'); btn.disabled=true; btn.textContent='Enviando…';
+  const btn = $('repc-cajas').querySelector(`[data-repcenviar="${sede}"]`);
+  if(btn){ btn.disabled=true; btn.textContent='Enviando…'; }
   try{
-    /* Se escribe EXACTAMENTE lo que escribe el local: la sede que recibe y sus
-       productos. Lo único que se agrega es de cuál de bodega descontar. */
     const {data,error} = await conReintento(()=>sb.from('repartos')
-      .insert([{sede:repcDestino, creado_por:NOMBRE, origen:'Bodega',
-                nombre:(($('repc-nombre').value||'').replace(/\s+/g,' ').trim()||null)}]).select());
+      .insert([{sede, creado_por:NOMBRE, origen:'Bodega'}]).select());
     if(error || !data || !data[0]) throw error || new Error('sin reparto');
     const rid = data[0].id;
     const {error:e2} = await conReintento(()=>sb.from('reparto_items').insert(
       items.map(c=>({reparto_id:rid, producto_id:c.sedeId, producto:c.producto,
                      cantidad_pedida:+c.cantidad, producto_bodega_id:c.bodegaId}))));
-    if(e2){
-      // no dejar un envío vacío dando vueltas si las líneas no entraron
-      await sb.from('repartos').delete().eq('id',rid);
-      throw e2;
-    }
-    avisar('✓ Enviado a '+SEDES[repcDestino].corto+' · '+items.length+' producto(s)');
-    repcCarrito=[]; $('repc-nombre').value=''; $('repc-q').value='';
-    repcPintarResultados(); repcPintarCarrito(); repcCargarAbiertos();
+    if(e2){ await sb.from('repartos').delete().eq('id',rid); throw e2; }
+    avisar('✓ Enviado a '+SEDES[sede].corto+' · '+items.length+' producto(s)');
+    repcCarritos[sede]=[]; repcPintarResultados(); repcCargarAbiertos();
   }catch(err){
     console.error('enviar reparto', err);
     avisar('No se pudo enviar. Revisa tu señal e inténtalo de nuevo.');
-  }finally{ btn.disabled=false; btn.textContent='Enviar'; }
+    repcPintarCajas();
+  }
+}
+
+$('view-repcentral').addEventListener('click', async e=>{
+  const m = e.target.closest('[data-repcmodo]');
+  if(m){
+    const hay = repcCarritos.plaza.length + repcCarritos.angamos.length;
+    if(m.dataset.repcmodo==='entrada' && hay
+       && !await preguntar('Cambiar a entrada','Los envíos que estabas armando se van a descartar.','Cambiar')) return;
+    if(m.dataset.repcmodo==='salida' && entCarrito.length
+       && !await preguntar('Cambiar a envíos','La entrada que estabas registrando se va a descartar.','Cambiar')) return;
+    if(m.dataset.repcmodo==='entrada'){ repcCarritos={plaza:[],angamos:[]}; } else entCarrito=[];
+    repcModo(m.dataset.repcmodo); return;
+  }
+  const cr = e.target.closest('[data-repccrit]');
+  if(cr){ abrirCriticos(cr.dataset.repccrit); return; }
+  const pr = e.target.closest('[data-repcprop]');
+  if(pr){ repcProponer(pr.dataset.repcprop); return; }
+  const ir = e.target.closest('[data-repcir]');
+  if(ir){
+    const s = ir.dataset.repcir, sid = +ir.dataset.sid;
+    const i = repcCarritos[s].findIndex(c=>c.sedeId===sid);
+    if(i>=0) repcCarritos[s].splice(i,1); else repcAgregar(s, sid);
+    repcPintarCajas(); repcPintarResultados(); return;
+  }
+  const ll = e.target.closest('[data-repcllenar]');
+  if(ll){ const [s,i]=ll.dataset.repcllenar.split('-'); repcCarritos[s][+i].cantidad=+ll.dataset.cant; repcPintarCajas(); return; }
+  const inc = e.target.closest('[data-repcinc]');
+  if(inc){ const [s,i]=inc.dataset.repcinc.split('-'); repcCarritos[s][+i].cantidad=(+repcCarritos[s][+i].cantidad||0)+1; repcPintarCajas(); return; }
+  const left = e.target.closest('[data-repcleft]');
+  if(left){
+    const [s,i]=left.dataset.repcleft.split('-');
+    if((+repcCarritos[s][+i].cantidad||0)>1) repcCarritos[s][+i].cantidad=+repcCarritos[s][+i].cantidad-1;
+    else repcCarritos[s].splice(+i,1);
+    repcPintarCajas(); repcPintarResultados(); return;
+  }
+  const cp = e.target.closest('[data-repccopiar]');
+  if(cp){
+    const s = cp.dataset.repccopiar, items = repcCarritos[s].filter(c=>c.cantidad>0);
+    if(!items.length) return;
+    const txt = 'Envío a '+SEDES[s].label+'\n'
+      + items.map(c=>fmt(c.cantidad)+'  '+nombreResumen(c.producto)).join('\n');
+    cp.textContent = await copiarTexto(txt) ? '✓ Copiado' : 'No se pudo';
+    setTimeout(()=>{ cp.textContent='Copiar'; }, 1400);
+    return;
+  }
+  const en = e.target.closest('[data-repcenviar]');
+  if(en){ await repcEnviar(en.dataset.repcenviar); return; }
 });
+$('view-repcentral').addEventListener('input', e=>{
+  if(e.target.id==='repc-q'){ repcPintarResultados(); return; }
+  const idx = e.target.closest('[data-repcidx]');
+  if(idx){ const [s,i]=idx.dataset.repcidx.split('-');
+           repcCarritos[s][+i].cantidad = +idx.value || 0; repcPintarCajas(); }
+});
+
+
 
 /* ================= ENTRADA A BODEGA (solo central) =================
    Lo que llega del proveedor. Hasta ahora bodega solo sabía restar —por reparto
@@ -3373,7 +3426,10 @@ function render(){
     : '';
   /* Al mirar UN tipo, AM/PM no significa nada: no se está contando el turno,
      se está mirando "todas las tortas". Los turnos vuelven al soltar el tipo. */
-  const cuerpo = tipoSel
+  /* En BODEGA no hay turnos AM/PM: no se cuenta por turno, se cuenta la
+     bodega entera. Separarla en dos bloques era una división prestada de los
+     locales que ahí no significa nada. En Plaza y Angamos sigue igual. */
+  const cuerpo = (tipoSel || SEDE==='central')
     ? bloqueUrg + orden.map(secHTML).join('')
     : bloqueUrg + bloque('AM', orden.filter(esAM)) + bloque('PM', orden.filter(s=>!esAM(s)));
   listEl.innerHTML = cuerpo || '<div class="empty">No hay productos que coincidan.</div>';
@@ -3626,10 +3682,27 @@ function swipeFin(pasa){
   setTimeout(()=>row.classList.remove('vuelve'), 450);
   document.body.classList.remove('sin-seleccion');
   swRow=null; swDx=0; swEje=null; swRect=null; swPid=null;
-  if(pasa) mandarAlReparto(id);
+  if(pasa) mandarAlReparto(id, swDx > 0 ? 'plaza' : 'angamos');
 }
-function mandarAlReparto(id){
+/* En un LOCAL el gesto va a cualquier lado y hace lo mismo: no hay una segunda
+   acción que confundir. En BODEGA sí la hay, porque el envío tiene dos
+   destinos posibles, así que el lado decide: derecha Mall Plaza, izquierda
+   Angamos. Por eso el símbolo dice a dónde va mientras se arrastra. */
+function mandarAlReparto(id, lado){
   const p=DATA.find(d=>d.id===id); if(!p) return;
+
+  if(SEDE==='central'){
+    const sede = lado==='plaza' ? 'plaza' : 'angamos';
+    const e = ENLACES.find(x=>x.producto_bodega_id===id && x.sede===sede);
+    if(!e){ aviso(p.producto+' no está enlazado a '+SEDES[sede].corto); return; }
+    if(!repcAgregar(sede, e.producto_sede_id)){
+      aviso(p.producto+' ya está en el envío a '+SEDES[sede].corto); return;
+    }
+    repcPintarCajas();
+    aviso('✓ '+p.producto+' → '+SEDES[sede].corto);
+    return;
+  }
+
   if(carrito.some(c=>c.id===id)){ aviso(p.producto+' ya está en el reparto'); return; }
   carrito.push({id:p.id, producto:p.producto, rubro:p.rubro, cantidad:1});
   renderCarrito();
@@ -3677,6 +3750,11 @@ listEl.addEventListener('pointermove', e=>{
   const r = swRect;
   const ico = swIco(), avance = Math.min(1, Math.abs(dx)/SWIPE_MIN);
   const lado = dx > 0 ? r.left + 8 : r.right - 64;
+  /* En bodega el símbolo dice a dónde va, porque el lado ahora significa algo.
+     En los locales sigue siendo un "+" a secas. */
+  ico.textContent = SEDE==='central'
+    ? (dx > 0 ? '→ '+SEDES.plaza.corto : SEDES.angamos.corto+' ←') : '+';
+  ico.classList.toggle('ancho', SEDE==='central');
   ico.classList.add('ver');
   ico.style.top  = Math.round(r.top + r.height/2 - 28) + 'px';
   ico.style.left = Math.round(lado) + 'px';
@@ -4156,6 +4234,10 @@ $('m-eliminar').addEventListener('click', async()=>{
 
 /* ---------------- nuevo producto ---------------- */
 $('btnNuevo').addEventListener('click',()=>{
+  /* En bodega el + es un atajo a Enlaces: un producto nuevo casi nunca es solo
+     de bodega — hay que crearlo también en los locales y dejarlo enlazado, o
+     nace suelto y el reparto no lo puede mover. */
+  if(SEDE==='central'){ pickTab('enlaces'); setTimeout(()=>$('enl-n-nombre').focus(), 260); return; }
   $('n-sede-label').textContent = 'Se agregará a ' + SEDES[SEDE].label;
   $('n-nombre').value=''; $('n-perec').checked=false;   // n-rubro se rearma abajo
   $('n-stock').value=''; $('n-min').value=''; $('n-max').value='';
