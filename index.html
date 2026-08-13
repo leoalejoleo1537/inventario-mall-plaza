@@ -250,6 +250,35 @@
   .csede .cn{display:block;font-size:22px;font-weight:700;color:var(--red-fg);
              margin-top:3px;line-height:1.1}
   .csede .ch{position:absolute;top:5px;right:8px;font-size:14px;color:var(--muted);opacity:.5}
+
+  /* ---- el tablero de Bodega ----
+     Adriana decide el reparto mirando lo que pasa en los locales, no lo que
+     pasa en su repisa. Las dos cosas que de verdad mueven esa decisión son los
+     sándwiches —que vencen— y las tortas. Por eso viven acá arriba y no
+     escondidas tras un botón. */
+  .bod-atajo{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+             background:var(--sec-bg);color:#fff;border:none;border-radius:12px;
+             padding:14px 15px;margin-bottom:12px;cursor:pointer;font:inherit;
+             transition:transform .12s ease}
+  .bod-atajo:active{transform:scale(.98)}
+  .bod-atajo .t{flex:1}
+  .bod-atajo .t b{display:block;font-size:15.5px;font-weight:800}
+  .bod-atajo .t span{font-size:12.5px;opacity:.78;font-weight:600}
+  .bod-atajo .fl{font-size:20px;opacity:.8}
+  .bod-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;
+             overflow:hidden;margin-bottom:12px}
+  .bod-panel .cab{display:flex;align-items:center;gap:8px;background:var(--sec-bg);
+                  color:var(--sec-tx);font-size:12px;font-weight:800;letter-spacing:.5px;padding:9px 13px}
+  .bod-panel .cab .n{margin-left:auto;font-weight:700;opacity:.85}
+  .bod-fila{display:flex;align-items:flex-start;gap:10px;padding:9px 13px;
+            border-bottom:1px solid var(--border)}
+  .bod-fila:last-child{border-bottom:none}
+  .bod-fila .nm{flex:1;font-size:14px;font-weight:600;min-width:0}
+  .bod-fila .sd{display:block;font-size:11px;color:var(--muted);font-weight:700;margin-top:1px}
+  .bod-fila .qt{flex-shrink:0;font-size:13px;font-weight:800}
+  .bod-vacio{font-size:13px;color:var(--muted);padding:12px 13px;text-align:center}
+  /* la fila de fechas de un pan, con el mismo lenguaje de color del local */
+  .bod-fila .vencs{margin-top:4px}
   /* lo urgente lo marcó una persona: va en el naranja de acción, igual que la
      píldora que ya lleva el producto en la lista del local */
   .csede-urg{display:inline-block;margin-top:5px;font-size:10.5px;padding:2px 8px}
@@ -1195,6 +1224,8 @@
   </div>
   <!-- solo en Bodega: cuánto le falta a cada local. Ver .csedes en el estilo -->
   <div class="csedes" id="critSedes" style="display:none"></div>
+  <!-- solo en Bodega: el atajo al reparto y lo que pasa en los locales -->
+  <div id="bodPanel" style="display:none"></div>
   <div class="metrics" id="metrics">
     <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
     <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
@@ -2155,6 +2186,7 @@ function pickSede(s){
      volver a Bodega se verían un instante los números de la visita anterior */
   CRITICOS={}; CRIT_TOPE={};
   $('critSedes').style.display='none'; $('critSedes').innerHTML='';
+  $('bodPanel').style.display='none'; $('bodPanel').innerHTML=''; LOTES_SEDES={};
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
   qEl.value=''; openSecs=new Set();
   $('rq').value=''; $('reparto-results').innerHTML=''; $('carrito-box').style.display='none';
@@ -2337,6 +2369,7 @@ async function cargarCriticos(){
     CRIT_TOPE[s] = filas.length >= 1000;
   });
   pintarCriticos();
+  cargarPanelBodega();   // el tablero depende de estas mismas listas
 }
 
 /* El número que va en la tarjeta. Está aparte por una sola razón, y es la
@@ -2433,6 +2466,98 @@ function abrirCriticos(sede){
 $('critSedes').addEventListener('click', e=>{
   const b = e.target.closest('[data-crit]');
   if(b) abrirCriticos(b.dataset.crit);
+});
+
+/* ================= EL TABLERO DE BODEGA =================
+   Adriana decide el reparto mirando lo que pasa en los LOCALES, no lo que pasa
+   en su repisa. Y de todo lo que pasa allá, dos cosas mandan: los sándwiches
+   —porque vencen, y son el punto más delicado de la cafetería (§0.3)— y las
+   tortas. Estaban a dos pantallas de distancia; ahora están acá.
+
+   Las fechas de los locales hay que pedirlas aparte: `loadLotes()` solo trae
+   las de la sede abierta. Se piden SOLO las de los sándwiches —una veintena de
+   ids, no los 460 productos— para no repetir el problema de meter la lista
+   entera de ids en la dirección (§6 bloque D). */
+let LOTES_SEDES = {};       // producto_id -> [lotes]  (de plaza y angamos)
+
+const esSandwich = p => normNombre(p.rubro||'').startsWith('sandwich')
+                     || normNombre(p.rubro||'').startsWith('sándwich');
+const esTorta    = p => /torta|cheesecake|kutchen|pie |tiramisu/.test(normNombre(p.producto));
+
+async function cargarPanelBodega(){
+  if(SEDE!=='central'){ $('bodPanel').style.display='none'; return; }
+  $('bodPanel').style.display='';
+  pintarPanelBodega();                       // el marco, mientras llegan las fechas
+
+  const ids = SEDES_ENLACE.flatMap(s=>(SEDE_PROD[s]||[]).filter(esSandwich).map(p=>p.id));
+  if(!ids.length){ pintarPanelBodega(); return; }
+  const {data,error} = await sb.from('producto_lotes')
+    .select('producto_id,cantidad,vencimiento').in('producto_id', ids).limit(1000);
+  if(error){ console.error('fechas de los locales', error); LOTES_SEDES={}; }
+  else {
+    const m = {};
+    (data||[]).forEach(l=>{ if((+l.cantidad||0)>0){ (m[l.producto_id]=m[l.producto_id]||[]).push(l); } });
+    LOTES_SEDES = m;
+  }
+  pintarPanelBodega();
+}
+
+/* Las fechas de un producto de OTRA sede, con el mismo color que en el local:
+   rojo relleno vencido, rojo claro hoy, ámbar mañana, gris más adelante. */
+function vencsDeSede(pid){
+  const ls = (LOTES_SEDES[pid]||[]).filter(l=>l.vencimiento)
+    .sort((a,b)=>a.vencimiento.localeCompare(b.vencimiento));
+  if(!ls.length) return '';
+  return `<div class="vencs">${ls.map(l=>{
+    const e = etiquetaVenc(l.vencimiento);
+    return `<span class="${e.cls}">${fmt(+l.cantidad||0)} V ${e.txt}</span>`;
+  }).join('')}</div>`;
+}
+
+function pintarPanelBodega(){
+  const enviosAbiertos = SEDES_ENLACE.reduce((n,s)=>
+    n + (repcAbiertos[s]||[]).reduce((m,r)=>m+(r.items||[]).filter(i=>i.estado==='pendiente').length,0), 0);
+
+  const atajo = `<button type="button" class="bod-atajo" data-bodreparto="1">
+      <span class="t"><b>Armar reparto</b>
+        <span>${enviosAbiertos ? enviosAbiertos+' línea(s) sin confirmar en los locales'
+                               : 'Las dos sedes en una pantalla'}</span></span>
+      <span class="fl">›</span>
+    </button>`;
+
+  /* Un panel por familia: se lista lo que hay en los DOS locales, uno debajo
+     del otro, porque la pregunta de Adriana es "¿a quién le falta?". */
+  const panel = (titulo, filtro, conFechas) => {
+    const filas = SEDES_ENLACE.flatMap(s=>(SEDE_PROD[s]||[])
+      .filter(filtro)
+      .map(p=>({p, sede:s})))
+      .sort((a,b)=> a.p.producto.localeCompare(b.p.producto,'es')
+                 || a.sede.localeCompare(b.sede));
+    if(!filas.length) return '';
+    /* Lo que está en cero o bajo el mínimo va primero: es lo que hay que mandar. */
+    filas.sort((a,b)=> (estado(a.p)==='critico'?0:1) - (estado(b.p)==='critico'?0:1));
+    const total = filas.reduce((n,f)=>n+(+f.p.stock_actual||0),0);
+    return `<div class="bod-panel">
+      <div class="cab">${titulo}<span class="n">${fmt(total)} en total</span></div>
+      ${filas.map(f=>{
+        const cf = CFG[estado(f.p)];
+        return `<div class="bod-fila">
+          <span class="nm">${esc(f.p.producto)}
+            <span class="sd">${esc(SEDES[f.sede].corto)}</span>
+            ${conFechas ? vencsDeSede(f.p.id) : ''}</span>
+          <span class="qt" style="color:${cf.fg}">${fmt(f.p.stock_actual)}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  };
+
+  $('bodPanel').innerHTML = atajo
+    + panel('SÁNDWICHES EN LOS LOCALES', esSandwich, true)
+    + panel('TORTAS EN LOS LOCALES', p=>esTorta(p) && !esSandwich(p), false);
+}
+
+$('bodPanel').addEventListener('click', e=>{
+  if(e.target.closest('[data-bodreparto]')) pickTab('reparto');
 });
 
 /* ================= MERMAS (solo Bodega) =================
