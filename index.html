@@ -1317,7 +1317,10 @@
         <input type="text" id="repc-nombre" maxlength="40" autocomplete="off"
                placeholder="Nombre del envío (opcional)">
         <div id="repc-carrito"></div>
-        <button class="btn btn-orange btn-block" id="repc-enviar" style="margin-top:10px">Enviar</button>
+        <div class="mbtns" style="margin-top:10px">
+          <button class="btn btn-gris" id="repc-copiar">Copiar</button>
+          <button class="btn btn-orange" id="repc-enviar">Enviar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -2823,6 +2826,18 @@ $('view-repcentral').addEventListener('input', e=>{
   if(e.target.id==='repc-q'){ repcPintarResultados(); return; }
   const idx = e.target.closest('[data-repcidx]');
   if(idx){ repcCarrito[+idx.dataset.repcidx].cantidad = +idx.value || 0; repcPintarCarrito(); }
+});
+
+/* El resumen para WhatsApp, el mismo gesto que ya existe en el reparto de los
+   locales. Sirve para mandarlo por adelantado antes de que la caja salga. */
+$('repc-copiar').addEventListener('click', async ()=>{
+  const items = repcCarrito.filter(c=>c.cantidad>0);
+  if(!items.length){ avisar('Agrega una cantidad mayor a 0.'); return; }
+  const btn=$('repc-copiar');
+  const titulo = ($('repc-nombre').value||'').trim() || 'Envío a '+SEDES[repcDestino].corto;
+  const txt = titulo+'\n'+items.map(c=>fmt(c.cantidad)+'  '+nombreResumen(c.producto)).join('\n');
+  btn.textContent = await copiarTexto(txt) ? '✓ Copiado' : 'No se pudo';
+  setTimeout(()=>{ btn.textContent='Copiar'; }, 1400);
 });
 
 $('repc-enviar').addEventListener('click', async ()=>{
