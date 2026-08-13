@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tablero de Bodega · propuesta</title>
+<style>
+  :root{
+    --navy:#0F1E31; --navy2:#16283F;
+    --orange:#DC4405; --orange-dark:#B93A04;
+    --bg:#F2F3F5; --card:#ffffff; --border:#E3E5E8;
+    --text:#1C2733; --muted:#6B7684;
+    --red-bg:#FDECEA; --red-fg:#C0392B;
+    --green-bg:#E6F4E6; --green-fg:#2E7D32;
+    --amber-bg:#FFF3E0; --amber-fg:#B26A00;
+    --gray-bg:#EDEEF0; --gray-fg:#5F6670;
+    --sec-bg:#2F4A6D; --sec-tx:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       -webkit-font-smoothing:antialiased}
+  .doc{max-width:1100px;margin:0 auto;padding:22px 16px 70px}
+  .doc h1{font-size:25px;margin:0 0 4px}
+  .doc .lede{color:var(--muted);font-size:15px;margin:0 0 18px}
+  .nota{background:#fff;border:1px solid var(--border);border-left:3px solid var(--sec-bg);
+        border-radius:0 12px 12px 0;padding:12px 15px;margin:0 0 16px;font-size:14.5px;line-height:1.5}
+  .nota b{color:var(--sec-bg)}
+  .doc h2{font-size:17px;margin:28px 0 10px}
+  .tam{display:inline-flex;gap:6px;background:#fff;border:1px solid var(--border);
+       border-radius:999px;padding:4px;margin-bottom:14px}
+  .tam button{border:none;background:none;font:inherit;font-size:13.5px;font-weight:700;
+              color:var(--muted);padding:7px 16px;border-radius:999px;cursor:pointer}
+  .tam button.on{background:var(--sec-bg);color:#fff}
+
+  .marco{margin:0 auto;background:var(--bg);border:1px solid var(--border);border-radius:18px;
+         overflow:hidden;box-shadow:0 10px 34px rgba(15,30,49,.10);transition:max-width .25s ease}
+  .marco.tel{max-width:390px}
+  .marco.pc{max-width:1000px}
+  .topbar{background:var(--navy);color:#fff;padding:11px 15px;display:flex;align-items:center;gap:10px}
+  .topbar .tt{font-size:16px;font-weight:800;flex:1}
+  .topbar .sd{font-size:11.5px;opacity:.72;display:block;font-weight:600}
+  .ico{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.12);
+       display:flex;align-items:center;justify-content:center;font-size:15px}
+  .tabs{display:flex;background:var(--navy2);padding:0 8px;gap:2px;overflow-x:auto}
+  .tabs button{border:none;background:none;color:rgba(255,255,255,.62);font:inherit;font-size:13.5px;
+               font-weight:700;padding:11px 12px;cursor:pointer;white-space:nowrap;
+               border-bottom:2.5px solid transparent}
+  .tabs button.on{color:#fff;border-bottom-color:var(--orange)}
+  .wrap{padding:13px 14px 22px}
+
+  /* ---------- 1. las alarmas ---------- */
+  .alarmas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .al{background:var(--card);border:1px solid var(--border);border-radius:12px;
+      padding:11px 8px;text-align:center;position:relative;cursor:pointer}
+  .al .n{font-size:27px;font-weight:800;line-height:1}
+  .al .l{font-size:10.5px;color:var(--muted);margin-top:3px;font-weight:700;letter-spacing:.2px}
+  .al .d{font-size:10px;color:var(--muted);margin-top:2px;opacity:.85}
+  .al.vencido{border-color:var(--red-fg);background:var(--red-fg)}
+  .al.vencido .n{color:#fff} .al.vencido .l,.al.vencido .d{color:rgba(255,255,255,.85)}
+  .al.urg .n{color:var(--orange)}
+  .al.crit .n{color:var(--red-fg)}
+
+  /* ---------- 2. las barras de mín/máx ---------- */
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;
+         overflow:hidden;margin-bottom:12px}
+  .panel .cab{display:flex;align-items:center;background:var(--sec-bg);color:var(--sec-tx);
+              font-size:11.5px;font-weight:800;letter-spacing:.5px;padding:8px 13px}
+  .panel .cab .der{margin-left:auto;opacity:.85;font-weight:700}
+  .panel .cuerpo{padding:11px 13px}
+  .barra{margin-bottom:13px}
+  .barra:last-child{margin-bottom:0}
+  .barra .top{display:flex;align-items:baseline;gap:8px;margin-bottom:5px}
+  .barra .sede{font-size:13px;font-weight:800;flex:1}
+  .barra .val{font-size:13px;font-weight:800}
+  .barra .max{font-size:11px;color:var(--muted);font-weight:600}
+  .pista{position:relative;height:16px;background:var(--gray-bg);border-radius:999px;overflow:hidden}
+  .lleno{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
+  .lleno.ok{background:var(--green-fg)}
+  .lleno.bajo{background:var(--amber-fg)}
+  .lleno.mal{background:var(--red-fg)}
+  /* la marca del mínimo: la línea que no hay que cruzar */
+  .marca{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--navy);opacity:.55}
+  .barra .pie{display:flex;gap:10px;margin-top:4px;font-size:10.5px;color:var(--muted);font-weight:600}
+  .barra .pie .mn{color:var(--navy)}
+
+  /* ---------- 3. las ventas ---------- */
+  .ventas{display:grid;grid-template-columns:1fr;gap:11px}
+  .marco.pc .ventas{grid-template-columns:1fr 1fr}
+  .vsede{border:1px solid var(--border);border-radius:10px;padding:10px 11px;background:var(--card)}
+  .vsede .tt2{font-size:12px;font-weight:800;margin-bottom:2px}
+  .vsede .prom{font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:8px}
+  .vsede .prom b{color:var(--text)}
+  .graf{display:flex;align-items:flex-end;gap:5px;height:56px}
+  .graf .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+  .graf .bar{background:var(--sec-bg);border-radius:3px 3px 0 0;min-height:2px}
+  .graf .col.hoy .bar{background:var(--orange)}
+  .graf .dia{font-size:9px;color:var(--muted);text-align:center;margin-top:3px;font-weight:600}
+  .sugerencia{display:flex;align-items:center;gap:8px;margin-top:9px;padding:8px 10px;
+              background:var(--amber-bg);border-radius:9px;font-size:12px;
+              color:var(--amber-fg);font-weight:700}
+
+  .ir{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;
+      border:none;border-radius:10px;background:var(--orange);color:#fff;
+      font:inherit;font-size:14.5px;font-weight:800;cursor:pointer;margin-top:2px}
+
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <h1>El tablero de Bodega</h1>
+  <p class="lede">Propuesta para revisar antes de construir · 13 de agosto</p>
+
+  <div class="nota">
+    <b>El encargo, en una frase.</b> Que Adriana abra Bodega y en cinco segundos
+    sepa qué mandar hoy, sin leer una sola lista. Números grandes, barras y
+    comparación — el detalle se toca, no se lee.
+  </div>
+
+  <div class="tam">
+    <button class="on" data-tam="tel">Teléfono</button>
+    <button data-tam="pc">Computador</button>
+  </div>
+
+  <div class="marco tel" id="marco">
+    <div class="topbar">
+      <div class="ico">☰</div>
+      <div class="tt">Inventario<span class="sd">Bodega</span></div>
+      <div class="ico">⟳</div>
+    </div>
+    <div class="tabs">
+      <button class="on">Inventario</button><button>Reparto</button>
+      <button>Mermas</button><button>Enlaces</button>
+    </div>
+
+    <div class="wrap">
+
+      <!-- 1. LO QUE NO PUEDE ESPERAR -->
+      <div class="alarmas">
+        <div class="al vencido"><div class="n">11</div><div class="l">VENCIDOS</div><div class="d">pan, hoy</div></div>
+        <div class="al urg"><div class="n">8</div><div class="l">URGENTES</div><div class="d">marcados a mano</div></div>
+        <div class="al crit"><div class="n">190</div><div class="l">EN CRÍTICO</div><div class="d">89 · 101</div></div>
+      </div>
+
+      <!-- 2. CÓMO ESTÁN, CONTRA SU PROPIO MÍN Y MÁX -->
+      <div class="panel">
+        <div class="cab">SÁNDWICHES <span class="der">88 en los dos</span></div>
+        <div class="cuerpo">
+          <div class="barra">
+            <div class="top"><span class="sede">Mall Plaza</span>
+              <span class="val" style="color:var(--red-fg)">38</span><span class="max">de 90</span></div>
+            <div class="pista"><div class="lleno mal" style="width:42%"></div><div class="marca" style="left:55%"></div></div>
+            <div class="pie"><span class="mn">mín 50</span><span>máx 90</span><span style="margin-left:auto;color:var(--red-fg)">bajo el mínimo</span></div>
+          </div>
+          <div class="barra">
+            <div class="top"><span class="sede">Parque Angamos</span>
+              <span class="val" style="color:var(--green-fg)">50</span><span class="max">de 70</span></div>
+            <div class="pista"><div class="lleno ok" style="width:71%"></div><div class="marca" style="left:43%"></div></div>
+            <div class="pie"><span class="mn">mín 30</span><span>máx 70</span><span style="margin-left:auto;color:var(--green-fg)">en rango</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="cab">TORTAS <span class="der">200 en los dos</span></div>
+        <div class="cuerpo">
+          <div class="barra">
+            <div class="top"><span class="sede">Mall Plaza</span>
+              <span class="val" style="color:var(--green-fg)">120</span><span class="max">de 150</span></div>
+            <div class="pista"><div class="lleno ok" style="width:80%"></div><div class="marca" style="left:40%"></div></div>
+            <div class="pie"><span class="mn">mín 60</span><span>máx 150</span><span style="margin-left:auto;color:var(--green-fg)">en rango</span></div>
+          </div>
+          <div class="barra">
+            <div class="top"><span class="sede">Parque Angamos</span>
+              <span class="val" style="color:var(--amber-fg)">80</span><span class="max">de 140</span></div>
+            <div class="pista"><div class="lleno bajo" style="width:57%"></div><div class="marca" style="left:50%"></div></div>
+            <div class="pie"><span class="mn">mín 70</span><span>máx 140</span><span style="margin-left:auto;color:var(--amber-fg)">cerca del mínimo</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. QUÉ TANTO SE VENDE -->
+      <div class="panel">
+        <div class="cab">SE VENDIÓ · ÚLTIMOS 7 DÍAS <span class="der">sándwiches</span></div>
+        <div class="cuerpo">
+          <div class="ventas">
+            <div class="vsede">
+              <div class="tt2">Mall Plaza</div>
+              <div class="prom">promedio <b>9 al día</b> · 63 en la semana</div>
+              <div class="graf">
+                <div class="col"><div class="bar" style="height:60%"></div><div class="dia">J</div></div>
+                <div class="col"><div class="bar" style="height:45%"></div><div class="dia">V</div></div>
+                <div class="col"><div class="bar" style="height:85%"></div><div class="dia">S</div></div>
+                <div class="col"><div class="bar" style="height:95%"></div><div class="dia">D</div></div>
+                <div class="col"><div class="bar" style="height:40%"></div><div class="dia">L</div></div>
+                <div class="col"><div class="bar" style="height:55%"></div><div class="dia">M</div></div>
+                <div class="col hoy"><div class="bar" style="height:30%"></div><div class="dia">hoy</div></div>
+              </div>
+              <div class="sugerencia">⟶ para 3 días, mandar 27</div>
+            </div>
+            <div class="vsede">
+              <div class="tt2">Parque Angamos</div>
+              <div class="prom">promedio <b>5 al día</b> · 35 en la semana</div>
+              <div class="graf">
+                <div class="col"><div class="bar" style="height:40%"></div><div class="dia">J</div></div>
+                <div class="col"><div class="bar" style="height:50%"></div><div class="dia">V</div></div>
+                <div class="col"><div class="bar" style="height:70%"></div><div class="dia">S</div></div>
+                <div class="col"><div class="bar" style="height:80%"></div><div class="dia">D</div></div>
+                <div class="col"><div class="bar" style="height:35%"></div><div class="dia">L</div></div>
+                <div class="col"><div class="bar" style="height:45%"></div><div class="dia">M</div></div>
+                <div class="col hoy"><div class="bar" style="height:25%"></div><div class="dia">hoy</div></div>
+              </div>
+              <div class="sugerencia">⟶ para 3 días, mandar 15</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="ir">Armar el reparto →</button>
+
+    </div>
+  </div>
+
+  <h2>Las cinco preguntas, y dónde se contestan</h2>
+  <div class="nota"><b>¿Hay pan vencido?</b> La tarjeta roja rellena, arriba a la
+  izquierda. Es la única con fondo sólido porque es la única donde el tiempo ya
+  se acabó. Se toca y salen cuáles.</div>
+  <div class="nota"><b>¿Hay algo urgente que mandar?</b> La tarjeta naranja. Son
+  los que el equipo marcó a mano, que hoy solo se ven entrando a cada sede.</div>
+  <div class="nota"><b>¿Cómo están de sándwiches y tortas contra su mín y máx?</b>
+  Las barras. La línea vertical oscura es el <b>mínimo de esa sede</b>: si el
+  relleno no la alcanza, está bajo el mínimo y el color lo dice. Cada sede tiene
+  su propio mín y máx, así que la barra compara a cada una consigo misma — no
+  entre ellas, que sería comparar peras con manzanas.</div>
+  <div class="nota"><b>¿Cuánto se vendió, para proyectar?</b> Las siete barritas
+  por sede. Y debajo el número que de verdad sirve: <b>"para 3 días, mandar
+  27"</b> — el promedio diario por los días que quieras cubrir, menos lo que ya
+  tienen. Esto sale de <code>fudo_movimientos</code>, que ya guarda cada venta:
+  <b>no hace falta tocar la API de Fudo</b>.</div>
+
+  <h2>Lo que quiero que decidas</h2>
+  <div class="nota"><b>1. ¿Sándwiches y tortas, o más familias?</b> Se puede
+  agregar café, bebidas, bollería. Cada una son dos barras más. Yo pondría solo
+  esas dos: si entran seis familias, vuelve a ser una lista.</div>
+  <div class="nota"><b>2. ¿Cuántos días quieres cubrir?</b> La sugerencia dice
+  "para 3 días". Puede ser fijo en 3, o un selector 2/3/5.</div>
+  <div class="nota"><b>3. ¿El gráfico de ventas va por familia o total?</b> Acá
+  está mostrando solo sándwiches. Puede ser el total de la sede, o cambiar según
+  la familia que toques arriba.</div>
+  <div class="nota"><b>4. ¿La lista de productos sigue debajo?</b> El tablero la
+  empuja hacia abajo. Alternativa: que el inventario de bodega pase a un toque de
+  distancia y esta pestaña sea solo el tablero.</div>
+
+</div>
+
+<script>
+  document.querySelectorAll('[data-tam]').forEach(b => b.onclick = () => {
+    document.querySelectorAll('[data-tam]').forEach(x => x.classList.toggle('on', x===b));
+    document.getElementById('marco').className = 'marco ' + b.dataset.tam;
+  });
+</script>
+</body>
+</html>

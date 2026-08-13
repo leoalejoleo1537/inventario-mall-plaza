@@ -785,6 +785,52 @@ ya está enlazado, y la base no deja que un producto del local tenga dos
 orígenes. La solución ahí no es un enlace, es que el equipo decida qué hacer
 con el duplicado (ver `docs/pendiente-gemelos-sin-pareja.md`).
 
+### REGLA DURA — en Bodega, cada pantalla contesta una DECISIÓN
+
+*(2026-08-13, después de entregar una lista de texto donde se había pedido un
+vistazo. Jhon: "yo lo que necesito son o gráficos o tarjetas".)*
+
+**El objetivo de Bodega no es mostrar el inventario: es que Adriana decida qué
+mandar hoy, rápido.** Todo lo que se construya ahí se juzga contra esa frase.
+
+**La prueba, y es una sola:** ¿se entiende **sin leer**? Un número grande, una
+barra, un color — eso se entiende de un vistazo. Una lista de catorce filas con
+fechas **no**, por muy correcta que sea la información.
+
+Se entregó exactamente eso —los sándwiches de los dos locales listados con
+todas sus fechas— y hubo que revertirlo entero. El dato era cierto y útil; la
+forma lo hacía inservible. **Información correcta presentada como lista es una
+funcionalidad no entregada.**
+
+Las tres reglas que salen de ahí, para cualquier pantalla de Bodega:
+
+1. **Números y barras primero; el detalle se toca, no se lee.** Si hace falta
+   recorrer con el dedo para entender, está mal resuelto.
+2. **Comparar contra la referencia que importa, no entre sedes.** Cada local
+   tiene su propio mín/máx: Plaza con 38 sándwiches sobre un mínimo de 50 está
+   mal, y Angamos con 50 sobre un mínimo de 30 está bien. Ponerlas a competir
+   por el número absoluto miente.
+3. **Decir la instrucción, no el indicador.** "Para 3 días, mandar 27" es
+   accionable; "cobertura 44%" hay que traducirlo.
+
+**Y el atajo que evita repetirlo: maqueta antes de código.** Ya funcionó dos
+veces (`docs/propuesta-enlaces.html`, `docs/propuesta-tablero.html`) y la vez
+que se saltó, se perdió el trabajo entero. Jhon lo pidió con esas palabras: *"me
+ahorraré en el futuro iterar en el frontend"*.
+
+### Las ventas ya están en la base: no hace falta la API de Fudo
+
+`fudo_movimientos` guarda **cada ítem vendido** con `sede`, `producto_id`,
+`cantidad_vendida` y `created_at`, desde que el motor se encendió
+(`sql/2026-07-fase1-recetas-modo-prueba.sql`).
+
+Cualquier pregunta del tipo *"cuánto se vendió los últimos días"* — para
+gráficos, para proyectar demanda, para el relleno del reparto — **es una
+consulta agrupada por día, no una integración**. Verificado el 2026-08-13.
+
+La API de Fudo solo haría falta para lo que el motor NO registra: importes,
+medios de pago, mesas abiertas.
+
 ### El reparto descuenta al ACEPTAR, no al enviar
 
 *(Decisión de Jhon del 2026-08-10, y cambia lo que decía `docs/plan-bodega.html`.)*
