@@ -330,6 +330,20 @@
            padding:3px 8px;border-radius:999px;flex-shrink:0}
   .enl-vacio{font-size:13.5px;color:var(--muted);padding:6px 2px}
 
+  /* ---- REPARTO DESDE BODEGA ----
+     La franja de crítico del local al que se le está armando: es la razón por
+     la que Adriana está en esta pantalla. */
+  .repc-critico{display:flex;align-items:center;gap:10px;background:var(--card);
+                border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:12px}
+  .repc-critico .n{font-size:22px;font-weight:700;color:var(--red-fg);line-height:1}
+  .repc-critico .t{flex:1;font-size:13px;font-weight:600;color:var(--muted)}
+  .repc-critico button{border:none;background:var(--gray-bg);color:var(--text);font:inherit;
+                       font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer}
+  /* lo que bodega tiene de ese producto, y en qué queda al enviarlo */
+  .repc-bod{display:block;font-size:11.5px;font-weight:700;margin-top:2px;color:var(--sec-bg)}
+  .repc-bod.poco{color:var(--amber-fg)}
+  .repc-bod.nada{color:var(--red-fg)}
+
   /* La salida manual: cuando el parecido de nombres no encuentra lo que sí
      existe, o simplemente porque la persona prefiere buscar. Siempre está,
      no solo cuando la lista de arriba viene vacía — el algoritmo propone,
@@ -1268,6 +1282,44 @@
   </div>
 </div>
 
+<!-- ================= REPARTO DESDE BODEGA (solo central) =================
+     Adriana arma acá los envíos para los dos locales, en vez de entrar a cada
+     uno. Lo que se crea es EXACTAMENTE lo mismo que hoy —`repartos` +
+     `reparto_items` con la sede que recibe— así que el jefe de turno lo ve
+     aparecer en su pestaña de siempre y la recibe con la interfaz que ya usa.
+     Acá no se suma stock ni se empuja a Fudo: eso ya funciona del otro lado. -->
+<div class="wrap" id="view-repcentral" style="display:none">
+
+  <div class="rec-modos" id="repc-destinos"></div>
+
+  <div class="repc-critico" id="repc-critico"></div>
+
+  <div class="sec open">
+    <div class="sec-head"><div class="sec-btn sec-fija">
+      <span class="sec-ico"><span class="mas-fab" aria-hidden="true">+</span>
+        <span id="repc-titulo">Armar envío</span></span>
+    </div></div>
+    <div class="sec-body">
+      <div class="controls busca" style="margin-bottom:8px;margin-top:2px">
+        <input type="text" id="repc-q" placeholder="Buscar producto…">
+      </div>
+      <div id="repc-results"></div>
+      <div id="repc-carrito-box" style="display:none">
+        <div class="cart-title">Va en este envío</div>
+        <input type="text" id="repc-nombre" maxlength="40" autocomplete="off"
+               placeholder="Nombre del envío (opcional)">
+        <div id="repc-carrito"></div>
+        <button class="btn btn-orange btn-block" id="repc-enviar" style="margin-top:10px">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- lo que ese local ya tiene sin confirmar, armado desde acá o desde allá.
+       Existe para que no se mande dos veces lo mismo. -->
+  <div id="repc-abiertos"></div>
+
+</div>
+
 <!-- ================= ENLACES (solo Bodega) =================
      Le dice al sistema qué producto de cada local es el mismo que el de
      bodega. Sin esto el reparto no sabe a qué sumarle al llegar.
@@ -2057,9 +2109,10 @@ function pickSede(s){
   $('tabMermas').style.display = s==='central' ? '' : 'none';
   $('tabEnlaces').style.display = s==='central' ? '' : 'none';
   MERMAS=[]; ENLACES=[]; SEDE_PROD={};
+  repcCarrito=[]; repcAbiertos=[]; repcDestino='plaza';
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
-  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none'; $('view-enlaces').style.display='none';
+  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none'; $('view-enlaces').style.display='none'; $('view-repcentral').style.display='none';
   vistaActual='inv';
   listEl.innerHTML='';
   $('gate').classList.add('hidden');
@@ -2522,6 +2575,222 @@ $('mermas-list').addEventListener('click', async e=>{
   const {error} = await sb.rpc('deshacer_merma',{p_movimiento_id:+b.dataset.desmerma, p_quien:NOMBRE});
   if(error){ b.disabled=false; b.textContent='Deshacer'; avisar(error.message||'No se pudo deshacer.'); return; }
   await loadMermas(); await loadData(); await loadLotes(); metrics(); render();
+});
+
+/* ================= REPARTO DESDE BODEGA (solo central) =================
+   Adriana arma los envíos de los dos locales desde acá, en vez de entrar a cada
+   uno. Lo que se ESCRIBE es exactamente lo mismo que hoy: una fila en
+   `repartos` con la sede que recibe, y sus `reparto_items` apuntando a los
+   productos de ESE local. Por eso el jefe de turno lo ve aparecer solo en su
+   pestaña de siempre, y al confirmarlo suma y empuja a Fudo con la interfaz que
+   ya funciona. De este lado no se suma nada.
+
+   Lo único nuevo que viaja en cada línea es `producto_bodega_id`: de cuál de
+   los productos de bodega hay que descontar. Se resuelve acá, al armar, con la
+   libreta de enlaces — no al recibir, para que el jefe de turno nunca vea nada
+   de esto.                                                                   */
+let repcDestino  = 'plaza';
+let repcCarrito  = [];      // {sedeId, bodegaId, producto, rubro, cantidad}
+let repcAbiertos = [];      // repartos sin cerrar de ese local
+
+/* Del producto del local a lo que bodega tiene de él. Sin totales de
+   vitrina/congelador: el enlace ya apunta al congelador, así que el número de
+   esa ficha es el que corresponde. */
+function repcBodega(sedeId){
+  const e = bodegaDe(sedeId, repcDestino);
+  if(!e) return null;
+  const b = DATA.find(d=>d.id===e.producto_bodega_id);
+  return b ? {id:b.id, producto:b.producto, hay:+b.stock_actual||0} : null;
+}
+/* Cuánto falta para llenar la repisa del local, que es el pedido natural. */
+const repcFalta = p => maxOk(p) ? Math.max(0,(+p.stock_max||0)-(+p.stock_actual||0)) : 0;
+/* Lo ya comprometido en envíos sin confirmar, para no mandar dos veces. */
+function repcComprometido(sedeId){
+  return repcAbiertos.reduce((n,r)=>n + (r.items||[])
+    .filter(i=>i.producto_id===sedeId && i.estado==='pendiente')
+    .reduce((m,i)=>m+(+i.cantidad_pedida||0),0), 0);
+}
+
+function repcPintarDestinos(){
+  $('repc-destinos').innerHTML = SEDES_ENLACE.map(s=>
+    `<button type="button" class="rec-modo${s===repcDestino?' active':''}" data-repcdest="${s}">
+       ${esc(SEDES[s].label)}</button>`).join('');
+  $('repc-titulo').textContent = 'Armar envío a ' + SEDES[repcDestino].corto;
+}
+
+function repcPintarCritico(){
+  const lista = CRITICOS[repcDestino];
+  const n = lista==null ? '—' : lista.filter(p=>estado(p)==='critico').length;
+  $('repc-critico').innerHTML =
+    `<span class="n">${n}</span>
+     <span class="t">en crítico en ${esc(SEDES[repcDestino].corto)}</span>
+     <button type="button" data-repccrit="1">Ver la lista</button>`;
+}
+
+function repcPintarResultados(){
+  const q = normNombre($('repc-q').value);
+  if(!q){ $('repc-results').innerHTML=''; return; }
+  const yaEsta = new Set(repcCarrito.map(c=>c.sedeId));
+  const rows = (SEDE_PROD[repcDestino]||[])
+    .filter(p=>normNombre(p.producto).includes(q) && !yaEsta.has(p.id)).slice(0,15);
+  $('repc-results').innerHTML = rows.length ? rows.map(p=>{
+    const cf = CFG[estado(p)], b = repcBodega(p.id);
+    /* Si bodega no tiene de dónde sacarlo se dice acá, antes de agregarlo. No
+       se prohíbe: el envío igual puede salir y el local igual va a sumar — lo
+       que no va a pasar es que bodega baje. Mejor decirlo que esconderlo. */
+    const bod = !b ? '<span class="repc-bod nada">bodega no lo tiene enlazado</span>'
+      : `<span class="repc-bod${b.hay<=0?' nada':(b.hay<3?' poco':'')}">bodega: ${fmt(b.hay)}</span>`;
+    return `<div class="rep-result" data-repcadd="${p.id}">
+      <div style="min-width:0">
+        <div class="rn">${esc(p.producto)}</div>
+        <div class="rs">${esc(p.rubro||'Sin sección')} · mín ${fmt(p.stock_min)}${maxOk(p)?' · máx '+fmt(p.stock_max):''}</div>
+        ${bod}
+      </div>
+      <div class="rep-fin">
+        <span class="rep-hay" style="background:${cf.bg};color:${cf.fg}">${fmt(p.stock_actual)}</span>
+        <span class="add">+</span>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">Nada con ese nombre en '+esc(SEDES[repcDestino].corto)+'.</div>';
+}
+
+function repcPintarCarrito(){
+  $('repc-carrito-box').style.display = repcCarrito.length ? 'block' : 'none';
+  $('repc-carrito').innerHTML = repcCarrito.map((c,i)=>{
+    const p = (SEDE_PROD[repcDestino]||[]).find(x=>x.id===c.sedeId);
+    const b = repcBodega(c.sedeId);
+    let sub = '';
+    if(p){
+      const cf = CFG[estado(p)], falta = repcFalta(p);
+      const llenar = (falta>0 && +c.cantidad!==falta)
+        ? `<button type="button" class="cart-llenar" data-repcllenar="${i}" data-cant="${falta}">llenar ${fmt(falta)}</button>` : '';
+      /* "bodega: 12 → 8" es la vista previa del descuento, en el renglón donde
+         se decide. Sin esto Adriana promete algo que bodega no tiene. */
+      const queda = b ? Math.max(0, b.hay - (+c.cantidad||0)) : null;
+      const bod = !b ? '<span class="repc-bod nada">bodega no baja</span>'
+        : `<span class="repc-bod${queda<=0?' poco':''}">bodega: ${fmt(b.hay)} → ${fmt(queda)}`
+          + ((+c.cantidad||0) > b.hay ? ' · pide más de lo que hay' : '') + '</span>';
+      sub = `<div class="cns">allá hay <b style="color:${cf.fg}">${fmt(p.stock_actual)}</b>`
+          + `${maxOk(p)?' · máx '+fmt(p.stock_max):''}${llenar}</div>${bod}`;
+    }
+    const esUno = (+c.cantidad||0) <= 1;
+    return `<div class="cart-row">
+      <div class="cn"><div class="cnn">${esc(c.producto)}</div>${sub}</div>
+      <div class="qty">
+        <button type="button" class="qbtn qleft ${esUno?'is-trash':''}" data-repcleft="${i}" aria-label="${esUno?'Quitar':'Restar'}">${esUno?TRASH_SVG:'−'}</button>
+        <input type="number" step="0.5" min="0" value="${c.cantidad}" data-repcidx="${i}" aria-label="Cantidad de ${esc(c.producto)}">
+        <button type="button" class="qbtn qplus" data-repcinc="${i}" aria-label="Sumar">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* Los envíos que ese local todavía no confirmó, vengan de acá o armados allá.
+   Es la respuesta a "que no se dupliquen": Adriana ve lo que ya está en camino
+   antes de armar otro. */
+async function repcCargarAbiertos(){
+  const r = await sb.from('repartos').select('*').eq('sede',repcDestino)
+              .eq('estado','abierto').order('created_at',{ascending:false});
+  if(r.error){ repcAbiertos=[]; console.error('repartos abiertos', r.error); }
+  else {
+    const ids = (r.data||[]).map(x=>x.id);
+    let items = [];
+    if(ids.length){
+      const ri = await sb.from('reparto_items').select('*').in('reparto_id',ids).order('id');
+      items = ri.data||[];
+    }
+    repcAbiertos = (r.data||[]).map(x=>({...x, items:items.filter(i=>i.reparto_id===x.id)}));
+  }
+  repcPintarAbiertos();
+  repcPintarCarrito();      // el "comprometido" depende de esto
+}
+function repcPintarAbiertos(){
+  if(!repcAbiertos.length){ $('repc-abiertos').innerHTML=''; return; }
+  $('repc-abiertos').innerHTML = `<div class="turno"><div class="turno-lbl">
+      YA EN CAMINO A ${esc(SEDES[repcDestino].corto.toUpperCase())}</div>`
+    + repcAbiertos.map(r=>{
+        const pend = (r.items||[]).filter(i=>i.estado==='pendiente');
+        return `<div class="cs-fila">
+          <span class="cs-nm">${r.nombre?esc(r.nombre):'Envío'}
+            <span class="cs-sec">${r.creado_por?esc(r.creado_por)+' · ':''}${
+              new Date(r.created_at).toLocaleString('es-CL',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span></span>
+          <span class="cs-hay">${pend.length} sin confirmar</span>
+        </div>`;
+      }).join('') + '</div>';
+}
+
+function repcAbrir(){
+  repcPintarDestinos(); repcPintarCritico();
+  $('repc-q').value=''; $('repc-results').innerHTML='';
+  repcPintarCarrito(); repcCargarAbiertos();
+}
+
+$('view-repcentral').addEventListener('click', async e=>{
+  const d = e.target.closest('[data-repcdest]');
+  if(d){
+    if(d.dataset.repcdest!==repcDestino && repcCarrito.length
+       && !await preguntar('Cambiar de local','Lo que ya agregaste a este envío se va a descartar.','Cambiar')) return;
+    repcDestino = d.dataset.repcdest; repcCarrito=[];
+    repcAbrir(); return;
+  }
+  if(e.target.closest('[data-repccrit]')){ abrirCriticos(repcDestino); return; }
+  const add = e.target.closest('[data-repcadd]');
+  if(add){
+    const p = (SEDE_PROD[repcDestino]||[]).find(x=>x.id===+add.dataset.repcadd); if(!p) return;
+    const b = repcBodega(p.id);
+    repcCarrito.push({sedeId:p.id, bodegaId:b?b.id:null, producto:p.producto,
+                      rubro:p.rubro, cantidad: repcFalta(p) || 1});
+    $('repc-q').value=''; repcPintarResultados(); repcPintarCarrito(); return;
+  }
+  const ll = e.target.closest('[data-repcllenar]');
+  if(ll){ repcCarrito[+ll.dataset.repcllenar].cantidad = +ll.dataset.cant; repcPintarCarrito(); return; }
+  const inc = e.target.closest('[data-repcinc]');
+  if(inc){ const i=+inc.dataset.repcinc; repcCarrito[i].cantidad=(+repcCarrito[i].cantidad||0)+1; repcPintarCarrito(); return; }
+  const left = e.target.closest('[data-repcleft]');
+  if(left){
+    const i=+left.dataset.repcleft;
+    if((+repcCarrito[i].cantidad||0)>1) repcCarrito[i].cantidad=+repcCarrito[i].cantidad-1;
+    else repcCarrito.splice(i,1);
+    repcPintarCarrito(); return;
+  }
+});
+$('view-repcentral').addEventListener('input', e=>{
+  if(e.target.id==='repc-q'){ repcPintarResultados(); return; }
+  const idx = e.target.closest('[data-repcidx]');
+  if(idx){ repcCarrito[+idx.dataset.repcidx].cantidad = +idx.value || 0; repcPintarCarrito(); }
+});
+
+$('repc-enviar').addEventListener('click', async ()=>{
+  const items = repcCarrito.filter(c=>c.cantidad>0);
+  if(!items.length){ avisar('Agrega una cantidad mayor a 0.'); return; }
+  const sinEnlace = items.filter(c=>!c.bodegaId).length;
+  if(sinEnlace && !await preguntar('Enviar igual',
+      sinEnlace+' producto(s) no están enlazados a bodega. El local los va a recibir y sumar, pero el stock de bodega no va a bajar por ellos.','Enviar')) return;
+
+  const btn=$('repc-enviar'); btn.disabled=true; btn.textContent='Enviando…';
+  try{
+    /* Se escribe EXACTAMENTE lo que escribe el local: la sede que recibe y sus
+       productos. Lo único que se agrega es de cuál de bodega descontar. */
+    const {data,error} = await conReintento(()=>sb.from('repartos')
+      .insert([{sede:repcDestino, creado_por:NOMBRE, origen:'Bodega',
+                nombre:(($('repc-nombre').value||'').replace(/\s+/g,' ').trim()||null)}]).select());
+    if(error || !data || !data[0]) throw error || new Error('sin reparto');
+    const rid = data[0].id;
+    const {error:e2} = await conReintento(()=>sb.from('reparto_items').insert(
+      items.map(c=>({reparto_id:rid, producto_id:c.sedeId, producto:c.producto,
+                     cantidad_pedida:+c.cantidad, producto_bodega_id:c.bodegaId}))));
+    if(e2){
+      // no dejar un envío vacío dando vueltas si las líneas no entraron
+      await sb.from('repartos').delete().eq('id',rid);
+      throw e2;
+    }
+    avisar('✓ Enviado a '+SEDES[repcDestino].corto+' · '+items.length+' producto(s)');
+    repcCarrito=[]; $('repc-nombre').value=''; $('repc-q').value='';
+    repcPintarResultados(); repcPintarCarrito(); repcCargarAbiertos();
+  }catch(err){
+    console.error('enviar reparto', err);
+    avisar('No se pudo enviar. Revisa tu señal e inténtalo de nuevo.');
+  }finally{ btn.disabled=false; btn.textContent='Enviar'; }
 });
 
 /* ================= ENLACES (solo Bodega) =================
@@ -4254,7 +4523,12 @@ function pickTab(tab){
   if(!SEDE)return;
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
   $('view-inv').style.display = tab==='inv'?'block':'none';
-  $('view-reparto').style.display = tab==='reparto'?'block':'none';
+  /* La pestaña Reparto es la misma para todos, pero en Bodega muestra la
+     pantalla de ARMAR envíos y en los locales la de RECIBIRLOS. Son dos
+     trabajos distintos que llevan el mismo nombre. */
+  const repEsCentral = (tab==='reparto' && SEDE==='central');
+  $('view-reparto').style.display    = (tab==='reparto' && !repEsCentral)?'block':'none';
+  $('view-repcentral').style.display = repEsCentral?'block':'none';
   $('view-hist').style.display = tab==='hist'?'block':'none';
   $('view-recetas').style.display = tab==='recetas'?'block':'none';
   $('view-mermas').style.display = tab==='mermas'?'block':'none';
@@ -4266,7 +4540,7 @@ function pickTab(tab){
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();
   if(tab==='hist') loadHistorial();
-  if(tab==='reparto') loadRepartos();
+  if(tab==='reparto'){ if(repEsCentral){ loadEnlaces().then(repcAbrir); } else loadRepartos(); }
   /* Abre siempre en la portada, no en el último modo que se dejó: mientras
      jefatura está aprendiendo, lo primero que tienen que ver es dónde está el
      hueco. Cuando ya se sepa de memoria, esto pasa a abrir en el taller. */
