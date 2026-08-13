@@ -104,6 +104,31 @@
       border:none;border-radius:10px;background:var(--orange);color:#fff;
       font:inherit;font-size:14.5px;font-weight:800;cursor:pointer;margin-top:2px}
 
+  /* el buscador queda arriba del todo: es lo único de la lista que se usa
+     a cada rato, y esconderlo abajo sería cambiar un estorbo por otro */
+  .busca-top{margin-bottom:11px}
+  .busca-top input{width:100%;height:40px;padding:0 13px;border:1px solid var(--border);
+    border-radius:10px;font-size:14.5px;background:var(--card);color:var(--text);font-family:inherit}
+  /* selector de cuántos días cubrir */
+  .dias{display:inline-flex;gap:4px;background:var(--gray-bg);border-radius:999px;padding:3px;margin-left:auto}
+  .dias button{border:none;background:none;font:inherit;font-size:11px;font-weight:800;
+    color:var(--gray-fg);padding:4px 10px;border-radius:999px;cursor:pointer}
+  .dias button.on{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(15,30,49,.14)}
+  /* la lista de productos, plegada al fondo */
+  .cajon{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-top:14px;overflow:hidden}
+  .cajon .tirador{display:flex;align-items:center;gap:9px;width:100%;padding:13px 14px;
+    background:none;border:none;font:inherit;font-size:14px;font-weight:800;color:var(--text);cursor:pointer}
+  .cajon .tirador .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:700}
+  .cajon .tirador .fl{color:var(--muted);font-size:15px}
+  .cajon .dentro{border-top:1px solid var(--border);padding:11px 13px}
+  .filtros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+  .filtros span{padding:5px 11px;border-radius:999px;border:1px solid var(--border);
+    background:var(--card);color:var(--muted);font-size:11.5px;font-weight:700}
+  .filtros span.on{background:var(--sec-bg);border-color:var(--sec-bg);color:#fff}
+  .secfake{display:flex;align-items:center;background:var(--sec-bg);color:#fff;border-radius:9px;
+    padding:8px 12px;font-size:12px;font-weight:800;margin-bottom:6px}
+  .secfake .n2{margin-left:auto;opacity:.8;font-weight:700}
+
   @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
 </style>
 </head>
@@ -136,6 +161,11 @@
     </div>
 
     <div class="wrap">
+
+      <!-- 0. EL BUSCADOR, ARRIBA Y SIEMPRE -->
+      <div class="busca-top">
+        <input type="text" placeholder="Buscar producto…" readonly>
+      </div>
 
       <!-- 1. LO QUE NO PUEDE ESPERAR -->
       <div class="alarmas">
@@ -183,7 +213,8 @@
 
       <!-- 3. QUÉ TANTO SE VENDE -->
       <div class="panel">
-        <div class="cab">SE VENDIÓ · ÚLTIMOS 7 DÍAS <span class="der">sándwiches</span></div>
+        <div class="cab">SE VENDIÓ · ÚLTIMOS 7 DÍAS
+          <span class="dias"><button>2 d</button><button class="on">3 d</button><button>5 d</button><button>7 d</button></span></div>
         <div class="cuerpo">
           <div class="ventas">
             <div class="vsede">
@@ -220,6 +251,21 @@
 
       <button class="ir">Armar el reparto →</button>
 
+      <!-- 4. LA LISTA, AL FONDO Y PLEGADA -->
+      <div class="cajon">
+        <button class="tirador" data-cajon>
+          <span class="fl">›</span> Inventario de bodega
+          <span class="cnt">303 productos</span>
+        </button>
+        <div class="dentro" id="dentro" style="display:none">
+          <div class="filtros"><span class="on">Crítico 234</span><span>Sobre-stock 0</span><span>Sin dato 0</span></div>
+          <div class="secfake">BEBIDAS <span class="n2">18</span></div>
+          <div class="secfake">CONGELADOR <span class="n2">24</span></div>
+          <div class="secfake">LECHES <span class="n2">9</span></div>
+          <div class="secfake" style="opacity:.5">… y 17 secciones más</div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -240,18 +286,35 @@
   tienen. Esto sale de <code>fudo_movimientos</code>, que ya guarda cada venta:
   <b>no hace falta tocar la API de Fudo</b>.</div>
 
-  <h2>Lo que quiero que decidas</h2>
-  <div class="nota"><b>1. ¿Sándwiches y tortas, o más familias?</b> Se puede
-  agregar café, bebidas, bollería. Cada una son dos barras más. Yo pondría solo
-  esas dos: si entran seis familias, vuelve a ser una lista.</div>
-  <div class="nota"><b>2. ¿Cuántos días quieres cubrir?</b> La sugerencia dice
-  "para 3 días". Puede ser fijo en 3, o un selector 2/3/5.</div>
-  <div class="nota"><b>3. ¿El gráfico de ventas va por familia o total?</b> Acá
-  está mostrando solo sándwiches. Puede ser el total de la sede, o cambiar según
-  la familia que toques arriba.</div>
-  <div class="nota"><b>4. ¿La lista de productos sigue debajo?</b> El tablero la
-  empuja hacia abajo. Alternativa: que el inventario de bodega pase a un toque de
-  distancia y esta pestaña sea solo el tablero.</div>
+  <h2>Lo que cambió con tus respuestas</h2>
+  <div class="nota"><b>Solo sándwiches y tortas.</b> Dos familias, cuatro barras.
+  Si entraran seis, el tablero volvería a ser la lista que rechazaste.</div>
+  <div class="nota"><b>El selector de días</b> vive en la cabecera de las ventas:
+  2, 3, 5 o 7. Cambia la sugerencia de abajo, no el gráfico — el gráfico siempre
+  muestra la semana, para que el sesgo del fin de semana se vea.</div>
+  <div class="nota"><b>La lista de productos, plegada al fondo.</b> Es lo último
+  de la pantalla y arranca cerrada; sus filtros viven adentro. <b>Pero el
+  buscador se queda arriba del todo</b>: es lo único de la lista que se usa a
+  cada rato, y mandarlo al fondo sería cambiar un estorbo por otro.</div>
+
+  <h2>El respaldo automático, y una corrección</h2>
+  <div class="nota"><b>Se guarda solo, dos veces al día.</b> Va aparte en
+  <code>sql/2026-08-central-historial-automatico.sql</code>. Además de servir
+  para medir, cierra el agujero que costó el inventario de Angamos: una sede sin
+  foto es una sede sin red (§0.6), y hasta hoy la foto dependía de que alguien se
+  acordara de apretar un botón.</div>
+  <div class="nota"><b>Pero el gráfico de ventas NO lo necesita.</b> Dijiste "con
+  ese historial ya podemos trabajar" — y para las ventas no hace falta:
+  <code>fudo_movimientos</code> ya guarda cada ítem vendido con su sede y su
+  fecha. El historial mide <b>stock a lo largo del tiempo</b>, que es otra cosa y
+  también sirve, pero para responder "cuánto se vendió" alcanza con lo que ya
+  hay. Lo aclaro para que el respaldo automático se haga por su propio mérito y
+  no porque el tablero dependa de él.</div>
+
+  <h2>Lo único que falta decidir</h2>
+  <div class="nota"><b>¿Las 3 de la tarde o las 3 de la madrugada?</b> Dijiste
+  "una a las 3 y otra a las 10pm". Dejé <b>15:00 y 22:00</b>: una a media tarde
+  entre turnos y otra al cierre. Si querías 03:00, es cambiar un número.</div>
 
 </div>
 
@@ -259,6 +322,23 @@
   document.querySelectorAll('[data-tam]').forEach(b => b.onclick = () => {
     document.querySelectorAll('[data-tam]').forEach(x => x.classList.toggle('on', x===b));
     document.getElementById('marco').className = 'marco ' + b.dataset.tam;
+  });
+  /* el cajón de la lista: cerrado por defecto, se abre tocándolo */
+  document.querySelector('[data-cajon]').onclick = e => {
+    const d = document.getElementById('dentro'), abre = d.style.display === 'none';
+    d.style.display = abre ? 'block' : 'none';
+    e.currentTarget.querySelector('.fl').textContent = abre ? '⌄' : '›';
+  };
+  /* el selector de días cambia la sugerencia, no el gráfico */
+  const prom = {plaza:9, angamos:5}, tiene = {plaza:38, angamos:50};
+  document.querySelectorAll('.dias button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.dias button').forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+    const d = parseInt(b.textContent);
+    document.querySelectorAll('.sugerencia').forEach((s,i) => {
+      const sede = i === 0 ? 'plaza' : 'angamos';
+      s.textContent = `⟶ para ${d} días, mandar ${Math.max(0, prom[sede]*d - Math.round(tiene[sede]/6))}`;
+    });
   });
 </script>
 </body>
