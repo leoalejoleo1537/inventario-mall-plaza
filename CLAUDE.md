@@ -1018,7 +1018,10 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
 | d | **Mermas** | ✅ hecho · SQL corrido y probado de punta a punta |
 | — | Los gemelos (`producto_enlace`) | ✅ **290 escritos** · 144 con Angamos, 146 con Plaza |
 | — | **Enlaces** (la pantalla) | ✅ hecha · emparejar y crear productos en las sedes, sin SQL |
-| c+f | El reparto que resta, y su pantalla | ⬜ **lo siguiente.** La última pieza grande |
+| — | **Los ID, cerrados** | ✅ bodega copió los dos catálogos · Plaza 219/219 · Angamos 222/222 |
+| f | **Reparto desde bodega** (armar) | ✅ hecho · escribe lo mismo que el local, así que el jefe lo recibe igual |
+| c | El descuento en bodega al aceptar | ⬜ **lo siguiente** · la columna ya está, falta `reparto_recibir()` |
+| f | Relleno automático | ⬜ usa el crítico, que ya está |
 | e | Aviso de reparto en Angamos | ⬜ lo único fuera de `central` |
 | g | Seguridad y usuarios nuevos | ⬜ al final, por decisión suya |
 
@@ -2260,6 +2263,40 @@ donde se edita el stock— y no en cada fila de la lista.
 ---
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-08-13** — **El problema de los ID se cerró con la idea de Jhon, no con
+  la mía. Y con eso se construyó el reparto desde bodega.**
+  1. **Yo estaba emparejando dos catálogos que nunca fueron pensados para
+     calzar.** Los 234 nombres de bodega venían copiados de la bodega vieja, así
+     que no tenían por qué parecerse a como Plaza y Angamos nombran las cosas
+     hoy. Cada pasada de emparejado dejaba un resto, ese resto pedía otro
+     diagnóstico, y Jhon se pasó un día corriendo informes para que yo dijera
+     "parece que me equivoqué". Tenía razón en frenarlo.
+  2. **Su idea: que bodega COPIE el catálogo del local.** Así el enlace no se
+     adivina — nace hecho, porque el producto de bodega ES el del local copiado
+     con su mismo nombre. Se hizo con dos cambios para no perder nada: **no se
+     borró** el catálogo viejo (borrar se llevaba en cascada los 300 enlaces ya
+     buenos y los productos que solo existen en bodega: bultos, quinoa, cacao),
+     y **no se copió el lado no-congelador** de un par con doble estante.
+  3. **Esa segunda decisión convirtió su regla en estructura.** "Todo lo que
+     llega a Plaza llega al congelador" dejó de ser una decisión que alguien
+     puede equivocar producto por producto. Y salió general sin haberla pensado
+     general: el script se salta el lado no-congelador **solo cuando existe** un
+     congelador con el mismo nombre base — Plaza tiene esos dobles, Angamos no
+     tiene ninguno, así que en Angamos entran los "Vitrina", que allá son el
+     único estante. Sin una excepción escrita.
+  4. **Resultado: Plaza 219/219 y Angamos 222/222, `sin_origen` en 0.** Bodega
+     pasó de 234 a 303 productos. Los 17 tés y las 14 familias con doble estante
+     que iban a haber sido trabajo manual se resolvieron solas, porque estaban en
+     Plaza.
+  5. **La lección de método, y es la que vale:** cuando emparejar dos listas
+     deja un resto que exige otro diagnóstico, y otro, **el problema no es el
+     algoritmo: es que las dos listas no comparten origen.** Copiar una desde la
+     otra convierte el emparejado en construcción. Sirve para cualquier catálogo
+     futuro — otra sede, otro proveedor.
+  6. **Y con eso, el reparto desde bodega.** Lo que se escribe es idéntico a lo
+     que escribe el local hoy, así que el jefe de turno lo recibe en su pestaña
+     de siempre y no se tocó una línea de ese lado (§0.7).
 
 - **2026-08-13** — **Enlaces no tenía salida manual, y Jhon lo encontró
   probando.** Abrió un producto de bodega que él reconocía como "Sprite
