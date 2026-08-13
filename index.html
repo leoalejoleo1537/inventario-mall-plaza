@@ -1290,6 +1290,14 @@
      Acá no se suma stock ni se empuja a Fudo: eso ya funciona del otro lado. -->
 <div class="wrap" id="view-repcentral" style="display:none">
 
+  <!-- Salida y entrada son el mismo trabajo visto al revés, así que viven en la
+       misma pestaña. Entra por SALIDA porque es lo que se hace todos los días. -->
+  <div class="rec-modos" id="repc-modos">
+    <button class="rec-modo active" data-repcmodo="salida">Enviar a los locales</button>
+    <button class="rec-modo" data-repcmodo="entrada">Registrar lo que llegó</button>
+  </div>
+
+  <div id="repc-salida">
   <div class="rec-modos" id="repc-destinos"></div>
 
   <div class="repc-critico" id="repc-critico"></div>
@@ -1317,6 +1325,37 @@
   <!-- lo que ese local ya tiene sin confirmar, armado desde acá o desde allá.
        Existe para que no se mande dos veces lo mismo. -->
   <div id="repc-abiertos"></div>
+  </div><!-- /repc-salida -->
+
+  <!-- ---- ENTRADA: lo que llega del proveedor ----
+       Hasta ahora bodega solo sabía restar. Lo que llegaba había que corregirlo
+       a mano en la ficha y no quedaba rastro de cuánto entró. -->
+  <div id="repc-entrada" style="display:none">
+    <div class="sec open">
+      <div class="sec-head"><div class="sec-btn sec-fija">
+        <span class="sec-ico"><span class="mas-fab" aria-hidden="true">+</span>
+          <span>Registrar lo que llegó</span></span>
+      </div></div>
+      <div class="sec-body">
+        <div class="field" style="margin-top:0">
+          <label>De quién llegó</label>
+          <input type="text" id="ent-proveedor" maxlength="60" autocomplete="off"
+                 placeholder="Proveedor, guía, o de dónde vino">
+        </div>
+        <div class="controls busca" style="margin-bottom:8px">
+          <input type="text" id="ent-q" placeholder="Buscar producto de bodega…">
+        </div>
+        <div id="ent-results"></div>
+        <div id="ent-carrito-box" style="display:none">
+          <div class="cart-title">Llegó esto</div>
+          <div id="ent-carrito"></div>
+          <div class="enl-resumen" id="ent-resumen"></div>
+          <button class="btn btn-orange btn-block" id="ent-guardar" style="margin-top:10px">Registrar entrada</button>
+        </div>
+      </div>
+    </div>
+    <div id="ent-ultimas"></div>
+  </div>
 
 </div>
 
@@ -2110,6 +2149,7 @@ function pickSede(s){
   $('tabEnlaces').style.display = s==='central' ? '' : 'none';
   MERMAS=[]; ENLACES=[]; SEDE_PROD={};
   repcCarrito=[]; repcAbiertos=[]; repcDestino='plaza';
+  entCarrito=[]; entUltimas=[];
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
   $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none'; $('view-enlaces').style.display='none'; $('view-repcentral').style.display='none';
@@ -2725,7 +2765,28 @@ function repcAbrir(){
   repcPintarCarrito(); repcCargarAbiertos();
 }
 
+/* Salida y entrada en la misma pestaña: son el mismo trabajo al revés. Abre
+   siempre en SALIDA, que es lo que se hace todos los días. */
+function repcModo(m){
+  $('repc-modos').querySelectorAll('[data-repcmodo]')
+    .forEach(b=>b.classList.toggle('active', b.dataset.repcmodo===m));
+  $('repc-salida').style.display  = m==='salida'  ? 'block' : 'none';
+  $('repc-entrada').style.display = m==='entrada' ? 'block' : 'none';
+  if(m==='salida') repcAbrir();
+  else { $('ent-q').value=''; $('ent-results').innerHTML='';
+         entPintarCarrito(); entCargarUltimas(); }
+}
+
 $('view-repcentral').addEventListener('click', async e=>{
+  const m = e.target.closest('[data-repcmodo]');
+  if(m){
+    if(m.dataset.repcmodo==='entrada' && repcCarrito.length
+       && !await preguntar('Cambiar a entrada','El envío que estabas armando se va a descartar.','Cambiar')) return;
+    if(m.dataset.repcmodo==='salida' && entCarrito.length
+       && !await preguntar('Cambiar a envíos','La entrada que estabas registrando se va a descartar.','Cambiar')) return;
+    if(m.dataset.repcmodo==='entrada') repcCarrito=[]; else entCarrito=[];
+    repcModo(m.dataset.repcmodo); return;
+  }
   const d = e.target.closest('[data-repcdest]');
   if(d){
     if(d.dataset.repcdest!==repcDestino && repcCarrito.length
@@ -2795,6 +2856,186 @@ $('repc-enviar').addEventListener('click', async ()=>{
     console.error('enviar reparto', err);
     avisar('No se pudo enviar. Revisa tu señal e inténtalo de nuevo.');
   }finally{ btn.disabled=false; btn.textContent='Enviar'; }
+});
+
+/* ================= ENTRADA A BODEGA (solo central) =================
+   Lo que llega del proveedor. Hasta ahora bodega solo sabía restar —por reparto
+   y por merma— y lo que entraba había que corregirlo a mano en la ficha, sin
+   dejar rastro. Con esto "cuánto café entró este mes" pasa a ser una pregunta
+   que el libro puede contestar.
+
+   EL CUIDADO QUE MANDA ACÁ: un perecedero entra SOLO por fechas (regla 0.4).
+   Nunca se le suma al stock: se insertan las fechas y el trigger recalcula.
+   La base lo vuelve a comprobar dentro de registrar_entrada, así que esconder
+   el campo de cantidad es comodidad, no la única defensa.                    */
+let entCarrito = [];        // {id, producto, rubro, perec, cantidad, lotes:[{cantidad,vencimiento}]}
+let entUltimas = [];
+
+const entEsPerec = p => !!(p.perecedero || lotesDe(p.id).length > 0);
+/* Lo que suma una línea: si va por fechas, la suma de las fechas. */
+const entTotal = c => c.perec
+  ? (c.lotes||[]).reduce((n,l)=>n+(+l.cantidad||0),0)
+  : (+c.cantidad||0);
+
+function entPintarResultados(){
+  const q = normNombre($('ent-q').value);
+  if(!q){ $('ent-results').innerHTML=''; return; }
+  const ya = new Set(entCarrito.map(c=>c.id));
+  const rows = DATA.filter(p=>normNombre(p.producto).includes(q) && !ya.has(p.id)).slice(0,15);
+  $('ent-results').innerHTML = rows.length ? rows.map(p=>{
+    const cf = CFG[estado(p)];
+    return `<div class="rep-result" data-entadd="${p.id}">
+      <div style="min-width:0">
+        <div class="rn">${esc(p.producto)}</div>
+        <div class="rs">${esc(p.rubro||'Sin sección')}${entEsPerec(p)?' · por fechas':''}</div>
+      </div>
+      <div class="rep-fin">
+        <span class="rep-hay" style="background:${cf.bg};color:${cf.fg}">${fmt(p.stock_actual)}</span>
+        <span class="add">+</span>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">Nada con ese nombre en bodega.</div>';
+}
+
+function entPintarCarrito(){
+  $('ent-carrito-box').style.display = entCarrito.length ? 'block' : 'none';
+  $('ent-carrito').innerHTML = entCarrito.map((c,i)=>{
+    const p = DATA.find(d=>d.id===c.id);
+    const hay = p ? (+p.stock_actual||0) : 0;
+    const suma = entTotal(c);
+    const queda = `<div class="cns">bodega: ${fmt(hay)} → <b>${fmt(hay+suma)}</b></div>`;
+    if(c.perec){
+      /* Un perecedero no lleva contador: lleva una fila por fecha, y la
+         cantidad que entra es la suma de las fechas (regla 0.4). */
+      const filas = (c.lotes||[]).map((l,j)=>`
+        <div class="mlote">
+          <input type="date" data-entfecha="${i}-${j}" value="${l.vencimiento||''}"
+                 aria-label="Fecha de vencimiento">
+          <input type="number" step="0.5" min="0" value="${l.cantidad}"
+                 data-entlotecant="${i}-${j}" aria-label="Cantidad de esa fecha">
+          <button type="button" class="qbtn is-trash" data-entquitalote="${i}-${j}" aria-label="Quitar fecha">${TRASH_SVG}</button>
+        </div>`).join('');
+      return `<div class="cart-row" style="display:block">
+        <div class="cnn">${esc(c.producto)}
+          <button type="button" class="enl-quitar" data-entquita="${i}" style="float:right;margin:0">Quitar</button></div>
+        ${filas}
+        <button type="button" class="btn btn-outline btn-sm" data-entaddlote="${i}" style="margin-top:6px">+ Agregar fecha</button>
+        ${queda}
+      </div>`;
+    }
+    const esUno = (+c.cantidad||0) <= 1;
+    return `<div class="cart-row">
+      <div class="cn"><div class="cnn">${esc(c.producto)}</div>${queda}</div>
+      <div class="qty">
+        <button type="button" class="qbtn qleft ${esUno?'is-trash':''}" data-entleft="${i}" aria-label="${esUno?'Quitar':'Restar'}">${esUno?TRASH_SVG:'−'}</button>
+        <input type="number" step="0.5" min="0" value="${c.cantidad}" data-entidx="${i}" aria-label="Cantidad de ${esc(c.producto)}">
+        <button type="button" class="qbtn qplus" data-entinc="${i}" aria-label="Sumar">+</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  /* El botón dice qué falta en vez de quedarse apagado sin motivo. */
+  const sinFecha = entCarrito.filter(c=>c.perec &&
+    (c.lotes||[]).some(l=>!l.vencimiento || (+l.cantidad||0)<=0)).length;
+  const sinNada  = entCarrito.filter(c=>entTotal(c)<=0).length;
+  const falta = sinNada  ? 'Falta la cantidad de '+sinNada+' producto(s)'
+              : sinFecha ? 'Falta la fecha de '+sinFecha+' producto(s)'
+              : null;
+  const total = entCarrito.reduce((n,c)=>n+entTotal(c),0);
+  $('ent-resumen').textContent = falta || ('Entran '+fmt(total)+' unidades en '+entCarrito.length+' producto(s)');
+  $('ent-guardar').disabled = !!falta || !entCarrito.length;
+}
+
+async function entCargarUltimas(){
+  const {data,error} = await sb.from('movimientos').select('*')
+    .eq('sede','central').eq('tipo','entrada')
+    .order('created_at',{ascending:false}).limit(40);
+  entUltimas = error ? [] : (data||[]);
+  if(error) console.error('entradas', error);
+  entPintarUltimas();
+}
+function entPintarUltimas(){
+  if(!entUltimas.length){ $('ent-ultimas').innerHTML=''; return; }
+  const dias = [...new Set(entUltimas.map(m=>m.created_at.slice(0,10)))];
+  $('ent-ultimas').innerHTML = dias.map(d=>`
+    <div class="turno"><div class="turno-lbl">${fmtFecha(d).toUpperCase()}</div>
+    ${entUltimas.filter(m=>m.created_at.slice(0,10)===d).map(m=>`
+      <div class="cs-fila${m.deshecha_at?' cs-off':''}">
+        <span class="cs-nm">${esc(m.producto)}
+          <span class="cs-sec">${m.motivo?esc(m.motivo):'sin proveedor'}${m.quien?' · '+esc(m.quien):''}</span></span>
+        <span class="cs-hay" style="color:var(--green-fg)">+${fmt(m.cantidad)}${
+          m.deshecha_at ? '<span class="cs-des">deshecha</span>'
+            : `<button type="button" class="rep-deshacer" data-entdes="${m.id}">Deshacer</button>`}</span>
+      </div>`).join('')}</div>`).join('');
+}
+
+$('repc-entrada').addEventListener('click', async e=>{
+  const add = e.target.closest('[data-entadd]');
+  if(add){
+    const p = DATA.find(d=>d.id===+add.dataset.entadd); if(!p) return;
+    const perec = entEsPerec(p);
+    entCarrito.push({id:p.id, producto:p.producto, rubro:p.rubro, perec,
+                     cantidad: perec?0:1, lotes: perec?[{cantidad:1, vencimiento:''}]:[]});
+    $('ent-q').value=''; entPintarResultados(); entPintarCarrito(); return;
+  }
+  const q = e.target.closest('[data-entquita]');
+  if(q){ entCarrito.splice(+q.dataset.entquita,1); entPintarCarrito(); return; }
+  const al = e.target.closest('[data-entaddlote]');
+  if(al){ entCarrito[+al.dataset.entaddlote].lotes.push({cantidad:1, vencimiento:''}); entPintarCarrito(); return; }
+  const ql = e.target.closest('[data-entquitalote]');
+  if(ql){
+    const [i,j] = ql.dataset.entquitalote.split('-').map(Number);
+    entCarrito[i].lotes.splice(j,1);
+    if(!entCarrito[i].lotes.length) entCarrito.splice(i,1);
+    entPintarCarrito(); return;
+  }
+  const inc = e.target.closest('[data-entinc]');
+  if(inc){ const i=+inc.dataset.entinc; entCarrito[i].cantidad=(+entCarrito[i].cantidad||0)+1; entPintarCarrito(); return; }
+  const left = e.target.closest('[data-entleft]');
+  if(left){
+    const i=+left.dataset.entleft;
+    if((+entCarrito[i].cantidad||0)>1) entCarrito[i].cantidad=+entCarrito[i].cantidad-1;
+    else entCarrito.splice(i,1);
+    entPintarCarrito(); return;
+  }
+  const des = e.target.closest('[data-entdes]');
+  if(des){
+    if(!await preguntar('Deshacer esta entrada','Las unidades salen del inventario de Bodega.','Deshacer')) return;
+    des.disabled=true; des.textContent='…';
+    const {error} = await sb.rpc('deshacer_entrada',{p_movimiento_id:+des.dataset.entdes, p_quien:NOMBRE});
+    if(error){ des.disabled=false; des.textContent='Deshacer'; avisar(error.message||'No se pudo deshacer.'); return; }
+    await loadData(); await loadLotes(); metrics(); render(); entCargarUltimas();
+    return;
+  }
+});
+$('repc-entrada').addEventListener('input', e=>{
+  if(e.target.id==='ent-q'){ entPintarResultados(); return; }
+  const idx = e.target.closest('[data-entidx]');
+  if(idx){ entCarrito[+idx.dataset.entidx].cantidad = +idx.value || 0; entPintarCarrito(); return; }
+  const f = e.target.closest('[data-entfecha]');
+  if(f){ const [i,j]=f.dataset.entfecha.split('-').map(Number);
+         entCarrito[i].lotes[j].vencimiento = f.value; entPintarCarrito(); return; }
+  const lc = e.target.closest('[data-entlotecant]');
+  if(lc){ const [i,j]=lc.dataset.entlotecant.split('-').map(Number);
+          entCarrito[i].lotes[j].cantidad = +lc.value || 0; entPintarCarrito(); return; }
+});
+
+$('ent-guardar').addEventListener('click', async ()=>{
+  const btn=$('ent-guardar');
+  const items = entCarrito.map(c=>c.perec
+    ? {producto_id:c.id, lotes:c.lotes.filter(l=>l.vencimiento && (+l.cantidad||0)>0)}
+    : {producto_id:c.id, cantidad:+c.cantidad});
+  btn.disabled=true; btn.textContent='Registrando…';
+  const {error} = await sb.rpc('registrar_entrada',{
+    p_items:items, p_proveedor:$('ent-proveedor').value.trim()||null,
+    p_nota:null, p_quien:NOMBRE});
+  btn.disabled=false; btn.textContent='Registrar entrada';
+  if(error){ avisar(error.message || 'No se pudo registrar. Revisa tu señal e inténtalo de nuevo.'); return; }
+  const total = entCarrito.reduce((n,c)=>n+entTotal(c),0);
+  avisar('✓ Entraron '+fmt(total)+' unidades en '+entCarrito.length+' producto(s)');
+  entCarrito=[]; $('ent-q').value=''; $('ent-proveedor').value='';
+  entPintarResultados(); entPintarCarrito();
+  await loadData(); await loadLotes(); metrics(); render(); entCargarUltimas();
 });
 
 /* ================= ENLACES (solo Bodega) =================
@@ -4544,7 +4785,7 @@ function pickTab(tab){
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();
   if(tab==='hist') loadHistorial();
-  if(tab==='reparto'){ if(repEsCentral){ loadEnlaces().then(repcAbrir); } else loadRepartos(); }
+  if(tab==='reparto'){ if(repEsCentral){ loadEnlaces().then(()=>repcModo('salida')); } else loadRepartos(); }
   /* Abre siempre en la portada, no en el último modo que se dejó: mientras
      jefatura está aprendiendo, lo primero que tienen que ver es dónde está el
      hueco. Cuando ya se sepa de memoria, esto pasa a abrir en el taller. */
