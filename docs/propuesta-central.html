@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Central — propuesta</title>
+<style>
+:root{
+  --orange:#DC4405; --orange-dark:#B93A04;
+  --bg:#F2F3F5; --card:#fff; --border:#E3E5E8;
+  --text:#1C2733; --muted:#6B7684;
+  --red-bg:#FDECEA; --red-fg:#C0392B;
+  --green-bg:#E6F4E6; --green-fg:#2E7D32;
+  --amber-bg:#FFF3E0; --amber-fg:#B26A00;
+  --nav:#0F1E31; --sec-bg:#2F4A6D;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+     background:#8b95a3;color:var(--text);padding:22px 12px 60px}
+.nota{max-width:760px;margin:0 auto 20px;background:#fff;border-radius:14px;padding:16px 18px;
+      font-size:13.5px;line-height:1.55}
+.nota h1{font-size:17px;margin-bottom:8px}
+.nota p{margin-bottom:8px;color:#333}
+.nota b{color:#000}
+.nota .ojo{background:var(--amber-bg);border-left:3px solid var(--amber-fg);
+           padding:9px 11px;border-radius:0 8px 8px 0;margin:10px 0}
+.fila{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+.tel{width:375px;background:var(--bg);border-radius:26px;overflow:hidden;
+     box-shadow:0 10px 34px rgba(0,0,0,.3);flex:0 0 auto}
+.tel .pie{text-align:center;font-size:11.5px;color:#fff;padding:8px;background:#66707d}
+
+/* ---- ENCABEZADO ---- */
+.top{background:var(--nav);color:#fff;padding:14px 15px 15px;display:flex;align-items:center;gap:11px}
+.ham{width:30px;height:30px;flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.ham i{display:block;height:2.4px;background:#fff;border-radius:2px}
+.ham i:nth-child(2){width:70%}
+.top .quien{flex:1;min-width:0}
+.top .h1{font-size:21px;font-weight:800;letter-spacing:.2px;line-height:1.1}
+.top .h2{font-size:12.5px;opacity:.72;margin-top:2px}
+.top .accs{display:flex;gap:8px}
+.iconb{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.13);
+       border:none;color:#fff;font-size:16px;display:grid;place-items:center;cursor:pointer}
+
+/* ---- PESTANAS: solo dos ---- */
+.tabs{display:flex;gap:8px;padding:11px 13px;background:#fff;border-bottom:1px solid var(--border)}
+.tab{padding:8px 17px;border-radius:999px;border:1px solid var(--border);background:#fff;
+     font-size:13.5px;font-weight:700;color:var(--text)}
+.tab.on{background:var(--orange);border-color:var(--orange);color:#fff}
+
+.wrap{padding:13px}
+
+/* ---- LA REJILLA: sedes a la izquierda, bodega a la derecha ---- */
+.rejilla{display:grid;grid-template-columns:1fr 1fr;gap:9px;align-items:start}
+.col{display:flex;flex-direction:column;gap:9px}
+
+.sede{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:11px 12px 12px;
+      text-align:left;position:relative;box-shadow:0 1px 2px rgba(15,30,49,.06)}
+.sede .fl{position:absolute;top:9px;right:10px;color:var(--muted);opacity:.45;font-size:14px}
+.sede .nm{font-size:11.5px;font-weight:800;color:var(--muted);letter-spacing:.3px;
+          text-transform:uppercase;padding-right:14px}
+.sede .big{font-size:31px;font-weight:800;color:var(--red-fg);line-height:1;margin:5px 0 1px}
+.sede .sub{font-size:10.5px;color:var(--muted);font-weight:600}
+.pill{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;margin-top:6px}
+.pill.u{background:var(--amber-bg);color:var(--amber-fg)}
+.pill.v{background:var(--red-fg);color:#fff}
+.fam{margin-top:9px;padding-top:8px;border-top:1px solid var(--border)}
+.fam + .fam{margin-top:7px;padding-top:7px}
+.fam .lb{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;font-weight:700}
+.fam .lb b{font-size:12px;color:var(--red-fg)}
+.fam .pista{height:5px;background:#EDEFF2;border-radius:3px;margin-top:4px;overflow:hidden}
+.fam .lleno{height:100%;border-radius:3px;background:var(--red-fg)}
+.fam .lleno.medio{background:var(--amber-fg)}
+.fam .cuantos{font-size:9.5px;color:var(--muted);margin-top:3px;font-weight:600}
+
+/* ---- BODEGA: una sola tarjeta, estilo unificado ---- */
+.bod{background:var(--sec-bg);border-radius:14px;color:#fff;overflow:hidden;
+     box-shadow:0 1px 2px rgba(15,30,49,.1)}
+.bod .cab{font-size:11.5px;font-weight:800;letter-spacing:.4px;padding:10px 12px 8px;opacity:.85}
+.bod .item{padding:9px 12px;border-top:1px solid rgba(255,255,255,.14)}
+.bod .item .n{font-size:24px;font-weight:800;line-height:1}
+.bod .item .l{font-size:10.5px;opacity:.75;font-weight:600;margin-top:2px}
+.bod .alerta{background:var(--orange);padding:10px 12px;border-top:1px solid rgba(255,255,255,.14)}
+.bod .alerta .n{font-size:24px;font-weight:800;line-height:1}
+.bod .alerta .l{font-size:10.5px;font-weight:700;margin-top:2px}
+
+/* ---- DESPLEGABLES ---- */
+.desp{width:100%;margin-top:9px;background:var(--card);border:1px solid var(--border);
+      border-radius:14px;padding:13px 13px;display:flex;align-items:center;gap:9px;
+      font:inherit;font-weight:700;font-size:14px;color:var(--text);text-align:left}
+.desp .fl{color:var(--muted);font-size:15px}
+.desp .cnt{margin-left:auto;font-size:11.5px;color:var(--muted);font-weight:600}
+
+/* ---- MENU LATERAL ---- */
+.menu{position:relative;background:var(--nav);min-height:560px;color:#fff;padding:16px 0 0}
+.menu .mt{padding:0 17px 15px;border-bottom:1px solid rgba(255,255,255,.13)}
+.menu .mt .h1{font-size:19px;font-weight:800}
+.menu .mt .h2{font-size:12px;opacity:.7;margin-top:2px}
+.menu .grp{font-size:10px;font-weight:800;letter-spacing:.8px;opacity:.45;padding:16px 17px 7px}
+.menu a{display:flex;align-items:center;gap:11px;padding:11px 17px;color:#fff;
+        text-decoration:none;font-size:14.5px;font-weight:600}
+.menu a.on{background:rgba(255,255,255,.1);border-left:3px solid var(--orange);padding-left:14px}
+.menu a .ic{width:20px;text-align:center;opacity:.8}
+
+/* ---- MERMAS ---- */
+.mm{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:9px}
+.mm .cab{background:var(--sec-bg);color:#fff;padding:11px 13px;display:flex;align-items:center;gap:8px;
+         font-size:13px;font-weight:800}
+.mm .cab .cnt{margin-left:auto;font-size:11px;opacity:.8;font-weight:600}
+.mm .f{display:flex;align-items:center;gap:9px;padding:10px 13px;border-top:1px solid var(--border)}
+.mm .f .nm{flex:1;min-width:0;font-size:13px;font-weight:600}
+.mm .f .nm i{display:block;font-size:10.5px;color:var(--muted);font-style:normal;font-weight:600;margin-top:1px}
+.mm .f .q{font-size:14px;font-weight:800;color:var(--red-fg)}
+.mm .baj{display:flex;gap:8px;padding:11px 13px;border-top:1px solid var(--border)}
+.mm .baj button{flex:1;padding:9px;border-radius:10px;border:1px solid var(--border);background:#fff;
+                font:inherit;font-size:12.5px;font-weight:700;color:var(--text)}
+.mm .baj button.p{background:var(--orange);border-color:var(--orange);color:#fff}
+.cap{text-align:center;color:#fff;font-size:12.5px;font-weight:700;margin:0 0 9px;opacity:.95}
+</style></head><body>
+
+<div class="nota">
+  <h1>Central — inicio, mermas y menú</h1>
+  <p>Todos los números que se ven acá son <b>los de la base, hoy</b>. La maqueta anterior
+     tenía números inventados, y por eso «112 de 503» pasó desapercibido: con datos falsos
+     parecía razonable.</p>
+  <p><b>Se fue el máximo sumado.</b> Sumar el máximo de 200 tortas distintas da 503 y no
+     significa nada. En su lugar va <b>«faltan 37»</b>: unidades para llegar al mínimo.
+     Ese número sí se puede sumar —cada producto se mide contra su propio mínimo— y es
+     exactamente cuánto hay que mandar.</p>
+  <p><b>Se fue la gráfica de ventas.</b> Y las pestañas quedan en dos: Inicio y Reparto.</p>
+  <div class="ojo"><b>Lo que hay que decidir:</b> la bodega no está contada. De 303
+     productos, <b>301 están en cero</b>. Por eso su tarjeta no dice «sobre stock» ni
+     «en crítico» —serían 0 y 301, dos números que no informan nada— sino lo único
+     cierto y accionable: <b>falta contarla</b>. Cuando esté contada, esa misma tarjeta
+     pasa a mostrar sobre stock y faltantes como pediste, sin cambiar de forma.</div>
+</div>
+
+<div class="fila">
+
+  <!-- ============ INICIO ============ -->
+  <div>
+  <div class="cap">1 · Inicio</div>
+  <div class="tel">
+    <div class="top">
+      <div class="ham"><i></i><i></i><i></i></div>
+      <div class="quien">
+        <div class="h1">Central</div>
+        <div class="h2">Bienvenida, Adriana</div>
+      </div>
+      <div class="accs">
+        <button class="iconb">⌕</button>
+        <button class="iconb">⟳</button>
+      </div>
+    </div>
+    <div class="tabs"><button class="tab on">Inicio</button><button class="tab">Reparto</button></div>
+
+    <div class="wrap">
+      <div class="rejilla">
+
+        <div class="col">
+          <div class="sede">
+            <span class="fl">›</span>
+            <div class="nm">Mall Plaza</div>
+            <div class="big">95</div>
+            <div class="sub">en crítico · de 238</div>
+            <span class="pill u">22 urgentes</span>
+            <div class="fam">
+              <div class="lb"><span>Sándwiches</span><b>faltan 31</b></div>
+              <div class="pista"><div class="lleno" style="width:86%"></div></div>
+              <div class="cuantos">6 de 7 bajo el mínimo</div>
+            </div>
+            <div class="fam">
+              <div class="lb"><span>Tortas</span><b>faltan 37</b></div>
+              <div class="pista"><div class="lleno medio" style="width:67%"></div></div>
+              <div class="cuantos">8 de 12 bajo el mínimo</div>
+            </div>
+          </div>
+
+          <div class="sede">
+            <span class="fl">›</span>
+            <div class="nm">Angamos</div>
+            <div class="big">98</div>
+            <div class="sub">en crítico · de 222</div>
+            <span class="pill u">2 urgentes</span>
+            <span class="pill v">7 vencidos</span>
+            <div class="fam">
+              <div class="lb"><span>Sándwiches</span><b>faltan 17.5</b></div>
+              <div class="pista"><div class="lleno" style="width:71%"></div></div>
+              <div class="cuantos">5 de 7 bajo el mínimo</div>
+            </div>
+            <div class="fam">
+              <div class="lb"><span>Tortas</span><b>faltan 87</b></div>
+              <div class="pista"><div class="lleno" style="width:75%"></div></div>
+              <div class="cuantos">9 de 12 bajo el mínimo</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="bod">
+            <div class="cab">BODEGA</div>
+            <div class="alerta">
+              <div class="n">301</div>
+              <div class="l">sin contar, de 303</div>
+            </div>
+            <div class="item">
+              <div class="n">2</div>
+              <div class="l">con stock cargado</div>
+            </div>
+            <div class="item">
+              <div class="n">0</div>
+              <div class="l">sobre stock</div>
+            </div>
+            <div class="item">
+              <div class="n">0</div>
+              <div class="l">vencidos</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="desp"><span class="fl">›</span> Inventario de bodega
+        <span class="cnt">303 productos</span></button>
+    </div>
+    <div class="pie">Cuatro tarjetas y un desplegable. Nada más.</div>
+  </div>
+  </div>
+
+  <!-- ============ MENU ============ -->
+  <div>
+  <div class="cap">2 · Menú lateral</div>
+  <div class="tel">
+    <div class="menu">
+      <div class="mt">
+        <div class="h1">Central</div>
+        <div class="h2">Bienvenida, Adriana</div>
+      </div>
+      <div class="grp">OPERACIÓN</div>
+      <a class="on"><span class="ic">▤</span> Inicio</a>
+      <a><span class="ic">⇄</span> Reparto</a>
+      <a><span class="ic">↓</span> Entradas</a>
+      <div class="grp">REGISTRO</div>
+      <a><span class="ic">⊘</span> Mermas</a>
+      <a><span class="ic">⚭</span> Enlaces a sedes</a>
+      <a><span class="ic">◷</span> Historial</a>
+      <div class="grp">SEDES</div>
+      <a><span class="ic">◧</span> Café Mall Plaza</a>
+      <a><span class="ic">◧</span> Parque Angamos</a>
+    </div>
+    <div class="pie">Mermas y Enlaces salen de las pestañas y viven acá.</div>
+  </div>
+  </div>
+
+  <!-- ============ MERMAS ============ -->
+  <div>
+  <div class="cap">3 · Mermas</div>
+  <div class="tel">
+    <div class="top">
+      <div class="ham"><i></i><i></i><i></i></div>
+      <div class="quien">
+        <div class="h1">Mermas</div>
+        <div class="h2">Central · agosto</div>
+      </div>
+      <div class="accs"><button class="iconb">⌕</button><button class="iconb">⟳</button></div>
+    </div>
+    <div class="wrap">
+      <div class="mm">
+        <div class="cab"><span>⌄</span> HOY <span class="cnt">3 · 12 unidades</span></div>
+        <div class="f"><div class="nm">Sandwich Mechada<i>Angamos · vencido</i></div><div class="q">4</div></div>
+        <div class="f"><div class="nm">Trozo torta zanahoria<i>Bodega · mal estado</i></div><div class="q">6</div></div>
+        <div class="f"><div class="nm">Medialuna manjar<i>Angamos · vencido</i></div><div class="q">2</div></div>
+      </div>
+      <div class="mm">
+        <div class="cab"><span>›</span> ESTA SEMANA <span class="cnt">14 · 51 unidades</span></div>
+      </div>
+      <div class="mm">
+        <div class="cab"><span>›</span> AGOSTO <span class="cnt">38 · 147 unidades</span></div>
+        <div class="baj">
+          <button>Copiar</button>
+          <button class="p">Descargar CSV</button>
+        </div>
+      </div>
+    </div>
+    <div class="pie">Se despliega por período. La descarga sale de lo que estás viendo.</div>
+  </div>
+  </div>
+
+</div>
+</body></html>
