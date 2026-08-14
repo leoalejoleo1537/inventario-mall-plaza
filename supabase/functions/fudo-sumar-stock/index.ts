@@ -31,6 +31,24 @@
 //   combo porque llegaron 2 sándwiches diría que se pueden vender 2 más
 //   sin mirar la bebida.
 //
+// EL GEMELO DEL OTRO MUEBLE (2026-08-14) — por qué esto no busca solo
+// la ficha exacta:
+//
+//   Los Cannolis de Mall Plaza llegaron en un reparto, se aceptaron, y
+//   Fudo no cambió. La causa: el reparto entra al CONGELADOR y la
+//   receta descuenta de la VITRINA. Son dos fichas distintas, así que
+//   la búsqueda por id exacto no encontraba a quién avisarle, devolvía
+//   "sumados 0" y el aviso de la pantalla se iba solo.
+//
+//   Fudo ya piensa en el PAR: desde el 2026-07-29 el cálculo del botón
+//   rojo suma vitrina + congelador por nombre base. Este camino no lo
+//   hacía, y por eso los dos no daban lo mismo.
+//
+//   La regla que se aplica acá: **primero la ficha exacta; solo si esa
+//   no tiene receta 1:1 se busca en sus gemelas del mismo nombre base**.
+//   Así todo lo que ya funcionaba sigue igual —no se toca— y lo único
+//   que cambia es el hueco: el producto que vive en dos muebles.
+//
 // Cómo se llama:
 //   POST { sede, producto_id, cantidad, reparto_item_id? }
 //
@@ -38,7 +56,7 @@
 // que el resto. La lista se edita en SQL, no acá.
 // ================================================================
 
-const VERSION = "2026-08-06";
+const VERSION = "2026-08-14";
 const AUTH_URL = "https://auth.fu.do/api";
 const API_BASE = "https://api.fu.do/v1alpha1";
 
@@ -94,12 +112,19 @@ Deno.serve(async (req) => {
     if (!rRes.ok) return json({ error: "No se pudieron leer las recetas.", detalle: (await rRes.text()).slice(0, 200) }, 500);
     const recetas = await rRes.json();
 
-    const objetivos = (recetas ?? []).filter((r: any) => {
-      const its = r.receta_items ?? [];
-      return its.length === 1
-        && Number(its[0].producto_id) === productoId
-        && Number(its[0].cantidad) === 1;
-    });
+    // La ficha exacta primero; las gemelas solo si esa no tiene receta 1:1.
+    // Las gemelas necesitan los nombres de la sede, y eso es una lectura más:
+    // se pide únicamente cuando hace falta.
+    let elegido = elegirObjetivos(recetas, productoId, []);
+    if (!elegido.objetivos.length) {
+      const pRes3 = await fetch(
+        `${SB_URL}/rest/v1/productos?sede=eq.${encodeURIComponent(sede)}&select=id,producto`,
+        { headers: cab });
+      const productos = pRes3.ok ? await pRes3.json() : [];
+      elegido = elegirObjetivos(recetas, productoId, productos);
+    }
+    const objetivos = elegido.objetivos;
+    const porGemelo = elegido.porGemelo;
 
     if (!objetivos.length) {
       return json({
@@ -175,7 +200,8 @@ Deno.serve(async (req) => {
       bitacora.push({
         sede, lote, fudo_product_id: fpid, producto_fudo: r.fudo_product_nombre,
         stock_anterior: anterior, stock_enviado: enviado, ok,
-        detalle: detalle || `+${cantidad} por reparto${itemId ? ` (línea ${itemId})` : ""}`,
+        detalle: detalle || `+${cantidad} por reparto${itemId ? ` (línea ${itemId})` : ""}`
+                 + (porGemelo ? ` · la receta vive en "${porGemelo}"` : ""),
         quien: correo,
       });
     }
@@ -192,6 +218,7 @@ Deno.serve(async (req) => {
     return json({
       version: VERSION, ok: fallados.length === 0,
       sede, quien: correo, sumado: cantidad,
+      ...(porGemelo ? { por_gemelo: porGemelo } : {}),
       actualizados: hechos.length, con_error: fallados.length,
       cambios: hechos, errores: fallados,
     });
@@ -199,6 +226,59 @@ Deno.serve(async (req) => {
     return json({ error: "Error inesperado.", detalle: String(e) }, 500);
   }
 });
+
+/* ================================================================
+   A QUÉ PRODUCTOS DE FUDO HAY QUE AVISARLES
+
+   Está afuera del manejador y sin llamadas a la red a propósito: es la
+   única decisión con criterio que toma esta función, y así se puede
+   probar sola (mismo motivo que `permisosDeLaSede()` en la app).
+
+   Devuelve además `porGemelo` — el nombre de la otra ficha— cuando el
+   acierto vino por ahí, para que quede escrito en la bitácora y nadie
+   tenga que adivinar por qué se tocó ese producto de Fudo.
+   ================================================================ */
+export function elegirObjetivos(recetas: any[], productoId: number, productos: any[]) {
+  const unaSolaLinea = (recetas ?? []).filter((r: any) => {
+    const its = r?.receta_items ?? [];
+    return its.length === 1 && Number(its[0].cantidad) === 1;
+  });
+  const porFicha = (id: number) =>
+    unaSolaLinea.filter((r: any) => Number(r.receta_items[0].producto_id) === id);
+
+  // 1) La ficha exacta. Es el camino de siempre y manda.
+  const exactas = porFicha(productoId);
+  if (exactas.length) return { objetivos: exactas, porGemelo: null as string | null };
+
+  // 2) Solo si esa no tiene receta 1:1: sus gemelas del mismo nombre base.
+  //    (El caso Cannoli: entra al congelador, la receta vive en la vitrina.)
+  const yo = (productos ?? []).find((p: any) => Number(p.id) === productoId);
+  if (!yo) return { objetivos: [], porGemelo: null as string | null };
+  const miBase = base(yo.producto);
+  if (!miBase) return { objetivos: [], porGemelo: null as string | null };
+
+  for (const p of productos ?? []) {
+    if (Number(p.id) === productoId) continue;
+    if (base(p.producto) !== miBase) continue;
+    const enc = porFicha(Number(p.id));
+    if (enc.length) return { objetivos: enc, porGemelo: String(p.producto) };
+  }
+  return { objetivos: [], porGemelo: null as string | null };
+}
+
+/* Nombre base — MISMO criterio que baseNombre() en la app y que
+   base_nombre() en la base. Los tres tienen que decir lo mismo: si acá se
+   agregara una regla de más (por ejemplo entender "Vitrina de dulces"),
+   este camino emparejaría cosas que el motor de descuento no empareja, y
+   ese desacuerdo es exactamente el bug de los macarrons. Si algún día se
+   amplía, se amplían los tres juntos. */
+function base(s: unknown): string {
+  return String(s ?? "")
+    .toLowerCase()
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/\s+/g, " ").trim()
+    .replace(/\s+(vitrina|congelador)$/, "");
+}
 
 function json(obj: unknown, status = 200): Response {
   return new Response(JSON.stringify(obj, null, 2), {
