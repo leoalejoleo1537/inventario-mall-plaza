@@ -2310,6 +2310,33 @@ donde se edita el stock— y no en cada fila de la lista.
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-08-13** — **El tablero de Bodega, y la falla callada que casi se
+  cuela con él.** La pantalla de Bodega era una lista de 300 productos y dos
+  tarjetas de crítico: para decidir un reparto había que leerla entera y
+  comparar de memoria contra el mín y el máx de cada local. Ahora contesta la
+  pregunta sola — tres alarmas, una barra por sede y familia contra su propio
+  mín/máx con la marca del mínimo sobre la pista, y cuánto mandar para cubrir
+  N días. Maqueta aprobada por Jhon antes de escribir una línea
+  (`docs/propuesta-tablero.html`).
+  1. **Las ventas ya estaban en la base.** `fudo_movimientos` guarda cada ítem
+     vendido desde que el motor se encendió. No hizo falta tocar la API de
+     Fudo: una función que agrupa por día (`ventas_por_dia`) y listo. Devuelve
+     `dias_con_datos` para poder decir "35 en 5 días" en vez de dividir por 7 y
+     mentir por lo bajo donde la historia es corta (Angamos).
+  2. **Se quitaron las tarjetas de crítico por sede.** Decían los mismos
+     números que la fila de alarmas, en la misma pantalla. El detalle por sede
+     sigue donde se actúa: dentro de Reparto.
+  3. **Lo que casi se rompe, y es lo que hay que recordar.** Al pasar los
+     números a las alarmas escribí `(CRITICOS[s]||[]).length` — que convierte
+     una lectura FALLIDA en 0. Es exactamente la falla que `numeroTarjeta()`
+     existía para impedir: un 0 ahí dice "a ese local no le falta nada" justo
+     cuando no lo sabemos, y Adriana arma el reparto dejando ese local afuera.
+     Lo delató la prueba `critico-por-sede.mjs`, que se iba a caer al borrar la
+     función que ella vigila. **Una prueba que estorba cuando borras algo no es
+     burocracia: es el único aviso de que estabas por tirar una regla.** Los
+     tres estados (sin dato `·` · fallo `—` · número) viajan ahora enteros por
+     alarmas, barras, totales y el detalle de vencidos.
+
 - **2026-08-13** — **El problema de los ID se cerró con la idea de Jhon, no con
   la mía. Y con eso se construyó el reparto desde bodega.**
   1. **Yo estaba emparejando dos catálogos que nunca fueron pensados para
