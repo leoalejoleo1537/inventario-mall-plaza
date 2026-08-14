@@ -1,0 +1,448 @@
+<title>Ajustes de Llamita</title>
+<style>
+:root{
+  --ground:#FFFFFF; --surface:#F7F8F9; --sunken:#EFF1F3;
+  --ink:#1C2733; --muted:#6B7684; --border:#E3E5E8;
+  --pizarra:#2F4A6D; --pizarra-soft:#EDF1F6;
+  --orange:#DC4405;
+  --ok:#2E7D32;  --ok-bg:#E6F4E6;
+  --warn:#B26A00; --warn-bg:#FFF3E0;
+  --bad:#C0392B; --bad-bg:#FDECEA;
+  --shadow:0 1px 2px rgba(15,30,49,.05), 0 6px 20px rgba(15,30,49,.06);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F1E31; --surface:#16283F; --sunken:#1C3350;
+    --ink:#E8EDF3; --muted:#9AAABC; --border:#27405E;
+    --pizarra:#8FB0D6; --pizarra-soft:#1B3050;
+    --orange:#FF7A45;
+    --ok:#7FC784;  --ok-bg:#16321B;
+    --warn:#E9AE5A; --warn-bg:#33260F;
+    --bad:#F08579; --bad-bg:#3A1B18;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.28);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F1E31; --surface:#16283F; --sunken:#1C3350;
+  --ink:#E8EDF3; --muted:#9AAABC; --border:#27405E;
+  --pizarra:#8FB0D6; --pizarra-soft:#1B3050;
+  --orange:#FF7A45;
+  --ok:#7FC784;  --ok-bg:#16321B;
+  --warn:#E9AE5A; --warn-bg:#33260F;
+  --bad:#F08579; --bad-bg:#3A1B18;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.28);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--sans); font-size:17px; line-height:1.65; -webkit-text-size-adjust:100%}
+.wrap{max-width:850px; margin:0 auto; padding:0 24px 96px}
+p{margin:0 0 1em; max-width:68ch}
+strong{font-weight:640}
+code{font-family:var(--mono); font-size:.86em; background:var(--sunken);
+  padding:.12em .38em; border-radius:5px; border:1px solid var(--border)}
+
+header{padding:64px 0 36px; border-bottom:1px solid var(--border); margin-bottom:40px}
+.eyebrow{font-size:12px; font-weight:700; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--pizarra); margin:0 0 14px}
+h1{font-size:clamp(38px,7vw,58px); line-height:1.02; letter-spacing:-.032em;
+  font-weight:760; margin:0 0 12px; text-wrap:balance}
+.lede{font-size:clamp(18px,2.4vw,21px); color:var(--muted); margin:0; max-width:44ch; line-height:1.4}
+
+section{margin:0 0 56px}
+h2{font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--pizarra); margin:0 0 6px}
+h2 + .sub{font-size:25px; font-weight:680; letter-spacing:-.02em; margin:0 0 20px;
+  line-height:1.2; text-wrap:balance}
+h3{font-size:17.5px; font-weight:680; margin:26px 0 8px; letter-spacing:-.01em}
+
+.cifras{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin:0 0 22px}
+.cifra{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px}
+.cifra .n{font-family:var(--mono); font-variant-numeric:tabular-nums;
+  font-size:32px; font-weight:600; line-height:1; letter-spacing:-.02em}
+.cifra .l{font-size:13.5px; color:var(--muted); margin-top:7px; line-height:1.35}
+.cifra.alerta .n{color:var(--orange)}
+
+.tesis{background:var(--pizarra-soft); border-left:3px solid var(--pizarra);
+  border-radius:0 12px 12px 0; padding:20px 24px; margin:0 0 20px}
+.tesis p{margin:0; font-size:18.5px; line-height:1.5}
+.tesis p + p{margin-top:10px; font-size:15px; color:var(--muted)}
+
+.tabla{overflow-x:auto; margin:0 0 14px; border:1px solid var(--border); border-radius:12px}
+table{border-collapse:collapse; width:100%; min-width:560px; font-size:15px}
+th{text-align:left; font-size:11.5px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--muted); font-weight:700; padding:11px 15px; background:var(--surface);
+  border-bottom:1px solid var(--border); white-space:nowrap}
+td{padding:11px 15px; border-bottom:1px solid var(--border); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.nota{color:var(--muted); font-size:14px}
+td.num{font-family:var(--mono); font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
+
+.pill{display:inline-block; font-size:11.5px; font-weight:680; letter-spacing:.02em;
+  padding:3px 10px; border-radius:999px; white-space:nowrap}
+.pill.hay{background:var(--ok-bg); color:var(--ok)}
+.pill.falta{background:var(--bad-bg); color:var(--bad)}
+.pill.parcial{background:var(--warn-bg); color:var(--warn)}
+
+/* Las áreas van numeradas porque el número ES la prioridad: el orden sale de
+   qué se rompe si Jhon no está, no de un capricho de maquetación. */
+.areas{list-style:none; margin:0; padding:0}
+.area{display:grid; grid-template-columns:56px 1fr; gap:20px;
+  padding:26px 0; border-bottom:1px solid var(--border)}
+.area:last-child{border-bottom:0}
+.rank{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:27px;
+  font-weight:600; line-height:1; padding-top:4px; color:var(--pizarra)}
+.area.critica .rank{color:var(--bad)}
+.area h3{margin:0 0 4px; font-size:19px}
+.area .rol{font-size:13px; color:var(--muted); margin:0 0 10px}
+.area p{font-size:15.5px; margin:0 0 .7em}
+.area p:last-child{margin-bottom:0}
+.porque{margin-top:12px; padding-top:12px; border-top:1px dashed var(--border);
+  font-size:14.5px; color:var(--muted)}
+
+.aviso{background:var(--bad-bg); border:1px solid var(--bad); border-radius:12px;
+  padding:18px 22px; margin:0 0 20px}
+.aviso p{margin:0; font-size:15.5px}
+.aviso p + p{margin-top:9px}
+.aviso strong{color:var(--bad)}
+
+.nota-box{background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; padding:18px 22px; margin:0 0 18px; box-shadow:var(--shadow)}
+.nota-box p{margin:0; font-size:15.5px}
+.nota-box p + p{margin-top:9px}
+
+ul.limpia{margin:0 0 1em; padding-left:1.15em}
+ul.limpia li{margin-bottom:.45em; font-size:15.5px}
+ul.limpia li::marker{color:var(--muted)}
+
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--border);
+  font-size:14px; color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Análisis · 10 de agosto de 2026</p>
+  <h1>Ajustes de Llamita</h1>
+  <p class="lede">El panel que hace que el café deje de depender de una persona</p>
+</header>
+
+<section>
+  <h2>El diagnóstico</h2>
+  <p class="sub">No hace falta imaginar qué debe tener: ya está escrito en los scripts</p>
+
+  <div class="cifras">
+    <div class="cifra"><div class="n">70</div><div class="l">scripts SQL en el proyecto</div></div>
+    <div class="cifra alerta"><div class="n">31</div><div class="l">de ellos <b>escriben</b> en la base</div></div>
+    <div class="cifra"><div class="n">0</div><div class="l">de esas 31 son decisiones técnicas</div></div>
+  </div>
+
+  <div class="tesis">
+    <p>Cada script que escribe es una <strong>decisión del negocio</strong> que tuvo que
+    pasar por una persona con acceso a SQL, solo porque nadie construyó la pantalla.</p>
+    <p>Apagar duplicados · enlazar recetas · dar un permiso · poner tipos ·
+    corregir secciones · cambiar el modo de una sede. Ninguna es técnica.</p>
+  </div>
+
+  <p>El patrón de fondo ya está anotado en el archivo madre y sigue siendo cierto:
+  <strong>la app sabe editar productos, pero no sabe editar relaciones.</strong>
+  Qué producto de Fudo descuenta cuál del inventario. Qué vitrina va con qué
+  congelador. Quién puede hacer qué. Todas las relaciones viven en SQL — y por eso
+  el lío de los macarrons pasó sin que nadie lo viera: esa relación estaba
+  escondida dentro del nombre del producto.</p>
+</section>
+
+<section>
+  <h2>El criterio</h2>
+  <p class="sub">Cada área ordenada por qué se rompe si tú no estás</p>
+
+  <p>El objetivo que diste es concreto: que Café del Desierto pueda operar y
+  corregirse sin llamarte. Entonces la prioridad no la da lo que es más cómodo
+  de construir, sino <strong>qué queda muerto el día que no estés disponible</strong>.</p>
+
+  <p>Ese es el orden de abajo. Las tres primeras son las que, sin ti, dejan el
+  sistema sin salida.</p>
+</section>
+
+<section>
+  <h2>Las nueve áreas</h2>
+  <p class="sub">Qué hay hoy, qué falta, y por qué importa</p>
+
+  <ol class="areas">
+
+    <li class="area critica">
+      <div class="rank">1</div>
+      <div>
+        <h3>Respaldo y recuperación</h3>
+        <p class="rol">Sin esto, cualquier incidente es pérdida total</p>
+        <p>Guardar la foto de una sede ya existe — es el botón “Guardar inventario
+        de hoy”, escondido dentro de Historial. <strong>Lo que no existe es
+        restaurar.</strong></p>
+        <p>Falta: <strong>restaurar una sede a una fecha</strong> con vista previa
+        producto por producto; foto automática diaria; ver qué fotos hay y de
+        cuándo; y una alerta cuando una sede lleva días sin respaldo.</p>
+        <div class="porque">Esto es exactamente lo que faltó el 9 de agosto. Con
+        este botón, aquel día habría sido un susto de dos minutos en vez de una
+        jornada cargando stock a mano. <b>Es la pieza que convierte “no se puede
+        recuperar” en “apreta acá”.</b></div>
+      </div>
+    </li>
+
+    <li class="area critica">
+      <div class="rank">2</div>
+      <div>
+        <h3>Personas y permisos</h3>
+        <p class="rol">Sin esto, no se puede dar ni quitar acceso a nadie</p>
+        <p>Hoy los permisos se dan corriendo un <code>insert</code> en
+        <code>app_permisos</code>. Si mañana entra un jefe de turno o se va alguien,
+        <strong>no hay forma de hacerlo sin SQL.</strong></p>
+        <p>Falta: ver la lista de personas y qué puede cada una; dar y quitar
+        permisos; acotar a una sede (ya está construido en
+        <code>2026-08-permiso-por-sede.sql</code>, sin correr); y crear los usuarios
+        de los PC de Angamos y Plaza.</p>
+        <div class="porque"><b>Y hay un hueco de diseño que hay que resolver acá:</b>
+        hoy el permiso son dos casillas —<code>puede_editar</code> y
+        <code>puede_fudo</code>— pero tú describes cuatro niveles reales: empleados,
+        jefes de turno, administración y alta jefatura. Dos casillas no alcanzan
+        para cuatro escalones. Propongo <b>roles con nombre</b> en vez de casillas
+        sueltas.</div>
+      </div>
+    </li>
+
+    <li class="area critica">
+      <div class="rank">3</div>
+      <div>
+        <h3>Productos del catálogo</h3>
+        <p class="rol">El trabajo más frecuente, y el que más veces pasó por SQL</p>
+        <p>Crear, renombrar, cambiar sección, mín y máx, y eliminar ya existen en la
+        ficha. Lo que falta es todo lo demás:</p>
+        <ul class="limpia">
+          <li><strong>Ver y reactivar lo eliminado.</strong> Eliminar desactiva, no
+          borra — hay 50 productos apagados en Angamos que nadie puede ver ni
+          recuperar desde la app.</li>
+          <li><strong>Fusionar dos productos duplicados</strong>: juntar el stock,
+          repuntar las recetas que los usan y apagar el sobrante. Se hizo a mano
+          para los 117 pares de la bodega vieja.</li>
+          <li><strong>Mover un producto de sede</strong> — el caso de los productos
+          de bodega metidos en Angamos.</li>
+          <li><strong>Editar tipos en lote</strong>, no producto por producto.</li>
+          <li><strong>Unidad de medida</strong>: la columna ya existe, la pantalla no.
+          Sin ella, “café 8” no dice si son 8 bultos, 8 kilos u 8 paquetes.</li>
+        </ul>
+      </div>
+    </li>
+
+    <li class="area">
+      <div class="rank">4</div>
+      <div>
+        <h3>Relaciones</h3>
+        <p class="rol">El corazón del asunto, y lo que hoy no tiene ninguna pantalla</p>
+        <p>Cuatro tipos de relación, y ninguna se puede editar sin SQL:</p>
+        <ul class="limpia">
+          <li><strong>Recetas</strong> (producto de Fudo ↔ insumos). El taller ya
+          está diseñado. Falta lo de varios insumos, las cantidades fraccionarias
+          —los 18 g de café— y el campo de cuándo aplica.</li>
+          <li><strong>Pares vitrina / congelador.</strong> Hoy esta relación
+          <b>vive escondida dentro del nombre del producto</b>. Ese es el bug de los
+          macarrons. Debería ser explícita y editable.</li>
+          <li><strong>Bodega ↔ sede</strong>: la tabla <code>producto_enlace</code>
+          ya está creada y vacía, esperando su pantalla.</li>
+          <li><strong>Categoría de Fudo → sección nuestra</strong>, que hoy se llenó
+          con un script.</li>
+        </ul>
+      </div>
+    </li>
+
+    <li class="area">
+      <div class="rank">5</div>
+      <div>
+        <h3>Sedes y motor</h3>
+        <p class="rol">Poco frecuente, pero bloqueante cuando toca</p>
+        <p>Falta: el interruptor <strong>prueba / real</strong> por sede —que pediste
+        explícitamente—; encender y apagar el cron; ver el estado del motor de
+        descuento; mostrar u ocultar una sede completa (lo que ayer se hizo
+        editando el código); y los interruptores de funciones por sede que hoy
+        viven en <code>FLAGS</code>, como la lista de conteo.</p>
+        <div class="porque">Tu argumento para incluir prueba/real sigue siendo el
+        mejor del proyecto: <i>“existe la posibilidad de que yo un día me vaya y
+        necesito entregar un sistema que sea completamente manejable.”</i></div>
+      </div>
+    </li>
+
+    <li class="area">
+      <div class="rank">6</div>
+      <div>
+        <h3>Organización del inventario</h3>
+        <p class="rol">Lo que el equipo pide más seguido</p>
+        <p>Renombrar una sección ya se adelantó al menú. Falta crear, borrar y
+        reordenar secciones; mover varios productos de una sección a otra de una
+        vez; y decidir qué sección se cuenta en el turno AM y cuál en el PM — que
+        hoy es una lista dentro del código.</p>
+      </div>
+    </li>
+
+    <li class="area">
+      <div class="rank">7</div>
+      <div>
+        <h3>Salud del sistema</h3>
+        <p class="rol">Ver si algo está mal antes de que alguien lo sufra</p>
+        <p>El chequeo ya existe como script de diez bloques. Falta que sea una
+        pantalla con semáforo: si el motor descuenta, si el stock cuadra con las
+        fechas, si alguna tabla se acerca al tope de las mil filas, si hay recetas
+        apuntando al vacío, cuándo fue el último respaldo de cada sede.</p>
+        <div class="porque">Hoy esa información existe pero hay que pedírmela. Es
+        justo el tipo de cosa que la alta jefatura quiere mirar sola.</div>
+      </div>
+    </li>
+
+    <li class="area">
+      <div class="rank">8</div>
+      <div>
+        <h3>Registro de actividad</h3>
+        <p class="rol">La condición para que todo lo demás sea seguro</p>
+        <p>Hoy se sabe <b>cuándo</b> cambió un producto, pero no <b>quién</b> lo
+        cambió. Los repartos y los empujes a Fudo sí guardan el nombre; la edición
+        de productos no.</p>
+        <div class="porque"><b>Esto no es opcional.</b> El día que estas acciones
+        sean botones, hoy soy yo quien revisa el <code>where</code> y escribe la
+        vista previa. Si eso pasa a un botón sin registro ni deshacer, el panel de
+        ajustes se convierte en una forma cómoda de romper el inventario en
+        silencio.</div>
+      </div>
+    </li>
+
+    <li class="area">
+      <div class="rank">9</div>
+      <div>
+        <h3>Catálogo de Fudo</h3>
+        <p class="rol">El problema de Adriana, medido y confirmado</p>
+        <p>Está medido contra la API real: <strong>crear sí, desactivar sí, borrar
+        no existe</strong>. Y la pantalla de Fudo confirmó por qué — no deja borrar
+        lo que ya se vendió o está en un combo.</p>
+        <p>Entonces acá va: apagar en masa los duplicados que Adriana arrastra hace
+        cuatro años, y crear en Fudo los productos que falten.</p>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<section>
+  <h2>El botón de reinicio</h2>
+  <p class="sub">Lo pediste, y hay que desarmarlo en cuatro cosas distintas</p>
+
+  <div class="aviso">
+    <p><strong>Un solo botón que “reinicie todo” es peligroso</strong>, y es
+    exactamente la clase de cosa que causó el incidente del 9 de agosto: una acción
+    grande, sin vista previa, que nadie puede deshacer.</p>
+    <p>Pero el problema real que estás nombrando sí existe. Lo que pasa es que
+    “algo anda mal” son cuatro problemas con cuatro arreglos distintos.</p>
+  </div>
+
+  <div class="tabla">
+  <table>
+    <thead><tr><th>Lo que la persona siente</th><th>Lo que de verdad pasa</th><th>El botón que corresponde</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>“La app se ve rara o quedó pegada”</td>
+        <td class="nota">El navegador está mostrando algo viejo</td>
+        <td><strong>Recargar limpio</strong> · inofensivo, no toca datos</td>
+      </tr>
+      <tr>
+        <td>“Los números no cuadran con las fechas”</td>
+        <td class="nota">El stock y los lotes se desalinearon</td>
+        <td><strong>Recalcular stock desde las fechas</strong> · toca datos, va con vista previa</td>
+      </tr>
+      <tr>
+        <td>“Fudo dice una cosa y el inventario otra”</td>
+        <td class="nota">Los dos sistemas se separaron</td>
+        <td><strong>Volver a sincronizar con Fudo</strong> · ya existe, hay que darle su lugar</td>
+      </tr>
+      <tr>
+        <td>“Se rompió algo grande”</td>
+        <td class="nota">Alguien hizo un cambio masivo equivocado</td>
+        <td><strong>Restaurar el respaldo</strong> · el área 1</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>Los dos primeros pueden ser botones que cualquiera aprieta sin miedo. Los dos
+  últimos son de administración y llevan vista previa, registro y deshacer.</p>
+</section>
+
+<section>
+  <h2>Lo que hay que construir debajo</h2>
+  <p class="sub">Tres piezas invisibles que todas las áreas necesitan</p>
+
+  <div class="nota-box">
+    <p><strong>1 · Vista previa antes de escribir.</strong> Toda acción que cambie
+    datos muestra primero qué va a cambiar, fila por fila. Y la comprobación
+    posterior tiene que usar <b>exactamente el mismo filtro</b> que la vista previa
+    — si no, la vista previa miente por omisión, que es el error que se cometió
+    dos veces el 9 de agosto.</p>
+  </div>
+  <div class="nota-box">
+    <p><strong>2 · Registro de quién y cuándo.</strong> Una tabla que anota cada
+    acción del panel con la persona, la hora y qué cambió.</p>
+  </div>
+  <div class="nota-box">
+    <p><strong>3 · Deshacer.</strong> Cada acción destructiva guarda el estado
+    anterior antes de tocar nada, y aparece en una lista de “últimas acciones” con
+    su botón para revertirla.</p>
+  </div>
+
+  <p>Estas tres se construyen una vez y sirven para las nueve áreas. Son lo que
+  hoy hago yo a mano en cada script.</p>
+</section>
+
+<section>
+  <h2>Lo que no entra</h2>
+  <p class="sub">Y conviene dejarlo escrito</p>
+
+  <p>El motor de descuento y el esquema de la base de datos <strong>no van al
+  panel</strong>. No porque no se pueda, sino porque un botón que reescriba el motor
+  es un botón para romper el sistema entero, y su valor de uso es casi cero: se
+  toca una vez cada varios meses.</p>
+
+  <p>Lo que sí tiene que existir para esos casos es <strong>documentación</strong>,
+  no botones. El archivo madre ya cumple esa función y hay que mantenerlo.</p>
+</section>
+
+<section>
+  <h2>Lo que necesito que decidas</h2>
+  <p class="sub">Tres cosas antes de construir</p>
+
+  <div class="tabla">
+  <table>
+    <thead><tr><th>Decisión</th><th>Por qué importa</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>¿Roles con nombre o casillas sueltas?</strong></td>
+        <td class="nota">Describiste cuatro niveles y hoy hay dos casillas. Con roles,
+        agregar a alguien es elegir “jefe de turno” en vez de marcar casillas una por
+        una y equivocarse.</td>
+      </tr>
+      <tr>
+        <td><strong>¿El panel es una pestaña o una página aparte?</strong></td>
+        <td class="nota">Habías dicho página aparte con su propio ícono. Sigue siendo
+        lo correcto: separa lo peligroso de lo cotidiano, y hace que el barista no
+        cargue el código de administración.</td>
+      </tr>
+      <tr>
+        <td><strong>¿Por cuál área empezamos?</strong></td>
+        <td class="nota">Mi recomendación es respaldo y recuperación, aunque no sea
+        la más vistosa. Es la única cuya ausencia ya costó un día entero de trabajo.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<footer>
+  Café del Desierto · análisis del panel de ajustes. Las nueve áreas salen de
+  contar qué decisiones del negocio pasaron por un script SQL durante el proyecto.
+</footer>
+
+</div>
