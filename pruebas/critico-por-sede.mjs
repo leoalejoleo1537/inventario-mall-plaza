@@ -1,8 +1,4 @@
-/* Prueba de los números de crítico de Bodega — hoy son las ALARMAS del tablero.
-   Las tarjetas por sede se quitaron el 2026-08-13: repetían en la misma
-   pantalla lo que ya dice la fila de alarmas. La regla no cambió ni un poco, y
-   numeroTarjeta() ahora recibe también un número ya contado —los vencidos, que
-   son una suma de cantidades y no un largo de lista— con el mismo criterio.
+/* Prueba de las tarjetas de crítico por sede — la pantalla de Bodega.
    Se corre con:  node pruebas/critico-por-sede.mjs
    No necesita navegador ni base de datos: extrae las funciones de index.html
    y las evalúa. Si index.html cambia, esta prueba sigue leyendo las de verdad.
@@ -49,7 +45,7 @@ const { estado, entraEnCritico, urgenteDe } = new Function(
 const faltaPara = new Function(
   trozo('const faltaPara =', 'function abrirCriticos', 'faltaPara()') + '; return faltaPara;')();
 const numeroTarjeta = new Function(
-  trozo('function numeroTarjeta(', '/* Cuánto le falta', 'numeroTarjeta()') + '; return numeroTarjeta;')();
+  trozo('function numeroTarjeta(', 'function pintarCriticos', 'numeroTarjeta()') + '; return numeroTarjeta;')();
 
 let ok = 0, fallos = 0;
 const caso = (nombre, dio, esperado) => {
@@ -65,8 +61,6 @@ caso('leyó bien y no falta nada → 0 de verdad', numeroTarjeta([], false), '0'
 caso('leyó bien y faltan 3', numeroTarjeta([1, 2, 3], false), '3');
 caso('chocó con el tope de 1000 → el número lleva "+"', numeroTarjeta([1, 2], true), '2+');
 caso('un error con tope igual muestra raya, el tope no lo tapa', numeroTarjeta(null, true), '—');
-caso('un número ya contado pasa igual (los vencidos)', numeroTarjeta(7, false), '7');
-caso('cero vencidos de verdad sí es 0',                numeroTarjeta(0, false), '0');
 
 console.log('\nLa regla de crítico es la misma que la del local (estado())');
 const p = (stock, min, max) => ({ stock_actual: stock, stock_min: min, stock_max: max });

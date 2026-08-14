@@ -239,85 +239,17 @@
      Se distinguen de las tarjetas de abajo por lo que HACEN: estas abren una
      lista, las de abajo filtran la de esta misma pantalla. Por eso llevan la
      jerarquía al revés —el nombre arriba, el número abajo— y una flecha. */
-  /* ---- EL TABLERO DE BODEGA ----
-     Contesta "qué mando hoy" sin leer. Números grandes, barras y color; el
-     detalle se toca. La prueba es si se entiende SIN LEER (§0.7). */
-  .tb-alarmas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-  .tb-al{background:var(--card);border:1px solid var(--border);border-radius:12px;
-         padding:11px 6px;text-align:center;cursor:pointer;font:inherit;color:var(--text);
+  .csedes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .csede{position:relative;display:block;width:100%;font:inherit;text-align:center;
+         background:var(--card);border:1px solid var(--border);border-radius:12px;
+         padding:9px 6px 10px;cursor:pointer;user-select:none;color:var(--text);
          transition:transform .12s ease}
-  .tb-al:active{transform:scale(.95)}
-  .tb-al .n{display:block;font-size:26px;font-weight:800;line-height:1}
-  .tb-al .l{display:block;font-size:10px;color:var(--muted);margin-top:3px;font-weight:800;letter-spacing:.3px}
-  .tb-al .d{display:block;font-size:9.5px;color:var(--muted);margin-top:1px;opacity:.85;font-weight:600}
-  /* vencido va en rojo RELLENO: es la única donde el tiempo ya se acabó */
-  .tb-al.vencido{border-color:var(--red-fg);background:var(--red-fg)}
-  .tb-al.vencido .n{color:#fff}
-  .tb-al.vencido .l,.tb-al.vencido .d{color:rgba(255,255,255,.88)}
-  .tb-al.urg .n{color:var(--orange)}
-  .tb-al.crit .n{color:var(--red-fg)}
-
-  .tb-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;
-            overflow:hidden;margin-bottom:12px}
-  .tb-panel .cab{display:flex;align-items:center;gap:8px;background:var(--sec-bg);color:var(--sec-tx);
-                 font-size:11.5px;font-weight:800;letter-spacing:.5px;padding:8px 13px}
-  .tb-panel .cab .der{margin-left:auto;opacity:.85;font-weight:700}
-  .tb-panel .cuerpo{padding:11px 13px}
-
-  .tb-barra{margin-bottom:13px}
-  .tb-barra:last-child{margin-bottom:0}
-  .tb-barra .top{display:flex;align-items:baseline;gap:8px;margin-bottom:5px}
-  .tb-barra .sede{font-size:13px;font-weight:800;flex:1}
-  .tb-barra .val{font-size:13px;font-weight:800}
-  .tb-barra .max{font-size:11px;color:var(--muted);font-weight:600}
-  .tb-pista{position:relative;height:16px;background:var(--gray-bg);border-radius:999px;overflow:hidden}
-  .tb-lleno{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
-  .tb-lleno.ok{background:var(--green-fg)}
-  .tb-lleno.bajo{background:var(--amber-fg)}
-  .tb-lleno.mal{background:var(--red-fg)}
-  /* la marca del mínimo: la línea que no hay que cruzar */
-  .tb-marca{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--navy);opacity:.55}
-  .tb-barra .pie{display:flex;gap:10px;margin-top:4px;font-size:10.5px;color:var(--muted);font-weight:600}
-  .tb-barra .pie .mn{color:var(--navy)}
-  .tb-barra .pie .est{margin-left:auto;font-weight:700}
-
-  /* selector de cuántos días cubrir */
-  .tb-dias{display:inline-flex;gap:3px;background:rgba(255,255,255,.16);border-radius:999px;
-           padding:3px;margin-left:auto}
-  /* 38px de alto: abajo de eso el pulgar falla y son cuatro pegados */
-  .tb-dias button{border:none;background:none;font:inherit;font-size:10.5px;font-weight:800;
-                  color:rgba(255,255,255,.72);padding:0 11px;min-height:38px;
-                  border-radius:999px;cursor:pointer}
-  .tb-dias button.on{background:#fff;color:var(--sec-bg)}
-
-  .tb-ventas{display:grid;grid-template-columns:1fr;gap:11px}
-  @media (min-width:700px){ .tb-ventas{grid-template-columns:1fr 1fr} }
-  .tb-vs{border:1px solid var(--border);border-radius:10px;padding:10px 11px}
-  .tb-vs .tt{font-size:12px;font-weight:800;margin-bottom:2px}
-  .tb-vs .prom{font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:8px}
-  .tb-vs .prom b{color:var(--text)}
-  .tb-graf{display:flex;align-items:flex-end;gap:5px;height:56px}
-  .tb-graf .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%}
-  .tb-graf .bar{background:var(--sec-bg);border-radius:3px 3px 0 0;min-height:2px}
-  .tb-graf .col.hoy .bar{background:var(--orange)}
-  .tb-graf .dia{font-size:9px;color:var(--muted);text-align:center;margin-top:3px;font-weight:600}
-  .tb-sug{display:flex;align-items:center;gap:8px;margin-top:9px;padding:8px 10px;
-          background:var(--amber-bg);border-radius:9px;font-size:12px;
-          color:var(--amber-fg);font-weight:700}
-  .tb-aviso{font-size:11px;color:var(--muted);margin-top:6px;font-weight:600}
-
-  .tb-ir{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;
-         border:none;border-radius:10px;background:var(--orange);color:#fff;
-         font:inherit;font-size:14.5px;font-weight:800;cursor:pointer;margin-bottom:14px}
-  .tb-ir:active{background:var(--orange-dark)}
-
-  /* el cajón: la lista de bodega, al fondo y cerrada */
-  .cajon-tir{display:flex;align-items:center;gap:9px;width:100%;padding:13px 14px;
-             background:var(--card);border:1px solid var(--border);border-radius:12px;
-             font:inherit;font-size:14px;font-weight:800;color:var(--text);cursor:pointer}
-  .cajon-tir .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:700}
-  .cajon-tir .fl{color:var(--muted);font-size:15px}
-  @media (prefers-reduced-motion: reduce){ .tb-al{transition:none} .tb-al:active{transform:none} }
+  .csede:active{transform:scale(.94)}
+  .csede .sd{display:block;font-size:11px;font-weight:700;color:var(--muted);
+             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
+  .csede .cn{display:block;font-size:22px;font-weight:700;color:var(--red-fg);
+             margin-top:3px;line-height:1.1}
+  .csede .ch{position:absolute;top:5px;right:8px;font-size:14px;color:var(--muted);opacity:.5}
   /* lo urgente lo marcó una persona: va en el naranja de acción, igual que la
      píldora que ya lleva el producto en la lista del local */
   .csede-urg{display:inline-block;margin-top:5px;font-size:10.5px;padding:2px 8px}
@@ -1261,18 +1193,15 @@
   <div class="controls busca" data-busca="inv">
     <input type="text" id="q" placeholder="Buscar producto…">
   </div>
-  <!-- solo en Bodega: el tablero. Contesta qué mandar hoy sin leer una lista -->
-  <div id="tablero" style="display:none"></div>
-  <!-- en Bodega la lista baja al fondo y se pliega: estorba y es necesaria -->
-  <div id="cajonInv">
-    <div class="metrics" id="metrics">
-      <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
-      <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
-      <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
-    </div>
-    <div class="tipos" id="tipos" style="display:none"></div>
-    <div id="list"></div>
+  <!-- solo en Bodega: cuánto le falta a cada local. Ver .csedes en el estilo -->
+  <div class="csedes" id="critSedes" style="display:none"></div>
+  <div class="metrics" id="metrics">
+    <div class="mcard" data-f="critico"><div class="n" id="c-critico" style="color:var(--red-fg)">0</div><div class="l">Crítico</div></div>
+    <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
+    <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
   </div>
+  <div class="tipos" id="tipos" style="display:none"></div>
+  <div id="list"></div>
   <button class="fab" id="btnNuevo" title="Agregar producto" aria-label="Agregar producto">+</button>
 </div>
 
@@ -2225,8 +2154,7 @@ function pickSede(s){
   /* los conteos de las otras sedes se descartan al cambiar de sede: si no, al
      volver a Bodega se verían un instante los números de la visita anterior */
   CRITICOS={}; CRIT_TOPE={};
-  $('tablero').style.display='none'; $('tablero').innerHTML=''; $('cajonInv').style.display='block';
-  LOTES_SEDES=undefined; VENTAS=undefined; cajonAbierto=false;
+  $('critSedes').style.display='none'; $('critSedes').innerHTML='';
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
   qEl.value=''; openSecs=new Set();
   $('rq').value=''; $('reparto-results').innerHTML=''; $('carrito-box').style.display='none';
@@ -2381,11 +2309,10 @@ let CRIT_TOPE = {};         // sede -> true si la lectura chocó con el tope de 
 let SEDE_PROD = {};         // sede -> [productos activos]
 
 async function cargarCriticos(){
-  if(SEDE !== 'central') return;
-  /* Las listas por sede se siguen leyendo —el tablero y Reparto viven de ellas—
-     pero ya NO se pintan como tarjetas: la fila de alarmas del tablero da los
-     mismos números y tenerlos dos veces en la misma pantalla es ruido. */
-  pintarTablero();           // el marco, mientras llegan los números
+  const cont = $('critSedes');
+  if(SEDE !== 'central'){ cont.style.display='none'; return; }
+  cont.style.display='';
+  pintarCriticos();          // el marco, mientras llegan los números
 
   /* select('*') y no una lista de columnas: así trae `urgente` sin que la
      consulta se caiga en una base donde esa columna todavía no exista.
@@ -2409,7 +2336,7 @@ async function cargarCriticos(){
     CRITICOS[s]  = filas.filter(entraEnCritico);
     CRIT_TOPE[s] = filas.length >= 1000;
   });
-  cargarTablero();      // el tablero se arma con estas mismas listas
+  pintarCriticos();
 }
 
 /* El número que va en la tarjeta. Está aparte por una sola razón, y es la
@@ -2417,11 +2344,28 @@ async function cargarCriticos(){
    Un 0 acá diría "no le falta nada a esa sede" justo cuando no lo sabemos —
    y Adriana armaría el reparto sin ese local. Es la falla callada de §0.5 en
    versión chica. Probada en pruebas/critico-por-sede.mjs. */
-function numeroTarjeta(dato, tope){
-  if(dato === undefined) return '·';         // todavía viene en camino
-  if(dato === null)      return '—';         // no se pudo leer
-  const n = Array.isArray(dato) ? dato.length : dato;   // lista, o número ya contado
-  return n + (tope ? '+' : '');              // "+" = chocó con el tope de 1000
+function numeroTarjeta(lista, tope){
+  if(lista === undefined) return '·';        // todavía viene en camino
+  if(lista === null)      return '—';        // no se pudo leer
+  return lista.length + (tope ? '+' : '');   // "+" = chocó con el tope de 1000
+}
+
+function pintarCriticos(){
+  $('critSedes').innerHTML = SEDES_TARJETA.map(s=>{
+    const lista = CRITICOS[s];
+    /* El número grande cuenta SOLO los que el semáforo marca crítico, para que
+       sea el mismo número que ve el jefe de turno parado en su local. Lo
+       urgente se cuenta aparte, en su propia píldora: son dos cosas distintas
+       y sumarlas haría que Bodega y el local mostraran cifras que no calzan. */
+    const soloCrit = lista && lista.filter(p=>estado(p)==='critico');
+    const urg      = lista ? lista.filter(urgenteDe).length : 0;
+    return `<button type="button" class="csede" data-crit="${s}">
+        <span class="ch" aria-hidden="true">›</span>
+        <span class="sd">Críticos en ${esc(SEDES[s].corto)}</span>
+        <span class="cn">${numeroTarjeta(soloCrit, CRIT_TOPE[s])}</span>
+        ${urg?`<span class="pill pill-urg csede-urg">${urg} urgente${urg===1?'':'s'}</span>`:''}
+      </button>`;
+  }).join('');
 }
 
 /* Cuánto le falta a un producto para llegar a su mínimo. Ordena la lista por
@@ -2486,266 +2430,10 @@ function abrirCriticos(sede){
   });
 }
 
-/* ================= EL TABLERO DE BODEGA =================
-   La pregunta que contesta es UNA: ¿qué mando hoy? Y la prueba de que está
-   bien hecho es que se entienda SIN LEER (§0.7) — por eso números grandes,
-   barras y color, y el detalle detrás de un toque.
-
-   Las cuatro fuentes, todas ya disponibles:
-     · crítico y urgentes  -> CRITICOS / SEDE_PROD, ya cargados
-     · vencidos            -> las fechas de los sándwiches de los locales
-     · mín/máx por familia -> suma sobre SEDE_PROD
-     · ventas              -> ventas_por_dia(), que lee fudo_movimientos     */
-const FAMILIAS = [
-  {id:'sandwiches', tit:'SÁNDWICHES', test:p=>clavePlana(p.rubro).startsWith('sandwich')},
-  {id:'tortas',     tit:'TORTAS',
-   test:p=>!clavePlana(p.rubro).startsWith('sandwich')
-        && /torta|cheesecake|kutchen|pie |tiramisu/.test(clavePlana(p.producto))},
-];
-/* misma normalización que clave_nombre() en la base, para que la familia que
-   ve la pantalla y la que agrupa el SQL sean la misma */
-const clavePlana = s => normNombre(s||'');
-
-/* Los tres estados de siempre, y por eso van sin valor inicial:
-   sin definir = todavía viene · null = NO se pudo leer · dato = dato.
-   Confundir "no se pudo leer" con "no hay" es la falla callada de §0.5. */
-let LOTES_SEDES;           // producto_id -> [lotes] de los sándwiches de los locales
-let VENTAS;                // filas de ventas_por_dia()
-let tbDias = 3;            // cuántos días quiere cubrir el reparto
-
-async function cargarTablero(){
-  if(SEDE!=='central'){ $('tablero').style.display='none'; return; }
-  $('tablero').style.display='';
-  pintarTablero();                     // el marco, mientras llegan los datos
-
-  /* Las fechas: solo las de los sándwiches de los locales — una veintena de
-     ids, no los 460 productos, para no meter la lista entera en la dirección
-     (§6 bloque D). */
-  const ids = SEDES_ENLACE.flatMap(s=>(SEDE_PROD[s]||[])
-    .filter(FAMILIAS[0].test).map(p=>p.id));
-  const [lot, ven] = await Promise.all([
-    ids.length ? sb.from('producto_lotes').select('producto_id,cantidad,vencimiento')
-                   .in('producto_id', ids).limit(1000)
-               : Promise.resolve({data:[]}),
-    sb.rpc('ventas_por_dia', {p_dias:7}),
-  ]);
-
-  /* null y no {}: un objeto vacío diría "cero vencidos" cuando lo que pasó es
-     que no se pudo leer. */
-  if(lot.error){ LOTES_SEDES = null; console.error('fechas de los locales', lot.error); }
-  else {
-    LOTES_SEDES = {};
-    (lot.data||[]).forEach(l=>{
-      if((+l.cantidad||0)>0) (LOTES_SEDES[l.producto_id]=LOTES_SEDES[l.producto_id]||[]).push(l);
-    });
-  }
-
-  /* Si las ventas no se pueden leer, VENTAS queda en null y el panel lo dice.
-     Un promedio de 0 sería peor: haría creer que no se vende nada. */
-  VENTAS = ven.error ? null : (ven.data||[]);
-  if(ven.error) console.error('ventas por día', ven.error);
-
-  pintarTablero();
-}
-
-/* ---- los tres números de arriba ---- */
-function tbVencidos(){
-  if(LOTES_SEDES === undefined || LOTES_SEDES === null) return LOTES_SEDES;
-  const hoy = hoyISO();
-  let n = 0;
-  for(const ls of Object.values(LOTES_SEDES))
-    for(const l of ls) if(l.vencimiento && l.vencimiento < hoy) n += +l.cantidad||0;
-  return Math.round(n*100)/100;      // el redondeo de la casa, como fmt()
-}
-/* ---- cómo está una familia en una sede, contra SU PROPIO mín y máx ---- */
-function tbFamilia(sede, fam){
-  const ps = (SEDE_PROD[sede]||[]).filter(fam.test);
-  if(!ps.length) return null;
-  const hay = ps.reduce((n,p)=>n+(+p.stock_actual||0),0);
-  const min = ps.reduce((n,p)=>n+(+p.stock_min||0),0);
-  const max = ps.reduce((n,p)=>n+(+p.stock_max||0),0);
-  return {hay, min, max, n:ps.length};
-}
-/* ---- ventas: unidades por día de esa familia en esa sede ---- */
-function tbVentas(sede, famId){
-  if(!VENTAS) return null;
-  const filas = VENTAS.filter(v=>v.sede===sede && v.familia===famId);
-  const dias = Math.max(1, filas.length ? +filas[0].dias_con_datos||1 : 1);
-  const total = filas.reduce((n,v)=>n+(+v.unidades||0),0);
-  return {filas, dias, total, prom: total/dias};
-}
-
-function pintarTablero(){
-  /* Los números salen todos por numeroTarjeta(): una sede que no se pudo leer
-     muestra "—" y JAMÁS 0. Un 0 diría "no le falta nada" justo cuando no lo
-     sabemos, y Adriana armaría el reparto dejando ese local afuera. Es la
-     misma regla que probaba la tarjeta, y sigue probada en
-     pruebas/critico-por-sede.mjs. */
-  const listaDe = (sede, filtro) => CRITICOS[sede] && CRITICOS[sede].filter(filtro);
-  const juntas  = filtro => {                 // las dos sedes en una, o el fallo
-    const ls = SEDES_ENLACE.map(s=>listaDe(s, filtro));
-    if(ls.some(l=>l===null))      return null;
-    if(ls.some(l=>l===undefined)) return undefined;
-    return ls.flat();
-  };
-  const esCritico = p => estado(p)==='critico';
-  const porSede = SEDES_ENLACE.map(s=>
-    `${esc(SEDES[s].corto)} ${numeroTarjeta(listaDe(s, esCritico), CRIT_TOPE[s])}`).join(' · ');
-
-  /* 1. Lo que no puede esperar. */
-  const alarmas = `<div class="tb-alarmas">
-    <button type="button" class="tb-al vencido" data-tbvenc="1">
-      <span class="n">${numeroTarjeta(tbVencidos(), false)}</span>
-      <span class="l">VENCIDOS</span><span class="d">pan, hoy</span></button>
-    <button type="button" class="tb-al urg" data-tburg="1">
-      <span class="n">${numeroTarjeta(juntas(urgenteDe), false)}</span>
-      <span class="l">URGENTES</span><span class="d">marcados a mano</span></button>
-    <button type="button" class="tb-al crit" data-tbcrit="1">
-      <span class="n">${numeroTarjeta(juntas(esCritico), false)}</span><span class="l">EN CRÍTICO</span>
-      <span class="d">${porSede}</span></button>
-  </div>`;
-
-  /* 2. Cada familia contra su propio mín y máx, una barra por sede. */
-  const panelFamilia = fam => {
-    const barras = SEDES_ENLACE.map(sede=>{
-      /* Una sede que no se pudo leer NO se omite: omitirla dejaría un panel
-         que parece completo y no lo está. Lo dice y se calla el número. */
-      if(CRITICOS[sede]===null) return `<div class="tb-barra">
-        <div class="top"><span class="sede">${esc(SEDES[sede].label)}</span>
-          <span class="val">—</span></div>
-        <div class="tb-aviso">No se pudo leer esta sede.</div></div>`;
-      const f = tbFamilia(sede, fam);
-      if(!f) return '';
-      const tope = Math.max(f.max, f.hay, 1);
-      const pct  = Math.min(100, f.hay/tope*100);
-      const pctMin = Math.min(100, f.min/tope*100);
-      const cls = f.hay <= f.min ? 'mal' : (f.hay <= f.min*1.25 ? 'bajo' : 'ok');
-      const col = cls==='mal' ? 'var(--red-fg)' : cls==='bajo' ? 'var(--amber-fg)' : 'var(--green-fg)';
-      const dice = cls==='mal' ? 'bajo el mínimo' : cls==='bajo' ? 'cerca del mínimo' : 'en rango';
-      return `<div class="tb-barra">
-        <div class="top"><span class="sede">${esc(SEDES[sede].label)}</span>
-          <span class="val" style="color:${col}">${fmt(f.hay)}</span>
-          <span class="max">de ${fmt(f.max)}</span></div>
-        <div class="tb-pista"><div class="tb-lleno ${cls}" style="width:${pct.toFixed(1)}%"></div>
-          <div class="tb-marca" style="left:${pctMin.toFixed(1)}%"></div></div>
-        <div class="pie"><span class="mn">mín ${fmt(f.min)}</span><span>máx ${fmt(f.max)}</span>
-          <span class="est" style="color:${col}">${dice}</span></div>
-      </div>`;
-    }).join('');
-    if(!barras) return '';
-    /* Y el total tampoco: si falta una sede, sumar la otra y decir "en los
-       dos" sería mentir con un número que se lee de un vistazo. */
-    const incompleto = SEDES_ENLACE.some(s=>CRITICOS[s]===null);
-    const total = SEDES_ENLACE.reduce((n,s)=>{ const f=tbFamilia(s,fam); return n+(f?f.hay:0); },0);
-    return `<div class="tb-panel"><div class="cab">${fam.tit}
-        <span class="der">${incompleto ? '—' : fmt(total)+' en los dos'}</span></div>
-      <div class="cuerpo">${barras}</div></div>`;
-  };
-
-  /* 3. Cuánto se vende, y cuánto mandar para cubrir N días. */
-  const dias = [2,3,5,7].map(d=>
-    `<button type="button" class="${d===tbDias?'on':''}" data-tbdias="${d}">${d} d</button>`).join('');
-  let ventas;
-  if(VENTAS===undefined){
-    ventas = '<div class="cuerpo"><div class="tb-aviso">Leyendo las ventas…</div></div>';
-  } else if(VENTAS===null){
-    ventas = '<div class="cuerpo"><div class="tb-aviso">No se pudieron leer las ventas.</div></div>';
-  } else {
-    ventas = '<div class="cuerpo"><div class="tb-ventas">' + SEDES_ENLACE.map(sede=>{
-      const v = tbVentas(sede,'sandwiches');
-      const f = tbFamilia(sede, FAMILIAS[0]);
-      if(!v || !v.filas.length)
-        return `<div class="tb-vs"><div class="tt">${esc(SEDES[sede].corto)}</div>
-          <div class="tb-aviso">Todavía no hay ventas registradas.</div></div>`;
-      const maxU = Math.max(...v.filas.map(x=>+x.unidades||0), 1);
-      const cols = v.filas.slice(-7).map((x,i,a)=>{
-        const alto = Math.max(3, (+x.unidades||0)/maxU*100);
-        const esHoy = i===a.length-1 && x.dia===hoyISO();
-        const d = new Date(x.dia+'T12:00:00').toLocaleDateString('es-CL',{weekday:'narrow'});
-        return `<div class="col${esHoy?' hoy':''}"><div class="bar" style="height:${alto.toFixed(0)}%"></div>
-          <div class="dia">${esHoy?'hoy':esc(d)}</div></div>`;
-      }).join('');
-      /* La instrucción, no el indicador: cuántas unidades mandar. Se resta lo
-         que ya tienen, y nunca sale negativo. */
-      const mandar = Math.max(0, Math.round(v.prom*tbDias - (f?f.hay:0)));
-      const pocos = v.dias < tbDias
-        ? `<div class="tb-aviso">Solo hay ${v.dias} día(s) de historia: el promedio puede quedar corto.</div>` : '';
-      return `<div class="tb-vs">
-        <div class="tt">${esc(SEDES[sede].corto)}</div>
-        <div class="prom">promedio <b>${fmt(Math.round(v.prom*10)/10)} al día</b> · ${fmt(v.total)} en ${v.dias} día(s)</div>
-        <div class="tb-graf">${cols}</div>
-        <div class="tb-sug">⟶ para ${tbDias} días, mandar ${mandar}</div>${pocos}
-      </div>`;
-    }).join('') + '</div></div>';
-  }
-  const panelVentas = `<div class="tb-panel"><div class="cab">SE VENDIÓ · SÁNDWICHES
-      <span class="tb-dias">${dias}</span></div>${ventas}</div>`;
-
-  $('tablero').innerHTML = alarmas
-    + FAMILIAS.map(panelFamilia).join('')
-    + panelVentas
-    + `<button type="button" class="tb-ir" data-tbir="1">Armar el reparto →</button>`
-    + `<button type="button" class="cajon-tir" data-tbcajon="1">
-         <span class="fl">${cajonAbierto?'⌄':'›'}</span> Inventario de bodega
-         <span class="cnt">${DATA.length} productos</span></button>`;
-  $('cajonInv').style.display = cajonAbierto ? 'block' : 'none';
-}
-
-/* La lista arranca cerrada: estorba y es necesaria, así que vive al fondo. */
-let cajonAbierto = false;
-
-$('tablero').addEventListener('click', e=>{
-  if(e.target.closest('[data-tbir]')){ pickTab('reparto'); return; }
-  if(e.target.closest('[data-tbcajon]')){
-    cajonAbierto = !cajonAbierto; pintarTablero();
-    if(cajonAbierto) setTimeout(()=>$('cajonInv').scrollIntoView({behavior:'smooth',block:'start'}), 60);
-    return;
-  }
-  const d = e.target.closest('[data-tbdias]');
-  if(d){ tbDias = +d.dataset.tbdias; pintarTablero(); return; }
-  /* Las tres alarmas abren el detalle de la sede con más casos: es la que hay
-     que mirar primero, y evita preguntar "¿cuál de las dos?" antes de mostrar. */
-  if(e.target.closest('[data-tbcrit]') || e.target.closest('[data-tburg]')){
-    const peor = SEDES_ENLACE.slice().sort((a,b)=>
-      (CRITICOS[b]||[]).length - (CRITICOS[a]||[]).length)[0];
-    abrirCriticos(peor); return;
-  }
-  if(e.target.closest('[data-tbvenc]')) abrirVencidos();
+$('critSedes').addEventListener('click', e=>{
+  const b = e.target.closest('[data-crit]');
+  if(b) abrirCriticos(b.dataset.crit);
 });
-
-/* Los vencidos, con nombre y sede. Acá SÍ es una lista, y está bien: se abre a
-   propósito para actuar sobre ella, no es lo que se lee de un vistazo. */
-function abrirVencidos(){
-  const hoy = hoyISO();
-  const filas = [];
-  for(const sede of SEDES_ENLACE)
-    for(const p of (SEDE_PROD[sede]||[]).filter(FAMILIAS[0].test))
-      for(const l of ((LOTES_SEDES && LOTES_SEDES[p.id])||[]))
-        if(l.vencimiento && l.vencimiento < hoy)
-          filas.push({sede, producto:p.producto, cant:+l.cantidad||0, venc:l.vencimiento});
-  filas.sort((a,b)=>a.venc.localeCompare(b.venc));
-
-  const ov=document.createElement('div');
-  ov.className='overlay overlay-blur overlay-prop open';
-  ov.innerHTML = `<div class="modal globo">
-      <h2 style="margin:2px 0 12px;font-size:19px">Pan vencido</h2>
-      <div class="cs-lista">${filas.length ? filas.map(f=>`
-        <div class="cs-fila"><span class="cs-nm">${esc(f.producto)}
-          <span class="cs-sec">${esc(SEDES[f.sede].corto)} · venció el ${fmtPildora(f.venc)}</span></span>
-          <span class="cs-hay">${fmt(f.cant)}</span></div>`).join('')
-        : LOTES_SEDES ? '<div class="cs-vacio">No hay pan vencido</div>'
-        /* "no hay" y "no se pudo leer" no son lo mismo, tampoco acá */
-        : '<div class="cs-error">No se pudieron leer las fechas</div>'}</div>
-      <div class="mbtns"><button class="btn" data-a="cerrar">Cerrar</button></div>
-    </div>`;
-  document.body.appendChild(ov);
-  const caja = ov.querySelector('.modal');
-  ov.addEventListener('click', ev=>{
-    if(ev.target===ov || ev.target.closest('[data-a="cerrar"]')){
-      caja.classList.add('cerrando'); setTimeout(()=>ov.remove(),160);
-    }
-  });
-}
 
 /* ================= MERMAS (solo Bodega) =================
    Mermar es sacar del inventario lo que se perdió: se dañó, lo robaron, se
