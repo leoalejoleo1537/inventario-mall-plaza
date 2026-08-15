@@ -5573,10 +5573,13 @@ const PASOS_SYNC = [
        apriete ⟳ corrige lo que esta no hizo.                            */
     nombre: 'fudo',
     fn: async () => {
-      // Escribir en Fudo lleva candado, y en bodega no hay Fudo al otro
-      // lado. Para el resto del personal este paso simplemente no existe:
-      // el ⟳ les sigue funcionando igual que siempre.
-      if(!PERMISOS.puede_fudo) return '';
+      /* LO APRIETA CUALQUIERA (Jhon, 2026-08-15: "necesito que todos
+         puedan actualizar con ese botón el stock de Fudo, todos, no solo
+         jefatura"). No lleva candado porque no puede producir nada nuevo:
+         manda el stock ya calculado, que es lo mismo que la tarea
+         automática hace sola cada 15 minutos. Y los que ven que a Fudo le
+         falta stock son los del mesón, no jefatura.
+         Lo único que se comprueba es que haya un Fudo al otro lado. */
       if(SEDE !== 'plaza' && SEDE !== 'angamos') return '';
       const {data,error} = await sb.functions.invoke('fudo-empujar-stock',
         {body:{sede:SEDE, modo:'aplicar', incluir_ceros:true}});

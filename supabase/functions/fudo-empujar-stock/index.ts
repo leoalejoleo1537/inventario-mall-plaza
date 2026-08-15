@@ -69,17 +69,31 @@ Deno.serve(async (req) => {
                 ?? Deno.env.get("SUPABASE_SECRET_KEY");
     if (!SB_URL || !SB_KEY) return json({ error: "Falta la configuración de Supabase en el entorno." }, 500);
 
-    // ---------- El candado ----------
-    // Dos llaves distintas, y ninguna de las dos abre la puerta de la otra:
+    // ---------- QUIÉN LO HIZO, no quién puede ----------
     //
-    //  · una PERSONA entra con su sesión y se comprueba contra app_permisos,
-    //    igual que siempre. Esa parte no cambió nada.
-    //  · el RELOJ (la tarea automática) entra con un token que solo vive en
-    //    los secrets de Supabase. No es una cuenta ni tiene correo, y queda
-    //    firmado como "sistema" en la bitácora para poder distinguirlo.
+    // DECISIÓN DE JHON, 2026-08-15: "necesito que todos puedan actualizar
+    // con ese botón el stock de Fudo, todos, no solo jefatura."
     //
-    // El token es obligatorio y no tiene valor por defecto: si no está
-    // creado, el camino automático simplemente no existe.
+    // Esto abre el único candado que quedaba en pie (§6.1 dejaba a
+    // propósito con llave lo que toca un sistema externo). Vale escribir
+    // por qué es defendible, porque no es evidente:
+    //
+    //   Este empuje **no inventa nada**. Manda el stock que el inventario
+    //   ya calculó, y es exactamente lo que la tarea automática hace sola
+    //   cada 15 minutos sin que nadie apriete nada. Un botón que adelanta
+    //   algo que igual va a pasar no puede producir un estado nuevo. Lo
+    //   único que cambia es el momento.
+    //
+    //   Y el motivo operativo es más fuerte: los que ven que a Fudo le
+    //   falta stock son los del mesón, no jefatura. Pedirles que avisen y
+    //   esperen es cómo nacieron los "Jhon, el reparto no actualiza Fudo".
+    //
+    // LO QUE SIGUE CON LLAVE: deshacer un empuje (`fudo-deshacer-stock`).
+    // Ese sí revierte a un estado anterior y puede pisar el trabajo de
+    // otro. Adelantar algo que va a pasar solo es distinto de deshacerlo.
+    //
+    // La sesión se sigue LEYENDO cuando existe, para que la bitácora diga
+    // quién fue. Ya no decide si puede: decide cómo firma.
     const SISTEMA_TOKEN = Deno.env.get("SISTEMA_TOKEN");
     const tokenRecibido = req.headers.get("x-sistema-token") ?? "";
     const esSistema = !!SISTEMA_TOKEN && tokenRecibido === SISTEMA_TOKEN;
@@ -88,28 +102,15 @@ Deno.serve(async (req) => {
 
     if (!esSistema) {
       const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-      if (!jwt) return json({ error: "Falta la sesión. Entra a la app antes de actualizar Fudo." }, 401);
-
-      const uRes = await fetch(`${SB_URL}/auth/v1/user`, {
-        headers: { "Authorization": `Bearer ${jwt}`, "apikey": SB_KEY },
-      });
-      const uTxt = await uRes.text();
-      try { correo = (JSON.parse(uTxt)?.email ?? "").toLowerCase() || null; } catch { /* no-JSON */ }
-      if (!uRes.ok || !correo) {
-        return json({
-          error: "Tu sesión caducó. Sal y vuelve a entrar a la app.",
-          diagnostico: { status_de_auth: uRes.status, respuesta: uTxt.slice(0, 200) },
-        }, 401);
+      if (jwt) {
+        const uRes = await fetch(`${SB_URL}/auth/v1/user`, {
+          headers: { "Authorization": `Bearer ${jwt}`, "apikey": SB_KEY },
+        });
+        try { correo = ((await uRes.json())?.email ?? "").toLowerCase() || null; } catch { /* no-JSON */ }
       }
-      // La lista de autorizados vive en la base, no en un secret: así se
-      // agrega o quita gente con una línea de SQL, sin tocar esta función.
-      const pRes = await fetch(
-        `${SB_URL}/rest/v1/app_permisos?correo=eq.${encodeURIComponent(correo)}&select=puede_fudo`,
-        { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
-      const permisos = pRes.ok ? await pRes.json() : [];
-      if (!permisos?.[0]?.puede_fudo) {
-        return json({ error: "Esta cuenta no puede actualizar el stock de Fudo." }, 403);
-      }
+      // Sin sesión el empuje se hace igual, y queda firmado como equipo.
+      // Que no se sepa el nombre no es motivo para dejar Fudo desactualizado.
+      if (!correo) correo = "equipo (sin sesión)";
     }
 
     // ---------- Qué se pidió ----------
