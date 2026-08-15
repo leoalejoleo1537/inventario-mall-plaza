@@ -32,14 +32,33 @@
 // una a la otra: dos tareas agendadas por separado no garantizan el
 // orden.
 //
-// QUÉ NO HACE, a propósito:
-//   · No manda los que quedarían en 0 ni los que Fudo nunca controló.
-//     Son las tandas 2 y 3, que siguen siendo una decisión avisada. Acá
-//     importa más que nunca: esto corre solo, de noche, sin nadie
-//     mirando, y dejar en 0 un producto por una receta mal armada hace
-//     que el mesón no lo pueda vender. Que Fudo venda de más es el
-//     problema de hoy; que deje de vender algo que está en la vitrina
-//     sería un problema peor y nuevo.
+// SÍ MANDA LOS CEROS — y esto es una corrección de la primera versión
+// (2026-08-15, mismo día, después de probarlo Jhon).
+//
+//   Al principio los dejé fuera con este argumento: esto corre solo, sin
+//   nadie mirando, y poner un 0 por una receta mal armada haría que el
+//   mesón no pueda vender algo que sí está en la vitrina.
+//
+//   El argumento no era falso, pero el efecto era absurdo: **el sistema
+//   solo sabía sumar.** Subía cuando llegaba un reparto y no bajaba nunca
+//   cuando algo se acababa. Jhon lo destapó en dos minutos poniendo un
+//   serrano en 1 y borrándolo: Fudo se quedó en 1.
+//
+//   Y ese es justo el problema que Adriana tiene hace años — Fudo
+//   vendiendo lo que ya no hay. Un inventario que solo suma no es un
+//   inventario.
+//
+//   El riesgo que se acepta a cambio, dicho sin adornos: si una receta
+//   está mal armada, su producto va a quedar en 0 en Fudo y el mesón no
+//   lo va a poder vender hasta arreglarla. Se ve venir con una consulta
+//   (`deja_en_cero` en fudo_stock_calculado) y se arregla arreglando la
+//   receta, que es donde está el error de verdad.
+//
+// QUÉ SIGUE SIN MANDAR:
+//   · Los que Fudo nunca controló (stock en null): hoy se venden sin
+//     límite, y ponerles un número los empezaría a bloquear al llegar a
+//     0. Eso es un cambio de comportamiento en el mesón que nadie pidió,
+//     y es una tanda aparte y avisada.
 //   · No toca recetas, ni productos, ni el catálogo.
 //
 // Cómo se llama:
@@ -136,7 +155,8 @@ Deno.serve(async (req) => {
     try {
       const r = await fetch(fn("fudo-empujar-stock"), {
         method: "POST", headers: cabPaso,
-        body: JSON.stringify({ sede, modo: "aplicar" }),
+        // incluir_ceros: sin esto el sistema solo sabe sumar. Ver arriba.
+        body: JSON.stringify({ sede, modo: "aplicar", incluir_ceros: true }),
       });
       statusEmpuje = r.status;
       const txt = await r.text();
