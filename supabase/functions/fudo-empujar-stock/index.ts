@@ -40,12 +40,15 @@
 //   FUDO_<SEDE>_APIKEY / FUDO_<SEDE>_APISECRET
 // ================================================================
 
+// Se devuelve en cada respuesta para poder saber qué versión está
+// desplegada sin entrar al panel (§8, prevención).
+const VERSION = "2026-08-15";
 const AUTH_URL = "https://auth.fu.do/api";
 const API_BASE = "https://api.fu.do/v1alpha1";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-sistema-token",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -66,30 +69,47 @@ Deno.serve(async (req) => {
                 ?? Deno.env.get("SUPABASE_SECRET_KEY");
     if (!SB_URL || !SB_KEY) return json({ error: "Falta la configuración de Supabase en el entorno." }, 500);
 
-    // ---------- El candado: contra la sesión real, en el servidor ----------
-    const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-    if (!jwt) return json({ error: "Falta la sesión. Entra a la app antes de actualizar Fudo." }, 401);
+    // ---------- El candado ----------
+    // Dos llaves distintas, y ninguna de las dos abre la puerta de la otra:
+    //
+    //  · una PERSONA entra con su sesión y se comprueba contra app_permisos,
+    //    igual que siempre. Esa parte no cambió nada.
+    //  · el RELOJ (la tarea automática) entra con un token que solo vive en
+    //    los secrets de Supabase. No es una cuenta ni tiene correo, y queda
+    //    firmado como "sistema" en la bitácora para poder distinguirlo.
+    //
+    // El token es obligatorio y no tiene valor por defecto: si no está
+    // creado, el camino automático simplemente no existe.
+    const SISTEMA_TOKEN = Deno.env.get("SISTEMA_TOKEN");
+    const tokenRecibido = req.headers.get("x-sistema-token") ?? "";
+    const esSistema = !!SISTEMA_TOKEN && tokenRecibido === SISTEMA_TOKEN;
 
-    const uRes = await fetch(`${SB_URL}/auth/v1/user`, {
-      headers: { "Authorization": `Bearer ${jwt}`, "apikey": SB_KEY },
-    });
-    const uTxt = await uRes.text();
-    let correo: string | null = null;
-    try { correo = (JSON.parse(uTxt)?.email ?? "").toLowerCase() || null; } catch { /* no-JSON */ }
-    if (!uRes.ok || !correo) {
-      return json({
-        error: "Tu sesión caducó. Sal y vuelve a entrar a la app.",
-        diagnostico: { status_de_auth: uRes.status, respuesta: uTxt.slice(0, 200) },
-      }, 401);
-    }
-    // La lista de autorizados vive en la base, no en un secret: así se
-    // agrega o quita gente con una línea de SQL, sin tocar esta función.
-    const pRes = await fetch(
-      `${SB_URL}/rest/v1/app_permisos?correo=eq.${encodeURIComponent(correo)}&select=puede_fudo`,
-      { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
-    const permisos = pRes.ok ? await pRes.json() : [];
-    if (!permisos?.[0]?.puede_fudo) {
-      return json({ error: "Esta cuenta no puede actualizar el stock de Fudo." }, 403);
+    let correo: string | null = esSistema ? "sistema (automático)" : null;
+
+    if (!esSistema) {
+      const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+      if (!jwt) return json({ error: "Falta la sesión. Entra a la app antes de actualizar Fudo." }, 401);
+
+      const uRes = await fetch(`${SB_URL}/auth/v1/user`, {
+        headers: { "Authorization": `Bearer ${jwt}`, "apikey": SB_KEY },
+      });
+      const uTxt = await uRes.text();
+      try { correo = (JSON.parse(uTxt)?.email ?? "").toLowerCase() || null; } catch { /* no-JSON */ }
+      if (!uRes.ok || !correo) {
+        return json({
+          error: "Tu sesión caducó. Sal y vuelve a entrar a la app.",
+          diagnostico: { status_de_auth: uRes.status, respuesta: uTxt.slice(0, 200) },
+        }, 401);
+      }
+      // La lista de autorizados vive en la base, no en un secret: así se
+      // agrega o quita gente con una línea de SQL, sin tocar esta función.
+      const pRes = await fetch(
+        `${SB_URL}/rest/v1/app_permisos?correo=eq.${encodeURIComponent(correo)}&select=puede_fudo`,
+        { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
+      const permisos = pRes.ok ? await pRes.json() : [];
+      if (!permisos?.[0]?.puede_fudo) {
+        return json({ error: "Esta cuenta no puede actualizar el stock de Fudo." }, 403);
+      }
     }
 
     // ---------- Qué se pidió ----------
@@ -123,7 +143,7 @@ Deno.serve(async (req) => {
     if (!incluirNuevos) porHacer = porHacer.filter((f) => f.stock_en_fudo !== null);
 
     const resumen = {
-      sede, modo, quien: correo,
+      version: VERSION, sede, modo, quien: correo,
       se_actualizarian: porHacer.length,
       ya_estaban_iguales: yaIguales.length,
       saltados_por_quedar_en_cero: incluirCeros ? 0 : enCero.length,

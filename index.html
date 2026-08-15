@@ -1026,6 +1026,15 @@
       <button type="button" class="icon-btn" id="btnActualizar" aria-label="Actualizar" title="Actualizar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
       </button>
+      <!-- Poner Fudo al día AHORA. Hace lo mismo que el reloj cada 15
+           minutos: primero lee las ventas y descuenta, después le manda el
+           inventario entero. Por eso no pregunta antes de hacerlo — no
+           puede sorprender a nadie con algo que el sistema ya hace solo.
+           La flecha apunta hacia arriba porque esto SALE del inventario
+           hacia Fudo, al revés que el ⟳ de al lado. -->
+      <button type="button" class="icon-btn" id="btnCiclo" aria-label="Poner Fudo al día" title="Poner Fudo al día" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"></path><polyline points="6 11 12 5 18 11"></polyline><path d="M4 21h16"></path></svg>
+      </button>
     </div>
   </div>
 </div>
@@ -1824,6 +1833,10 @@ function aplicarPermisos(){
   // también acá y no solo al abrir la ficha: si el permiso cambia con la
   // ficha abierta, el botón tiene que irse en el momento
   $('m-fudo').style.display = PERMISOS.puede_fudo ? '' : 'none';
+  // El ciclo escribe en Fudo, así que lleva el mismo candado que lo demás.
+  // Y solo donde hay un Fudo al otro lado: en bodega no hay nada que actualizar.
+  $('btnCiclo').style.display =
+    (PERMISOS.puede_fudo && (SEDE === 'plaza' || SEDE === 'angamos')) ? '' : 'none';
   if(!PERMISOS.puede_editar) setModoEdicion(false);
 }
 
@@ -5597,6 +5610,66 @@ async function actualizarTodo(){
   }
 }
 $('btnActualizar').addEventListener('click', actualizarTodo);
+
+/* ---------------- poner Fudo al día, ahora ----------------
+
+   LA DECISIÓN DE FONDO (Jhon, 2026-08-15): "no podemos ir parchando estos
+   fallos de 'no se subió los cannolis'". Antes, Fudo se enteraba de lo que
+   entraba por avisos sueltos —uno por cada línea de reparto— y cada aviso
+   era una oportunidad de fallar en silencio.
+
+   Esto manda el TOTAL, no una diferencia. Por eso no necesita acertar
+   todas las veces: la corrida siguiente corrige lo que la anterior no
+   hizo. El reloj lo hace solo cada 15 minutos; este botón es "hazlo ya".
+
+   El orden lo garantiza la función `fudo-ciclo`, no este código: primero
+   leer las ventas y descontar, después empujar. Al revés se le devolvería
+   a Fudo stock que ya se vendió.                                        */
+let cicloEnCurso = false;
+async function cicloFudo(){
+  if(!SEDE || cicloEnCurso) return;
+  cicloEnCurso = true;
+  const btn = $('btnCiclo');
+  btn.disabled = true;
+  trabajando('Poniendo Fudo al día…');
+  try{
+    const r = await sb.functions.invoke('fudo-ciclo', {body:{sede:SEDE, origen:'boton'}});
+    const err = r.error || (r.data && r.data.error);
+    const d = r.data || {};
+    if(err){
+      /* El mensaje de la función se muestra tal cual: "Edge Function
+         returned a non-2xx status code" no le dice a nadie qué hacer, y
+         esconder la causa fue exactamente lo que nos costó los cannolis. */
+      const detalle = d.detalle || (d.empuje && d.empuje.error) || '';
+      avisar('Fudo no se actualizó\n\n'
+        + String((err && err.message) || err)
+        + (detalle ? '\n\n' + detalle : ''));
+      return;
+    }
+    const e = d.empuje || {}, v = d.ventas || {};
+    const partes = [];
+    if(v.descuentos) partes.push(v.descuentos + ' descontados');
+    partes.push((e.actualizados || 0) + ' corregidos en Fudo');
+    if(e.con_error) partes.push('⚠ ' + e.con_error + ' con error');
+    aviso('✓ ' + partes.join(' · '), 5000);
+    /* Los que se saltan por quedar en 0 no son un error, pero tampoco son
+       invisibles: si son muchos, hay recetas que revisar. */
+    if(e.saltados_por_quedar_en_cero > 4){
+      setTimeout(()=>aviso(e.saltados_por_quedar_en_cero
+        + ' productos quedarían en 0 y no se mandaron · revisa sus recetas', 6000), 5200);
+    }
+    ultimaRecarga = 0;
+    await resincronizar();
+  }catch(e){
+    console.error('Falló el ciclo de Fudo', e);
+    avisar('Fudo no se actualizó\n\n' + (e && e.message ? e.message : e));
+  }finally{
+    listo();
+    btn.disabled = false;
+    cicloEnCurso = false;
+  }
+}
+$('btnCiclo').addEventListener('click', cicloFudo);
 $('toast').addEventListener('click', abrirDetalle);
 /* Se cierra tocando fuera, como el resto de las ventanas de la app. */
 $('detalleFondo').addEventListener('click', e=>{ if(e.target===$('detalleFondo')) cerrarDetalle(); });
