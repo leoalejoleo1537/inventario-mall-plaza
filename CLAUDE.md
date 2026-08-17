@@ -936,6 +936,46 @@ La estética es **la de Fudo**: limpia, sobria, funcional. NO inventar estilos n
   partículas azul/vino). **Nunca redibujarlo por código** — solo usar el archivo
   que él entrega y redimensionarlo.
 
+### 2.2 REGLA DURA — todo se tiene que poder APAGAR sin romper nada
+
+> Jhon, 2026-08-15: *"quiero que esta sea una opción que se pueda deshabilitar
+> en el área de ajustes… la gran mayoría de cosas deben poder deshabilitarse sin
+> romper nada."*
+
+**Toda función nueva nace con interruptor.** No es una mejora que se agrega
+después: es parte de construirla, igual que la estética (§2.0).
+
+**Y "apagar" significa volver al comportamiento anterior, no dejar un hueco.**
+Es la mitad que se olvida. El ejemplo que lo dice todo, y es el suyo: si se
+apaga "las tortas piden fecha", una torta tiene que poder recibir **cantidad a
+secas**, como cualquier producto. Si al apagarlo quedara sin campo de fecha y
+sin campo de cantidad, no está apagado: está roto.
+
+Entonces, para cada interruptor:
+
+| | |
+|---|---|
+| Encendido | lo nuevo |
+| Apagado | **exactamente** lo que había antes, funcionando |
+| A medio camino | no existe — si un producto ya tiene fechas cargadas y se apaga la opción, esas fechas **no se borran**; dejan de pedirse |
+
+**Por qué esto vale una regla dura y no una preferencia:** un interruptor es lo
+que convierte "hay que llamar a Claude" en "lo apago y sigo trabajando". Es la
+misma razón por la que el `prueba`/`real` entra al panel (§6.2): *"necesito
+entregar un sistema que sea completamente manejable"*. Una función sin
+interruptor le agrega una dependencia de mí a un sistema que tiene que poder
+funcionar sin mí.
+
+**El patrón ya existe y es `FLAGS`** (§6.2): hoy se enciende cambiando una línea
+del código, y el día que exista el panel pasa a ser un botón. Lo que NO se hace
+es dejar la función comentada o en una rama — eso no es un interruptor, es un
+borrador.
+
+**La excepción, y son pocas:** los candados que protegen datos no se apagan
+—el tope en cero (§0.2), que un perecedero entre por fechas (§0.4), que el
+reparto no descuente dos veces—. Ahí el "apagado" sería corromper el
+inventario, no volver al estado anterior.
+
 ---
 
 ## 3. Arquitectura (cómo está montado)

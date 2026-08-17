@@ -26,8 +26,13 @@ const caso = (nombre, sync, esperado) => {
 console.log('\nTiene que avisar:');
 caso('el motor falló en la última corrida',
      {ultimo_resultado:'falla', ultima_corrida_at:haceMin(10), cron_activo:false}, 'grave');
+/* Baja de 'grave' a 'tibio' a propósito (2026-08-15). Que el reloj no haya
+   corrido NO es una avería: el inventario está bien, solo Fudo quedó
+   atrasado, y cualquiera lo arregla con un toque al ⟳. En rojo, la gente
+   del mesón lo leía como "la app se rompió" y lo escribía en el grupo de
+   jefatura. El rojo se reserva para lo que de verdad está roto. */
 caso('cron encendido y lleva 3 h sin correr',
-     {ultimo_resultado:'ok', ultima_corrida_at:haceMin(180), cron_activo:true}, 'grave');
+     {ultimo_resultado:'ok', ultima_corrida_at:haceMin(180), cron_activo:true}, 'tibio');
 caso('fallo parcial: avisa, pero en ámbar',
      {ultimo_resultado:'parcial', ultimos_errores:3, ultimos_items:20,
       ultima_corrida_at:haceMin(5), cron_activo:false}, 'tibio');
@@ -47,7 +52,7 @@ caso('la fila no existe todavía', null, null);
 
 console.log('\nJusto en el umbral (45 min) sí avisa:');
 caso('45 min con cron encendido',
-     {ultimo_resultado:'ok', ultima_corrida_at:haceMin(45), cron_activo:true}, 'grave');
+     {ultimo_resultado:'ok', ultima_corrida_at:haceMin(45), cron_activo:true}, 'tibio');
 
 console.log('\nEl "hace cuánto" se lee bien:');
 const esperado = {0:'recién', 1:'recién', 20:'hace 20 min', 90:'hace 1 h', 3000:'hace 2 días'};

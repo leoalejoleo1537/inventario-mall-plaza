@@ -43,6 +43,9 @@
   .gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
   .gate.hidden{display:none}
   .gate-box{background:#fff;border-radius:18px;padding:40px 30px 30px;max-width:380px;width:100%;text-align:center;box-shadow:0 10px 45px rgba(15,30,49,.12)}
+  /* El logo es el archivo que entrega Jhon, redimensionado. Nunca se
+     redibuja por código (regla 2.1). */
+  .gate-marca{display:block;margin:0 auto 12px;border-radius:22px}
   .gate-logo{font-size:34px;font-weight:800;color:var(--orange);letter-spacing:.5px;margin-bottom:4px}
   .gate-sub{font-size:14.5px;color:var(--muted);margin:0 0 26px}
   .gate-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:17px 20px;margin-bottom:12px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-size:16.5px;font-weight:700;color:var(--text);cursor:pointer;transition:.15s;text-align:left}
@@ -1004,7 +1007,8 @@
 <!-- ================= INICIO DE SESIÓN (obligatorio al abrir) ================= -->
 <div class="gate top" id="login-gate">
   <div class="gate-box">
-    <div class="gate-logo">Inventario</div>
+    <img class="gate-marca" src="icons/icon-192.png" alt="" width="88" height="88">
+    <div class="gate-logo">Llamita</div>
     <p class="gate-sub">Inicia sesión para comenzar</p>
     <div class="gate-err" id="login-err"></div>
     <input type="email" class="gate-input" id="login-email" placeholder="Correo" autocomplete="username">
@@ -1017,7 +1021,8 @@
 <!-- ================= SELECTOR DE SEDE (tras iniciar sesión) ================= -->
 <div class="gate" id="gate">
   <div class="gate-box">
-    <div class="gate-logo">Inventario</div>
+    <img class="gate-marca" src="icons/icon-192.png" alt="" width="88" height="88">
+    <div class="gate-logo">Llamita</div>
     <p class="gate-sub">Elige tu local para comenzar</p>
     <button class="gate-btn" data-sede="plaza">Café Mall Plaza</button>
     <button class="gate-btn" data-sede="angamos">Parque Angamos</button>
@@ -5535,8 +5540,13 @@ function juzgarMotor(sync, ahora){
   if(sync.ultimo_resultado === 'falla')
     return {nivel:'grave', texto:'El inventario no se está descontando', min};
 
+  /* Antes decía "La sincronización automática se detuvo", que es cierto y
+     no sirve de nada: quien lo lee no sabe qué hacer y termina avisando
+     por WhatsApp que la app se rompió. Un aviso tiene que decir el gesto
+     que lo arregla, no el diagnóstico. Y el gesto existe y es de un
+     toque: apretar ⟳ hace exactamente lo que el reloj no hizo. */
   if(sync.cron_activo && min !== null && min >= MOTOR_SIN_NOTICIAS_MIN)
-    return {nivel:'grave', texto:'La sincronización automática se detuvo', min};
+    return {nivel:'tibio', texto:'Para actualizar Fudo, usa ⟳', min};
 
   if(sync.ultimo_resultado === 'parcial')
     return {nivel:'tibio',
@@ -5730,9 +5740,12 @@ function mostrarEmpuje(){
        <div class="emp-tarjeta"><div class="n" style="color:var(--red-fg)">${bajan.length}</div><div class="l">bajaron</div></div>
      </div>`
     + bloque('BAJARON EN FUDO', bajan)      // primero lo que se descontó:
-    + bloque('SUBIERON EN FUDO', suben)     // es lo que puede dejar de venderse
-    + (d.saltados_por_quedar_en_cero
-        ? `<div class="emp-grupo">${d.saltados_por_quedar_en_cero} no se mandaron porque quedaban en 0 · revisa sus recetas</div>` : '');
+    + bloque('SUBIERON EN FUDO', suben);    // es lo que puede dejar de venderse
+  /* NO se avisa de los que quedan en 0 (Jhon, 2026-08-15): "somos
+     conscientes de eso, por lo que ese aviso está de más, solo empújalo".
+     Y tiene razón — el selladito deja en 0 media docena de combos porque
+     de verdad no hay selladito. Avisarlo cada vez es ruido sobre algo que
+     el equipo ya sabe, y un aviso que siempre aparece se deja de leer. */
 
   $('overlay-empuje').classList.add('open');
 }
