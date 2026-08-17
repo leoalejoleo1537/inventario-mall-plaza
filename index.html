@@ -2214,7 +2214,11 @@ function pickSede(s){
      y Angamos la barra queda igual que siempre. */
   document.querySelector('.tab[data-tab="recetas"]').style.display = s==='central' ? 'none' : '';
   // y al revés con Mermas: por ahora vive solo en Bodega
-  $('tabMermas').style.display = s==='central' ? '' : 'none';
+  /* La pestaña Mermas va en TODAS las sedes (Jhon, 2026-08-17): "que se
+     pueda mermar productos en todas las cedes y en central o bodega, se
+     pueda ver el resumen de mermas totales". En bodega además muestra las
+     de los tres lados juntas, que es el resumen total. */
+  $('tabMermas').style.display = '';
   $('tabEnlaces').style.display = s==='central' ? '' : 'none';
   MERMAS=[]; ENLACES=[]; SEDE_PROD={};
   repcCarritos={plaza:[],angamos:[]}; repcAbiertos={plaza:[],angamos:[]};
@@ -2633,9 +2637,13 @@ $('m-mermar').addEventListener('click', ()=>{ if(modalProd) abrirMerma(modalProd
 /* ---------------- la pestaña ---------------- */
 let MERMAS = [];
 async function loadMermas(){
-  if(SEDE!=='central') return;
-  const {data,error} = await sb.from('movimientos').select('*')
-    .eq('sede','central').eq('tipo','merma')
+  if(!SEDE) return;
+  /* En bodega se ven las de las TRES sedes: es el cuadro de mando de
+     Adriana y ahí "cuánto se está botando" es una pregunta del negocio,
+     no de un local. En Plaza y en Angamos, cada uno ve lo suyo. */
+  let q = sb.from('movimientos').select('*').eq('tipo','merma');
+  if(SEDE!=='central') q = q.eq('sede', SEDE);
+  const {data,error} = await q
     .order('created_at',{ascending:false}).limit(500);
   if(error){
     MERMAS=[];
@@ -2666,7 +2674,9 @@ function pintarMermas(){
       <div class="turno-lbl">${fmtFecha(d).toUpperCase()}</div>
       ${delDia.map(m=>`<div class="cs-fila${m.deshecha_at?' cs-off':''}">
         <span class="cs-nm">${esc(m.producto)}
-          <span class="cs-sec">${esc(MOT_MERMA_TXT[m.motivo]||m.motivo||'—')}${
+          <span class="cs-sec">${SEDE==='central' && m.sede!=='central'
+              ? esc((SEDES[m.sede]||{}).label||m.sede)+' · ' : ''}${
+            esc(MOT_MERMA_TXT[m.motivo]||m.motivo||'—')}${
             m.nota?' · '+esc(m.nota):''}${m.quien?' · '+esc(m.quien):''}</span></span>
         <span class="cs-hay">${fmt(Math.abs(m.cantidad))}${
           m.deshecha_at
@@ -2679,7 +2689,7 @@ function pintarMermas(){
 
 $('mermas-list').addEventListener('click', async e=>{
   const b = e.target.closest('[data-desmerma]'); if(!b) return;
-  if(!await preguntar('Deshacer esta merma','Las unidades vuelven al inventario de Bodega.','Deshacer')) return;
+  if(!await preguntar('Deshacer esta merma','Las unidades vuelven al inventario.','Deshacer')) return;
   b.disabled=true; b.textContent='…';
   const {error} = await sb.rpc('deshacer_merma',{p_movimiento_id:+b.dataset.desmerma, p_quien:NOMBRE});
   if(error){ b.disabled=false; b.textContent='Deshacer'; avisar(error.message||'No se pudo deshacer.'); return; }
@@ -4077,7 +4087,7 @@ function openModal(id){
   setUrgente(!!modalProd.urgente);
   /* Mermar solo en Bodega. La base lo vuelve a comprobar dentro de mermar(),
      así que esconder el botón es comodidad y no la única defensa. */
-  $('m-mermar').style.display = SEDE==='central' ? 'flex' : 'none';
+  $('m-mermar').style.display = 'flex';   // en todas las sedes, ver pickSede
   setModoEdicion(modoEdicion);
   // Solo se ofrece el editor de VARIAS fechas si la tabla que las guarda
   // (producto_lotes) existe de verdad en la base. Si no, se cae al campo
