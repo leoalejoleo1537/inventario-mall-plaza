@@ -51,5 +51,27 @@ caso('fila con los dos permisos apagados',
      { puede_fudo:false, puede_editar:false, sede:'angamos' }, 'angamos', {editar:false, fudo:false});
 caso('sin sede elegida todavía, permiso acotado', ang, null, {editar:false, fudo:false});
 
+/* El permiso nuevo de Ajustes: un solo nivel para toda la zona de
+   administración (Jhon, 2026-08-17). Se prueba aparte porque tiene que
+   respetar la sede igual que los otros dos, y porque su default seguro es
+   NO: mientras la columna no exista en la base, nadie ve la tuerca. */
+console.log('\nEl permiso de entrar a Ajustes:');
+const ajCaso = (nombre, fila, sede, esperado) => {
+  const dio = !!permisosDeLaSede(fila, sede).puede_ajustes;
+  if (dio === esperado) { ok++; console.log(`  \u2713 ${nombre}`); }
+  else { fallos++; console.log(`  \u2717 ${nombre}\n      esperaba ${esperado}, dio ${dio}`); }
+};
+ajCaso('la columna todavía no existe en la base: NO entra',
+       { puede_fudo:true, puede_editar:true }, 'plaza', false);
+ajCaso('encendido y sin sede: entra en todas',
+       { puede_ajustes:true }, 'angamos', true);
+ajCaso('acotado a plaza: entra en plaza',
+       { puede_ajustes:true, sede:'plaza' }, 'plaza', true);
+ajCaso('acotado a plaza: NO entra en angamos',
+       { puede_ajustes:true, sede:'plaza' }, 'angamos', false);
+ajCaso('sin fila (sin sesión): NO entra', null, 'plaza', false);
+ajCaso('poder empujar a Fudo NO abre Ajustes',
+       { puede_fudo:true, puede_editar:true, puede_ajustes:false }, 'plaza', false);
+
 console.log(`\n${ok} bien · ${fallos} mal\n`);
 process.exit(fallos ? 1 : 0);

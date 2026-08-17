@@ -805,6 +805,52 @@
   .emp-tarjeta{flex:1;text-align:center;background:var(--bg);border-radius:12px;padding:10px 6px}
   .emp-tarjeta .n{font-size:22px;font-weight:800;line-height:1.1}
   .emp-tarjeta .l{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
+
+  /* ================= AJUSTES =================
+     Es una PESTAÑA, no una ventana emergente: se tiene que sentir que uno
+     está adentro del área de ajustes, no que le abrieron un cuadro encima.
+     La forma sale de la pantalla de configuración de Fudo, que el equipo ya
+     conoce: la lista de secciones siempre desplegada a la izquierda, el
+     contenido a la derecha. */
+  /* La tuerca encendida mientras se está en Ajustes: sin esto, estando
+     adentro no hay nada que diga por dónde se sale. */
+  .icon-btn.on{background:rgba(255,255,255,.16);border-radius:10px}
+  .aj{display:flex;gap:16px;align-items:flex-start}
+  .aj-rail{width:232px;flex-shrink:0;background:#fff;border-radius:14px;padding:8px;
+    box-shadow:0 1px 3px rgba(15,30,49,.06);position:sticky;top:8px}
+  .aj-rail-tit{font-size:11.5px;font-weight:800;color:var(--muted);letter-spacing:.5px;
+    padding:10px 12px 6px}
+  .aj-it{display:flex;align-items:center;gap:11px;width:100%;padding:10px 12px;border:none;
+    background:none;border-radius:10px;cursor:pointer;font-size:14.5px;font-weight:650;
+    color:var(--text);text-align:left;transition:background .15s,color .15s}
+  .aj-it svg{width:19px;height:19px;flex-shrink:0;color:var(--muted);transition:color .15s}
+  .aj-it:active{transform:scale(.985)}
+  .aj-it:hover{background:var(--bg)}
+  .aj-it.on{background:var(--navy);color:#fff}
+  .aj-it.on svg{color:#fff}
+  .aj-pane{flex:1;min-width:0}
+  .aj-cab{display:flex;align-items:center;gap:12px;margin:2px 0 14px}
+  .aj-cab .ico{width:42px;height:42px;border-radius:12px;background:var(--navy);color:#fff;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .aj-cab .ico svg{width:22px;height:22px}
+  .aj-cab h2{margin:0;font-size:20px;font-weight:800;color:var(--text)}
+  .aj-cab p{margin:2px 0 0;font-size:13.5px;color:var(--muted);line-height:1.45}
+  .aj-caja{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;
+    box-shadow:0 1px 3px rgba(15,30,49,.06)}
+  .aj-caja h3{margin:0 0 2px;font-size:15px;font-weight:800;color:var(--text)}
+  .aj-caja p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.5}
+  .aj-pronto{display:inline-block;background:var(--gray-bg);color:var(--gray-fg);
+    border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:800;margin-left:8px}
+  /* En el teléfono la lista de secciones no cabe al lado: pasa arriba, en
+     una franja que se desliza — el mismo gesto que la franja de tipos. */
+  @media (max-width:719px){
+    .aj{flex-direction:column;gap:12px}
+    .aj-rail{width:100%;position:static;display:flex;gap:6px;overflow-x:auto;
+      -webkit-overflow-scrolling:touch;padding:8px;scrollbar-width:none}
+    .aj-rail::-webkit-scrollbar{display:none}
+    .aj-rail-tit{display:none}
+    .aj-it{width:auto;flex-shrink:0;white-space:nowrap;padding:9px 13px;font-size:13.5px}
+  }
   .adm-head{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;flex-shrink:0}
   .adm-head h2{margin:0;flex:1;font-size:18px}
   .adm-x{border:none;background:var(--gray-bg);color:var(--muted);width:32px;height:32px;
@@ -1059,6 +1105,12 @@
       <button type="button" class="icon-btn" id="btnActualizar" aria-label="Actualizar" title="Actualizar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
       </button>
+      <!-- Ajustes. A la derecha del todo y con la tuerca de siempre, que es
+           el símbolo que la gente ya busca. Solo lo ven las cuentas con
+           permiso: para el resto la app se ve exactamente igual que hoy. -->
+      <button type="button" class="icon-btn" id="btnAjustes" aria-label="Ajustes" title="Ajustes" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      </button>
     </div>
   </div>
 </div>
@@ -1234,6 +1286,19 @@
     <div class="adm-pie">
       <button type="button" class="adm-btn" id="empuje-ok">Entendido</button>
     </div>
+  </div>
+</div>
+
+
+<!-- ================= AJUSTES =================
+     Una pestaña propia, no una ventana emergente: se entra y se está
+     adentro. A la izquierda las secciones, siempre visibles; a la derecha
+     el contenido. El armazón se llena desde el registro AJUSTES del guion,
+     así que agregar una sección es agregar una entrada ahí. -->
+<div class="wrap" id="view-ajustes" style="display:none">
+  <div class="aj">
+    <nav class="aj-rail" id="aj-rail" aria-label="Secciones de ajustes"></nav>
+    <div class="aj-pane" id="aj-pane"></div>
   </div>
 </div>
 
@@ -1694,7 +1759,7 @@ const SEDES = {
   central: { label:'Bodega',           corto:'Bodega',     excel:'bodega'  },
 };
 /* el título de la barra dice en qué estás, como en Fudo */
-const TITULOS = {inv:'Inventario', reparto:'Reparto', hist:'Historial', recetas:'Recetas', mermas:'Mermas', enlaces:'Enlaces'};
+const TITULOS = {inv:'Inventario', reparto:'Reparto', hist:'Historial', recetas:'Recetas', mermas:'Mermas', enlaces:'Enlaces', ajustes:'Ajustes'};
 let SEDE = null;
 let channel = null;
 
@@ -1856,19 +1921,29 @@ function setModoEdicion(v){
    Si la columna todavía no existe en la base, `fila.sede` viene undefined y el
    permiso queda como estaba: para todas las sedes. */
 function permisosDeLaSede(fila, sede){
-  if(!fila) return { puede_fudo:false, puede_editar:false, sede:null };
+  if(!fila) return { puede_fudo:false, puede_editar:false, puede_ajustes:false, sede:null };
   const suya = fila.sede || null;
   const aqui = !suya || suya === sede;
   return {
     sede: suya,
     puede_fudo:   !!fila.puede_fudo   && aqui,
     puede_editar: !!fila.puede_editar && aqui,
+    /* UN SOLO NIVEL, y es decisión de Jhon (2026-08-17): "hay dos
+       categorías, o puedes o no puedes entrar a ajustes". Quien entra a
+       Ajustes tiene todo lo administrativo, incluido el empuje manual a
+       Fudo; quien no entra, ve la app de siempre.
+
+       Mientras la columna no exista en la base, esto es false para todos
+       —nadie ve la tuerca— y no pasa nada raro. Es el default seguro: una
+       zona de administración que se abre sola por no haber corrido un
+       script sería la peor forma de estrenarla. */
+    puede_ajustes: !!fila.puede_ajustes && aqui,
   };
 }
 
-let PERMISOS = { puede_fudo:false, puede_editar:false, correo:null, sede:null };
+let PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null };
 async function cargarPermisos(){
-  PERMISOS = { puede_fudo:false, puede_editar:false, correo:null, sede:null };
+  PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null };
   try{
     const {data:{session}} = await sb.auth.getSession();
     const correo = session?.user?.email?.toLowerCase() || null;
@@ -1896,6 +1971,9 @@ function aplicarPermisos(){
      puede actuar sobre ella; al resto solo le quita la confianza en el
      sistema, que es lo único que este proyecto no puede perder. */
   $('motorAviso').classList.toggle('solo-admin', !admin);
+  $('btnAjustes').style.display = PERMISOS.puede_ajustes ? '' : 'none';
+  // si le quitaron el permiso con la pantalla abierta, se sale de ella
+  if(!PERMISOS.puede_ajustes && vistaActual === 'ajustes') pickTab('inv');
   if(!PERMISOS.puede_editar) setModoEdicion(false);
 }
 
@@ -2255,7 +2333,7 @@ function pickSede(s){
   entCarrito=[]; entUltimas=[];
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
-  $('view-inv').style.display='block'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none'; $('view-enlaces').style.display='none'; $('view-repcentral').style.display='none';
+  $('view-inv').style.display='block'; $('view-ajustes').style.display='none'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none'; $('view-enlaces').style.display='none'; $('view-repcentral').style.display='none';
   vistaActual='inv';
   listEl.innerHTML='';
   $('gate').classList.add('hidden');
@@ -5101,6 +5179,150 @@ $('btnRegistrarReparto').addEventListener('click', async()=>{
    Historial ya no tiene pestaña: se entra desde el menú ☰. Por eso cambiar de
    vista es una función y no el manejador del click — el menú la llama igual.
    Si la vista no tiene pestaña, ninguna queda marcada, que es lo correcto. */
+
+/* ================= AJUSTES =================
+
+   EL REGISTRO manda: la lista de la izquierda y el contenido de la derecha
+   salen los dos de acá, así que agregar una sección es agregar una entrada
+   —igual que PASOS_SYNC con el botón de actualizar—. Nadie tiene que
+   acordarse de tocar dos sitios.
+
+   Cada sección trae su `render()`, que devuelve el HTML de su panel. Las
+   que todavía no están construidas devuelven su descripción con la píldora
+   "pronto": el armazón completo desde el primer día deja ver a dónde va
+   esto, y evita la sensación de que faltan cosas sin saber cuáles.        */
+const ICO = {
+  interruptores:'<path d="M9 5H5a5 5 0 0 0 0 10h4"></path><path d="M15 19h4a5 5 0 0 0 0-10h-4"></path><circle cx="9" cy="10" r="2.4"></circle>',
+  productos:'<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"></path><path d="M3 7.5 12 12l9-4.5"></path><path d="M12 12v9"></path>',
+  secciones:'<rect x="3" y="4" width="18" height="5" rx="1.5"></rect><rect x="3" y="14" width="18" height="5" rx="1.5"></rect>',
+  relaciones:'<path d="M9.5 14.5 14.5 9.5"></path><path d="M8 12H6a3.5 3.5 0 0 1 0-7h2"></path><path d="M16 12h2a3.5 3.5 0 0 1 0 7h-2"></path>',
+  metas:'<circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="4.5"></circle><circle cx="12" cy="12" r="1"></circle>',
+  personas:'<path d="M16 20v-1.6a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"></path><circle cx="9.5" cy="7" r="3.2"></circle><path d="M21 20v-1.6a4 4 0 0 0-3-3.87"></path>',
+  fudo:'<path d="M12 3v13"></path><polyline points="7 8 12 3 17 8"></polyline><path d="M4 21h16"></path>',
+  respaldos:'<path d="M3 6v12a9 3 0 0 0 18 0V6"></path><ellipse cx="12" cy="6" rx="9" ry="3"></ellipse><path d="M3 12a9 3 0 0 0 18 0"></path>',
+  actividad:'<path d="M3 12h4l2.5 7 5-14L17 12h4"></path>',
+  salud:'<path d="M12 21s-7.5-4.7-7.5-10A4.5 4.5 0 0 1 12 7.6 4.5 4.5 0 0 1 19.5 11c0 5.3-7.5 10-7.5 10z"></path>',
+};
+
+/* Un panel que todavía no está hecho: dice qué va a haber y no promete un
+   botón que no existe. Es preferible a esconder la sección — así se ve el
+   mapa entero desde el principio. */
+const ajPronto = (lista) =>
+  lista.map(t=>`<div class="aj-caja"><h3>${esc(t)}<span class="aj-pronto">pronto</span></h3></div>`).join('');
+
+const AJUSTES = [
+  { id:'interruptores', ico:'interruptores', tit:'Interruptores',
+    sub:'Encender y apagar sin tocar código. Apagar siempre devuelve lo que había antes.',
+    render:()=>ajPronto([
+      'El empuje automático a Fudo, por sede',
+      'Qué productos piden fecha de vencimiento',
+      'El respaldo automático de las 15:00 y 22:00',
+      'La lista de tareas del turno, por sede',
+    ]) },
+
+  { id:'productos', ico:'productos', tit:'Productos',
+    sub:'Activar, desactivar y ordenar el catálogo. Lo que se apaga desaparece de la app y de Fudo.',
+    render:()=>ajPronto([
+      'Activar y desactivar productos · en la app y en Fudo a la vez',
+      'Fusionar duplicados · se queda uno y se suma el stock',
+      'Tipo y unidad de medida, en lote',
+    ]) },
+
+  { id:'secciones', ico:'secciones', tit:'Secciones y turnos',
+    sub:'Dónde vive cada producto, y qué se cuenta en la mañana y qué en la tarde.',
+    render:()=>ajPronto([
+      'Crear, renombrar, borrar y reordenar secciones',
+      'Mover productos entre secciones',
+      'Qué secciones son AM y cuáles PM',
+    ]) },
+
+  { id:'relaciones', ico:'relaciones', tit:'Relaciones',
+    sub:'Lo que la app todavía no sabe editar: qué producto va con cuál.',
+    render:()=>ajPronto([
+      'Pares vitrina y congelador',
+      'Enlaces entre bodega y cada local',
+      'Recetas · enlazar y marcar "no lleva receta"',
+      'Traducir las categorías de Fudo a nuestras secciones',
+    ]) },
+
+  { id:'metas', ico:'metas', tit:'Metas de venta',
+    sub:'Un objetivo con premio y fecha. Las dos sedes compiten por llegar primero.',
+    render:()=>ajPronto([
+      'Crear una meta · productos, cantidad, premio y fechas',
+      'La barra de competencia, arriba de la pantalla',
+      'Metas terminadas y quién ganó',
+    ]) },
+
+  { id:'personas', ico:'personas', tit:'Personas y acceso',
+    sub:'Quién entra acá. Es un solo permiso: se entra a Ajustes o no se entra.',
+    render:()=>ajPronto([
+      'Todas las cuentas, con su interruptor de acceso',
+      'Acotar una cuenta a una sola sede',
+    ]) },
+
+  { id:'fudo', ico:'fudo', tit:'Fudo',
+    sub:'El puente con el sistema de ventas.',
+    render:()=>ajPronto([
+      'Empujar todo el inventario ahora · y deshacer el último empuje',
+      'Modo prueba o real, por sede',
+      'El reloj: encenderlo, apagarlo y ver cuándo corrió',
+    ]) },
+
+  { id:'respaldos', ico:'respaldos', tit:'Respaldos',
+    sub:'La red. Si algo se rompe, de acá se vuelve.',
+    render:()=>ajPronto([
+      'Qué fotos hay por sede y de cuándo',
+      'Devolver una sede a una fecha · con vista previa antes',
+      'Sacar una foto ahora · descargarla',
+    ]) },
+
+  { id:'actividad', ico:'actividad', tit:'Actividad',
+    sub:'Quién hizo qué y cuándo, todo en un solo lugar.',
+    render:()=>ajPronto([
+      'Mermas, repartos, empujes a Fudo y ediciones de productos',
+    ]) },
+
+  { id:'salud', ico:'salud', tit:'Salud del sistema',
+    sub:'Lo que hoy hay que preguntarle a la base con SQL.',
+    render:()=>ajPronto([
+      'Cobertura de recetas y recetas que apuntan al vacío',
+      'Tablas cerca del tope de las 1000 filas',
+      'Última corrida del motor, por sede',
+    ]) },
+];
+
+let ajActual = 'interruptores';
+
+function pintarAjustes(){
+  $('aj-rail').innerHTML = '<div class="aj-rail-tit">AJUSTES</div>' + AJUSTES.map(a=>`
+    <button type="button" class="aj-it${a.id===ajActual?' on':''}" data-aj="${a.id}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICO[a.ico]}</svg>
+      <span>${esc(a.tit)}</span>
+    </button>`).join('');
+
+  const a = AJUSTES.find(x=>x.id===ajActual) || AJUSTES[0];
+  $('aj-pane').innerHTML = `
+    <div class="aj-cab">
+      <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICO[a.ico]}</svg></span>
+      <div><h2>${esc(a.tit)}</h2><p>${esc(a.sub)}</p></div>
+    </div>` + a.render();
+}
+
+$('aj-rail').addEventListener('click', e=>{
+  const b = e.target.closest('[data-aj]'); if(!b) return;
+  ajActual = b.dataset.aj;
+  pintarAjustes();
+  /* En el teléfono la lista está arriba: al elegir hay que volver a subir,
+     si no el contenido nuevo queda fuera de la vista y parece que no pasó
+     nada. */
+  if(window.innerWidth < 720) window.scrollTo({top:0, behavior:'smooth'});
+});
+
+$('btnAjustes').addEventListener('click', ()=>{
+  if(!PERMISOS.puede_ajustes) return;
+  pickTab(vistaActual === 'ajustes' ? 'inv' : 'ajustes');
+});
+
 function pickTab(tab){
   if(!SEDE)return;
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
@@ -5115,7 +5337,13 @@ function pickTab(tab){
   $('view-recetas').style.display = tab==='recetas'?'block':'none';
   $('view-mermas').style.display = tab==='mermas'?'block':'none';
   $('view-enlaces').style.display = tab==='enlaces'?'block':'none';
+  $('view-ajustes').style.display = tab==='ajustes'?'block':'none';
   vistaActual=tab; $('topTitle').textContent=TITULOS[tab]||TITULOS.inv;
+  /* En Ajustes se esconden las pestañas y la franja del motor: se entró a
+     otra zona, y dejar la navegación de la anterior encima haría dudar de
+     dónde está uno. La tuerca sigue arriba para poder salir. */
+  document.querySelector('.tabs').style.display = tab==='ajustes' ? 'none' : '';
+  $('btnAjustes').classList.toggle('on', tab==='ajustes');
   if(tab==='mermas') loadMermas();
   /* El formulario se arma DESPUÉS de cargar, no antes (2026-08-17). Las
      secciones de Plaza y Angamos salen de SEDE_PROD, que la llena
@@ -5125,6 +5353,7 @@ function pickTab(tab){
      funciona en el segundo intento es de los errores más difíciles de
      reportar, y es justo el que describió Jhon. */
   if(tab==='enlaces') loadEnlaces().then(prepararNuevo);
+  if(tab==='ajustes') pintarAjustes();
   // Inicio devuelve la pantalla a como se abre: sin búsqueda, sin filtros y
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();
