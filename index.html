@@ -2629,7 +2629,35 @@ function abrirMerma(prod){
     avisar('✓ Mermado · ' + fmt(cant) + ' de ' + prod.producto);
     await loadData(); await loadLotes(); metrics(); render();
     if(vistaActual==='mermas') loadMermas();
+    bajarEnFudo(prod);
   });
+}
+
+/* Lo que se bota tiene que dejar de venderse (Jhon, 2026-08-17: "cuando se
+   merme que se descuente del inventario y de Fudo").
+
+   Se empuja SOLO ese producto —`producto_id` hace que la función busque
+   los productos de Fudo cuya receta lo usa— en vez del inventario entero:
+   mermar es un gesto de mesón y tiene que sentirse inmediato.
+
+   Va en SILENCIO y sin await: el reloj empuja todo cada 15 minutos igual,
+   así que si esto falla el peor caso es que Fudo se entere un rato
+   después. Que la merma ya quedó anotada es lo que importa, y una ventana
+   de error acá pondría en duda algo que sí ocurrió.
+
+   `incluir_ceros` va en true a propósito, y es el caso importante: si se
+   botó lo último que quedaba, lo que hay que decirle a Fudo es cero. Sin
+   eso seguiría vendiendo lo que está en la basura.                      */
+function bajarEnFudo(prod){
+  if(!prod || (SEDE !== 'plaza' && SEDE !== 'angamos')) return;
+  sb.functions.invoke('fudo-empujar-stock',
+    {body:{sede:SEDE, modo:'aplicar', producto_id:prod.id, incluir_ceros:true}})
+    .then(r=>{
+      const d = (r && r.data) || {};
+      if(d.actualizados) aviso('Fudo actualizado · ' + d.actualizados, 3000);
+      else if(r && r.error) console.warn('La merma no llegó a Fudo:', r.error);
+    })
+    .catch(e=>console.warn('La merma no llegó a Fudo:', e));
 }
 
 $('m-mermar').addEventListener('click', ()=>{ if(modalProd) abrirMerma(modalProd); });
@@ -2691,9 +2719,12 @@ $('mermas-list').addEventListener('click', async e=>{
   const b = e.target.closest('[data-desmerma]'); if(!b) return;
   if(!await preguntar('Deshacer esta merma','Las unidades vuelven al inventario.','Deshacer')) return;
   b.disabled=true; b.textContent='…';
+  const m = MERMAS.find(x=>x.id === +b.dataset.desmerma);
   const {error} = await sb.rpc('deshacer_merma',{p_movimiento_id:+b.dataset.desmerma, p_quien:NOMBRE});
   if(error){ b.disabled=false; b.textContent='Deshacer'; avisar(error.message||'No se pudo deshacer.'); return; }
   await loadMermas(); await loadData(); await loadLotes(); metrics(); render();
+  // las unidades volvieron al inventario: Fudo tiene que poder venderlas
+  if(m) bajarEnFudo({id: m.producto_id});
 });
 
 /* ================= REPARTO DESDE BODEGA (solo central) =================
