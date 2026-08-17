@@ -1,19 +1,31 @@
 -- ================================================================
 --  DÓNDE VA:  Supabase  ->  SQL Editor  ->  New query
---  ES:        1 solo bloque, y va SOLO (lleva $$, el editor se atraganta
---             si se pega junto a otra cosa).
+--  ES:        2 bloques. **UNO POR UNO, y el 1 va SOLO.**
 --  TARDA:     instantáneo
 --  QUÉ HACE:  permite mermar en TODAS las sedes, no solo en la bodega.
 --             No merma nada ni mueve un solo producto.
---  QUÉ VER:   al final, una fila que diga SÍ.
+--  QUÉ VER:   en el bloque 2, una fila que diga SÍ.
 -- ================================================================
 --
+-- ⚠️ POR QUÉ FALLÓ LA VEZ ANTERIOR ("relation pr does not exist"), y es
+-- culpa mía, no tuya: te lo mandé todo junto en un solo Run. El editor
+-- de Supabase parte el texto en instrucciones por su cuenta, y con las
+-- comillas de dólar ($$) se confunde: cortó la función por la mitad y
+-- ejecutó un pedazo suelto, donde `pr` ya no significaba nada.
+--
+-- No era un error del SQL —el mensaje no habla de la función ni de la
+-- tabla— era el editor. Es §3.5 del archivo madre, y yo la incumplí.
+--
+-- SOLUCIÓN: el bloque 1 va SOLO. Se pega, se aprieta Run, y recién
+-- después se pega el bloque 2.
+--
+-- ================================================================
 -- QUÉ CAMBIA, y son dos líneas:
 --
 --  1) Se quita el candado que decía "por ahora la merma solo está
 --     habilitada en la bodega". Era la regla de esa etapa (§0.7), y hoy
---     Jhon pidió lo contrario: que se pueda mermar en Mall Plaza, en
---     Angamos y en la bodega.
+--     Jhon pidió lo contrario: mermar en Mall Plaza, en Angamos y en la
+--     bodega.
 --
 --  2) La merma queda anotada con la sede DEL PRODUCTO. Antes se anotaba
 --     siempre 'central' porque no había otra posible; ahora sí la hay, y
@@ -33,6 +45,11 @@
 -- ================================================================
 
 
+-- ================================================================
+-- BLOQUE 1 — LA FUNCIÓN.  ⚠️ ESTE BLOQUE VA SOLO, NADA MÁS PEGADO.
+--   Copiar desde la línea de abajo hasta el `$$;` final, y Run.
+--   Tiene que contestar "Success. No rows returned".
+-- ================================================================
 create or replace function public.mermar(
   p_producto_id bigint,
   p_cantidad    numeric default null,
@@ -127,20 +144,20 @@ end;
 $$;
 
 
+-- ================================================================
+-- BLOQUE 2 — PERMISO Y COMPROBACIÓN  (recién ahora, en otro Run)
+--
+-- QUÉ VER: una sola fila, y que diga SÍ. Si dijera NO, el bloque 1 no
+-- llegó a entrar y hay que volver a pegarlo solo.
+-- ================================================================
 grant execute on function public.mermar(bigint,numeric,jsonb,text,text,text) to anon, authenticated;
 
-
--- ---------- comprobación ----------
--- QUÉ VER: una sola fila, y que diga SÍ. Si dijera NO, quedó la versión
--- vieja y hay que volver a pegar el bloque.
 select 'la merma ya funciona en todas las sedes' as pieza,
        case when pg_get_functiondef(p.oid) not like '%<> ''central''%'
             then 'SÍ' else 'NO' end as quedo
 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public' and p.proname = 'mermar';
 
-
--- ---------- registro en el cuaderno ----------
 insert into public.migraciones_aplicadas (archivo, quien, como_se_supo, nota)
 values ('2026-08-mermas-en-todas-las-sedes.sql', 'Jhon', 'lo corrió Jhon',
         'Quita el candado que limitaba la merma a la bodega, y anota la merma con la sede del producto en vez de central')
