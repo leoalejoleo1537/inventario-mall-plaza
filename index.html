@@ -1450,6 +1450,14 @@
             <input type="number" step="0.5" min="0" id="enl-n-max"></div>
         </div>
         <label class="chkrow"><input type="checkbox" id="enl-n-perec"><span>Producto perecedero</span></label>
+        <!-- Nace APAGADO a propósito: la mayoría de lo que entra a bodega
+             es insumo y no se vende de a uno. Y crear en Fudo no se puede
+             deshacer — la API no tiene borrar (§8). -->
+        <label class="chkrow"><input type="checkbox" id="enl-n-fudo"><span>Se vende en Fudo</span></label>
+        <div class="field" id="enl-n-precio-caja" style="display:none">
+          <label>Precio de venta</label>
+          <input type="number" step="10" min="0" id="enl-n-precio" placeholder="Ej: 3500">
+        </div>
         <div id="enl-dup"></div>
       </div>
     </div>
@@ -3263,6 +3271,8 @@ let enlDest = {plaza:false, angamos:false};
 function prepararNuevo(){
   $('enl-n-nombre').value=''; $('enl-n-min').value=''; $('enl-n-max').value='';
   $('enl-n-perec').checked=false; $('enl-dup').innerHTML='';
+  $('enl-n-fudo').checked=false; $('enl-n-precio').value='';
+  $('enl-n-precio-caja').style.display='none';
   enlDest = {plaza:false, angamos:false};
   /* La sección arranca SIN elegir. Si se dejara la primera de la lista, una
      torta terminaría creada en "Aseo" por no tocar el desplegable — y un
@@ -3308,16 +3318,29 @@ function pintarResumenNuevo(){
   /* Falta algo por elegir: se dice cuál. Un botón apagado sin motivo deja a la
      persona tocándolo sin entender por qué no pasa nada. */
   const sinSeccion = on.filter(s=>!($('enl-destinos').querySelector(`[data-enlrubro="${s}"]`)||{}).value);
+  const enFudo = $('enl-n-fudo').checked;
   const falta = !$('enl-n-nombre').value.trim() ? 'Falta el nombre'
               : !$('enl-n-rubro').value        ? 'Falta la sección en Bodega'
               : sinSeccion.length              ? 'Falta la sección en '+sinSeccion.map(s=>SEDES[s].corto).join(' y ')
+              : enFudo && !(+$('enl-n-precio').value > 0) ? 'Falta el precio de venta'
+              : enFudo && !on.length           ? 'Para venderlo en Fudo, elige al menos un local'
               : null;
   $('enl-resumen').textContent = falta ? falta
     : on.length ? 'Se crea en '+lista+' · quedan enlazados'
+                  + (enFudo ? ' · y en Fudo, con su receta' : '')
                 : 'Se crea solo en Bodega · sin enlace';
   $('enl-resumen').style.color = falta ? 'var(--muted)' : '';
   $('enl-crear').disabled = !!falta;
 }
+
+/* El precio aparece solo si el producto se va a vender. Un campo que no
+   aplica y está siempre visible es una pregunta que la gente contesta por
+   contestar. */
+$('enl-n-fudo').addEventListener('change', ()=>{
+  $('enl-n-precio-caja').style.display = $('enl-n-fudo').checked ? '' : 'none';
+  pintarResumenNuevo();
+});
+$('enl-n-precio').addEventListener('input', pintarResumenNuevo);
 
 $('enl-destinos').addEventListener('click', e=>{
   const d = e.target.closest('[data-enldest]'); if(!d) return;
@@ -3377,8 +3400,38 @@ $('enl-crear').addEventListener('click', async ()=>{
   btn.disabled=false; btn.textContent='Crear y enlazar';
   if(error){ avisar(error.message || 'No se pudo crear. Revisa tu señal e inténtalo de nuevo.'); return; }
   const det = (data && data.detalle) || [];
-  avisar('✓ '+nombre+'\n'+det.map(d=>
-    (SEDES[d.sede]?SEDES[d.sede].corto:d.sede)+': '+d.estado).join(' · '));
+  const lineas = det.map(d=>(SEDES[d.sede]?SEDES[d.sede].corto:d.sede)+': '+d.estado);
+
+  /* Y si se marcó "se vende en Fudo", nace allá también, con su receta ya
+     apuntando al producto del local. Es lo que pidió Jhon: que el enlace y
+     la receta nazcan con el producto, en vez de quedar como dos trabajos
+     sueltos que alguien tiene que acordarse de hacer después.
+
+     Va DESPUÉS de crear en el inventario y no antes: la receta necesita el
+     id del producto del local, así que si esto fallara, lo que queda es un
+     producto sin vender — molesto pero inofensivo. Al revés quedaría algo
+     vendiéndose en Fudo sin descontar nada, que es la falla cara.
+
+     Se hace sede por sede porque cada local tiene su propio Fudo: son dos
+     catálogos distintos y cada uno da su propio id. */
+  if($('enl-n-fudo').checked){
+    const precio = +$('enl-n-precio').value;
+    for(const d of det){
+      if(d.sede === 'central' || !d.id) continue;
+      const r = await sb.functions.invoke('fudo-crear-producto',
+        {body:{sede:d.sede, producto_id:d.id, nombre, precio}});
+      const err = r.error || (r.data && r.data.error);
+      const corto = SEDES[d.sede] ? SEDES[d.sede].corto : d.sede;
+      if(err){
+        lineas.push('⚠ Fudo ' + corto + ': ' + String((err && err.message) || err));
+      } else {
+        lineas.push('Fudo ' + corto + ': ' +
+          (r.data && r.data.ya_existia ? 'ya estaba · receta hecha' : 'creado · con receta'));
+      }
+    }
+  }
+
+  avisar('✓ '+nombre+'\n'+lineas.join('\n'));
   await loadData(); await loadEnlaces();
   prepararNuevo();          // el formulario queda limpio para el siguiente
 });
@@ -4969,7 +5022,14 @@ function pickTab(tab){
   $('view-enlaces').style.display = tab==='enlaces'?'block':'none';
   vistaActual=tab; $('topTitle').textContent=TITULOS[tab]||TITULOS.inv;
   if(tab==='mermas') loadMermas();
-  if(tab==='enlaces'){ prepararNuevo(); loadEnlaces(); }
+  /* El formulario se arma DESPUÉS de cargar, no antes (2026-08-17). Las
+     secciones de Plaza y Angamos salen de SEDE_PROD, que la llena
+     loadEnlaces(); armándolo primero, esos dos desplegables quedaban
+     VACÍOS la primera vez que se entraba a Enlaces —no había de dónde
+     elegir— y al volver a entrar aparecían solos. Un formulario que
+     funciona en el segundo intento es de los errores más difíciles de
+     reportar, y es justo el que describió Jhon. */
+  if(tab==='enlaces') loadEnlaces().then(prepararNuevo);
   // Inicio devuelve la pantalla a como se abre: sin búsqueda, sin filtros y
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();
