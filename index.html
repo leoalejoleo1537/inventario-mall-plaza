@@ -699,6 +699,9 @@
   .modal-ask{max-width:340px;text-align:center}
   .modal-ask h2{margin:2px 0 0}
   .ask-detalle{font-size:14px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+  .ask-detalle.largo{text-align:left;font-size:14px;white-space:pre-wrap;word-break:break-word;
+    max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    background:var(--bg);border-radius:10px;padding:10px 12px}
   .btn-gris{background:var(--gray-bg);color:var(--gray-fg)}
   .btn-gris:active{background:#E1E3E6}
   .sec-ico{display:flex;align-items:center;gap:9px;min-width:0}
@@ -943,6 +946,9 @@
   .modal-ask{max-width:340px;text-align:center}
   .modal-ask h2{margin:2px 0 0}
   .ask-detalle{font-size:14px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+  .ask-detalle.largo{text-align:left;font-size:14px;white-space:pre-wrap;word-break:break-word;
+    max-height:46vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    background:var(--bg);border-radius:10px;padding:10px 12px}
   .btn-gris{background:var(--gray-bg);color:var(--gray-fg)}
   .btn-gris:active{background:#E1E3E6}
   .sec-ico{display:flex;align-items:center;gap:9px;min-width:0}
@@ -1457,6 +1463,13 @@
         <div class="field" id="enl-n-precio-caja" style="display:none">
           <label>Precio de venta</label>
           <input type="number" step="10" min="0" id="enl-n-precio" placeholder="Ej: 3500">
+        </div>
+        <!-- Fudo no acepta un producto sin apartado: contesta que le falta
+             `relationships`. Y no es un formalismo — es dónde lo va a
+             encontrar el mesero en la pantalla de venta. -->
+        <div class="field" id="enl-n-cat-caja" style="display:none">
+          <label>Apartado en Fudo</label>
+          <select id="enl-n-cat"><option value="">Cargando…</option></select>
         </div>
         <div id="enl-dup"></div>
       </div>
@@ -2106,6 +2119,10 @@ function preguntar(titulo, detalle, textoOk, soloAviso){
     $('ask-titulo').textContent = titulo||'';
     $('ask-detalle').textContent = detalle||'';
     $('ask-detalle').style.display = detalle ? '' : 'none';
+    /* Centrado se lee bien una frase; un mensaje de seis líneas no. Y si no
+       cabe, que haga scroll adentro en vez de empujar el botón fuera de la
+       pantalla — con el botón fuera, el aviso no se puede ni cerrar. */
+    $('ask-detalle').classList.toggle('largo', String(detalle||'').length > 90);
     ok.textContent = textoOk || 'Sí';
     no.style.display = soloAviso ? 'none' : '';
     ov.querySelector('.modal-ask').classList.toggle('solo-aviso', !!soloAviso);
@@ -2127,10 +2144,15 @@ function preguntar(titulo, detalle, textoOk, soloAviso){
 /* Un aviso que hay que cerrar, con la cara de la app. Ojo con los nombres:
    aviso()  = el mensajito que aparece y se va solo (toast)
    avisar() = esta ventana, que espera a que la cierren (reemplaza a alert) */
+/* Un aviso puede traer un titulito corto y un detalle, separados por una
+   línea en blanco. Pero si lo de arriba es largo NO es un título: es el
+   mensaje entero, y ponerlo en la letra grande y negrita del título lo
+   deja ilegible y desbordado — pasó con el error de Fudo, que traía el
+   texto crudo de la API. Por encima de 60 caracteres, todo va al cuerpo. */
 function avisar(texto){
   const t = String(texto||'');
   const corte = t.indexOf('\n\n');
-  return corte > 0
+  return (corte > 0 && corte <= 60)
     ? preguntar(t.slice(0,corte), t.slice(corte+2), 'Entendido', true)
     : preguntar('', t, 'Entendido', true);
 }
@@ -3273,6 +3295,7 @@ function prepararNuevo(){
   $('enl-n-perec').checked=false; $('enl-dup').innerHTML='';
   $('enl-n-fudo').checked=false; $('enl-n-precio').value='';
   $('enl-n-precio-caja').style.display='none';
+  $('enl-n-cat-caja').style.display='none'; CATS_FUDO=null;
   enlDest = {plaza:false, angamos:false};
   /* La sección arranca SIN elegir. Si se dejara la primera de la lista, una
      torta terminaría creada en "Aseo" por no tocar el desplegable — y un
@@ -3324,6 +3347,7 @@ function pintarResumenNuevo(){
               : sinSeccion.length              ? 'Falta la sección en '+sinSeccion.map(s=>SEDES[s].corto).join(' y ')
               : enFudo && !(+$('enl-n-precio').value > 0) ? 'Falta el precio de venta'
               : enFudo && !on.length           ? 'Para venderlo en Fudo, elige al menos un local'
+              : enFudo && !$('enl-n-cat').value ? 'Falta el apartado en Fudo'
               : null;
   $('enl-resumen').textContent = falta ? falta
     : on.length ? 'Se crea en '+lista+' · quedan enlazados'
@@ -3336,10 +3360,40 @@ function pintarResumenNuevo(){
 /* El precio aparece solo si el producto se va a vender. Un campo que no
    aplica y está siempre visible es una pregunta que la gente contesta por
    contestar. */
+/* Las categorías se piden a Fudo, no se escriben a mano: son las que ese
+   local tiene de verdad en su pantalla de venta. Se piden de la primera
+   sede marcada, y al crear se resuelven POR NOMBRE en cada una — cada
+   local tiene su propio Fudo y el mismo apartado lleva otro número. */
+let CATS_FUDO = null;
+async function cargarCategoriasFudo(){
+  const sede = SEDES_ENLACE.find(s=>enlDest[s]);
+  const sel = $('enl-n-cat');
+  if(!sede){ sel.innerHTML='<option value="">Elige primero un local</option>'; return; }
+  sel.innerHTML = '<option value="">Cargando…</option>';
+  const r = await sb.functions.invoke('fudo-crear-producto',
+    {body:{sede, listar_categorias:true}});
+  const err = await motivoDeFuncion(r);
+  if(err){
+    sel.innerHTML = '<option value="">No se pudieron leer</option>';
+    console.error('categorías de Fudo', err);
+    CATS_FUDO = [];
+    return;
+  }
+  CATS_FUDO = ((r.data && r.data.categorias) || []).map(c=>c.nombre)
+    .sort((a,b)=>a.localeCompare(b,'es'));
+  sel.innerHTML = '<option value="">— Elegir apartado —</option>'
+    + CATS_FUDO.map(n=>`<option>${esc(n)}</option>`).join('');
+  pintarResumenNuevo();
+}
+
 $('enl-n-fudo').addEventListener('change', ()=>{
-  $('enl-n-precio-caja').style.display = $('enl-n-fudo').checked ? '' : 'none';
+  const on = $('enl-n-fudo').checked;
+  $('enl-n-precio-caja').style.display = on ? '' : 'none';
+  $('enl-n-cat-caja').style.display = on ? '' : 'none';
+  if(on && CATS_FUDO === null) cargarCategoriasFudo();
   pintarResumenNuevo();
 });
+$('enl-n-cat').addEventListener('change', pintarResumenNuevo);
 $('enl-n-precio').addEventListener('input', pintarResumenNuevo);
 
 $('enl-destinos').addEventListener('click', e=>{
@@ -3348,6 +3402,8 @@ $('enl-destinos').addEventListener('click', e=>{
   const s = d.dataset.enldest;
   enlDest[s] = !enlDest[s];
   d.classList.toggle('on', enlDest[s]);
+  // cambió el local: sus apartados de Fudo son otros
+  if($('enl-n-fudo').checked){ CATS_FUDO = null; cargarCategoriasFudo(); }
   pintarResumenNuevo();
 });
 $('enl-destinos').addEventListener('change', pintarResumenNuevo);
@@ -3419,7 +3475,8 @@ $('enl-crear').addEventListener('click', async ()=>{
     for(const d of det){
       if(d.sede === 'central' || !d.id) continue;
       const r = await sb.functions.invoke('fudo-crear-producto',
-        {body:{sede:d.sede, producto_id:d.id, nombre, precio}});
+        {body:{sede:d.sede, producto_id:d.id, nombre, precio,
+               categoria:$('enl-n-cat').value}});
       const err = await motivoDeFuncion(r);
       const corto = SEDES[d.sede] ? SEDES[d.sede].corto : d.sede;
       if(err){
