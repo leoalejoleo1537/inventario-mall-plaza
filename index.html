@@ -779,6 +779,26 @@
   /* franja a rayas: el lenguaje de "zona restringida", antes de leer nada */
   .adm-barra{height:6px;flex-shrink:0;
     background:repeating-linear-gradient(45deg,#C0392B 0 10px,#8E2A20 10px 20px)}
+  /* ---- lo que cambió en Fudo ----
+     Una fila por producto: el nombre, y el salto del número. La dirección
+     la lleva el COLOR y la flecha, no una palabra — mismo criterio que
+     las píldoras de vencimiento (regla 0.3). */
+  .modal-lista{display:flex;flex-direction:column;padding:0}
+  .emp-grupo{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.3px;
+    padding:12px 2px 6px}
+  .emp-fila{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;
+    background:var(--bg);margin-bottom:6px}
+  .emp-nom{flex:1;min-width:0;font-size:14.5px;font-weight:600;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .emp-salto{font-size:14px;font-weight:800;white-space:nowrap;
+    padding:4px 10px;border-radius:999px}
+  .emp-salto.sube{color:var(--green-fg);background:var(--green-bg)}
+  .emp-salto.baja{color:var(--red-fg);background:var(--red-bg)}
+  .emp-salto .de{font-weight:600;opacity:.62}
+  .emp-resumen{display:flex;gap:8px;margin:2px 0 4px}
+  .emp-tarjeta{flex:1;text-align:center;background:var(--bg);border-radius:12px;padding:10px 6px}
+  .emp-tarjeta .n{font-size:22px;font-weight:800;line-height:1.1}
+  .emp-tarjeta .l{font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
   .adm-head{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;flex-shrink:0}
   .adm-head h2{margin:0;flex:1;font-size:18px}
   .adm-x{border:none;background:var(--gray-bg);color:var(--muted);width:32px;height:32px;
@@ -1187,6 +1207,22 @@
     <div class="rueda"></div>
     <div class="cargando-txt" id="cargando-txt">Actualizando Fudo…</div>
     <div class="cargando-sub">No cierres la app</div>
+  </div>
+</div>
+
+<!-- ---- lo que cambió en Fudo, al terminar de actualizar ----
+     Sale solo cuando hubo cambios. Si Fudo ya estaba al día no aparece
+     nada: una ventana que dice "no pasó nada" es una ventana de más. -->
+<div class="overlay overlay-blur" id="overlay-empuje">
+  <div class="modal modal-lista">
+    <div class="adm-head">
+      <h2 id="empuje-titulo">Fudo actualizado</h2>
+      <button type="button" class="adm-x" id="empuje-cerrar" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="adm-body" id="empuje-cuerpo"></div>
+    <div class="adm-pie">
+      <button type="button" class="adm-btn" id="empuje-ok">Entendido</button>
+    </div>
   </div>
 </div>
 
@@ -5585,19 +5621,33 @@ const PASOS_SYNC = [
         {body:{sede:SEDE, modo:'aplicar', incluir_ceros:true}});
       if(error) throw error;
       if(!data || data.error) throw new Error((data && data.error) || 'sin respuesta');
+      /* Se guarda para poder MOSTRARLO al final. Que la pantalla diga qué
+         se movió en Fudo es la diferencia entre confiar en el sistema y
+         tener que ir a comprobarlo a mano cada vez. */
+      ULTIMO_EMPUJE = data;
       if(data.con_error) throw new Error(data.con_error + ' productos que Fudo rechazó');
       return data.actualizados ? data.actualizados + ' en Fudo' : '';
     }
   },
 ];
 
+/* Lo que el último empuje movió en Fudo. Se llena en el paso `fudo` y se
+   pinta al terminar; se vacía en cada corrida para no mostrar lo de la
+   vez pasada si esta no empujó nada. */
+let ULTIMO_EMPUJE = null;
+
 let actualizando = false;
 async function actualizarTodo(){
   if(!SEDE || actualizando) return;          // no se pisa a sí mismo
   actualizando = true;
+  ULTIMO_EMPUJE = null;
   const btn = $('btnActualizar');
   btn.disabled = true; btn.classList.add('girando');
-  aviso('Actualizando…', 0);
+  /* Ventana de "trabajando" con el fondo desenfocado, no un avisito.
+     Desde que este botón además le escribe a Fudo, tarda unos segundos y
+     hace algo que sale de la app: tiene que verse que está ocurriendo, y
+     nadie tiene que poder apretarlo dos veces mientras tanto. */
+  trabajando('Actualizando…');
 
   const logros = [], fallos = [], graves = [];
   const t0 = new Date(Date.now() - 5000).toISOString();   // 5 s de holgura por el reloj
@@ -5622,6 +5672,7 @@ async function actualizarTodo(){
     if($('view-recetas').style.display !== 'none') await loadRecetas();
   }catch(e){ console.error('No se pudo releer la pantalla', e); }
 
+  listo();
   btn.disabled = false; btn.classList.remove('girando');
   actualizando = false;
 
@@ -5637,8 +5688,58 @@ async function actualizarTodo(){
        puntito naranja aparece un instante después si hubo algo que descontar. */
     ofrecerDetalle(await traerDescuentos(t0));
   }
+  mostrarEmpuje();
 }
 $('btnActualizar').addEventListener('click', actualizarTodo);
+
+/* ---------------- qué se movió en Fudo ----------------
+
+   Pedido por Jhon: al terminar, ver qué bajó y qué subió. Antes esto era
+   un número en un avisito que se iba solo, y un número no deja comprobar
+   nada — para saber si el cachito llegó de verdad había que abrir Fudo.
+
+   Sale SOLO si hubo cambios: si Fudo ya estaba al día no aparece nada.
+   Una ventana que dice "no pasó nada" es una ventana de más, y la que
+   aparece siempre se cierra sin leerla.                                */
+function cerrarEmpuje(){ $('overlay-empuje').classList.remove('open'); }
+
+function mostrarEmpuje(){
+  const d = ULTIMO_EMPUJE;
+  if(!d) return;
+  const cambios = (d.cambios || []).filter(c => c && c.a != null && c.de != null);
+  if(!cambios.length) return;
+
+  const suben = cambios.filter(c => Number(c.a) > Number(c.de));
+  const bajan = cambios.filter(c => Number(c.a) < Number(c.de));
+
+  const fila = c => {
+    const sube = Number(c.a) > Number(c.de);
+    return `<div class="emp-fila">
+      <span class="emp-nom">${esc(c.producto)}</span>
+      <span class="emp-salto ${sube?'sube':'baja'}">
+        <span class="de">${esc(String(c.de))}</span> → ${esc(String(c.a))}
+      </span></div>`;
+  };
+
+  const bloque = (titulo, lista) => lista.length
+    ? `<div class="emp-grupo">${titulo}</div>` + lista.map(fila).join('') : '';
+
+  $('empuje-cuerpo').innerHTML =
+    `<div class="emp-resumen">
+       <div class="emp-tarjeta"><div class="n" style="color:var(--green-fg)">${suben.length}</div><div class="l">subieron</div></div>
+       <div class="emp-tarjeta"><div class="n" style="color:var(--red-fg)">${bajan.length}</div><div class="l">bajaron</div></div>
+     </div>`
+    + bloque('BAJARON EN FUDO', bajan)      // primero lo que se descontó:
+    + bloque('SUBIERON EN FUDO', suben)     // es lo que puede dejar de venderse
+    + (d.saltados_por_quedar_en_cero
+        ? `<div class="emp-grupo">${d.saltados_por_quedar_en_cero} no se mandaron porque quedaban en 0 · revisa sus recetas</div>` : '');
+
+  $('overlay-empuje').classList.add('open');
+}
+
+$('empuje-cerrar').addEventListener('click', cerrarEmpuje);
+$('empuje-ok').addEventListener('click', cerrarEmpuje);
+$('overlay-empuje').addEventListener('click', e=>{ if(e.target===$('overlay-empuje')) cerrarEmpuje(); });
 
 $('toast').addEventListener('click', abrirDetalle);
 /* Se cierra tocando fuera, como el resto de las ventanas de la app. */
