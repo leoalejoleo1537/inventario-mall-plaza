@@ -2660,10 +2660,10 @@ function bajarEnFudo(prod){
   if(!prod || (SEDE !== 'plaza' && SEDE !== 'angamos')) return;
   sb.functions.invoke('fudo-empujar-stock',
     {body:{sede:SEDE, modo:'aplicar', producto_id:prod.id, incluir_ceros:true}})
-    .then(r=>{
+    .then(async r=>{
       const d = (r && r.data) || {};
       if(d.actualizados) aviso('Fudo actualizado · ' + d.actualizados, 3000);
-      else if(r && r.error) console.warn('La merma no llegó a Fudo:', r.error);
+      else if(r && r.error) console.warn('La merma no llegó a Fudo:', await motivoDeFuncion(r));
     })
     .catch(e=>console.warn('La merma no llegó a Fudo:', e));
 }
@@ -3420,10 +3420,10 @@ $('enl-crear').addEventListener('click', async ()=>{
       if(d.sede === 'central' || !d.id) continue;
       const r = await sb.functions.invoke('fudo-crear-producto',
         {body:{sede:d.sede, producto_id:d.id, nombre, precio}});
-      const err = r.error || (r.data && r.data.error);
+      const err = await motivoDeFuncion(r);
       const corto = SEDES[d.sede] ? SEDES[d.sede].corto : d.sede;
       if(err){
-        lineas.push('⚠ Fudo ' + corto + ': ' + String((err && err.message) || err));
+        lineas.push('⚠ Fudo ' + corto + ':\n' + err);
       } else {
         lineas.push('Fudo ' + corto + ': ' +
           (r.data && r.data.ya_existia ? 'ya estaba · receta hecha' : 'creado · con receta'));
@@ -3627,6 +3627,44 @@ async function loadLotes(){
   (data||[]).forEach(l=>{ (nuevo[l.producto_id]=nuevo[l.producto_id]||[]).push(l); });
   LOTES=nuevo;
 }
+/* ---------------- traducir el error de una Edge Function ----------------
+
+   EL PROBLEMA, y lo destapó Jhon el 2026-08-17 intentando crear una pizza:
+   la pantalla decía **"Edge Function returned a non-2xx status code"**.
+   Eso no es un error nuestro: es el mensaje genérico de la librería, que
+   solo dice "el servidor contestó con un código de fallo" sin decir cuál
+   ni por qué.
+
+   Y el motivo de verdad SÍ viaja: cuando la respuesta no es 2xx, la
+   librería guarda la respuesta completa en `error.context`. Ahí adentro
+   está el texto que escribimos nosotros —"Falta el precio", "Esta cuenta
+   no puede crear productos en Fudo", "Fudo no aceptó crear el
+   producto"—. Simplemente nadie lo estaba abriendo.
+
+   Es la falla de §0.5 en su forma más barata: la información existía y no
+   llegaba a la pantalla. Un error que no se puede leer cuesta una vuelta
+   entera de preguntas cada vez que aparece.
+
+   Devuelve null si no hubo error.                                       */
+async function motivoDeFuncion(r){
+  const e = r && r.error;
+  if(!e) return (r && r.data && r.data.error) ? String(r.data.error) : null;
+  const ctx = e.context;
+  if(ctx && typeof ctx.text === 'function'){
+    try{
+      const crudo = await (typeof ctx.clone === 'function' ? ctx.clone() : ctx).text();
+      let cuerpo = null;
+      try{ cuerpo = JSON.parse(crudo); }catch(_){ /* no era JSON */ }
+      const partes = cuerpo
+        ? [cuerpo.error, cuerpo.detalle, cuerpo.que_hacer].filter(Boolean)
+        : (crudo ? [crudo.slice(0,300)] : []);
+      if(partes.length) return partes.join('\n') + (ctx.status ? '\n\n(código '+ctx.status+')' : '');
+      if(ctx.status) return 'El servidor contestó con el código '+ctx.status+'.';
+    }catch(_){ /* si no se puede leer, cae al mensaje de siempre */ }
+  }
+  return String(e.message || e);
+}
+
 /* reintenta una operación de Supabase hasta 3 veces (para señal móvil floja) */
 async function conReintento(fn,intentos=3){
   let res;
@@ -4636,9 +4674,9 @@ async function sumarAFudo(productoId, cantidad, itemId){
      causa real: puede ser la señal, pero también una sesión caducada, una
      cuenta sin permiso o una receta que no calza. La primera prueba en el
      local se perdió justo por eso. Ahora el motivo se dice tal cual. */
-  const err = r.error || (r.data && r.data.error);
+  const err = await motivoDeFuncion(r);
   if(err){
-    const msg = String((err && err.message) || err);
+    const msg = err;
     console.error('No se pudo sumar a Fudo:', msg, r);
     const sinRed = !navigator.onLine || /fetch|network|failed to send/i.test(msg);
     if(sinRed){
@@ -5730,8 +5768,8 @@ const PASOS_SYNC = [
       if(SEDE !== 'plaza' && SEDE !== 'angamos') return '';
       const {data,error} = await sb.functions.invoke('fudo-empujar-stock',
         {body:{sede:SEDE, modo:'aplicar', incluir_ceros:true}});
-      if(error) throw error;
-      if(!data || data.error) throw new Error((data && data.error) || 'sin respuesta');
+      if(error || (data && data.error)) throw new Error(await motivoDeFuncion({error, data}));
+      if(!data) throw new Error('sin respuesta');
       /* Se guarda para poder MOSTRARLO al final. Que la pantalla diga qué
          se movió en Fudo es la diferencia entre confiar en el sistema y
          tener que ir a comprobarlo a mano cada vez. */
