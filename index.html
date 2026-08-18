@@ -837,6 +837,27 @@
     border-radius:10px;font-size:15px;background:#fff;color:var(--text)}
   .aj-alta input:focus{outline:none;border-color:var(--orange)}
   .aj-alta button{flex-shrink:0;width:auto;padding:0 18px}
+
+  /* respaldos: elegir sede, elegir día, y ver qué cambiaría */
+  .aj-sedes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .aj-sede{padding:9px 15px;border-radius:999px;border:1.5px solid var(--border);background:#fff;
+    font-size:14px;font-weight:700;color:var(--text);cursor:pointer;transition:.15s}
+  .aj-sede.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .aj-dia{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border:none;
+    border-radius:11px;background:var(--bg);margin-bottom:8px;cursor:pointer;text-align:left}
+  .aj-dia:hover{background:#EFF2F5}
+  .aj-dia .nm{flex:1;min-width:0}
+  .aj-dia .nm b{display:block;font-size:14.5px;color:var(--text)}
+  .aj-dia .nm span{font-size:12.5px;color:var(--muted)}
+  .aj-dia .flecha{color:var(--orange);font-size:20px;font-weight:800;line-height:1}
+  .aj-dif{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;
+    background:var(--bg);margin-bottom:6px;font-size:14px}
+  .aj-dif .nm{flex:1;min-width:0;font-weight:650;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .aj-dif .sal{font-weight:800;white-space:nowrap;padding:3px 9px;border-radius:999px;
+    background:var(--amber-bg);color:var(--amber-fg)}
+  .aj-dif .sal .de{font-weight:600;opacity:.62}
+  .aj-vacio{font-size:14px;color:var(--muted);padding:6px 2px}
   .aj{display:flex;gap:16px;align-items:flex-start}
   .aj-rail{width:232px;flex-shrink:0;background:#fff;border-radius:14px;padding:8px;
     box-shadow:0 1px 3px rgba(15,30,49,.06);position:sticky;top:8px}
@@ -4326,9 +4347,24 @@ $('m-fudo').addEventListener('click', async()=>{
   $('overlay-fudo').classList.add('open');
 });
 
-$('adm-nuevo').addEventListener('click', ()=>{
-  $('overlay-admin').classList.remove('open');
-  $('btnNuevo').click();
+/* Acceso directo a Bodega -> Enlaces, que es el camino completo: crea en
+   bodega, en los locales elegidos y en Fudo, con su receta y su enlace.
+   Antes esto abría el alta suelta de la sede abierta — un producto que
+   nacía sin enlace, y que el reparto después no podía mover. */
+$('adm-nuevo').addEventListener('click', async ()=>{
+  if(SEDE !== 'central'){
+    if(!await preguntar('Crear un producto',
+        'Se crea desde Bodega, para que nazca enlazado con los locales y con Fudo.',
+        'Ir a Bodega')) return;
+    /* Cambiar de sede es lo mismo que hace el selector de siempre: se
+       apoya en pickSede en vez de escribir otra forma de hacerlo. */
+    pickSede('central');
+    /* pickSede deja la app en Inventario y recargando; se espera a que
+       termine, si no la pestaña Enlaces se pinta sobre datos viejos. */
+    await new Promise(r=>setTimeout(r, 400));
+  }
+  pickTab('enlaces');
+  setTimeout(()=>{ const c = $('enl-n-nombre'); if(c) c.focus(); }, 300);
 });
 $('adm-edicion').addEventListener('click', ()=>{
   setModoEdicion(!modoEdicion);
@@ -5244,8 +5280,18 @@ const AJUSTES = [
     montar:()=>{
       ajMontar('aj-slot-productos','adm-sec-productos');
       $('adm-edicion').classList.toggle('on', modoEdicion);
-      $('adm-nuevo').style.display   = PERMISOS.puede_editar ? '' : 'none';
       $('adm-edicion').style.display = PERMISOS.puede_editar ? '' : 'none';
+      /* "Agregar producto" creaba un producto suelto en la sede abierta.
+         Desde el 2026-08-17 hay un camino mejor y completo —Bodega →
+         Enlaces— que lo crea en bodega, en los locales elegidos, en Fudo
+         y con su receta, todo de una vez. Dejar los dos caminos vivos
+         invita a usar el pobre sin darse cuenta, así que este botón pasa
+         a ser la puerta al otro. */
+      const nu = $('adm-nuevo');
+      nu.style.display = PERMISOS.puede_editar ? '' : 'none';
+      nu.querySelector('h4').textContent = '＋ Crear producto';
+      nu.querySelector('.adm-d').textContent =
+        'En bodega, en los locales que elijas y en Fudo, con su receta';
     } },
 
   { id:'secciones', ico:'secciones', tit:'Secciones y turnos',
@@ -5302,11 +5348,12 @@ const AJUSTES = [
 
   { id:'respaldos', ico:'respaldos', tit:'Respaldos',
     sub:'La red. Si algo se rompe, de acá se vuelve.',
-    render:()=>ajPronto([
-      'Qué fotos hay por sede y de cuándo',
-      'Devolver una sede a una fecha · con vista previa antes',
-      'Sacar una foto ahora · descargarla',
-    ]) },
+    render:()=>ajRespaldosHTML(),
+    montar:()=>{
+      if(!AJ_REST.length) ajCargarRestauraciones();
+      const b = $('aj-restaurar');
+      if(b) b.addEventListener('click', ajRestaurar);
+    } },
 
   { id:'actividad', ico:'actividad', tit:'Actividad',
     sub:'Quién hizo qué y cuándo, todo en un solo lugar.',
@@ -5419,6 +5466,188 @@ async function ajAgregarPersona(){
   aviso('✓ Agregada · enciéndele el acceso cuando quieras');
 }
 
+
+/* ---------------- Respaldos y recuperación ----------------
+
+   LA PIEZA QUE SOSTIENE EL RESTO DE AJUSTES. Si cualquier cosa que se
+   toque acá se puede deshacer volviendo a una foto, el miedo a tocar
+   desaparece — y sin eso una zona de administración es una forma cómoda
+   de romper el inventario.
+
+   Es también la que faltó el 9 de agosto: Angamos quedó en cero y no
+   había de dónde volver. Hoy la foto se saca sola dos veces al día; lo
+   que faltaba era poder usarla sin escribir SQL a las corridas.
+
+   TRES REGLAS, y las tres están en la base y no en la pantalla:
+     · guarda el ANTES de cada producto, así la restauración se deshace
+     · no revive productos apagados a propósito
+     · no toca los que nacieron después de la foto                      */
+let AJ_SEDE  = null;     // a qué sede se le va a devolver el tiempo
+let AJ_DIAS  = null;     // días con foto, o null mientras carga
+let AJ_DIA   = null;     // el día elegido
+let AJ_PREVIA = null;    // qué cambiaría, calculado contra el estado de hoy
+let AJ_REST  = [];       // restauraciones hechas
+
+const AJ_SEDES = ['plaza','angamos','central'];
+
+async function ajCargarDias(){
+  AJ_DIAS = null; AJ_DIA = null; AJ_PREVIA = null;
+  if(ajActual === 'respaldos') pintarAjustes();
+  const sede = AJ_SEDE;
+  const [man, aut] = await Promise.all([
+    sb.from('historial').select('fecha').eq('sede',sede).order('fecha',{ascending:false}).limit(1000),
+    sb.from('historial_auto').select('fecha').eq('sede',sede).order('fecha',{ascending:false}).limit(1000),
+  ]);
+  if(sede !== AJ_SEDE) return;               // cambiaron de sede mientras cargaba
+  const dias = {};
+  (man.data||[]).forEach(f=>{ dias[f.fecha] = 'contada a mano'; });
+  (aut.data||[]).forEach(f=>{ if(!dias[f.fecha]) dias[f.fecha] = 'automática'; });
+  AJ_DIAS = Object.keys(dias).sort().reverse().slice(0,60).map(f=>({fecha:f, tipo:dias[f]}));
+  if(ajActual === 'respaldos') pintarAjustes();
+}
+
+/* La vista previa se calcula comparando la foto contra lo que hay AHORA.
+   Solo se muestran las diferencias: una lista de 240 productos donde 236
+   dicen "igual" esconde los 4 que importan. */
+async function ajVerDia(fecha){
+  AJ_DIA = fecha; AJ_PREVIA = null;
+  pintarAjustes();
+  const sede = AJ_SEDE;
+  let foto = [];
+  const man = await sb.from('historial').select('producto_id,producto,stock_actual,stock_min,stock_max,rubro')
+    .eq('sede',sede).eq('fecha',fecha).limit(2000);
+  foto = man.data || [];
+  if(!foto.length){
+    const aut = await sb.from('historial_auto').select('producto_id,producto,stock_actual,stock_min,stock_max,rubro')
+      .eq('sede',sede).eq('fecha',fecha).limit(2000);
+    foto = aut.data || [];
+  }
+  const hoy = await sb.from('productos').select('id,producto,stock_actual,stock_min,stock_max,rubro,activo')
+    .eq('sede',sede).limit(2000);
+  if(sede !== AJ_SEDE || fecha !== AJ_DIA) return;
+  const porId = {};
+  (hoy.data||[]).forEach(p=>{ porId[p.id] = p; });
+
+  const cambios = [], apagados = [];
+  for(const f of foto){
+    const p = porId[f.producto_id];
+    if(!p) continue;                          // ya no existe: no hay a qué volver
+    if(p.activo !== 'SÍ'){ apagados.push(f); continue; }
+    const dif = [];
+    const cmp = (campo, etiqueta) => {
+      const a = f[campo], b = p[campo];
+      if(a === null || a === undefined) return;
+      if(String(a) !== String(b)) dif.push({etiqueta, de:b, a});
+    };
+    cmp('stock_actual','stock'); cmp('stock_min','mín');
+    cmp('stock_max','máx');      cmp('rubro','sección');
+    if(dif.length) cambios.push({nombre: p.producto || f.producto, dif});
+  }
+  AJ_PREVIA = {total: foto.length, cambios, apagados: apagados.length};
+  pintarAjustes();
+}
+
+async function ajCargarRestauraciones(){
+  const {data} = await sb.from('restauraciones').select('*')
+    .order('created_at',{ascending:false}).limit(20);
+  AJ_REST = data || [];
+  if(ajActual === 'respaldos') pintarAjustes();
+}
+
+function ajRespaldosHTML(){
+  const sedes = `<div class="aj-caja">
+      <h3>¿Qué sede?</h3>
+      <p>La restauración toca solo la sede elegida acá, no la que tengas abierta.</p>
+      <div class="aj-sedes">${AJ_SEDES.map(s=>`
+        <button type="button" class="aj-sede${s===AJ_SEDE?' on':''}" data-ajsede="${s}">${esc(SEDES[s].label)}</button>`).join('')}
+      </div>
+    </div>`;
+
+  if(!AJ_SEDE) return sedes;
+
+  let dias;
+  if(AJ_DIAS === null){
+    dias = '<div class="aj-caja"><p>Buscando fotos…</p></div>';
+  } else if(!AJ_DIAS.length){
+    dias = `<div class="aj-caja"><h3>No hay ninguna foto de esta sede</h3>
+      <p>Se sacan solas a las 15:00 y a las 22:00. Si nunca corrieron, no hay a dónde volver.</p></div>`;
+  } else {
+    dias = `<div class="aj-caja"><h3>Volver a un día</h3>
+      <p>Devuelve el stock, el mínimo, el máximo y la sección de cada producto.</p>
+      <div style="margin-top:12px">${AJ_DIAS.map(d=>`
+        <button type="button" class="aj-dia${d.fecha===AJ_DIA?' on':''}" data-ajdia="${d.fecha}">
+          <span class="nm"><b>${fmtFecha(d.fecha)}</b><span>${d.tipo}</span></span>
+          <span class="flecha">›</span>
+        </button>`).join('')}</div></div>`;
+  }
+
+  let previa = '';
+  if(AJ_DIA){
+    if(AJ_PREVIA === null){
+      previa = '<div class="aj-caja"><p>Comparando con lo que hay ahora…</p></div>';
+    } else if(!AJ_PREVIA.cambios.length){
+      previa = `<div class="aj-caja"><h3>Nada cambiaría</h3>
+        <p>El inventario de ${esc(SEDES[AJ_SEDE].label)} está igual que el ${fmtFecha(AJ_DIA)}.</p></div>`;
+    } else {
+      const filas = AJ_PREVIA.cambios.slice(0,200).map(c=>`
+        <div class="aj-dif"><span class="nm">${esc(c.nombre)}</span>
+          ${c.dif.map(d=>`<span class="sal">${esc(d.etiqueta)} <span class="de">${esc(String(d.de))}</span> → ${esc(String(d.a))}</span>`).join('')}
+        </div>`).join('');
+      previa = `<div class="aj-caja">
+          <h3>Qué cambiaría · ${AJ_PREVIA.cambios.length} producto${AJ_PREVIA.cambios.length===1?'':'s'}</h3>
+          <p>Todavía no pasó nada. Esto es lo que quedaría si aplicas.</p>
+          <div style="margin-top:12px">${filas}</div>
+          ${AJ_PREVIA.cambios.length>200?'<div class="aj-vacio">…y más</div>':''}
+          ${AJ_PREVIA.apagados?`<div class="aj-vacio">${AJ_PREVIA.apagados} de la foto están eliminados hoy · no se tocan</div>`:''}
+          <button type="button" class="adm-btn peligro" id="aj-restaurar" style="margin-top:12px">
+            Devolver ${esc(SEDES[AJ_SEDE].label)} al ${fmtFecha(AJ_DIA)}</button>
+        </div>`;
+    }
+  }
+
+  const hechas = AJ_REST.length ? `<div class="aj-caja">
+      <h3>Restauraciones hechas</h3>
+      <div style="margin-top:10px">${AJ_REST.map(r=>`
+        <div class="aj-fila">
+          <div class="nm"><b>${esc((SEDES[r.sede]||{}).label||r.sede)} al ${fmtFecha(r.fecha)}</b>
+            <span>${r.productos} producto${r.productos===1?'':'s'} · ${esc(r.quien||'—')} · ${fmtFecha(r.created_at.slice(0,10))}</span></div>
+          ${r.deshecha_at
+            ? '<span class="aj-yo">deshecha</span>'
+            : `<button type="button" class="rep-deshacer" data-ajdes="${r.id}">Deshacer</button>`}
+        </div>`).join('')}</div></div>` : '';
+
+  return sedes + dias + previa + hechas;
+}
+
+async function ajRestaurar(){
+  const sede = AJ_SEDE, fecha = AJ_DIA;
+  if(!sede || !fecha) return;
+  const n = AJ_PREVIA ? AJ_PREVIA.cambios.length : 0;
+  if(!await preguntar(
+      'Devolver ' + SEDES[sede].label + ' al ' + fmtFecha(fecha),
+      'Van a cambiar ' + n + ' producto' + (n===1?'':'s') + '. Se puede deshacer.',
+      'Sí, devolver')) return;
+  trabajando('Devolviendo el inventario…');
+  const {error} = await sb.rpc('restaurar_sede',{p_sede:sede, p_fecha:fecha, p_quien:NOMBRE});
+  listo();
+  if(error){ avisar(error.message || 'No se pudo restaurar.'); return; }
+  aviso('✓ ' + SEDES[sede].label + ' volvió al ' + fmtFecha(fecha), 5000);
+  await ajCargarRestauraciones();
+  if(sede === SEDE){ await loadData(); await loadLotes(); metrics(); render(); }
+  ajVerDia(fecha);
+}
+
+async function ajDeshacerRestauracion(id){
+  if(!await preguntar('Deshacer la restauración',
+      'Cada producto vuelve al valor que tenía justo antes.','Deshacer')) return;
+  const {error} = await sb.rpc('deshacer_restauracion',{p_id:id, p_quien:NOMBRE});
+  if(error){ avisar(error.message || 'No se pudo deshacer.'); return; }
+  aviso('✓ Deshecha');
+  await ajCargarRestauraciones();
+  if(SEDE){ await loadData(); await loadLotes(); metrics(); render(); }
+  if(AJ_DIA) ajVerDia(AJ_DIA);
+}
+
 let ajActual = 'interruptores';
 
 /* MONTAR TROZOS QUE YA EXISTEN, en vez de reescribirlos.
@@ -5466,7 +5695,13 @@ function pintarAjustes(){
 
 $('aj-pane').addEventListener('click', e=>{
   const sw = e.target.closest('[data-persona]');
-  if(sw && !sw.disabled) ajTogglePersona(sw.dataset.persona);
+  if(sw && !sw.disabled){ ajTogglePersona(sw.dataset.persona); return; }
+  const sd = e.target.closest('[data-ajsede]');
+  if(sd){ AJ_SEDE = sd.dataset.ajsede; ajCargarDias(); return; }
+  const dd = e.target.closest('[data-ajdia]');
+  if(dd){ ajVerDia(dd.dataset.ajdia); return; }
+  const ud = e.target.closest('[data-ajdes]');
+  if(ud){ ajDeshacerRestauracion(+ud.dataset.ajdes); return; }
 });
 
 $('aj-rail').addEventListener('click', e=>{
