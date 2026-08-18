@@ -1524,14 +1524,22 @@
   <!-- Salida y entrada son el mismo trabajo visto al revés, así que viven en la
        misma pestaña. Entra por SALIDA porque es lo que se hace todos los días. -->
   <div class="rec-modos" id="repc-modos">
-    <button class="rec-modo active" data-repcmodo="salida">Enviar a los locales</button>
     <!-- LA LISTA DE RECEPCIÓN (pedida por Adriana, 2026-08-18). Se arma
          temprano con lo que se espera, y a lo largo de la mañana se va
          aceptando, rechazando o corrigiendo a medida que llega. Es el
          MISMO sistema del reparto de los locales, con bodega de destino:
-         por eso reusa esa pantalla entera en vez de una copia. -->
-    <button class="rec-modo" data-repcmodo="recepcion">Lo que llega a bodega</button>
-    <button class="rec-modo" data-repcmodo="entrada">Registrar de una vez</button>
+         por eso reusa esa pantalla entera en vez de una copia.
+
+         VA PRIMERA Y FIJA. Antes cambiaba de sitio según el modo activo y
+         eso confunde: un botón que se mueve obliga a leer la fila entera
+         cada vez, en vez de ir al mismo lugar de memoria. -->
+    <button class="rec-modo active" data-repcmodo="recepcion">Lo que llega a bodega</button>
+    <button class="rec-modo" data-repcmodo="salida">Enviar a los locales</button>
+    <!-- "Registrar de una vez" queda escondido: Adriana no lo va a usar,
+         y dos caminos para lo mismo hacen que alguien tome el corto sin
+         darse cuenta de que no deja check-list. El código se queda por si
+         algún día hace falta. -->
+    <button class="rec-modo" data-repcmodo="entrada" style="display:none">Registrar de una vez</button>
   </div>
 
   <div id="repc-salida">
@@ -1659,9 +1667,12 @@
 <!-- ================= RECETAS ================= -->
 <div class="wrap" id="view-recetas" style="display:none">
 
-  <div class="rec-modos">
-    <button class="rec-modo active" data-modo="enlazar">Enlazar</button>
-    <button class="rec-modo" data-modo="combos">Combos</button>
+  <div class="rec-modos" id="rec-modos">
+    <!-- "Enlazar" era para ponerse al día con los enlaces que faltaban, y
+         ese trabajo ya se hizo. Se apaga desde Ajustes en vez de borrarlo:
+         el día que entre una sede nueva vuelve a hacer falta entero. -->
+    <button class="rec-modo" data-modo="enlazar" id="rec-modo-enlazar" style="display:none">Enlazar</button>
+    <button class="rec-modo active" data-modo="combos">Combos</button>
   </div>
 
   <!-- ---------- portada: el puente ---------- -->
@@ -2037,15 +2048,37 @@ function permisosDeLaSede(fila, sede){
 }
 
 let PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null };
+/* UNA LECTURA QUE FALLA NO PUEDE QUITARLE EL PERMISO A NADIE.
+
+   Este era el bug que reportó Jhon: "habilito el Modo edición para otra
+   persona, funciona un rato y se vuelve a bloquear". La causa: acá se
+   vaciaban los permisos ANTES de leerlos, así que cualquier lectura que
+   no llegara —señal floja, un segundo sin cobertura— dejaba a la persona
+   sin permiso hasta la próxima vez. Y sin permiso, el Modo edición se
+   apaga solo.
+
+   Ahora se distinguen dos cosas que antes se trataban igual:
+     · NO hay sesión  -> se limpia, y está bien: nadie entró.
+     · Hay sesión pero la lectura falló -> se conserva lo que ya se sabía.
+       Un problema de señal no es una revocación de permiso.             */
 async function cargarPermisos(){
-  PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null };
+  const antes = PERMISOS;
   try{
     const {data:{session}} = await sb.auth.getSession();
     const correo = session?.user?.email?.toLowerCase() || null;
-    PERMISOS.correo = correo;
-    if(correo){
-      const {data} = await sb.from('app_permisos').select('*').eq('correo',correo).maybeSingle();
-      if(data) Object.assign(PERMISOS, permisosDeLaSede(data, SEDE));
+    if(!correo){
+      PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null };
+    } else {
+      const {data,error} = await sb.from('app_permisos').select('*').eq('correo',correo).maybeSingle();
+      if(error){
+        // la lectura no llegó: se deja lo de antes si es la misma persona
+        PERMISOS = (antes.correo === correo) ? antes
+          : { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo, sede:null };
+        console.warn('No se pudieron releer los permisos; se conservan los anteriores.', error);
+      } else {
+        PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo, sede:null };
+        if(data) Object.assign(PERMISOS, permisosDeLaSede(data, SEDE));
+      }
     }
   }catch(e){ console.error(e); }   // si la tabla no existe todavía, nadie ve nada nuevo
   aplicarPermisos();
@@ -2071,6 +2104,27 @@ function aplicarPermisos(){
   // si le quitaron el permiso con la pantalla abierta, se sale de ella
   if(!PERMISOS.puede_ajustes && vistaActual === 'ajustes') pickTab('inv');
   if(!PERMISOS.puede_editar) setModoEdicion(false);
+  else recuperarModoEdicion();
+}
+
+/* EL MODO EDICIÓN SE RECUERDA, y esto cambia una decisión de julio.
+
+   Entonces se decidió que arrancara siempre apagado, para que encenderlo
+   fuera una decisión consciente — venía de un producto renombrado sin
+   querer. La intención era buena, pero en la práctica hacía imposible
+   usarlo: al volver del selector de sede o al reabrir la app se apagaba,
+   y había que entrar a Ajustes otra vez. Jhon lo pidió cambiado.
+
+   El punto medio: se recuerda mientras sea LA MISMA persona en LA MISMA
+   sede. Cambiar de sede o cerrar sesión lo apaga — que son justo los dos
+   momentos en que uno deja de estar donde creía estar.                  */
+function llaveModoEd(){ return 'modoEd:' + (PERMISOS.correo||'') + ':' + (SEDE||''); }
+function recordarModoEdicion(v){
+  try{ v ? localStorage.setItem(llaveModoEd(),'1') : localStorage.removeItem(llaveModoEd()); }
+  catch(_){ /* sin almacenamiento, sigue funcionando: solo no se recuerda */ }
+}
+function recuperarModoEdicion(){
+  try{ if(localStorage.getItem(llaveModoEd()) === '1') setModoEdicion(true); }catch(_){ }
 }
 
 /* ---------------- lista de tareas del turno ----------------
@@ -2436,7 +2490,7 @@ function pickSede(s){
   $('armar-titulo').textContent = (SEDE === 'central')
     ? 'Lo que se espera hoy'
     : 'Armar pedido' + (NOMBRE ? ', '+NOMBRE : '');
-  REPARTOS=[]; cajasAbiertas.clear(); setModoEdicion(false);
+  REPARTOS=[]; cajasAbiertas.clear(); setModoEdicion(false);   // se recupera abajo si estaba puesto
   $('body-cerrados').style.display='none';
   $('repartos-abiertos').innerHTML='';
   marcarNuevo();
@@ -4473,6 +4527,7 @@ $('adm-nuevo').addEventListener('click', async ()=>{
 });
 $('adm-edicion').addEventListener('click', ()=>{
   setModoEdicion(!modoEdicion);
+  recordarModoEdicion(modoEdicion);
   aviso(modoEdicion ? 'Modo edición activado' : 'Modo edición desactivado');
 });
 
@@ -6236,6 +6291,9 @@ const INTERRUPTORES = [
   { clave:'tareas_turno', porSede:['plaza','angamos','central'], defecto:false,
     tit:'Lista de tareas del turno',
     sub:'El botón de tareas en la barra de arriba.' },
+  { clave:'modo_enlazar', porSede:[''], defecto:false,
+    tit:'Recetas · el modo Enlazar',
+    sub:'Servía para ponerse al día con los enlaces que faltaban. Se enciende si entra una sede nueva.' },
   { clave:'marca_nuevo', porSede:[''], defecto:true,
     tit:'Marca NUEVO en las pestañas',
     sub:'La etiqueta naranja que invita a entrar a una pantalla recién hecha.' },
@@ -6300,6 +6358,14 @@ function aplicarInterruptores(){
   const verNuevo = ajVal('marca_nuevo', '', true);
   if(tab && !verNuevo)  tab.style.display  = 'none';
   if(tabR && !verNuevo) tabR.style.display = 'none';
+  /* El modo Enlazar de Recetas. Con él apagado la fila de modos queda con
+     un solo botón, y una fila de un botón no es una fila: se esconde
+     entera y la pantalla abre directo en Combos. */
+  const verEnl = ajVal('modo_enlazar', '', false);
+  const be = $('rec-modo-enlazar'), fila = $('rec-modos');
+  if(be)   be.style.display = verEnl ? '' : 'none';
+  if(fila) fila.style.display = verEnl ? '' : 'none';
+  if(!verEnl && vistaActual === 'recetas') modoRecetas('combos');
   if(!ajVal('aviso_motor','',true)) $('motorAviso').classList.remove('ver');
   const bt = $('btnTareas');
   if(bt && SEDE && !ajVal('tareas_turno', SEDE, !!(FLAGS.tareas||{})[SEDE])) bt.style.display = 'none';
@@ -6579,11 +6645,14 @@ function pickTab(tab){
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();
   if(tab==='hist') loadHistorial();
-  if(tab==='reparto'){ if(repEsCentral){ loadEnlaces().then(()=>repcModo('salida')); } else loadRepartos(); }
+  if(tab==='reparto'){ if(repEsCentral){ loadEnlaces().then(()=>repcModo('recepcion')); } else loadRepartos(); }
   /* Abre siempre en la portada, no en el último modo que se dejó: mientras
      jefatura está aprendiendo, lo primero que tienen que ver es dónde está el
      hueco. Cuando ya se sepa de memoria, esto pasa a abrir en el taller. */
-  if(tab==='recetas'){ modoRecetas('enlazar'); loadRecetas(); }
+  if(tab==='recetas'){
+    modoRecetas(ajVal('modo_enlazar','',false) ? 'enlazar' : 'combos');
+    loadRecetas();
+  }
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>pickTab(t.dataset.tab)));
 
