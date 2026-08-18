@@ -858,6 +858,30 @@
     background:var(--amber-bg);color:var(--amber-fg)}
   .aj-dif .sal .de{font-weight:600;opacity:.62}
   .aj-vacio{font-size:14px;color:var(--muted);padding:6px 2px}
+
+  /* pares vitrina/congelador */
+  .aj-grupo{margin-top:14px}
+  .aj-grupo-tit{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.4px;
+    padding:0 2px 8px;display:flex;align-items:center;gap:8px}
+  .aj-par{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;
+    background:var(--bg);margin-bottom:7px}
+  .aj-par.mal{background:var(--amber-bg)}
+  .aj-par .nm{flex:1;min-width:0}
+  .aj-par .nm b{display:block;font-size:14.5px;font-weight:700;color:var(--text)}
+  .aj-par .nm span{font-size:12.5px;color:var(--muted);line-height:1.45}
+  .aj-par .tot{font-size:14px;font-weight:800;color:var(--text);background:#fff;
+    border-radius:999px;padding:4px 11px;white-space:nowrap}
+  .aj-par .arr{border:none;background:var(--orange);color:#fff;border-radius:9px;
+    padding:8px 13px;font-size:13.5px;font-weight:750;cursor:pointer;white-space:nowrap;flex-shrink:0}
+  .aj-par .arr:active{transform:scale(.96)}
+  .aj-nota{font-size:13.5px;color:var(--muted);line-height:1.55;margin:0 0 4px}
+  .aj-atajo{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:none;
+    border-radius:11px;background:var(--bg);cursor:pointer;text-align:left;margin-top:8px}
+  .aj-atajo:hover{background:#EFF2F5}
+  .aj-atajo .nm{flex:1;min-width:0}
+  .aj-atajo .nm b{display:block;font-size:14.5px;color:var(--text)}
+  .aj-atajo .nm span{font-size:12.5px;color:var(--muted)}
+  .aj-atajo .flecha{color:var(--orange);font-size:20px;font-weight:800}
   .aj{display:flex;gap:16px;align-items:flex-start}
   .aj-rail{width:232px;flex-shrink:0;background:#fff;border-radius:14px;padding:8px;
     box-shadow:0 1px 3px rgba(15,30,49,.06);position:sticky;top:8px}
@@ -5309,13 +5333,8 @@ const AJUSTES = [
     montar:()=>{ $('aj-renombrar-sec').addEventListener('click', abrirSecciones); } },
 
   { id:'relaciones', ico:'relaciones', tit:'Relaciones',
-    sub:'Lo que la app todavía no sabe editar: qué producto va con cuál.',
-    render:()=>ajPronto([
-      'Pares vitrina y congelador',
-      'Enlaces entre bodega y cada local',
-      'Recetas · enlazar y marcar "no lleva receta"',
-      'Traducir las categorías de Fudo a nuestras secciones',
-    ]) },
+    sub:'Qué producto va con cuál. Es lo que la app no sabía editar, y donde un nombre mal puesto rompe algo sin que se note.',
+    render:()=>ajRelacionesHTML() },
 
   { id:'metas', ico:'metas', tit:'Metas de venta',
     sub:'Un objetivo con premio y fecha. Las dos sedes compiten por llegar primero.',
@@ -5648,6 +5667,192 @@ async function ajDeshacerRestauracion(id){
   if(AJ_DIA) ajVerDia(AJ_DIA);
 }
 
+
+/* ---------------- Relaciones · pares vitrina y congelador ----------------
+
+   QUÉ ES UN PAR, y por qué importa: cuando el mismo producto vive en dos
+   muebles —"Brownie Vitrina" y "Brownie Congelador"— el sistema los suma
+   para decidir cuánto se puede vender. A Fudo le llega el TOTAL de los
+   dos, no el de la vitrina sola.
+
+   Y ACÁ ESTÁ EL PROBLEMA DE FONDO, que conviene decir claro: esa relación
+   NO está escrita en ninguna parte. El sistema la deduce del NOMBRE — le
+   quita " Vitrina" o " Congelador" al final y lo que queda es el nombre
+   base. Si los dos nombres base coinciden, suman; si no, no.
+
+   Por eso un nombre mal puesto rompe una relación y no se nota. Pasó con
+   `Macarrons Vitrina de dulces`: el sistema no entiende ese apellido, así
+   que nunca sumó con su congelador y Adriana veía 6 donde había 30. Costó
+   un sobre-stock que hubo que devolver.
+
+   POR QUÉ ESTA PANTALLA NO CAMBIA EL MECANISMO, y es una decisión: pasar
+   los pares a una tabla propia significaría tocar `base_nombre()`, que la
+   usan el motor de descuento, el cálculo que se le manda a Fudo y el
+   total de la lista. Es la función más delicada del sistema y estamos a
+   nueve días de la entrega. Lo que sí hace falta —y es lo que faltaba— es
+   VER los pares y poder arreglar los rotos. Arreglar acá es renombrar, y
+   renombrar es seguro: las recetas van por id, así que ningún descuento
+   se rompe (regla 0.1.1).                                               */
+let AJ_PSEDE = null;      // en qué sede se están mirando los pares
+let AJ_PARES = null;      // null mientras carga
+
+const MUEBLES = ['vitrina','congelador'];
+
+/* Lo que el sistema entiende hoy: solo " vitrina" o " congelador" al
+   final. Tiene que decir EXACTAMENTE lo mismo que base_nombre() en la
+   base y que baseNombre() en la lista — si acá se agregara una regla de
+   más, esta pantalla diría que un par suma cuando en realidad no. */
+const baseEstricta = t => normNombre(t).replace(/\s+(vitrina|congelador)$/,'');
+
+/* Lo que una persona diría que es el mismo producto: también aguanta
+   " vitrina de dulces", " congelados" y compañía. Sirve para DETECTAR los
+   rotos, nunca para dar por bueno un par. */
+const baseAmplia = t => normNombre(t)
+  .replace(/\s+(vitrina|congelador|congelados|refrigerador)(\s+de\s+[a-záéíóúñ]+)?$/,'')
+  .trim();
+
+/* De qué mueble habla un nombre, si es que habla de alguno. */
+function muebleDe(nombre){
+  const n = normNombre(nombre);
+  for(const m of MUEBLES){ if(new RegExp('\\s'+m+'(\\s|$)').test(n)) return m; }
+  if(/\scongelados(\s|$)/.test(n)) return 'congelador';
+  return null;
+}
+
+async function ajCargarPares(){
+  AJ_PARES = null;
+  if(ajActual === 'relaciones') pintarAjustes();
+  const sede = AJ_PSEDE;
+  const {data,error} = await sb.from('productos')
+    .select('id,producto,rubro,stock_actual').eq('sede',sede).eq('activo','SÍ')
+    .order('producto').limit(2000);
+  if(sede !== AJ_PSEDE) return;
+  if(error){ console.error('pares', error); AJ_PARES = {error:true}; pintarAjustes(); return; }
+
+  const filas = data || [];
+  // agrupados por lo que el sistema entiende
+  const porEstricta = {};
+  filas.forEach(p=>{ (porEstricta[baseEstricta(p.producto)] ||= []).push(p); });
+  // y por lo que una persona diría
+  const porAmplia = {};
+  filas.forEach(p=>{ (porAmplia[baseAmplia(p.producto)] ||= []).push(p); });
+
+  const suman = [], rotos = [], solos = [];
+  for(const [clave, grupo] of Object.entries(porAmplia)){
+    if(grupo.length < 2){
+      const p = grupo[0];
+      if(muebleDe(p.producto)) solos.push(p);
+      continue;
+    }
+    const claves = new Set(grupo.map(p=>baseEstricta(p.producto)));
+    if(claves.size === 1){
+      suman.push({clave, grupo});
+    } else {
+      /* Mismo producto para una persona, distinto para el sistema. Se
+         propone el nombre que SÍ entiende: la base amplia más el mueble.
+         Se propone, no se aplica — el que decide es quien lo lee. */
+      rotos.push({clave, grupo: grupo.map(p=>{
+        const m = muebleDe(p.producto);
+        const propuesto = m ? (clave.charAt(0).toUpperCase()+clave.slice(1))
+                              + ' ' + (m === 'vitrina' ? 'Vitrina' : 'Congelador') : null;
+        return {...p, mueble:m, propuesto,
+                cambia: propuesto && normNombre(propuesto) !== normNombre(p.producto)};
+      })});
+    }
+  }
+  AJ_PARES = {suman, rotos, solos};
+  pintarAjustes();
+}
+
+function ajRelacionesHTML(){
+  const sedes = `<div class="aj-caja">
+      <h3>Pares vitrina y congelador</h3>
+      <p class="aj-nota">Cuando el mismo producto vive en dos muebles, el sistema los
+        <b>suma</b> para saber cuánto se puede vender, y a Fudo le manda el total de los dos.
+        Esa relación la deduce del <b>nombre</b>: le quita “Vitrina” o “Congelador” del final,
+        y si lo que queda coincide, suman.</p>
+      <div class="aj-sedes">${['plaza','angamos'].map(x=>`
+        <button type="button" class="aj-sede${x===AJ_PSEDE?' on':''}" data-ajpsede="${x}">${esc(SEDES[x].label)}</button>`).join('')}
+      </div>
+    </div>`;
+
+  let cuerpo = '';
+  if(AJ_PSEDE){
+    if(AJ_PARES === null) cuerpo = '<div class="aj-caja"><p>Revisando los nombres…</p></div>';
+    else if(AJ_PARES.error) cuerpo = '<div class="aj-caja"><p>No se pudo leer. Revisa la señal.</p></div>';
+    else {
+      const {suman, rotos, solos} = AJ_PARES;
+
+      const rotosHTML = rotos.length ? `<div class="aj-caja">
+        <h3>⚠️ Parecen el mismo producto y NO suman · ${rotos.length}</h3>
+        <p class="aj-nota">El sistema no reconoce el apellido del mueble, así que los cuenta
+          por separado: en la lista se ve menos de lo que hay. Se arregla dejando el nombre
+          como “Producto Vitrina” o “Producto Congelador”.<br>
+          <b>Renombrar es seguro</b>: las recetas van por id, así que ningún descuento se rompe.</p>
+        ${rotos.map(r=>`<div class="aj-grupo">
+          ${r.grupo.map(p=>`<div class="aj-par${p.cambia?' mal':''}">
+            <div class="nm"><b>${esc(p.producto)}</b>
+              <span>${esc(p.rubro||'—')} · ${fmt(p.stock_actual||0)} en stock${
+                p.cambia ? ' · quedaría <b>'+esc(p.propuesto)+'</b>' : ' · este ya está bien'}</span></div>
+            ${p.cambia ? `<button type="button" class="arr" data-ajren="${p.id}"
+               data-nuevo="${esc(p.propuesto)}">Renombrar</button>` : ''}
+          </div>`).join('')}
+        </div>`).join('')}
+      </div>` : `<div class="aj-caja"><h3>✓ Ningún par roto</h3>
+        <p class="aj-nota">Todos los productos que viven en dos muebles se están sumando bien.</p></div>`;
+
+      const sumanHTML = suman.length ? `<div class="aj-caja">
+        <h3>Suman juntos · ${suman.length}</h3>
+        ${suman.map(g=>`<div class="aj-par">
+          <div class="nm"><b>${esc(g.grupo.map(p=>p.producto).join('  +  '))}</b>
+            <span>${esc(g.grupo.map(p=>p.rubro||'—').join(' · '))}</span></div>
+          <span class="tot">${fmt(g.grupo.reduce((t,p)=>t+(+p.stock_actual||0),0))}</span>
+        </div>`).join('')}
+      </div>` : '';
+
+      const solosHTML = solos.length ? `<div class="aj-caja">
+        <h3>En un solo mueble · ${solos.length}</h3>
+        <p class="aj-nota">Llevan apellido de mueble pero no tienen pareja. No es un error:
+          puede que ese producto solo viva ahí.</p>
+        ${solos.slice(0,40).map(p=>`<div class="aj-par">
+          <div class="nm"><b>${esc(p.producto)}</b><span>${esc(p.rubro||'—')}</span></div>
+          <span class="tot">${fmt(p.stock_actual||0)}</span>
+        </div>`).join('')}
+        ${solos.length>40?'<div class="aj-vacio">…y '+(solos.length-40)+' más</div>':''}
+      </div>` : '';
+
+      cuerpo = rotosHTML + sumanHTML + solosHTML;
+    }
+  }
+
+  const otros = `<div class="aj-caja">
+      <h3>Las otras relaciones</h3>
+      <button type="button" class="aj-atajo" data-ajir="enlaces">
+        <span class="nm"><b>Bodega y los locales</b>
+          <span>Qué producto del local recibe lo que sale de bodega</span></span>
+        <span class="flecha">›</span></button>
+      <button type="button" class="aj-atajo" data-ajir="recetas">
+        <span class="nm"><b>Recetas</b>
+          <span>Qué descuenta cada producto de Fudo al venderse</span></span>
+        <span class="flecha">›</span></button>
+    </div>` + ajPronto(['Traducir las categorías de Fudo a nuestras secciones']);
+
+  return sedes + cuerpo + otros;
+}
+
+async function ajRenombrarPar(id, nuevo){
+  const p = (AJ_PARES && [].concat(...AJ_PARES.rotos.map(r=>r.grupo)).find(x=>x.id===id));
+  if(!p) return;
+  if(!await preguntar('Renombrar', '“'+p.producto+'” pasa a llamarse “'+nuevo+'”.\n\n'
+      + 'Con eso empieza a sumar con su pareja. No se toca ningún stock ni ninguna receta.',
+      'Renombrar')) return;
+  const {error} = await sb.from('productos').update({producto:nuevo}).eq('id',id);
+  if(error){ avisar(error.message || 'No se pudo renombrar.'); return; }
+  aviso('✓ Ahora suman juntos');
+  await ajCargarPares();
+  if(AJ_PSEDE === SEDE){ await loadData(); metrics(); render(); }
+}
+
 let ajActual = 'interruptores';
 
 /* MONTAR TROZOS QUE YA EXISTEN, en vez de reescribirlos.
@@ -5702,6 +5907,12 @@ $('aj-pane').addEventListener('click', e=>{
   if(dd){ ajVerDia(dd.dataset.ajdia); return; }
   const ud = e.target.closest('[data-ajdes]');
   if(ud){ ajDeshacerRestauracion(+ud.dataset.ajdes); return; }
+  const ps = e.target.closest('[data-ajpsede]');
+  if(ps){ AJ_PSEDE = ps.dataset.ajpsede; ajCargarPares(); return; }
+  const rn = e.target.closest('[data-ajren]');
+  if(rn){ ajRenombrarPar(+rn.dataset.ajren, rn.dataset.nuevo); return; }
+  const ir = e.target.closest('[data-ajir]');
+  if(ir){ pickTab(ir.dataset.ajir); return; }
 });
 
 $('aj-rail').addEventListener('click', e=>{
