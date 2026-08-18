@@ -903,6 +903,39 @@
   .aj-prod.off .nm b{text-decoration:line-through}
   .aj-prod .nm span{font-size:12.5px;color:var(--muted)}
   .aj-filtros{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+  /* ---- la barra de la competencia ----
+     Las dos sedes empujan desde los extremos hacia el centro, que es la
+     meta. Se lee sin números: quien tiene la barra más larga va ganando. */
+  .meta-caja{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;
+    box-shadow:0 1px 3px rgba(15,30,49,.06)}
+  .meta-tit{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:2px}
+  .meta-tit b{font-size:16px;font-weight:800;color:var(--text)}
+  .meta-tit .obj{font-size:13px;color:var(--muted);font-weight:700}
+  .meta-premio{font-size:13.5px;color:var(--amber-fg);font-weight:750;margin:2px 0 0}
+  .meta-fechas{font-size:12.5px;color:var(--muted);margin:2px 0 10px}
+  .meta-pista{position:relative;display:flex;align-items:stretch;height:38px;
+    background:var(--bg);border-radius:10px;overflow:hidden}
+  .meta-lado{flex:1;position:relative;display:flex;align-items:center}
+  .meta-lado .barra{position:absolute;top:0;bottom:0;transition:width .5s cubic-bezier(.2,.8,.3,1)}
+  .meta-lado.izq .barra{right:0;background:var(--navy);border-radius:10px 0 0 10px}
+  .meta-lado.der .barra{left:0;background:var(--orange);border-radius:0 10px 10px 0}
+  .meta-lado .val{position:relative;z-index:1;font-size:13.5px;font-weight:800;padding:0 11px;
+    color:var(--muted);white-space:nowrap}
+  .meta-lado.izq{justify-content:flex-start}
+  .meta-lado.der{justify-content:flex-end}
+  .meta-lado.izq .val.on,.meta-lado.der .val.on{color:#fff}
+  .meta-centro{width:2px;background:var(--border);flex-shrink:0}
+  .meta-pies{display:flex;justify-content:space-between;margin-top:5px}
+  .meta-pies span{font-size:12.5px;font-weight:750;color:var(--muted)}
+  .meta-gano{margin-top:9px;background:var(--green-bg);color:var(--green-fg);border-radius:10px;
+    padding:9px 12px;font-size:14px;font-weight:800;text-align:center;
+    animation:metaGano .5s cubic-bezier(.2,1.4,.4,1)}
+  @keyframes metaGano{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+  @media (prefers-reduced-motion:reduce){
+    .meta-gano{animation:none}
+    .meta-lado .barra{transition:none}
+  }
   .aj{display:flex;gap:16px;align-items:flex-start}
   .aj-rail{width:232px;flex-shrink:0;background:#fff;border-radius:14px;padding:8px;
     box-shadow:0 1px 3px rgba(15,30,49,.06);position:sticky;top:8px}
@@ -1403,10 +1436,41 @@
     <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
     <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
   </div>
+  <!-- La meta viva, arriba del inventario. Una competencia que hay que ir
+       a buscar a Ajustes no compite con nada. -->
+  <div id="metaPortada" style="display:none"></div>
   <div class="tipos" id="tipos" style="display:none"></div>
   <div id="list"></div>
   <button class="fab" id="btnNuevo" title="Agregar producto" aria-label="Agregar producto">+</button>
 </div>
+
+<!-- LOS MODOS DE BODEGA VIVEN FUERA de las dos pantallas que gobiernan.
+
+     Estaban adentro de `view-repcentral`, y por eso saltaban: al elegir
+     "Lo que llega a bodega" se muestra `view-reparto`, que en el documento
+     va ANTES — así que la fila de botones quedaba debajo del contenido. Un
+     botón que cambia de sitio según lo que esté abierto obliga a buscarlo
+     cada vez.
+
+     Sacándola acá arriba queda fija, encima de las dos. -->
+  <div class="rec-modos" id="repc-modos">
+    <!-- LA LISTA DE RECEPCIÓN (pedida por Adriana, 2026-08-18). Se arma
+         temprano con lo que se espera, y a lo largo de la mañana se va
+         aceptando, rechazando o corrigiendo a medida que llega. Es el
+         MISMO sistema del reparto de los locales, con bodega de destino:
+         por eso reusa esa pantalla entera en vez de una copia.
+
+         VA PRIMERA Y FIJA. Antes cambiaba de sitio según el modo activo y
+         eso confunde: un botón que se mueve obliga a leer la fila entera
+         cada vez, en vez de ir al mismo lugar de memoria. -->
+    <button class="rec-modo active" data-repcmodo="recepcion">Lo que llega a bodega</button>
+    <button class="rec-modo" data-repcmodo="salida">Enviar a los locales</button>
+    <!-- "Registrar de una vez" queda escondido: Adriana no lo va a usar,
+         y dos caminos para lo mismo hacen que alguien tome el corto sin
+         darse cuenta de que no deja check-list. El código se queda por si
+         algún día hace falta. -->
+    <button class="rec-modo" data-repcmodo="entrada" style="display:none">Registrar de una vez</button>
+  </div>
 
 <!-- ================= REPARTO ================= -->
 <div class="wrap" id="view-reparto" style="display:none">
@@ -1523,24 +1587,6 @@
 
   <!-- Salida y entrada son el mismo trabajo visto al revés, así que viven en la
        misma pestaña. Entra por SALIDA porque es lo que se hace todos los días. -->
-  <div class="rec-modos" id="repc-modos">
-    <!-- LA LISTA DE RECEPCIÓN (pedida por Adriana, 2026-08-18). Se arma
-         temprano con lo que se espera, y a lo largo de la mañana se va
-         aceptando, rechazando o corrigiendo a medida que llega. Es el
-         MISMO sistema del reparto de los locales, con bodega de destino:
-         por eso reusa esa pantalla entera en vez de una copia.
-
-         VA PRIMERA Y FIJA. Antes cambiaba de sitio según el modo activo y
-         eso confunde: un botón que se mueve obliga a leer la fila entera
-         cada vez, en vez de ir al mismo lugar de memoria. -->
-    <button class="rec-modo active" data-repcmodo="recepcion">Lo que llega a bodega</button>
-    <button class="rec-modo" data-repcmodo="salida">Enviar a los locales</button>
-    <!-- "Registrar de una vez" queda escondido: Adriana no lo va a usar,
-         y dos caminos para lo mismo hacen que alguien tome el corto sin
-         darse cuenta de que no deja check-list. El código se queda por si
-         algún día hace falta. -->
-    <button class="rec-modo" data-repcmodo="entrada" style="display:none">Registrar de una vez</button>
-  </div>
 
   <div id="repc-salida">
 
@@ -2083,6 +2129,7 @@ async function cargarPermisos(){
   }catch(e){ console.error(e); }   // si la tabla no existe todavía, nadie ve nada nuevo
   aplicarPermisos();
   ajCargarAjustes().then(aplicarInterruptores);
+  cargarMetas();
 }
 function aplicarPermisos(){
   const admin = PERMISOS.puede_fudo || PERMISOS.puede_editar;
@@ -5525,11 +5572,17 @@ const AJUSTES = [
 
   { id:'metas', ico:'metas', tit:'Metas de venta',
     sub:'Un objetivo con premio y fecha. Las dos sedes compiten por llegar primero.',
-    render:()=>ajPronto([
-      'Crear una meta · productos, cantidad, premio y fechas',
-      'La barra de competencia, arriba de la pantalla',
-      'Metas terminadas y quién ganó',
-    ]) },
+    render:()=>ajMetasHTML(),
+    montar:()=>{
+      if(METAS === null) cargarMetas();
+      const q = $('meta-q');
+      if(q) q.addEventListener('input', metaBuscar);
+      ['meta-titulo','meta-objetivo','meta-hasta'].forEach(id=>{
+        const el = $(id); if(el) el.addEventListener('input', pintarMetaElegidos);
+      });
+      const cr = $('meta-crear'); if(cr) cr.addEventListener('click', metaCrear);
+      pintarMetaElegidos();
+    } },
 
   { id:'personas', ico:'personas', tit:'Personas y acceso',
     sub:'Quién entra acá. Es un solo permiso: se entra a Ajustes o no se entra.',
@@ -6518,6 +6571,177 @@ function ajSaludHTML(){
     </div>`;
 }
 
+
+/* ---------------- Metas de venta ----------------
+
+   Administración pone un objetivo —"100 aguas Bosqua entre con gas y sin
+   gas antes del 31"— y las dos sedes compiten por llegar primero. Hasta
+   hoy eso vivía en un mensaje de WhatsApp y nadie sabía cómo iba.
+
+   LA BARRA ES EL PUNTO, no la tabla. Se lee sin números: las dos sedes
+   empujan desde los extremos hacia el centro, y quien tiene la barra más
+   larga va ganando. Es la regla de Bodega aplicada acá — si hay que
+   recorrer con el dedo para entender, está mal resuelto.
+
+   NO SE LE PREGUNTA NADA A FUDO. Cada ítem vendido queda en
+   `fudo_movimientos` con su sede desde julio, así que el avance es una
+   consulta agrupada. Verificado el 2026-08-13.
+
+   Y SE CUENTA LO VENDIDO, no lo descontado: una meta es cuántas unidades
+   salieron, y eso no depende de que el producto tenga receta. Así la meta
+   funciona aunque falte enlazar el inventario.                          */
+let METAS = null;
+let META_AVANCE = {};
+
+async function cargarMetas(){
+  const {data,error} = await sb.from('metas')
+    .select('*, meta_productos(fudo_product_id,nombre)')
+    .order('created_at',{ascending:false}).limit(30);
+  METAS = error ? [] : (data||[]);
+  await Promise.all(METAS.map(async m=>{
+    const {data:av} = await sb.rpc('meta_avance',{p_meta:m.id});
+    META_AVANCE[m.id] = Object.fromEntries((av||[]).map(r=>[r.sede, +r.vendido||0]));
+  }));
+  if(ajActual === 'metas') pintarAjustes();
+  pintarMetaEnPortada();
+}
+
+const metaVigente = m => {
+  const hoy = hoyISO();
+  return !m.cerrada_at && m.desde <= hoy && m.hasta >= hoy;
+};
+
+/* La barra. `plaza` a la izquierda y `angamos` a la derecha, siempre en el
+   mismo orden: si cambiara según quién va ganando, habría que leer los
+   nombres cada vez para saber cuál es cuál. */
+function metaBarraHTML(m){
+  const av = META_AVANCE[m.id] || {};
+  const a = av.plaza || 0, b = av.angamos || 0;
+  const obj = +m.objetivo || 1;
+  const pa = Math.min(100, a/obj*100), pb = Math.min(100, b/obj*100);
+  const ganoA = a >= obj, ganoB = b >= obj;
+  const dias = Math.ceil((new Date(m.hasta+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
+  return `<div class="meta-caja">
+      <div class="meta-tit"><b>${esc(m.titulo)}</b><span class="obj">meta ${fmt(obj)}</span></div>
+      ${m.premio ? `<p class="meta-premio">🏆 ${esc(m.premio)}</p>` : ''}
+      <p class="meta-fechas">${fmtFecha(m.desde)} — ${fmtFecha(m.hasta)}${
+        m.cerrada_at ? ' · cerrada' : dias < 0 ? ' · terminada' :
+        dias === 0 ? ' · <b>último día</b>' : ' · quedan ' + dias + (dias===1?' día':' días')}</p>
+      <div class="meta-pista">
+        <div class="meta-lado izq"><div class="barra" style="width:${pa}%"></div>
+          <span class="val${pa>18?' on':''}">${fmt(a)}</span></div>
+        <div class="meta-centro"></div>
+        <div class="meta-lado der"><div class="barra" style="width:${pb}%"></div>
+          <span class="val${pb>18?' on':''}">${fmt(b)}</span></div>
+      </div>
+      <div class="meta-pies"><span>${esc(SEDES.plaza.label)}</span><span>${esc(SEDES.angamos.label)}</span></div>
+      ${ganoA || ganoB ? `<div class="meta-gano">🎉 ${
+        ganoA && ganoB ? 'Las dos llegaron a la meta'
+        : ganoA ? esc(SEDES.plaza.label) + ' llegó a la meta'
+        : esc(SEDES.angamos.label) + ' llegó a la meta'}</div>` : ''}
+    </div>`;
+}
+
+/* La meta vigente se ve en el INVENTARIO, no escondida en Ajustes: una
+   competencia que hay que ir a buscar no compite con nada. Va arriba y
+   solo si hay una viva. */
+function pintarMetaEnPortada(){
+  const c = $('metaPortada'); if(!c) return;
+  const viva = (METAS||[]).find(metaVigente);
+  c.innerHTML = viva ? metaBarraHTML(viva) : '';
+  c.style.display = viva ? '' : 'none';
+}
+
+function ajMetasHTML(){
+  if(METAS === null) return '<div class="aj-caja"><p>Cargando…</p></div>';
+  const vivas = METAS.filter(metaVigente);
+  const otras = METAS.filter(m=>!metaVigente(m));
+  return `<div class="aj-caja">
+      <h3>Crear una meta</h3>
+      <p class="aj-nota">Se cuenta lo vendido en Fudo entre las dos fechas. Puede llevar
+        varios productos: “100 aguas Bosqua” son la con gas y la sin gas sumadas.</p>
+      <div class="field" style="margin-top:10px"><label>Nombre</label>
+        <input type="text" id="meta-titulo" maxlength="60" placeholder="Ej: 100 aguas Bosqua"></div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>Cuántas</label>
+          <input type="number" min="1" step="1" id="meta-objetivo" placeholder="100"></div>
+        <div class="field" style="flex:1"><label>Premio</label>
+          <input type="text" id="meta-premio" maxlength="60" placeholder="Opcional"></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>Desde</label>
+          <input type="date" id="meta-desde" value="${hoyISO()}"></div>
+        <div class="field" style="flex:1"><label>Hasta</label>
+          <input type="date" id="meta-hasta"></div>
+      </div>
+      <div class="field"><label>Productos que cuentan</label>
+        <input type="text" class="aj-buscar" id="meta-q" style="margin-top:0"
+          placeholder="Buscar en la carta de Fudo…"></div>
+      <div id="meta-res"></div>
+      <div id="meta-elegidos"></div>
+      <button type="button" class="adm-btn" id="meta-crear" style="margin-top:10px" disabled>Crear meta</button>
+    </div>`
+    + (vivas.length ? '<div class="aj-caja"><h3>En curso</h3></div>' + vivas.map(metaBarraHTML).join('') : '')
+    + (otras.length ? '<div class="aj-caja"><h3>Terminadas</h3></div>' + otras.slice(0,6).map(metaBarraHTML).join('') : '');
+}
+
+let META_SEL = [];
+function pintarMetaElegidos(){
+  const c = $('meta-elegidos'); if(!c) return;
+  c.innerHTML = META_SEL.map(p=>`<div class="aj-prod">
+      <div class="nm"><b>${esc(p.nombre)}</b></div>
+      <button type="button" class="rep-deshacer" data-metaquitar="${esc(p.id)}">Quitar</button>
+    </div>`).join('');
+  const ok = $('meta-crear');
+  if(ok) ok.disabled = !(META_SEL.length && $('meta-titulo').value.trim()
+                         && +$('meta-objetivo').value > 0 && $('meta-hasta').value);
+}
+
+async function metaBuscar(){
+  const q = normNombre($('meta-q').value);
+  const c = $('meta-res'); if(!c) return;
+  if(q.length < 2){ c.innerHTML=''; return; }
+  /* Se busca en el catálogo de Fudo de las DOS sedes y se junta por
+     nombre: el mismo producto existe en las dos con id distinto, y la
+     meta tiene que contar los dos. */
+  const {data} = await sb.from('fudo_productos')
+    .select('fudo_product_id,nombre,sede').limit(1000);
+  const vistos = new Map();
+  for(const f of (data||[])){
+    if(!normNombre(f.nombre).includes(q)) continue;
+    const k = normNombre(f.nombre);
+    if(!vistos.has(k)) vistos.set(k, {nombre:f.nombre, ids:[]});
+    vistos.get(k).ids.push(f.fudo_product_id);
+  }
+  const filas = [...vistos.values()].slice(0,10);
+  c.innerHTML = filas.length ? filas.map(f=>`<div class="aj-prod">
+      <div class="nm"><b>${esc(f.nombre)}</b><span>${f.ids.length} en la carta</span></div>
+      <button type="button" class="arr" data-metaadd="${esc(f.ids.join(','))}"
+        data-nom="${esc(f.nombre)}">Agregar</button>
+    </div>`).join('') : '<div class="aj-vacio">Nada con ese nombre en Fudo.</div>';
+}
+
+async function metaCrear(){
+  const titulo = $('meta-titulo').value.trim();
+  const objetivo = +$('meta-objetivo').value;
+  const hasta = $('meta-hasta').value, desde = $('meta-desde').value;
+  if(!titulo || !(objetivo>0) || !hasta || !META_SEL.length) return;
+  if(hasta < desde){ avisar('La fecha de término no puede ser antes de la de inicio.'); return; }
+  const {data,error} = await sb.from('metas').insert({
+    titulo, objetivo, premio:$('meta-premio').value.trim()||null,
+    desde, hasta, creada_por:NOMBRE }).select().single();
+  if(error){ avisar(error.message || 'No se pudo crear la meta.'); return; }
+  const filas = [];
+  for(const p of META_SEL) for(const id of String(p.id).split(','))
+    filas.push({meta_id:data.id, fudo_product_id:id, nombre:p.nombre});
+  const {error:e2} = await sb.from('meta_productos').insert(filas);
+  if(e2){ avisar('La meta se creó pero no se guardaron los productos: ' + e2.message); return; }
+  META_SEL = [];
+  aviso('✓ Meta creada');
+  await cargarMetas();
+  pintarAjustes();
+}
+
 let ajActual = 'interruptores';
 
 /* MONTAR TROZOS QUE YA EXISTEN, en vez de reescribirlos.
@@ -6590,6 +6814,14 @@ $('aj-pane').addEventListener('click', e=>{
   if(df){ ajDeshacerFusion(+df.dataset.ajdesfus); return; }
   const it = e.target.closest('[data-ajint]');
   if(it){ ajToggleInterruptor(it.dataset.ajint, it.dataset.sd); return; }
+  const ma = e.target.closest('[data-metaadd]');
+  if(ma){
+    if(!META_SEL.some(x=>x.id===ma.dataset.metaadd))
+      META_SEL.push({id:ma.dataset.metaadd, nombre:ma.dataset.nom});
+    $('meta-q').value=''; $('meta-res').innerHTML=''; pintarMetaElegidos(); return;
+  }
+  const mq = e.target.closest('[data-metaquitar]');
+  if(mq){ META_SEL = META_SEL.filter(x=>x.id!==mq.dataset.metaquitar); pintarMetaElegidos(); return; }
 });
 
 $('aj-volver').addEventListener('click', ()=>pickTab('inv'));
@@ -6612,6 +6844,9 @@ function pickTab(tab){
      pantalla de ARMAR envíos y en los locales la de RECIBIRLOS. Son dos
      trabajos distintos que llevan el mismo nombre. */
   const repEsCentral = (tab==='reparto' && SEDE==='central');
+  /* La fila de modos vive fuera de las dos pantallas, así que hay que
+     encenderla y apagarla acá: solo tiene sentido en Bodega → Reparto. */
+  $('repc-modos').style.display = repEsCentral ? '' : 'none';
   /* En bodega la pantalla de reparto existe igual, pero la enciende el
      modo "Lo que llega a bodega" — por eso acá se apaga y repcModo()
      decide. */
