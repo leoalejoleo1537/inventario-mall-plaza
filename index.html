@@ -2049,6 +2049,7 @@ async function cargarPermisos(){
     }
   }catch(e){ console.error(e); }   // si la tabla no existe todavía, nadie ve nada nuevo
   aplicarPermisos();
+  ajCargarAjustes().then(aplicarInterruptores);
 }
 function aplicarPermisos(){
   const admin = PERMISOS.puede_fudo || PERMISOS.puede_editar;
@@ -5412,12 +5413,8 @@ const ajPronto = (lista) =>
 const AJUSTES = [
   { id:'interruptores', ico:'interruptores', tit:'Interruptores',
     sub:'Encender y apagar sin tocar código. Apagar siempre devuelve lo que había antes.',
-    render:()=>ajPronto([
-      'El empuje automático a Fudo, por sede',
-      'Qué productos piden fecha de vencimiento',
-      'El respaldo automático de las 15:00 y 22:00',
-      'La lista de tareas del turno, por sede',
-    ]) },
+    render:()=>ajInterruptoresHTML(),
+    montar:()=>{ if(AJUSTES_VAL === null) ajCargarAjustes(); } },
 
   { id:'productos', ico:'productos', tit:'Productos',
     sub:'Activar, desactivar y ordenar el catálogo. Lo que se apaga desaparece de la app y de Fudo.',
@@ -5510,18 +5507,14 @@ const AJUSTES = [
     } },
 
   { id:'actividad', ico:'actividad', tit:'Actividad',
-    sub:'Quién hizo qué y cuándo, todo en un solo lugar.',
-    render:()=>ajPronto([
-      'Mermas, repartos, empujes a Fudo y ediciones de productos',
-    ]) },
+    sub:'Quién hizo qué y cuándo, todo en un solo lugar. Últimos 30 días.',
+    render:()=>ajActividadHTML(),
+    montar:()=>{ if(AJ_ACT === null) ajCargarActividad(); } },
 
   { id:'salud', ico:'salud', tit:'Salud del sistema',
     sub:'Lo que hoy hay que preguntarle a la base con SQL.',
-    render:()=>ajPronto([
-      'Cobertura de recetas y recetas que apuntan al vacío',
-      'Tablas cerca del tope de las 1000 filas',
-      'Última corrida del motor, por sede',
-    ]) },
+    render:()=>ajSaludHTML(),
+    montar:()=>{ if(AJ_SALUD === null) ajCargarSalud(); } },
 ];
 
 
@@ -6218,6 +6211,247 @@ async function ajDeshacerFusion(id){
   if(AJ_PRSEDE === SEDE){ await loadData(); await loadLotes(); metrics(); render(); }
 }
 
+
+/* ---------------- Interruptores ----------------
+
+   REGLA §2.2 (Jhon): "la gran mayoría de cosas deben poder deshabilitarse
+   sin romper nada". Hasta hoy cada interruptor era una línea del código
+   que solo yo podía cambiar — una dependencia de mí metida en un sistema
+   que tiene que poder funcionar sin mí.
+
+   SI LA TABLA NO EXISTE, manda el valor por defecto y todo sigue igual.
+   Un ajuste que falta nunca puede apagar algo que ya funcionaba: es la
+   misma regla que aplica la función del ciclo.
+
+   LO QUE NO TIENE INTERRUPTOR, y es a propósito (§2.2, la excepción): el
+   respaldo automático, el tope en cero, que un perecedero entre por
+   fechas. Apagar eso no sería volver al estado anterior, sería quitar la
+   red — y una red que se puede apagar por accidente no es una red.      */
+let AJUSTES_VAL = null;
+
+const INTERRUPTORES = [
+  { clave:'ciclo_fudo', porSede:['plaza','angamos'], defecto:true,
+    tit:'Empuje automático a Fudo',
+    sub:'Cada 15 minutos lee las ventas y le manda el inventario entero. Apagado, queda el botón ⟳.' },
+  { clave:'tareas_turno', porSede:['plaza','angamos','central'], defecto:false,
+    tit:'Lista de tareas del turno',
+    sub:'El botón de tareas en la barra de arriba.' },
+  { clave:'marca_nuevo', porSede:[''], defecto:true,
+    tit:'Marca NUEVO en las pestañas',
+    sub:'La etiqueta naranja que invita a entrar a una pantalla recién hecha.' },
+  { clave:'aviso_motor', porSede:[''], defecto:true,
+    tit:'Aviso de sincronización',
+    sub:'La franja bajo las pestañas cuando el reloj lleva rato sin correr. Solo la ve administración.' },
+];
+
+async function ajCargarAjustes(){
+  const {data,error} = await sb.from('ajustes').select('clave,sede,valor');
+  AJUSTES_VAL = error ? {} : Object.fromEntries((data||[]).map(a=>[a.clave+'|'+(a.sede||''), a.valor]));
+  if(ajActual === 'interruptores') pintarAjustes();
+}
+
+/* El valor que manda: el de la base si está, y si no el de siempre. */
+function ajVal(clave, sede, defecto){
+  if(!AJUSTES_VAL) return defecto;
+  const v = AJUSTES_VAL[clave+'|'+(sede||'')];
+  return v === undefined ? defecto : v;
+}
+
+function ajInterruptoresHTML(){
+  if(AJUSTES_VAL === null) return '<div class="aj-caja"><p>Cargando…</p></div>';
+  return INTERRUPTORES.map(i=>`<div class="aj-caja">
+      <h3>${esc(i.tit)}</h3>
+      <p class="aj-nota">${esc(i.sub)}</p>
+      <div style="margin-top:10px">${i.porSede.map(sd=>{
+        const on = ajVal(i.clave, sd, i.defecto);
+        return `<div class="aj-fila">
+          <div class="nm"><b>${sd ? esc(SEDES[sd].label) : 'En toda la app'}</b>
+            <span>${on ? 'encendido' : 'apagado'}</span></div>
+          <button type="button" class="aj-sw${on?' on':''}" data-ajint="${i.clave}" data-sd="${sd}"></button>
+        </div>`;
+      }).join('')}</div>
+    </div>`).join('')
+    + `<div class="aj-caja">
+        <h3>Lo que no se puede apagar</h3>
+        <p class="aj-nota">El respaldo de las 15:00 y 22:00, el tope en cero del stock y que un
+          perecedero entre por fechas. Apagarlos no sería volver a como estaba antes: sería
+          quitar la red. Y una red que se apaga por accidente no es una red.</p>
+      </div>`;
+}
+
+async function ajToggleInterruptor(clave, sede){
+  const def = (INTERRUPTORES.find(i=>i.clave===clave)||{}).defecto;
+  const nuevo = !ajVal(clave, sede, def);
+  const {error} = await sb.from('ajustes')
+    .upsert({clave, sede: sede||'', valor:nuevo, cambiado_at:new Date().toISOString(),
+             cambiado_por:NOMBRE}, {onConflict:'clave,sede'});
+  if(error){ avisar(error.message || 'No se pudo cambiar. ¿Corriste el SQL de interruptores?'); return; }
+  AJUSTES_VAL[clave+'|'+(sede||'')] = nuevo;
+  aviso(nuevo ? '✓ Encendido' : 'Apagado');
+  pintarAjustes();
+  aplicarInterruptores();
+}
+
+/* Los que cambian la pantalla se aplican en el momento, no al recargar:
+   un interruptor que hay que "recargar para ver" no se siente como un
+   interruptor. */
+function aplicarInterruptores(){
+  const tab = $('tabNuevo'), tabR = $('tabNuevoRec');
+  const verNuevo = ajVal('marca_nuevo', '', true);
+  if(tab && !verNuevo)  tab.style.display  = 'none';
+  if(tabR && !verNuevo) tabR.style.display = 'none';
+  if(!ajVal('aviso_motor','',true)) $('motorAviso').classList.remove('ver');
+  const bt = $('btnTareas');
+  if(bt && SEDE && !ajVal('tareas_turno', SEDE, !!(FLAGS.tareas||{})[SEDE])) bt.style.display = 'none';
+}
+
+/* ---------------- Actividad ----------------
+
+   TODO LO QUE PASÓ, EN UN SOLO SITIO. Hasta hoy cada cosa dejaba su
+   rastro en su propia tabla y había que saber cuál mirar: las mermas en
+   el libro de movimientos, los empujes en su bitácora, las fusiones y las
+   restauraciones en las suyas. Nadie que no sea yo sabe eso.
+
+   Es de SOLO LECTURA a propósito. Un registro donde se puede borrar una
+   línea no sirve de registro.                                          */
+let AJ_ACT = null;
+
+async function ajCargarActividad(){
+  AJ_ACT = null;
+  if(ajActual === 'actividad') pintarAjustes();
+  const desde = new Date(Date.now() - 30*86400000).toISOString();
+  const [mov, push, rest, fus] = await Promise.all([
+    sb.from('movimientos').select('*').gte('created_at',desde).order('created_at',{ascending:false}).limit(150),
+    sb.from('fudo_stock_push').select('*').gte('created_at',desde).order('created_at',{ascending:false}).limit(150),
+    sb.from('restauraciones').select('*').gte('created_at',desde).order('created_at',{ascending:false}).limit(50),
+    sb.from('fusiones').select('*').gte('created_at',desde).order('created_at',{ascending:false}).limit(50),
+  ]);
+  const filas = [];
+  for(const m of (mov.data||[])) filas.push({
+    at:m.created_at, sede:m.sede, quien:m.quien,
+    que: (m.tipo==='merma' ? 'Merma' : m.tipo==='entrada' ? 'Entrada' : m.tipo),
+    det: m.producto + ' · ' + fmt(Math.abs(m.cantidad)) + (m.motivo?' · '+m.motivo:'')
+         + (m.deshecha_at?' · deshecha':'') });
+  /* Los empujes se agrupan por lote: 58 productos en un envío son UNA
+     cosa que pasó, no 58. Sin agrupar, un empuje tapa el resto del día. */
+  const lotes = {};
+  for(const p of (push.data||[])){
+    const k = (p.lote || p.created_at.slice(0,16)) + '|' + p.sede;
+    (lotes[k] ||= {at:p.created_at, sede:p.sede, quien:p.quien, n:0, mal:0});
+    lotes[k].n++; if(!p.ok) lotes[k].mal++;
+  }
+  for(const l of Object.values(lotes)) filas.push({
+    at:l.at, sede:l.sede, quien:l.quien, que:'Empuje a Fudo',
+    det: l.n + ' producto' + (l.n===1?'':'s') + (l.mal?' · '+l.mal+' con error':'') });
+  for(const r of (rest.data||[])) filas.push({
+    at:r.created_at, sede:r.sede, quien:r.quien, que:'Restauración',
+    det:'al ' + fmtFecha(r.fecha) + ' · ' + r.productos + ' productos' + (r.deshecha_at?' · deshecha':'') });
+  for(const f of (fus.data||[])) filas.push({
+    at:f.created_at, sede:f.sede, quien:f.quien, que:'Fusión',
+    det: f.se_va_nombre + ' → ' + f.queda_nombre + (f.deshecha_at?' · deshecha':'') });
+
+  filas.sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+  AJ_ACT = filas.slice(0,200);
+  pintarAjustes();
+}
+
+function ajActividadHTML(){
+  if(AJ_ACT === null) return '<div class="aj-caja"><p>Cargando…</p></div>';
+  if(!AJ_ACT.length) return '<div class="aj-caja"><p>Nada en los últimos 30 días.</p></div>';
+  const dias = [...new Set(AJ_ACT.map(f=>String(f.at).slice(0,10)))];
+  return dias.map(d=>`<div class="aj-caja">
+      <h3>${fmtFecha(d)}</h3>
+      <div style="margin-top:10px">${AJ_ACT.filter(f=>String(f.at).slice(0,10)===d).map(f=>`
+        <div class="aj-fila">
+          <div class="nm"><b>${esc(f.que)} · ${esc(f.det)}</b>
+            <span>${esc((SEDES[f.sede]||{}).label||f.sede||'—')} · ${esc(f.quien||'—')} · ${
+              new Date(f.at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})}</span></div>
+        </div>`).join('')}</div>
+    </div>`).join('');
+}
+
+/* ---------------- Salud del sistema ----------------
+
+   LO QUE HOY HAY QUE PREGUNTARLE A LA BASE CON SQL, en una pantalla. No
+   es un tablero bonito: son las tres o cuatro cosas que anunciaron las
+   fallas caras de este proyecto y que nadie estaba mirando.             */
+let AJ_SALUD = null;
+
+async function ajCargarSalud(){
+  AJ_SALUD = null;
+  if(ajActual === 'salud') pintarAjustes();
+  const cuenta = async (tabla, filtro) => {
+    let q = sb.from(tabla).select('*', {count:'exact', head:true});
+    if(filtro) q = filtro(q);
+    const {count} = await q;
+    return count ?? null;
+  };
+  const [sync, recetas, items, rotas] = await Promise.all([
+    sb.from('fudo_sync').select('*'),
+    cuenta('recetas'),
+    cuenta('receta_items'),
+    /* Recetas que apuntan a un producto que ya no existe. Es el chequeo
+       que atrapa un traslado mal hecho, y el que habría avisado del lío
+       de Angamos cuatro días antes. */
+    sb.rpc('recetas_rotas').then(r=>r.error ? null : r.data, ()=>null),
+  ]);
+  AJ_SALUD = {
+    sedes: sync.data || [],
+    recetas, items,
+    tope: [{t:'recetas', n:recetas}, {t:'receta_items', n:items}],
+    rotas,
+  };
+  pintarAjustes();
+}
+
+function ajSaludHTML(){
+  if(AJ_SALUD === null) return '<div class="aj-caja"><p>Mirando…</p></div>';
+  const S = AJ_SALUD;
+
+  const motor = (S.sedes||[]).map(f=>{
+    const min = f.ultima_corrida_at
+      ? Math.floor((Date.now() - new Date(f.ultima_corrida_at).getTime())/60000) : null;
+    const mal = f.ultimo_resultado === 'falla' || (f.cron_activo && min !== null && min >= 45);
+    return `<div class="aj-fila">
+      <div class="nm"><b>${esc((SEDES[f.sede]||{}).label||f.sede)}</b>
+        <span>modo ${esc(f.modo||'—')} · ${f.cron_activo?'reloj encendido':'reloj apagado'} ·
+          ${min===null?'nunca corrió':haceCuanto(min)}</span></div>
+      <span class="emp-salto ${mal?'baja':'sube'}">${mal?'revisar':'al día'}</span>
+    </div>`;
+  }).join('');
+
+  const cerca = S.tope.filter(t=>t.n !== null && t.n >= 800);
+  const topeHTML = cerca.length
+    ? cerca.map(t=>`<div class="aj-fila"><div class="nm"><b>${esc(t.t)}</b>
+        <span>${t.n} filas · Supabase corta en 1000 y no avisa</span></div>
+        <span class="emp-salto baja">${t.n}</span></div>`).join('')
+    : `<div class="aj-vacio">Ninguna tabla cerca del tope de 1000 filas.</div>`;
+
+  return `<div class="aj-caja">
+      <h3>El motor, por sede</h3>
+      <p class="aj-nota">Si dice "revisar", Fudo puede estar vendiendo con números viejos.</p>
+      <div style="margin-top:10px">${motor || '<div class="aj-vacio">Sin datos.</div>'}</div>
+    </div>
+    <div class="aj-caja">
+      <h3>Recetas</h3>
+      <div style="margin-top:10px">
+        <div class="aj-fila"><div class="nm"><b>${S.recetas ?? '—'} recetas</b>
+          <span>${S.items ?? '—'} ingredientes en total</span></div></div>
+        ${S.rotas === null
+          ? '<div class="aj-vacio">Las recetas rotas se revisan con el chequeo de salud en Supabase.</div>'
+          : `<div class="aj-fila"><div class="nm"><b>${S.rotas} apuntan al vacío</b>
+              <span>una receta rota descuenta de un producto que ya no está</span></div>
+              <span class="emp-salto ${S.rotas?'baja':'sube'}">${S.rotas?'revisar':'ok'}</span></div>`}
+      </div>
+    </div>
+    <div class="aj-caja">
+      <h3>El tope de las 1000 filas</h3>
+      <p class="aj-nota">Supabase corta cualquier lectura en 1000 filas <b>sin avisar</b>: la app
+        pide todo, recibe 1000 y sigue como si tuviera el resto.</p>
+      <div style="margin-top:10px">${topeHTML}</div>
+    </div>`;
+}
+
 let ajActual = 'interruptores';
 
 /* MONTAR TROZOS QUE YA EXISTEN, en vez de reescribirlos.
@@ -6288,6 +6522,8 @@ $('aj-pane').addEventListener('click', e=>{
   if(fu){ ajFusionar(+fu.dataset.ajfus, +fu.dataset.otro); return; }
   const df = e.target.closest('[data-ajdesfus]');
   if(df){ ajDeshacerFusion(+df.dataset.ajdesfus); return; }
+  const it = e.target.closest('[data-ajint]');
+  if(it){ ajToggleInterruptor(it.dataset.ajint, it.dataset.sd); return; }
 });
 
 $('aj-volver').addEventListener('click', ()=>pickTab('inv'));

@@ -71,7 +71,7 @@
 // puedan decir cosas distintas.
 // ================================================================
 
-const VERSION = "2026-08-15";
+const VERSION = "2026-08-18";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -122,6 +122,27 @@ Deno.serve(async (req) => {
     }
 
     const fn = (nombre: string, qs = "") => `${SB_URL}/functions/v1/${nombre}${qs}`;
+
+    // ---------- ¿está encendido para esta sede? ----------
+    // El interruptor vive en la base, no en el cron: la tarea agendada
+    // sigue llamando y es ESTA función la que decide no hacer nada. Así
+    // apagarlo desde Ajustes es una fila, y no hay que tocar el cron —
+    // que es justo lo que Jhon no puede hacer solo.
+    //
+    // Si la tabla no existe todavía, se sigue como siempre. Un ajuste que
+    // falta nunca puede apagar algo que ya funcionaba.
+    try {
+      const aRes = await fetch(
+        `${SB_URL}/rest/v1/ajustes?clave=eq.ciclo_fudo&sede=eq.${encodeURIComponent(sede)}&select=valor`,
+        { headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` } });
+      if (aRes.ok) {
+        const fila = (await aRes.json())?.[0];
+        if (fila && fila.valor === false) {
+          return json({ version: VERSION, ok: true, sede, apagado: true,
+                        motivo: "El empuje automático está apagado para esta sede en Ajustes." });
+        }
+      }
+    } catch { /* sin respuesta se sigue: apagar por accidente sería peor */ }
 
     // ---------- PASO 1 · leer las ventas y descontar ----------
     let ventas: any = null, errorVentas: string | null = null;
