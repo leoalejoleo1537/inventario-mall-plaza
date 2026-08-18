@@ -80,5 +80,27 @@ caso('baseEstricta NUNCA agrupa más que baseAmplia',
      ['Macarrons Vitrina de dulces','Brownie Vitrina','Torta amor Vitrina de tortas']
        .every(n => baseAmplia(n).length <= baseEstricta(n).length), true);
 
+/* EL REPARTO ENTRA SIEMPRE AL CONGELADOR (§0.7). El de vitrina deja de
+   ofrecerse cuando existe su congelador — si no, se suma stock a un
+   estante que nadie llenó, que es el error de §0.2.1. */
+const fuenteHermano = trozo('function tieneCongeladorHermano', '\n/* Saca de los candidatos');
+const { tieneCongeladorHermano } = new Function(
+  fuente + fuenteHermano + '; return {tieneCongeladorHermano};')();
+
+console.log('\nEl reparto entra al congelador:');
+const inv = [
+  {id:1, producto:'Brownie Vitrina'},
+  {id:2, producto:'Brownie Congelador'},
+  {id:3, producto:'Cannoli Vitrina'},          // sin congelador
+  {id:4, producto:'Bolsa kraft m'},
+  {id:5, producto:'Mini muffin Congelador'},
+];
+const h = (id) => { const r = tieneCongeladorHermano(inv.find(p=>p.id===id), inv); return r ? r.producto : null; };
+caso('el brownie de vitrina se redirige a su congelador', h(1), 'Brownie Congelador');
+caso('el brownie de congelador no se toca', h(2), null);
+caso('un producto de vitrina SIN congelador se deja pasar', h(3), null);
+caso('un producto sin mueble no se toca', h(4), null);
+caso('el de congelador nunca se redirige', h(5), null);
+
 console.log(`\n${fallos ? '✗' : '✓'} ${ok} bien, ${fallos} mal\n`);
 process.exit(fallos ? 1 : 0);

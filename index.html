@@ -882,6 +882,13 @@
   .aj-atajo .nm b{display:block;font-size:14.5px;color:var(--text)}
   .aj-atajo .nm span{font-size:12.5px;color:var(--muted)}
   .aj-atajo .flecha{color:var(--orange);font-size:20px;font-weight:800}
+
+  .aj-volver{display:flex;align-items:center;gap:9px;border:none;background:#fff;
+    border-radius:11px;padding:10px 15px;margin-bottom:12px;cursor:pointer;
+    font-size:14.5px;font-weight:750;color:var(--text);
+    box-shadow:0 1px 3px rgba(15,30,49,.06)}
+  .aj-volver svg{width:19px;height:19px;color:var(--orange)}
+  .aj-volver:active{transform:scale(.985)}
   .aj{display:flex;gap:16px;align-items:flex-start}
   .aj-rail{width:232px;flex-shrink:0;background:#fff;border-radius:14px;padding:8px;
     box-shadow:0 1px 3px rgba(15,30,49,.06);position:sticky;top:8px}
@@ -1356,6 +1363,14 @@
      el contenido. El armazón se llena desde el registro AJUSTES del guion,
      así que agregar una sección es agregar una entrada ahí. -->
 <div class="wrap" id="view-ajustes" style="display:none">
+  <!-- Volver a la sede desde donde se entró. Sin esto no habia salida:
+       para volver al inventario habia que pasar por el selector de sede,
+       y ese reinicia el Modo edicion — asi que encenderlo y usarlo era
+       imposible. Un circulo vicioso que encontro Jhon el 2026-08-18. -->
+  <button type="button" class="aj-volver" id="aj-volver">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v9a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1v-9"></path></svg>
+    <span id="aj-volver-txt">Volver</span>
+  </button>
   <div class="aj">
     <nav class="aj-rail" id="aj-rail" aria-label="Secciones de ajustes"></nav>
     <div class="aj-pane" id="aj-pane"></div>
@@ -1496,7 +1511,13 @@
        misma pestaña. Entra por SALIDA porque es lo que se hace todos los días. -->
   <div class="rec-modos" id="repc-modos">
     <button class="rec-modo active" data-repcmodo="salida">Enviar a los locales</button>
-    <button class="rec-modo" data-repcmodo="entrada">Registrar lo que llegó</button>
+    <!-- LA LISTA DE RECEPCIÓN (pedida por Adriana, 2026-08-18). Se arma
+         temprano con lo que se espera, y a lo largo de la mañana se va
+         aceptando, rechazando o corrigiendo a medida que llega. Es el
+         MISMO sistema del reparto de los locales, con bodega de destino:
+         por eso reusa esa pantalla entera en vez de una copia. -->
+    <button class="rec-modo" data-repcmodo="recepcion">Lo que llega a bodega</button>
+    <button class="rec-modo" data-repcmodo="entrada">Registrar de una vez</button>
   </div>
 
   <div id="repc-salida">
@@ -2397,7 +2418,9 @@ function pickSede(s){
   listEl.innerHTML='';
   $('gate').classList.add('hidden');
   $('liveText').textContent='conectando…'; $('live').classList.remove('off');
-  $('armar-titulo').textContent = 'Armar pedido' + (NOMBRE ? ', '+NOMBRE : '');
+  $('armar-titulo').textContent = (SEDE === 'central')
+    ? 'Lo que se espera hoy'
+    : 'Armar pedido' + (NOMBRE ? ', '+NOMBRE : '');
   REPARTOS=[]; cajasAbiertas.clear(); setModoEdicion(false);
   $('body-cerrados').style.display='none';
   $('repartos-abiertos').innerHTML='';
@@ -2936,9 +2959,14 @@ function repcPintarResultados(){
   /* Se busca en las DOS sedes a la vez y se junta por nombre: un mismo producto
      suele existir en las dos, y mostrarlo dos veces confundiría. */
   const vistos = new Map();
+  const escondidos = [];
   for(const s of SEDES_ENLACE)
     for(const p of (SEDE_PROD[s]||[]))
       if(normNombre(p.producto).includes(q)){
+        /* El de vitrina no se ofrece si existe su congelador: lo que sale
+           de bodega entra al congelador, siempre (§0.7). */
+        const h = tieneCongeladorHermano(p, SEDE_PROD[s]||[]);
+        if(h){ escondidos.push(p.producto + ' → ' + h.producto); continue; }
         const k = normNombre(p.producto);
         if(!vistos.has(k)) vistos.set(k, {nombre:p.producto, rubro:p.rubro, en:{}});
         vistos.get(k).en[s] = p;
@@ -2946,7 +2974,9 @@ function repcPintarResultados(){
   const filas = [...vistos.values()].slice(0,12);
   if(!filas.length){ $('repc-results').innerHTML='<div class="empty">Nada con ese nombre en los locales.</div>'; return; }
 
-  $('repc-results').innerHTML = filas.map(f=>{
+  const nota = escondidos.length
+    ? `<div class="tl-pista">Entra al congelador: ${esc([...new Set(escondidos)].join(' · '))}</div>` : '';
+  $('repc-results').innerHTML = nota + filas.map(f=>{
     const botones = SEDES_ENLACE.map(s=>{
       const p = f.en[s];
       if(!p) return `<button type="button" disabled title="No existe en ${esc(SEDES[s].corto)}">${esc(SEDES[s].corto)}</button>`;
@@ -3084,20 +3114,45 @@ function repcAbrir(){
 
 /* Salida y entrada en la misma pestaña: son el mismo trabajo al revés. Abre
    siempre en SALIDA, que es lo que se hace todos los días. */
+/* Los tres modos de bodega. "Recepción" no tiene pantalla propia: usa la
+   de reparto de los locales tal cual.
+
+   Y no es un atajo de programación, es que ES el mismo trabajo. Esa
+   pantalla ya filtra todo por la sede abierta, y la sede abierta es
+   bodega: la lista se arma con productos de bodega, se confirma línea por
+   línea y al aceptar suma en bodega. Escribir una copia habría sido tener
+   dos sitios donde arreglar el mismo error.
+
+   La diferencia con "Registrar de una vez" es el tiempo: aquella es para
+   lo que ya está sobre el mesón; esta es para lo que se espera y va
+   llegando de a poco. */
 function repcModo(m){
   $('repc-modos').querySelectorAll('[data-repcmodo]')
     .forEach(b=>b.classList.toggle('active', b.dataset.repcmodo===m));
   $('repc-salida').style.display  = m==='salida'  ? 'block' : 'none';
   $('repc-entrada').style.display = m==='entrada' ? 'block' : 'none';
+  $('view-reparto').style.display = m==='recepcion' ? 'block' : 'none';
+  repcModoActual = m;
   if(m==='salida') repcAbrir();
+  else if(m==='recepcion'){
+    /* El rótulo cambia: en un local "Armar pedido" es lo que se manda, y
+       acá es lo que se espera recibir. Misma pantalla, otro trabajo. */
+    $('armar-titulo').textContent = 'Lo que se espera hoy';
+    rqEl.value=''; $('reparto-results').innerHTML='';
+    loadRepartos();
+  }
   else { $('ent-q').value=''; $('ent-results').innerHTML='';
          entPintarCarrito(); entCargarUltimas(); }
 }
+let repcModoActual = 'salida';
 
 /* Agregar desde el buscador o desde el gesto de deslizar, un solo camino. */
 function repcAgregar(sede, sedeId, cant){
+  let p = (SEDE_PROD[sede]||[]).find(x=>x.id===sedeId); if(!p) return false;
+  // lo que sale de bodega entra al congelador del local, siempre (§0.7)
+  p = tieneCongeladorHermano(p, SEDE_PROD[sede]||[]) || p;
+  sedeId = p.id;
   if(repcCarritos[sede].some(c=>c.sedeId===sedeId)) return false;
-  const p = (SEDE_PROD[sede]||[]).find(x=>x.id===sedeId); if(!p) return false;
   const b = repcBodega(p.id, sede);
   repcCarritos[sede].push({sedeId:p.id, bodegaId:b?b.id:null, producto:p.producto,
                            rubro:p.rubro, cantidad: cant || 1});
@@ -4081,6 +4136,17 @@ function mandarAlReparto(id, lado){
   }
 
   if(carrito.some(c=>c.id===id)){ aviso(p.producto+' ya está en el reparto'); return; }
+  /* El candado de verdad va acá y no solo en el buscador: al deslizar la
+     fila se agrega sin pasar por él, y ese es el camino que Adriana usa
+     todos los días. Si tiene congelador, se manda ese. */
+  const herm = tieneCongeladorHermano(p, DATA);
+  if(herm){
+    if(carrito.some(c=>c.id===herm.id)){ aviso(herm.producto+' ya está en el reparto'); return; }
+    carrito.push({id:herm.id, producto:herm.producto, rubro:herm.rubro, cantidad:1});
+    renderCarrito(); render();
+    aviso('✓ ' + herm.producto + ' · el reparto entra al congelador', 4000);
+    return;
+  }
   carrito.push({id:p.id, producto:p.producto, rubro:p.rubro, cantidad:1});
   renderCarrito();
   render();                                   // para que aparezca "En reparto"
@@ -5144,12 +5210,55 @@ function infoReparto(p){
   const falta = maxOk(p) ? Math.max(0, (+p.stock_max||0) - aqui) : 0;
   return { hay, aqui, t, cf, falta };
 }
+
+/* ---------------- el reparto entra SIEMPRE al congelador ----------------
+
+   REGLA DEL EQUIPO, y estaba escrita desde el 2026-08-12: todo producto
+   que tenga doble en vitrina y congelador recibe lo que viene de bodega
+   en el CONGELADOR. Es donde la caja aterriza de verdad.
+
+   Hasta hoy la regla vivía solo en la cabeza de quien armaba la lista, y
+   Adriana anotaba el de vitrina de vez en cuando. Eso suma stock a un
+   estante que nadie llenó — el mismo error que hizo apagar la reposición
+   automática (§0.2.1): el sistema dando por movido algo que sigue en su
+   caja.
+
+   Así que el de vitrina deja de ofrecerse cuando existe su congelador.
+   No se esconde el producto: se ofrece el mueble correcto.             */
+function tieneCongeladorHermano(p, lista){
+  if(muebleDe(p.producto) !== 'vitrina') return null;
+  const base = baseEstricta(p.producto);
+  return (lista||[]).find(x => x.id !== p.id
+    && baseEstricta(x.producto) === base
+    && muebleDe(x.producto) === 'congelador') || null;
+}
+
+/* Saca de los candidatos los de vitrina que tienen congelador. Devuelve
+   también cuántos se quitaron, para poder decirlo en vez de que
+   desaparezcan sin explicación. */
+function soloCongelador(candidatos, universo){
+  const fuera = [];
+  const quedan = candidatos.filter(p=>{
+    const h = tieneCongeladorHermano(p, universo);
+    if(h){ fuera.push({p, h}); return false; }
+    return true;
+  });
+  return {quedan, fuera};
+}
+
 function renderRepartoResults(){
   const q = normNombre(rqEl.value);
   if(!q){ $('reparto-results').innerHTML=''; return; }
   const enCarrito = new Set(carrito.map(c=>c.id));
-  const rows = DATA.filter(p=>normNombre(p.producto).includes(q) && !enCarrito.has(p.id)).slice(0,15);
-  $('reparto-results').innerHTML = rows.map(p=>{
+  const halla = DATA.filter(p=>normNombre(p.producto).includes(q) && !enCarrito.has(p.id));
+  const {quedan, fuera} = soloCongelador(halla, DATA);
+  const rows = quedan.slice(0,15);
+  /* Si se quitó alguno, se dice cuál y por qué: un producto que se busca y
+     no aparece manda a la gente a crearlo de nuevo. */
+  const aviso = fuera.length
+    ? `<div class="tl-pista">${fuera.map(f=>esc(f.p.producto)+' entra por <b>'+esc(f.h.producto)+'</b>').join(' · ')}</div>`
+    : '';
+  $('reparto-results').innerHTML = aviso + rows.map(p=>{
     const {hay, t, cf} = infoReparto(p);
     // el número va en la píldora de color: cuánto hay y cómo está, de un vistazo
     return `
@@ -5169,7 +5278,9 @@ rqEl.addEventListener('input', renderRepartoResults);
 $('reparto-results').addEventListener('click', e=>{
   const el = e.target.closest('[data-add]'); if(!el) return;
   const id = +el.dataset.add;
-  const p = DATA.find(d=>d.id===id); if(!p) return;
+  let p = DATA.find(d=>d.id===id); if(!p) return;
+  p = tieneCongeladorHermano(p, DATA) || p;      // el reparto entra al congelador
+  if(carrito.some(c=>c.id===p.id)){ aviso(p.producto+' ya está en el reparto'); return; }
   carrito.push({id:p.id, producto:p.producto, rubro:p.rubro, cantidad:1});
   rqEl.value=''; renderRepartoResults(); renderCarrito();
 });
@@ -5915,6 +6026,8 @@ $('aj-pane').addEventListener('click', e=>{
   if(ir){ pickTab(ir.dataset.ajir); return; }
 });
 
+$('aj-volver').addEventListener('click', ()=>pickTab('inv'));
+
 $('aj-rail').addEventListener('click', e=>{
   const b = e.target.closest('[data-aj]'); if(!b) return;
   ajActual = b.dataset.aj;
@@ -5933,6 +6046,9 @@ function pickTab(tab){
      pantalla de ARMAR envíos y en los locales la de RECIBIRLOS. Son dos
      trabajos distintos que llevan el mismo nombre. */
   const repEsCentral = (tab==='reparto' && SEDE==='central');
+  /* En bodega la pantalla de reparto existe igual, pero la enciende el
+     modo "Lo que llega a bodega" — por eso acá se apaga y repcModo()
+     decide. */
   $('view-reparto').style.display    = (tab==='reparto' && !repEsCentral)?'block':'none';
   $('view-repcentral').style.display = repEsCentral?'block':'none';
   $('view-hist').style.display = tab==='hist'?'block':'none';
@@ -5955,7 +6071,10 @@ function pickTab(tab){
      funciona en el segundo intento es de los errores más difíciles de
      reportar, y es justo el que describió Jhon. */
   if(tab==='enlaces') loadEnlaces().then(prepararNuevo);
-  if(tab==='ajustes') pintarAjustes();
+  if(tab==='ajustes'){
+    $('aj-volver-txt').textContent = 'Volver a ' + (SEDE ? SEDES[SEDE].label : 'el inventario');
+    pintarAjustes();
+  }
   // Inicio devuelve la pantalla a como se abre: sin búsqueda, sin filtros y
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();
