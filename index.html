@@ -212,8 +212,12 @@
   .motor-aviso svg{flex:0 0 18px;width:18px;height:18px}
   @keyframes motorEntra{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
   @media (prefers-reduced-motion: reduce){ .motor-aviso{animation:none} }
-  .tabs .inner{max-width:900px;margin:0 auto;display:flex;gap:7px}
-  .tab{padding:8px 15px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  /* La fila SE CORRE, no recorta. En Bodega son cinco pestañas y con
+     flex-shrink los nombres terminaban en "Enviar a loc…", que es peor que
+     tener que deslizar: un nombre a medias hay que adivinarlo. */
+  .tabs .inner{max-width:900px;margin:0 auto;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .tabs .inner::-webkit-scrollbar{display:none}
+  .tab{padding:8px 15px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
   .tab.active{background:var(--orange);border-color:var(--orange);color:#fff}
   .tab-badge{background:var(--amber-fg);color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:5px}
   .tab.active .tab-badge{background:#fff;color:var(--orange)}
@@ -1240,6 +1244,14 @@
     <button class="tab" data-tab="recetas">Recetas <span class="tab-nuevo late" id="tabNuevoRec" style="display:none">NUEVO</span></button>
     <!-- solo en Bodega, igual que la franja de crítico -->
     <button class="tab" data-tab="mermas" id="tabMermas" style="display:none">Mermas</button>
+    <!-- BODEGA · el reparto son DOS trabajos distintos y cada uno tiene su
+         pestaña. Antes eran dos botones adentro de la pantalla y no servían:
+         ocupaban el ancho entero, se movían de sitio según lo que estuviera
+         abierto, y había que estar ya en Reparto para encontrarlos. Como
+         pestañas están siempre a la vista, se llegue desde donde se llegue
+         (Jhon, 2026-08-18). -->
+    <button class="tab" data-tab="recepcion" id="tabRecepcion" style="display:none">Recibir <span class="tab-badge" id="repBadgeC" style="display:none"></span></button>
+    <button class="tab" data-tab="envios" id="tabEnvios" style="display:none">Enviar</button>
     <button class="tab" data-tab="enlaces" id="tabEnlaces" style="display:none">Enlaces</button>
   </div>
 </div>
@@ -1443,34 +1455,6 @@
   <div id="list"></div>
   <button class="fab" id="btnNuevo" title="Agregar producto" aria-label="Agregar producto">+</button>
 </div>
-
-<!-- LOS MODOS DE BODEGA VIVEN FUERA de las dos pantallas que gobiernan.
-
-     Estaban adentro de `view-repcentral`, y por eso saltaban: al elegir
-     "Lo que llega a bodega" se muestra `view-reparto`, que en el documento
-     va ANTES — así que la fila de botones quedaba debajo del contenido. Un
-     botón que cambia de sitio según lo que esté abierto obliga a buscarlo
-     cada vez.
-
-     Sacándola acá arriba queda fija, encima de las dos. -->
-  <div class="rec-modos" id="repc-modos">
-    <!-- LA LISTA DE RECEPCIÓN (pedida por Adriana, 2026-08-18). Se arma
-         temprano con lo que se espera, y a lo largo de la mañana se va
-         aceptando, rechazando o corrigiendo a medida que llega. Es el
-         MISMO sistema del reparto de los locales, con bodega de destino:
-         por eso reusa esa pantalla entera en vez de una copia.
-
-         VA PRIMERA Y FIJA. Antes cambiaba de sitio según el modo activo y
-         eso confunde: un botón que se mueve obliga a leer la fila entera
-         cada vez, en vez de ir al mismo lugar de memoria. -->
-    <button class="rec-modo active" data-repcmodo="recepcion">Lo que llega a bodega</button>
-    <button class="rec-modo" data-repcmodo="salida">Enviar a los locales</button>
-    <!-- "Registrar de una vez" queda escondido: Adriana no lo va a usar,
-         y dos caminos para lo mismo hacen que alguien tome el corto sin
-         darse cuenta de que no deja check-list. El código se queda por si
-         algún día hace falta. -->
-    <button class="rec-modo" data-repcmodo="entrada" style="display:none">Registrar de una vez</button>
-  </div>
 
 <!-- ================= REPARTO ================= -->
 <div class="wrap" id="view-reparto" style="display:none">
@@ -1911,7 +1895,7 @@ const SEDES = {
   central: { label:'Bodega',           corto:'Bodega',     excel:'bodega'  },
 };
 /* el título de la barra dice en qué estás, como en Fudo */
-const TITULOS = {inv:'Inventario', reparto:'Reparto', hist:'Historial', recetas:'Recetas', mermas:'Mermas', enlaces:'Enlaces', ajustes:'Ajustes'};
+const TITULOS = {inv:'Inventario', reparto:'Reparto', recepcion:'Lo que llega a bodega', envios:'Enviar a los locales', hist:'Historial', recetas:'Recetas', mermas:'Mermas', enlaces:'Enlaces', ajustes:'Ajustes'};
 let SEDE = null;
 let channel = null;
 
@@ -1989,11 +1973,16 @@ const FIN_NUEVO = '2026-08-03';
    pantalla nueva, es una forma nueva de trabajar. Se apaga sola en la fecha —
    no depende de que alguien se acuerde de sacarla. */
 const FIN_NUEVO_REC = '2026-09-05';
+/* MANDA EL INTERRUPTOR, y desde el 2026-08-18 nace APAGADO: Jhon pidió sacar
+   la marca de Reparto y de Recetas. No se borró el mecanismo — encenderlo en
+   Ajustes -> Interruptores lo devuelve tal cual, con sus fechas de siempre
+   (§2.2: apagar es volver a lo anterior, no dejar un hueco). */
 function marcarNuevo(){
+  const ver = ajVal('marca_nuevo', '', false);
   const b = $('tabNuevo');
-  if(b) b.style.display = hoyISO() < FIN_NUEVO ? 'inline-block' : 'none';
+  if(b) b.style.display = (ver && hoyISO() < FIN_NUEVO) ? 'inline-block' : 'none';
   const r = $('tabNuevoRec');
-  if(r) r.style.display = hoyISO() < FIN_NUEVO_REC ? 'inline-block' : 'none';
+  if(r) r.style.display = (ver && hoyISO() < FIN_NUEVO_REC) ? 'inline-block' : 'none';
 }
 
 /* lotes de vencimiento por producto: { producto_id: [{id,cantidad,vencimiento}] } */
@@ -2190,7 +2179,12 @@ function recuperarModoEdicion(){
    · Se enciende por sede en FLAGS. El día que exista el panel de configuración
      esto pasa a ser un interruptor (§6.2).                                    */
 const FLAGS = { tareas: { angamos:true, plaza:false, central:false } };
-const hayTareas = () => !!(SEDE && FLAGS.tareas[SEDE]);
+/* EL INTERRUPTOR MANDA, y FLAGS es solo el valor de fábrica. Antes eran dos
+   dueños —FLAGS decidía si mostrar el botón y el interruptor solo sabía
+   esconderlo—, así que apagar y volver a encender dejaba el botón invisible
+   hasta recargar la página. Un interruptor que necesita recargar no es un
+   interruptor (Jhon, 2026-08-18). */
+const hayTareas = () => !!(SEDE && ajVal('tareas_turno', SEDE, !!FLAGS.tareas[SEDE]));
 
 let TAREAS = [];
 async function cargarTareas(){
@@ -2524,6 +2518,12 @@ function pickSede(s){
      de los tres lados juntas, que es el resumen total. */
   $('tabMermas').style.display = '';
   $('tabEnlaces').style.display = s==='central' ? '' : 'none';
+  /* En Bodega el reparto se parte en dos pestañas —recibir lo que llega y
+     mandar a los locales—, así que la de "Reparto" no va: sería un tercer
+     nombre para los mismos dos trabajos. En Plaza y Angamos, al revés. */
+  $('tabRecepcion').style.display = s==='central' ? '' : 'none';
+  $('tabEnvios').style.display    = s==='central' ? '' : 'none';
+  document.querySelector('.tab[data-tab="reparto"]').style.display = s==='central' ? 'none' : '';
   MERMAS=[]; ENLACES=[]; SEDE_PROD={};
   repcCarritos={plaza:[],angamos:[]}; repcAbiertos={plaza:[],angamos:[]};
   entCarrito=[]; entUltimas=[];
@@ -3242,21 +3242,15 @@ function repcAbrir(){
    La diferencia con "Registrar de una vez" es el tiempo: aquella es para
    lo que ya está sobre el mesón; esta es para lo que se espera y va
    llegando de a poco. */
+/* Desde el 2026-08-18 "Lo que llega" es una pestaña propia y la decide
+   pickTab(). Acá quedan solo los dos modos que viven DENTRO de la pantalla
+   de envíos: armar los envíos y el "registrar de una vez", que está
+   escondido pero no borrado. */
 function repcModo(m){
-  $('repc-modos').querySelectorAll('[data-repcmodo]')
-    .forEach(b=>b.classList.toggle('active', b.dataset.repcmodo===m));
   $('repc-salida').style.display  = m==='salida'  ? 'block' : 'none';
   $('repc-entrada').style.display = m==='entrada' ? 'block' : 'none';
-  $('view-reparto').style.display = m==='recepcion' ? 'block' : 'none';
   repcModoActual = m;
   if(m==='salida') repcAbrir();
-  else if(m==='recepcion'){
-    /* El rótulo cambia: en un local "Armar pedido" es lo que se manda, y
-       acá es lo que se espera recibir. Misma pantalla, otro trabajo. */
-    $('armar-titulo').textContent = 'Lo que se espera hoy';
-    rqEl.value=''; $('reparto-results').innerHTML='';
-    loadRepartos();
-  }
   else { $('ent-q').value=''; $('ent-results').innerHTML='';
          entPintarCarrito(); entCargarUltimas(); }
 }
@@ -3302,16 +3296,6 @@ async function repcEnviar(sede){
 }
 
 $('view-repcentral').addEventListener('click', async e=>{
-  const m = e.target.closest('[data-repcmodo]');
-  if(m){
-    const hay = repcCarritos.plaza.length + repcCarritos.angamos.length;
-    if(m.dataset.repcmodo==='entrada' && hay
-       && !await preguntar('Cambiar a entrada','Los envíos que estabas armando se van a descartar.','Cambiar')) return;
-    if(m.dataset.repcmodo==='salida' && entCarrito.length
-       && !await preguntar('Cambiar a envíos','La entrada que estabas registrando se va a descartar.','Cambiar')) return;
-    if(m.dataset.repcmodo==='entrada'){ repcCarritos={plaza:[],angamos:[]}; } else entCarrito=[];
-    repcModo(m.dataset.repcmodo); return;
-  }
   const cr = e.target.closest('[data-repccrit]');
   if(cr){ abrirCriticos(cr.dataset.repccrit); return; }
   const pr = e.target.closest('[data-repcprop]');
@@ -5000,9 +4984,15 @@ function renderRepartos(){
     </div>`;
   }).join('');
 
-  const badge=$('repBadge');
+  /* El mismo contador en las dos pestañas que pueden mostrarlo: "Reparto"
+     en los locales y "Lo que llega" en bodega. En cada sede una de las dos
+     está escondida, así que se escriben las dos y no hay que preguntar. */
   const pend = abiertos.reduce((n,r)=>n+r.items.filter(i=>i.estado==='pendiente').length,0);
-  if(pend){ badge.textContent=pend; badge.style.display='inline-block'; } else { badge.style.display='none'; }
+  ['repBadge','repBadgeC'].forEach(id=>{
+    const badge = $(id); if(!badge) return;
+    if(pend){ badge.textContent=pend; badge.style.display='inline-block'; }
+    else badge.style.display='none';
+  });
 }
 
 /* cajas plegables de la pestaña Reparto (mismo gesto que las secciones) */
@@ -6347,7 +6337,7 @@ const INTERRUPTORES = [
   { clave:'modo_enlazar', porSede:[''], defecto:false,
     tit:'Recetas · el modo Enlazar',
     sub:'Servía para ponerse al día con los enlaces que faltaban. Se enciende si entra una sede nueva.' },
-  { clave:'marca_nuevo', porSede:[''], defecto:true,
+  { clave:'marca_nuevo', porSede:[''], defecto:false,
     tit:'Marca NUEVO en las pestañas',
     sub:'La etiqueta naranja que invita a entrar a una pantalla recién hecha.' },
   { clave:'aviso_motor', porSede:[''], defecto:true,
@@ -6420,8 +6410,10 @@ function aplicarInterruptores(){
   if(fila) fila.style.display = verEnl ? '' : 'none';
   if(!verEnl && vistaActual === 'recetas') modoRecetas('combos');
   if(!ajVal('aviso_motor','',true)) $('motorAviso').classList.remove('ver');
-  const bt = $('btnTareas');
-  if(bt && SEDE && !ajVal('tareas_turno', SEDE, !!(FLAGS.tareas||{})[SEDE])) bt.style.display = 'none';
+  /* Las dos de abajo ENCIENDEN y APAGAN, no solo apagan: cada una es la
+     única dueña de lo suyo y se vuelve a preguntar el valor entero. */
+  marcarNuevo();
+  if(SEDE) cargarTareas();
 }
 
 /* ---------------- Actividad ----------------
@@ -6838,20 +6830,24 @@ $('aj-rail').addEventListener('click', e=>{
 
 function pickTab(tab){
   if(!SEDE)return;
+  /* En Bodega "Reparto" ya no existe como pestaña: son dos. Si algo llama
+     con el nombre viejo, se manda a la de recibir en vez de dejar la
+     pantalla en blanco. */
+  if(tab==='reparto' && SEDE==='central') tab='recepcion';
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
   $('view-inv').style.display = tab==='inv'?'block':'none';
-  /* La pestaña Reparto es la misma para todos, pero en Bodega muestra la
-     pantalla de ARMAR envíos y en los locales la de RECIBIRLOS. Son dos
-     trabajos distintos que llevan el mismo nombre. */
-  const repEsCentral = (tab==='reparto' && SEDE==='central');
-  /* La fila de modos vive fuera de las dos pantallas, así que hay que
-     encenderla y apagarla acá: solo tiene sentido en Bodega → Reparto. */
-  $('repc-modos').style.display = repEsCentral ? '' : 'none';
-  /* En bodega la pantalla de reparto existe igual, pero la enciende el
-     modo "Lo que llega a bodega" — por eso acá se apaga y repcModo()
-     decide. */
-  $('view-reparto').style.display    = (tab==='reparto' && !repEsCentral)?'block':'none';
-  $('view-repcentral').style.display = repEsCentral?'block':'none';
+  /* Los dos trabajos del reparto. En Plaza y Angamos hay uno solo y se
+     llama "Reparto": recibir lo que manda bodega. En Bodega son dos y cada
+     uno tiene su pestaña:
+       · "Lo que llega"      -> el check-list de lo que entra a bodega. Reusa
+                                la MISMA pantalla del local, con bodega de
+                                destino, en vez de una copia parecida.
+       · "Enviar a locales"  -> armar los envíos que salen. */
+  const esRecepcion = (tab==='recepcion');
+  const esEnvios    = (tab==='envios');
+  const repLocal    = (tab==='reparto' && SEDE!=='central');
+  $('view-reparto').style.display    = (repLocal || esRecepcion) ? 'block':'none';
+  $('view-repcentral').style.display = esEnvios ? 'block':'none';
   $('view-hist').style.display = tab==='hist'?'block':'none';
   $('view-recetas').style.display = tab==='recetas'?'block':'none';
   $('view-mermas').style.display = tab==='mermas'?'block':'none';
@@ -6880,7 +6876,16 @@ function pickTab(tab){
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
   if(tab==='inv') irAlInicio();
   if(tab==='hist') loadHistorial();
-  if(tab==='reparto'){ if(repEsCentral){ loadEnlaces().then(()=>repcModo('recepcion')); } else loadRepartos(); }
+  if(repLocal || esRecepcion){
+    if(esRecepcion){
+      /* El rótulo cambia: en un local "Armar pedido" es lo que se manda, y
+         acá es lo que se espera recibir. Misma pantalla, otro trabajo. */
+      $('armar-titulo').textContent = 'Lo que se espera hoy';
+      rqEl.value=''; $('reparto-results').innerHTML='';
+    }
+    loadRepartos();
+  }
+  if(esEnvios) loadEnlaces().then(()=>repcModo('salida'));
   /* Abre siempre en la portada, no en el último modo que se dejó: mientras
      jefatura está aprendiendo, lo primero que tienen que ver es dónde está el
      hueco. Cuando ya se sepa de memoria, esto pasa a abrir en el taller. */

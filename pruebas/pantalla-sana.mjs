@@ -88,5 +88,28 @@ if (dobles.length) {
   console.log(`  ✓ las ${nivel1.length} funciones tienen nombres distintos`);
 }
 
+// ---------- 5. una pestaña que no lleva a ninguna parte ----------
+/* Agregado el 2026-08-18. Jhon lo dijo así: "los presiono y no pasa nada".
+   Un botón de pestaña sin su rama en pickTab() no da ningún error: se pinta
+   como activo y la pantalla se queda igual. Es la falla callada de siempre en
+   su forma más chica, y la atrapa una comparación de dos listas.
+
+   Se comprueban las dos direcciones: que cada pestaña del HTML tenga título y
+   que pickTab() la nombre. */
+const pestanas = [...new Set([...html.matchAll(/class="tab[^"]*"[^>]*data-tab="([a-z]+)"/g)].map(m => m[1]))];
+const titulos = (html.match(/const TITULOS = \{([^}]*)\}/) || [, ''])[1];
+const ini = html.indexOf('function pickTab(');
+const cuerpo = ini < 0 ? '' : html.slice(ini, html.indexOf('\ndocument.querySelectorAll(\'.tab\')', ini));
+const huerfanas = pestanas.filter(t => !new RegExp(`['"]${t}['"]`).test(cuerpo));
+const sinTitulo = pestanas.filter(t => !new RegExp(`\\b${t}\\s*:`).test(titulos));
+if (huerfanas.length || sinTitulo.length) {
+  fallos++;
+  if (huerfanas.length) console.log('  ✗ pestañas que pickTab() no nombra: ' + huerfanas.join(', '));
+  if (sinTitulo.length) console.log('  ✗ pestañas sin título en TITULOS: ' + sinTitulo.join(', '));
+  console.log('      se pintan como activas y no pasa nada: no da error en ninguna parte.');
+} else {
+  console.log(`  ✓ las ${pestanas.length} pestañas llevan a una pantalla y tienen título`);
+}
+
 console.log(fallos ? `\n${fallos} problema(s)` : '\nla pantalla está sana');
 process.exit(fallos ? 1 : 0);
