@@ -889,6 +889,20 @@
     box-shadow:0 1px 3px rgba(15,30,49,.06)}
   .aj-volver svg{width:19px;height:19px;color:var(--orange)}
   .aj-volver:active{transform:scale(.985)}
+
+  /* productos: la lista con su interruptor */
+  .aj-buscar{width:100%;height:44px;padding:0 14px;border:1.5px solid var(--border);
+    border-radius:11px;font-size:15.5px;background:#fff;color:var(--text);margin-top:10px}
+  .aj-buscar:focus{outline:none;border-color:var(--orange)}
+  .aj-prod{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;
+    background:var(--bg);margin-bottom:7px}
+  .aj-prod.off{opacity:.62}
+  .aj-prod .nm{flex:1;min-width:0}
+  .aj-prod .nm b{display:block;font-size:14.5px;font-weight:700;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .aj-prod.off .nm b{text-decoration:line-through}
+  .aj-prod .nm span{font-size:12.5px;color:var(--muted)}
+  .aj-filtros{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
   .aj{display:flex;gap:16px;align-items:flex-start}
   .aj-rail{width:232px;flex-shrink:0;background:#fff;border-radius:14px;padding:8px;
     box-shadow:0 1px 3px rgba(15,30,49,.06);position:sticky;top:8px}
@@ -5407,12 +5421,21 @@ const AJUSTES = [
 
   { id:'productos', ico:'productos', tit:'Productos',
     sub:'Activar, desactivar y ordenar el catálogo. Lo que se apaga desaparece de la app y de Fudo.',
-    render:()=>'<div id="aj-slot-productos"></div>' + ajPronto([
-      'Activar y desactivar productos · en la app y en Fudo a la vez',
+    /* El hueco donde se monta la zona de administración va acá y no
+       adentro de ajProductosHTML(): ese emite varias ramas y el id habría
+       quedado repetido en el archivo. Un id repetido no da error — el
+       navegador devuelve solo el primero y el segundo se queda mudo. */
+    render:()=>ajProductosHTML() + '<div id="aj-slot-productos"></div>' + ajPronto([
       'Fusionar duplicados · se queda uno y se suma el stock',
       'Tipo y unidad de medida, en lote',
     ]),
     montar:()=>{
+      if(!AJ_PRSEDE && SEDE) { AJ_PRSEDE = SEDE; ajCargarProds(); }
+      const bq = $('aj-prq');
+      if(bq){
+        bq.addEventListener('input', ()=>{ AJ_PRQ = bq.value; pintarAjustes();
+          const n = $('aj-prq'); if(n){ n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
+      }
       ajMontar('aj-slot-productos','adm-sec-productos');
       $('adm-edicion').classList.toggle('on', modoEdicion);
       $('adm-edicion').style.display = PERMISOS.puede_editar ? '' : 'none';
@@ -5964,6 +5987,113 @@ async function ajRenombrarPar(id, nuevo){
   if(AJ_PSEDE === SEDE){ await loadData(); metrics(); render(); }
 }
 
+
+/* ---------------- Productos · encender y apagar ----------------
+
+   EL PROBLEMA DE ADRIANA, con cuatro años encima: el catálogo de Fudo
+   está lleno de cosas que ya no se venden y ella no las puede limpiar,
+   porque Fudo se niega a borrar lo que alguna vez se vendió. Desactivar
+   es la respuesta que el propio Fudo tiene prevista — su formulario tiene
+   una casilla "Activo" — y hasta hoy había que ir producto por producto
+   en dos sistemas distintos.
+
+   Acá es un interruptor y cambia los dos lados a la vez.
+
+   QUÉ SE APAGA EN FUDO, y conviene entenderlo: no "el que se llama
+   igual", sino los que quedarían IMPOSIBLES DE HACER. Si apagas "Brownie
+   Vitrina" pero el del congelador sigue lleno, el Brownie de Fudo NO se
+   apaga: el mesón lo puede seguir vendiendo. Lo decide la receta, no el
+   nombre.
+
+   Y SE PUEDE DESHACER: volver a encenderlo devuelve las dos cosas. Por
+   eso este camino no lleva la advertencia dura de crear, que sí es para
+   siempre.                                                              */
+let AJ_PRSEDE = null;
+let AJ_PRODS  = null;
+let AJ_PRQ    = '';
+let AJ_VER_OFF = false;
+
+async function ajCargarProds(){
+  AJ_PRODS = null;
+  if(ajActual === 'productos') pintarAjustes();
+  const sede = AJ_PRSEDE;
+  const {data,error} = await sb.from('productos')
+    .select('id,producto,rubro,stock_actual,activo').eq('sede',sede)
+    .order('producto').limit(2000);
+  if(sede !== AJ_PRSEDE) return;
+  AJ_PRODS = error ? {error:true} : (data||[]);
+  pintarAjustes();
+}
+
+function ajProductosHTML(){
+  const cab = `<div class="aj-caja">
+      <h3>Encender y apagar productos</h3>
+      <p class="aj-nota">Lo que se apaga desaparece de la app <b>y</b> de Fudo, y vuelve
+        entero al encenderlo. En Fudo solo se apaga lo que ya no se podría hacer:
+        si el producto tiene su gemelo en otro mueble y ese sigue activo, el mesón
+        lo puede seguir vendiendo.</p>
+      <div class="aj-sedes">${['plaza','angamos','central'].map(x=>`
+        <button type="button" class="aj-sede${x===AJ_PRSEDE?' on':''}" data-ajprsede="${x}">${esc(SEDES[x].label)}</button>`).join('')}
+      </div>
+    </div>`;
+
+  if(!AJ_PRSEDE) return cab;
+  if(AJ_PRODS === null) return cab + '<div class="aj-caja"><p>Cargando…</p></div>';
+  if(AJ_PRODS.error) return cab + '<div class="aj-caja"><p>No se pudo leer. Revisa la señal.</p></div>';
+
+  const apagados = AJ_PRODS.filter(p=>p.activo !== 'SÍ');
+  const q = normNombre(AJ_PRQ);
+  let lista = AJ_VER_OFF ? apagados : AJ_PRODS;
+  if(q) lista = lista.filter(p=>normNombre(p.producto).includes(q));
+  /* Sin buscar no se pintan 240 filas: la lista larga tarda y además nadie
+     recorre 240 productos con el dedo. Se busca y aparece. */
+  const mostrar = q || AJ_VER_OFF ? lista.slice(0,60) : [];
+
+  const filas = mostrar.map(p=>{
+    const on = p.activo === 'SÍ';
+    return `<div class="aj-prod${on?'':' off'}">
+      <div class="nm"><b>${esc(p.producto)}</b>
+        <span>${esc(p.rubro||'—')} · ${fmt(p.stock_actual||0)} en stock${on?'':' · apagado'}</span></div>
+      <button type="button" class="aj-sw${on?' on':''}" data-ajprod="${p.id}"
+        aria-label="${on?'Apagar':'Encender'}"></button>
+    </div>`;
+  }).join('');
+
+  return cab + `<div class="aj-caja">
+      <div class="aj-filtros">
+        <button type="button" class="aj-sede${AJ_VER_OFF?'':' on'}" data-ajproff="0">Todos</button>
+        <button type="button" class="aj-sede${AJ_VER_OFF?' on':''}" data-ajproff="1">Apagados · ${apagados.length}</button>
+      </div>
+      <input type="text" class="aj-buscar" id="aj-prq" placeholder="Buscar producto…" value="${esc(AJ_PRQ)}">
+      <div style="margin-top:12px">${
+        filas || `<div class="aj-vacio">${AJ_VER_OFF
+          ? 'No hay ningún producto apagado en esta sede.'
+          : 'Escribe para buscar un producto.'}</div>`}</div>
+      ${mostrar.length >= 60 ? '<div class="aj-vacio">Se muestran los primeros 60 · afina la búsqueda</div>' : ''}
+    </div>`;
+}
+
+async function ajToggleProducto(id){
+  const p = (AJ_PRODS||[]).find(x=>x.id===id); if(!p) return;
+  const encender = p.activo !== 'SÍ';
+  if(!encender && !await preguntar('Apagar ' + p.producto,
+      'Desaparece de la app y, si con eso deja de poder hacerse, también de Fudo.\n\n'
+      + 'Se puede volver a encender cuando quieras.', 'Apagar')) return;
+  trabajando(encender ? 'Encendiendo…' : 'Apagando…');
+  const r = await sb.functions.invoke('fudo-activar-producto',
+    {body:{sede:AJ_PRSEDE, producto_id:id, activo:encender}});
+  listo();
+  const err = await motivoDeFuncion(r);
+  if(err){ avisar('No se pudo\n\n' + err); return; }
+  p.activo = encender ? 'SÍ' : 'NO';
+  const d = r.data || {};
+  const enFudo = (d.en_fudo||[]).length;
+  aviso('✓ ' + p.producto + (encender ? ' encendido' : ' apagado')
+        + (enFudo ? ' · ' + enFudo + ' en Fudo' : ''), 4500);
+  pintarAjustes();
+  if(AJ_PRSEDE === SEDE){ await loadData(); metrics(); render(); }
+}
+
 let ajActual = 'interruptores';
 
 /* MONTAR TROZOS QUE YA EXISTEN, en vez de reescribirlos.
@@ -6024,6 +6154,12 @@ $('aj-pane').addEventListener('click', e=>{
   if(rn){ ajRenombrarPar(+rn.dataset.ajren, rn.dataset.nuevo); return; }
   const ir = e.target.closest('[data-ajir]');
   if(ir){ pickTab(ir.dataset.ajir); return; }
+  const prs = e.target.closest('[data-ajprsede]');
+  if(prs){ AJ_PRSEDE = prs.dataset.ajprsede; AJ_PRQ=''; ajCargarProds(); return; }
+  const pof = e.target.closest('[data-ajproff]');
+  if(pof){ AJ_VER_OFF = pof.dataset.ajproff === '1'; pintarAjustes(); return; }
+  const pt = e.target.closest('[data-ajprod]');
+  if(pt){ ajToggleProducto(+pt.dataset.ajprod); return; }
 });
 
 $('aj-volver').addEventListener('click', ()=>pickTab('inv'));
