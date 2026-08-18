@@ -815,6 +815,28 @@
   /* La tuerca encendida mientras se está en Ajustes: sin esto, estando
      adentro no hay nada que diga por dónde se sale. */
   .icon-btn.on{background:rgba(255,255,255,.16);border-radius:10px}
+
+  /* filas de personas, con su interruptor */
+  .aj-fila{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:11px;
+    background:var(--bg);margin-bottom:8px}
+  .aj-fila .nm{flex:1;min-width:0}
+  .aj-fila .nm b{display:block;font-size:14.5px;font-weight:700;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .aj-fila .nm span{font-size:12.5px;color:var(--muted)}
+  .aj-sw{width:44px;height:26px;border-radius:999px;background:var(--border);border:none;
+    position:relative;flex-shrink:0;cursor:pointer;transition:background .18s}
+  .aj-sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;
+    border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.22);transition:transform .18s}
+  .aj-sw.on{background:var(--green-fg)}
+  .aj-sw.on::after{transform:translateX(18px)}
+  .aj-sw:disabled{opacity:.45;cursor:default}
+  .aj-yo{font-size:11.5px;font-weight:800;color:var(--muted);background:var(--gray-bg);
+    border-radius:999px;padding:3px 9px}
+  .aj-alta{display:flex;gap:8px;margin-top:10px}
+  .aj-alta input{flex:1;min-width:0;height:42px;padding:0 12px;border:1.5px solid var(--border);
+    border-radius:10px;font-size:15px;background:#fff;color:var(--text)}
+  .aj-alta input:focus{outline:none;border-color:var(--orange)}
+  .aj-alta button{flex-shrink:0;width:auto;padding:0 18px}
   .aj{display:flex;gap:16px;align-items:flex-start}
   .aj-rail{width:232px;flex-shrink:0;background:#fff;border-radius:14px;padding:8px;
     box-shadow:0 1px 3px rgba(15,30,49,.06);position:sticky;top:8px}
@@ -1105,12 +1127,7 @@
       <button type="button" class="icon-btn" id="btnActualizar" aria-label="Actualizar" title="Actualizar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
       </button>
-      <!-- Ajustes. A la derecha del todo y con la tuerca de siempre, que es
-           el símbolo que la gente ya busca. Solo lo ven las cuentas con
-           permiso: para el resto la app se ve exactamente igual que hoy. -->
-      <button type="button" class="icon-btn" id="btnAjustes" aria-label="Ajustes" title="Ajustes" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-      </button>
+
     </div>
   </div>
 </div>
@@ -1154,18 +1171,16 @@
     Historial
   </button>
 
-  <!-- Solo para las cuentas con permiso. Un jefe de turno no ve nada de esto. -->
+  <!-- UNA sola puerta a todo lo administrativo (Jhon, 2026-08-18). Antes
+       había dos entradas sueltas acá —la zona roja y Secciones— y cada
+       cosa nueva sumaba otra. Ahora esto abre Ajustes y adentro está todo,
+       cada cosa en su sección. Solo lo ven las cuentas con permiso: para
+       el resto el menú se ve exactamente igual que siempre. -->
   <div id="bloqueAdmin" style="display:none">
-    <div class="drawer-sec">Solo administración</div>
-    <button type="button" class="drawer-item item-admin" data-accion="admin">
-      <span class="adm-ico">🚨</span>
-      Zona de administración
-    </button>
-    <!-- Renombrar secciones. Hoy es lo único que se pide; crear, mover y
-         ordenar viene con el panel de configuración (§6.2). -->
-    <button type="button" class="drawer-item" data-accion="secciones">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1.5"></rect><rect x="3" y="14" width="18" height="5" rx="1.5"></rect></svg>
-      Secciones
+    <div class="drawer-sec">Administración</div>
+    <button type="button" class="drawer-item" data-accion="ajustes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+      Ajustes
     </button>
   </div>
 
@@ -1208,7 +1223,7 @@
     </div>
     <div class="adm-body">
 
-      <div class="adm-sec peligro">
+      <div class="adm-sec peligro" id="adm-sec-fudo">
         <div class="adm-sec-cab"><span>🚨</span><div><b>Actualizar Fudo</b><i>Escribe en el sistema de ventas</i></div></div>
         <div class="adm-sec-cuerpo">
           <div class="adm-card rojo">
@@ -1224,12 +1239,12 @@
         </div>
       </div>
 
-      <div class="adm-sec">
+      <div class="adm-sec" id="adm-sec-hist">
         <div class="adm-sec-cab azul"><span>🕗</span><div><b>Historial</b><i>Quién actualizó qué, y cuándo</i></div></div>
         <div class="adm-sec-cuerpo"><div id="adm-hist"><div class="empty">Cargando…</div></div></div>
       </div>
 
-      <div class="adm-sec">
+      <div class="adm-sec" id="adm-sec-productos">
         <div class="adm-sec-cab azul"><span>✏️</span><div><b>Productos</b><i>Crear, renombrar y eliminar</i></div></div>
         <div class="adm-sec-cuerpo">
           <button type="button" class="adm-card adm-fila" id="adm-nuevo">
@@ -1957,7 +1972,8 @@ async function cargarPermisos(){
 }
 function aplicarPermisos(){
   const admin = PERMISOS.puede_fudo || PERMISOS.puede_editar;
-  $('bloqueAdmin').style.display = admin ? '' : 'none';
+  // La puerta del menú es la MISMA que la de Ajustes: un solo permiso.
+  $('bloqueAdmin').style.display = PERMISOS.puede_ajustes ? '' : 'none';
   // crear productos pasa a ser cosa de administración
   $('btnNuevo').style.display = PERMISOS.puede_editar ? '' : 'none';
   // también acá y no solo al abrir la ficha: si el permiso cambia con la
@@ -1971,7 +1987,6 @@ function aplicarPermisos(){
      puede actuar sobre ella; al resto solo le quita la confianza en el
      sistema, que es lo único que este proyecto no puede perder. */
   $('motorAviso').classList.toggle('solo-admin', !admin);
-  $('btnAjustes').style.display = PERMISOS.puede_ajustes ? '' : 'none';
   // si le quitaron el permiso con la pantalla abierta, se sale de ella
   if(!PERMISOS.puede_ajustes && vistaActual === 'ajustes') pickTab('inv');
   if(!PERMISOS.puede_editar) setModoEdicion(false);
@@ -2184,9 +2199,8 @@ $('drawer').addEventListener('click',e=>{
   cerrarMenu();
   if(a==='actualizar')     actualizarTodo();
   if(a==='historial')      pickTab('hist');
-  if(a==='secciones')      abrirSecciones();
+  if(a==='ajustes')        pickTab('ajustes');
   if(a==='cambiar-sede')   showGate();
-  if(a==='admin')          abrirAdmin();
 });
 
 /* Pregunta de sí/no con la cara de la app. El confirm() del navegador pinta
@@ -5222,19 +5236,31 @@ const AJUSTES = [
 
   { id:'productos', ico:'productos', tit:'Productos',
     sub:'Activar, desactivar y ordenar el catálogo. Lo que se apaga desaparece de la app y de Fudo.',
-    render:()=>ajPronto([
+    render:()=>'<div id="aj-slot-productos"></div>' + ajPronto([
       'Activar y desactivar productos · en la app y en Fudo a la vez',
       'Fusionar duplicados · se queda uno y se suma el stock',
       'Tipo y unidad de medida, en lote',
-    ]) },
+    ]),
+    montar:()=>{
+      ajMontar('aj-slot-productos','adm-sec-productos');
+      $('adm-edicion').classList.toggle('on', modoEdicion);
+      $('adm-nuevo').style.display   = PERMISOS.puede_editar ? '' : 'none';
+      $('adm-edicion').style.display = PERMISOS.puede_editar ? '' : 'none';
+    } },
 
   { id:'secciones', ico:'secciones', tit:'Secciones y turnos',
     sub:'Dónde vive cada producto, y qué se cuenta en la mañana y qué en la tarde.',
-    render:()=>ajPronto([
-      'Crear, renombrar, borrar y reordenar secciones',
+    render:()=>`<div class="aj-caja">
+        <h3>Renombrar una sección</h3>
+        <p>Cambia el nombre en esta sede. Los productos no se mueven.</p>
+        <button type="button" class="adm-btn fantasma" id="aj-renombrar-sec"
+          style="margin-top:10px">Elegir sección</button>
+      </div>` + ajPronto([
+      'Crear, borrar y reordenar secciones',
       'Mover productos entre secciones',
       'Qué secciones son AM y cuáles PM',
-    ]) },
+    ]),
+    montar:()=>{ $('aj-renombrar-sec').addEventListener('click', abrirSecciones); } },
 
   { id:'relaciones', ico:'relaciones', tit:'Relaciones',
     sub:'Lo que la app todavía no sabe editar: qué producto va con cuál.',
@@ -5255,18 +5281,24 @@ const AJUSTES = [
 
   { id:'personas', ico:'personas', tit:'Personas y acceso',
     sub:'Quién entra acá. Es un solo permiso: se entra a Ajustes o no se entra.',
-    render:()=>ajPronto([
-      'Todas las cuentas, con su interruptor de acceso',
-      'Acotar una cuenta a una sola sede',
-    ]) },
+    render:()=>ajPersonasHTML(),
+    montar:()=>{
+      if(!PERSONAS || !PERSONAS.length) cargarPersonas();
+      const ok = $('aj-nuevo-ok');
+      if(ok) ok.addEventListener('click', ajAgregarPersona);
+    } },
 
   { id:'fudo', ico:'fudo', tit:'Fudo',
     sub:'El puente con el sistema de ventas.',
-    render:()=>ajPronto([
-      'Empujar todo el inventario ahora · y deshacer el último empuje',
+    render:()=>'<div id="aj-slot-fudo"></div><div id="aj-slot-hist"></div>' + ajPronto([
       'Modo prueba o real, por sede',
       'El reloj: encenderlo, apagarlo y ver cuándo corrió',
-    ]) },
+    ]),
+    montar:()=>{
+      ajMontar('aj-slot-fudo','adm-sec-fudo');
+      ajMontar('aj-slot-hist','adm-sec-hist');
+      cargarHistorialFudo();
+    } },
 
   { id:'respaldos', ico:'respaldos', tit:'Respaldos',
     sub:'La red. Si algo se rompe, de acá se vuelve.',
@@ -5291,9 +5323,132 @@ const AJUSTES = [
     ]) },
 ];
 
+
+/* ---------------- Personas y acceso ----------------
+
+   La sección que desata a Jhon de Supabase: hasta hoy dar un permiso era
+   escribirle un `update` y pegarlo en el panel. Acá es un interruptor.
+
+   DOS CANDADOS, y los dos son contra el accidente, no contra nadie:
+
+   · NADIE PUEDE QUITARSE EL ACCESO A SÍ MISMO. Si el único que entra se
+     apaga por error, no queda forma de volver a entrar desde la app y hay
+     que ir a Supabase — o sea, exactamente el problema que esta pantalla
+     viene a resolver. Su propio interruptor está apagado y dice "tú".
+
+   · NO SE PUEDE DEJAR LA LISTA EN CERO. Un sistema sin nadie que entre a
+     administración no es un sistema seguro: es uno que hay que reparar
+     por fuera.                                                          */
+let PERSONAS = [];
+
+async function cargarPersonas(){
+  const {data,error} = await sb.from('app_permisos').select('*').order('correo');
+  if(error){ console.error('personas', error); PERSONAS = null; }
+  else PERSONAS = data || [];
+  if(ajActual === 'personas') pintarAjustes();
+}
+
+function ajPersonasHTML(){
+  if(PERSONAS === null){
+    return '<div class="aj-caja"><p>No se pudo leer la lista. Revisa la señal y vuelve a entrar.</p></div>';
+  }
+  if(!PERSONAS.length){
+    return '<div class="aj-caja"><p>Cargando…</p></div>';
+  }
+  const yo = (PERMISOS.correo||'').toLowerCase();
+  const conAcceso = PERSONAS.filter(p=>p.puede_ajustes).length;
+  const filas = PERSONAS.map(p=>{
+    const on = !!p.puede_ajustes;
+    const esYo = String(p.correo||'').toLowerCase() === yo;
+    /* Si queda uno solo con acceso, su interruptor tampoco se puede
+       apagar — aunque sea otra persona la que esté mirando. */
+    const ultimo = on && conAcceso <= 1;
+    return `<div class="aj-fila">
+      <div class="nm"><b>${esc(p.nombre || p.correo)}</b><span>${esc(p.correo)}</span></div>
+      ${esYo ? '<span class="aj-yo">tú</span>' : ''}
+      <button type="button" class="aj-sw${on?' on':''}" data-persona="${esc(p.correo)}"
+        ${esYo || ultimo ? 'disabled' : ''}
+        aria-label="${on?'Quitar':'Dar'} acceso a Ajustes"></button>
+    </div>`;
+  }).join('');
+  return `<div class="aj-caja">
+      <h3>Quién entra a Ajustes</h3>
+      <p>Quien entra acá tiene todo lo administrativo, incluido escribirle a Fudo.</p>
+      <div style="margin-top:12px">${filas}</div>
+    </div>
+    <div class="aj-caja">
+      <h3>Agregar a alguien</h3>
+      <p>Tiene que ser el correo con el que esa persona entra a la app.</p>
+      <div class="aj-alta">
+        <input type="email" id="aj-nuevo-correo" placeholder="correo@ejemplo.cl" autocomplete="off">
+        <button type="button" class="adm-btn fantasma" id="aj-nuevo-ok">Agregar</button>
+      </div>
+    </div>`;
+}
+
+async function ajTogglePersona(correo){
+  const p = PERSONAS.find(x=>x.correo === correo); if(!p) return;
+  const valor = !p.puede_ajustes;
+  if(!valor && !await preguntar('Quitarle el acceso a Ajustes',
+      (p.nombre||correo)+' va a dejar de ver esta zona.','Quitar acceso')) return;
+  const {error} = await sb.from('app_permisos')
+    .update({puede_ajustes: valor}).eq('correo', correo);
+  if(error){ avisar(error.message || 'No se pudo cambiar el permiso.'); return; }
+  p.puede_ajustes = valor;
+  aviso(valor ? '✓ Ahora entra a Ajustes' : 'Acceso quitado');
+  pintarAjustes();
+}
+
+async function ajAgregarPersona(){
+  const inp = $('aj-nuevo-correo');
+  const correo = (inp.value||'').trim().toLowerCase();
+  if(!correo || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)){
+    avisar('Escribe un correo válido.'); return;
+  }
+  if(PERSONAS.some(p=>String(p.correo).toLowerCase()===correo)){
+    avisar('Esa cuenta ya está en la lista.'); return;
+  }
+  /* Se agrega SIN acceso. Darlo es un segundo gesto, a propósito: escribir
+     un correo y que quede dentro de la zona de administración de una vez
+     es demasiado fácil de hacer sin querer. */
+  const {error} = await sb.from('app_permisos')
+    .insert({correo, puede_ajustes:false, puede_fudo:false, puede_editar:true});
+  if(error){ avisar(error.message || 'No se pudo agregar.'); return; }
+  inp.value = '';
+  await cargarPersonas();
+  aviso('✓ Agregada · enciéndele el acceso cuando quieras');
+}
+
 let ajActual = 'interruptores';
 
+/* MONTAR TROZOS QUE YA EXISTEN, en vez de reescribirlos.
+
+   La zona roja de administración y sus botones funcionan hace semanas y
+   son lo más delicado que hay —el que le escribe a Fudo—. Rehacerlos para
+   la mudanza sería cambiar código probado por código nuevo sin ninguna
+   ganancia: los mismos botones, con los mismos ids, con el mismo riesgo de
+   equivocarse en el camino.
+
+   Así que se MUEVEN los nodos tal cual. Los manejadores siguen enganchados
+   porque están puestos por id, y cambiar de padre no los desengancha.
+   Antes de repintar el panel se devuelven a su escondite, porque si no,
+   el innerHTML siguiente los destruiría. */
+const AJ_MONTADOS = [];
+function ajDevolver(){
+  while(AJ_MONTADOS.length){
+    const g = AJ_MONTADOS.pop();
+    if(g.casa && g.nodo) g.casa.appendChild(g.nodo);
+  }
+}
+function ajMontar(slotId, nodoId){
+  const slot = $(slotId), nodo = $(nodoId);
+  if(!slot || !nodo) return;
+  AJ_MONTADOS.push({nodo, casa: nodo.parentNode});
+  slot.appendChild(nodo);
+}
+
 function pintarAjustes(){
+  ajDevolver();                 // primero a su casa: el innerHTML los borraría
   $('aj-rail').innerHTML = '<div class="aj-rail-tit">AJUSTES</div>' + AJUSTES.map(a=>`
     <button type="button" class="aj-it${a.id===ajActual?' on':''}" data-aj="${a.id}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICO[a.ico]}</svg>
@@ -5306,7 +5461,13 @@ function pintarAjustes(){
       <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICO[a.ico]}</svg></span>
       <div><h2>${esc(a.tit)}</h2><p>${esc(a.sub)}</p></div>
     </div>` + a.render();
+  if(a.montar) a.montar();
 }
+
+$('aj-pane').addEventListener('click', e=>{
+  const sw = e.target.closest('[data-persona]');
+  if(sw && !sw.disabled) ajTogglePersona(sw.dataset.persona);
+});
 
 $('aj-rail').addEventListener('click', e=>{
   const b = e.target.closest('[data-aj]'); if(!b) return;
@@ -5316,11 +5477,6 @@ $('aj-rail').addEventListener('click', e=>{
      si no el contenido nuevo queda fuera de la vista y parece que no pasó
      nada. */
   if(window.innerWidth < 720) window.scrollTo({top:0, behavior:'smooth'});
-});
-
-$('btnAjustes').addEventListener('click', ()=>{
-  if(!PERMISOS.puede_ajustes) return;
-  pickTab(vistaActual === 'ajustes' ? 'inv' : 'ajustes');
 });
 
 function pickTab(tab){
@@ -5338,12 +5494,12 @@ function pickTab(tab){
   $('view-mermas').style.display = tab==='mermas'?'block':'none';
   $('view-enlaces').style.display = tab==='enlaces'?'block':'none';
   $('view-ajustes').style.display = tab==='ajustes'?'block':'none';
+  if(tab!=='ajustes') ajDevolver();   // si no, quedan colgando fuera de la vista
   vistaActual=tab; $('topTitle').textContent=TITULOS[tab]||TITULOS.inv;
   /* En Ajustes se esconden las pestañas y la franja del motor: se entró a
      otra zona, y dejar la navegación de la anterior encima haría dudar de
      dónde está uno. La tuerca sigue arriba para poder salir. */
   document.querySelector('.tabs').style.display = tab==='ajustes' ? 'none' : '';
-  $('btnAjustes').classList.toggle('on', tab==='ajustes');
   if(tab==='mermas') loadMermas();
   /* El formulario se arma DESPUÉS de cargar, no antes (2026-08-17). Las
      secciones de Plaza y Angamos salen de SEDE_PROD, que la llena

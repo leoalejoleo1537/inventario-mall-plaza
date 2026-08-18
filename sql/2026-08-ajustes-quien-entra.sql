@@ -41,9 +41,19 @@ on conflict (correo) do update set puede_ajustes = true;
 -- QUÉ VER: tu correo con puede_ajustes en true, y TODOS los demás en
 -- false. Desde la app vas a poder ir encendiéndoselo a quien quieras,
 -- sin volver acá.
+--
+-- ⚠️ La primera versión de este bloque falló con "column sede does not
+-- exist". No era un error del permiso: esa columna la creaba otro script
+-- de agosto que decidiste no correr, y nombrarla derecho tumba la
+-- consulta entera. Acá se pregunta si existe en vez de darla por hecha.
 -- ================================================================
-select correo, nombre, puede_ajustes, puede_fudo, puede_editar, sede
-from public.app_permisos
+-- `sede` se lee con to_jsonb porque esa columna puede no existir: la
+-- creaba `2026-08-permiso-por-sede.sql`, que Jhon decidió NO correr (§9.6).
+-- Nombrarla derecho hace fallar el bloque entero por una palabra (§0.1.9),
+-- que es exactamente lo que pasó la primera vez.
+select correo, nombre, puede_ajustes, puede_fudo, puede_editar,
+       to_jsonb(a) ->> 'sede' as sede
+from public.app_permisos a
 order by puede_ajustes desc, correo;
 
 
