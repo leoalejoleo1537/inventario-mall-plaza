@@ -5425,12 +5425,13 @@ const AJUSTES = [
        adentro de ajProductosHTML(): ese emite varias ramas y el id habría
        quedado repetido en el archivo. Un id repetido no da error — el
        navegador devuelve solo el primero y el segundo se queda mudo. */
-    render:()=>ajProductosHTML() + '<div id="aj-slot-productos"></div>' + ajPronto([
-      'Fusionar duplicados · se queda uno y se suma el stock',
+    render:()=>ajProductosHTML() + ajDuplicadosHTML()
+      + '<div id="aj-slot-productos"></div>' + ajPronto([
       'Tipo y unidad de medida, en lote',
     ]),
     montar:()=>{
       if(!AJ_PRSEDE && SEDE) { AJ_PRSEDE = SEDE; ajCargarProds(); }
+      if(!AJ_FUS.length) ajCargarFusiones();
       const bq = $('aj-prq');
       if(bq){
         bq.addEventListener('input', ()=>{ AJ_PRQ = bq.value; pintarAjustes();
@@ -6022,6 +6023,7 @@ async function ajCargarProds(){
     .order('producto').limit(2000);
   if(sede !== AJ_PRSEDE) return;
   AJ_PRODS = error ? {error:true} : (data||[]);
+  AJ_DUP = null;                 // la lista cambió: los duplicados se recalculan
   pintarAjustes();
 }
 
@@ -6094,6 +6096,128 @@ async function ajToggleProducto(id){
   if(AJ_PRSEDE === SEDE){ await loadData(); metrics(); render(); }
 }
 
+
+/* ---------------- Productos · juntar duplicados ----------------
+
+   EL PROBLEMA: el mismo producto cargado dos veces. Las jefas cuentan una
+   vez en cada ficha, el stock queda partido, y a Fudo se le manda el de
+   una sola. Bodega llegó a tener 117 pares así.
+
+   LOS CANDIDATOS SE PROPONEN, NO SE DECIDEN. Se juntan por nombre
+   normalizado —sin tildes ni mayúsculas— y eso encuentra "Dona Berlin" y
+   "Dona berlín", que es el caso común. Pero proponer no es acertar: el
+   que aprieta el botón es quien sabe si son el mismo producto. Es la
+   lección del `Croissant manjar` que se propuso para el `Croissant Jamon
+   Queso`, insumo de once recetas.
+
+   ⚠️ NO se proponen los pares vitrina/congelador. Esos NO son duplicados:
+   son el mismo producto en dos muebles, a propósito, y juntarlos rompería
+   el reparto. Se excluyen mirando el mueble, no el nombre.               */
+let AJ_DUP = null;
+let AJ_FUS = [];
+
+function ajBuscarDuplicados(){
+  if(!AJ_PRODS || AJ_PRODS.error){ AJ_DUP = []; return; }
+  const activos = AJ_PRODS.filter(p=>p.activo === 'SÍ');
+  const por = {};
+  for(const p of activos){
+    /* La clave es el nombre SIN el apellido del mueble, pero solo se
+       agrupan los que están en el MISMO mueble: así "Brownie Vitrina" y
+       "Brownie Congelador" nunca se proponen como duplicados. */
+    const k = baseEstricta(p.producto) + '|' + (muebleDe(p.producto) || '');
+    (por[k] ||= []).push(p);
+  }
+  AJ_DUP = Object.values(por).filter(g=>g.length > 1)
+    .map(g=>g.slice().sort((a,b)=>(+b.stock_actual||0)-(+a.stock_actual||0) || a.id-b.id));
+}
+
+async function ajCargarFusiones(){
+  const {data} = await sb.from('fusiones').select('*')
+    .order('created_at',{ascending:false}).limit(15);
+  AJ_FUS = data || [];
+  if(ajActual === 'productos') pintarAjustes();
+}
+
+function ajDuplicadosHTML(){
+  if(!AJ_PRSEDE || !AJ_PRODS || AJ_PRODS.error) return '';
+  if(AJ_DUP === null) ajBuscarDuplicados();
+
+  const grupos = (AJ_DUP||[]).slice(0,30).map(g=>{
+    const queda = g[0];
+    const otros = g.slice(1);
+    return `<div class="aj-caja" style="background:var(--bg);box-shadow:none">
+      <div class="aj-prod" style="background:#fff">
+        <div class="nm"><b>${esc(queda.producto)}</b>
+          <span>se queda este · ${esc(queda.rubro||'—')} · ${fmt(queda.stock_actual||0)}</span></div>
+      </div>
+      ${otros.map(o=>`<div class="aj-prod" style="background:#fff">
+        <div class="nm"><b>${esc(o.producto)}</b>
+          <span>${esc(o.rubro||'—')} · ${fmt(o.stock_actual||0)} · se apaga</span></div>
+        <button type="button" class="arr" data-ajfus="${queda.id}" data-otro="${o.id}">Juntar</button>
+      </div>`).join('')}
+      <div class="aj-vacio">Quedaría en ${fmt(g.reduce((t,p)=>t+(+p.stock_actual||0),0))}</div>
+    </div>`;
+  }).join('');
+
+  const hechas = AJ_FUS.length ? `<div class="aj-caja">
+      <h3>Fusiones hechas</h3>
+      <div style="margin-top:10px">${AJ_FUS.map(f=>`
+        <div class="aj-fila">
+          <div class="nm"><b>${esc(f.se_va_nombre)} → ${esc(f.queda_nombre)}</b>
+            <span>${esc((SEDES[f.sede]||{}).label||f.sede)} · ${esc(f.quien||'—')} · ${fmtFecha(f.created_at.slice(0,10))}</span></div>
+          ${f.deshecha_at ? '<span class="aj-yo">deshecha</span>'
+            : `<button type="button" class="rep-deshacer" data-ajdesfus="${f.id}">Deshacer</button>`}
+        </div>`).join('')}</div></div>` : '';
+
+  return `<div class="aj-caja">
+      <h3>Productos repetidos${AJ_DUP && AJ_DUP.length ? ' · '+AJ_DUP.length : ''}</h3>
+      <p class="aj-nota">Al juntarlos, el stock se suma, las fechas se mudan y las recetas
+        pasan al que se queda. El otro se apaga, no se borra, y se puede deshacer.<br>
+        Los pares <b>vitrina y congelador no salen acá</b>: no son duplicados, son el mismo
+        producto en dos muebles a propósito.</p>
+      ${grupos || '<div class="aj-vacio">Ningún nombre repetido en esta sede.</div>'}
+    </div>` + hechas;
+}
+
+async function ajFusionar(quedaId, otroId){
+  const a = (AJ_PRODS||[]).find(p=>p.id===quedaId);
+  const b = (AJ_PRODS||[]).find(p=>p.id===otroId);
+  if(!a || !b) return;
+  if(!await preguntar('Juntar en “'+a.producto+'”',
+      '“'+b.producto+'” se apaga y su stock, sus fechas y sus recetas pasan a “'+a.producto+'”.\n\n'
+      + 'Quedaría en ' + fmt((+a.stock_actual||0)+(+b.stock_actual||0)) + '. Se puede deshacer.',
+      'Juntar')) return;
+  trabajando('Juntando…');
+  const {data,error} = await sb.rpc('fusionar_productos',
+    {p_queda:quedaId, p_se_va:otroId, p_quien:NOMBRE});
+  listo();
+  if(error){ avisar(error.message || 'No se pudo juntar.'); return; }
+  /* Los choques se avisan al terminar, no antes: son raros, y advertir de
+     algo raro en cada confirmación entrena a la gente a no leerlas. */
+  const ch = (data && data.antes && data.antes.choques) || [];
+  aviso('✓ Juntados en ' + a.producto, 4000);
+  if(ch.length){
+    setTimeout(()=>avisar('Ojo con esto\n\n'
+      + 'Los dos estaban en la misma receta, así que sus cantidades se sumaron en una sola línea: '
+      + ch.map(c=>c.receta).join(', ') + '.\n\n'
+      + 'Si deshaces la fusión, esa suma no se puede volver a partir.'), 1200);
+  }
+  AJ_DUP = null;
+  await ajCargarProds(); await ajCargarFusiones();
+  if(AJ_PRSEDE === SEDE){ await loadData(); await loadLotes(); metrics(); render(); }
+}
+
+async function ajDeshacerFusion(id){
+  if(!await preguntar('Deshacer la fusión',
+      'Los dos productos vuelven a estar separados, con su stock y sus fechas.','Deshacer')) return;
+  const {error} = await sb.rpc('deshacer_fusion',{p_id:id, p_quien:NOMBRE});
+  if(error){ avisar(error.message || 'No se pudo deshacer.'); return; }
+  aviso('✓ Deshecha');
+  AJ_DUP = null;
+  await ajCargarProds(); await ajCargarFusiones();
+  if(AJ_PRSEDE === SEDE){ await loadData(); await loadLotes(); metrics(); render(); }
+}
+
 let ajActual = 'interruptores';
 
 /* MONTAR TROZOS QUE YA EXISTEN, en vez de reescribirlos.
@@ -6160,6 +6284,10 @@ $('aj-pane').addEventListener('click', e=>{
   if(pof){ AJ_VER_OFF = pof.dataset.ajproff === '1'; pintarAjustes(); return; }
   const pt = e.target.closest('[data-ajprod]');
   if(pt){ ajToggleProducto(+pt.dataset.ajprod); return; }
+  const fu = e.target.closest('[data-ajfus]');
+  if(fu){ ajFusionar(+fu.dataset.ajfus, +fu.dataset.otro); return; }
+  const df = e.target.closest('[data-ajdesfus]');
+  if(df){ ajDeshacerFusion(+df.dataset.ajdesfus); return; }
 });
 
 $('aj-volver').addEventListener('click', ()=>pickTab('inv'));

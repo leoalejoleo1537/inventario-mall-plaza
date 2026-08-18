@@ -102,5 +102,21 @@ caso('un producto de vitrina SIN congelador se deja pasar', h(3), null);
 caso('un producto sin mueble no se toca', h(4), null);
 caso('el de congelador nunca se redirige', h(5), null);
 
+/* LOS PARES NO SON DUPLICADOS. La pantalla de fusion agrupa por nombre
+   base MAS el mueble, justo para que "Brownie Vitrina" y "Brownie
+   Congelador" nunca se propongan como repetidos: juntarlos romperia el
+   reparto y el total que se le manda a Fudo. */
+const clave = n => baseEstricta(n) + '|' + (muebleDe(n) || '');
+
+console.log('\nQue la fusion NO proponga juntar un par:');
+caso('vitrina y congelador tienen claves distintas',
+     clave('Brownie Vitrina') === clave('Brownie Congelador'), false);
+caso('dos escrituras del mismo producto SI se juntan',
+     clave('Dona Berlin') === clave('Dona berlín'), true);
+caso('dos del mismo mueble SI se juntan',
+     clave('Muffin Vitrina') === clave('muffin  VITRINA'), true);
+caso('productos distintos no se juntan',
+     clave('Muffin Vitrina') === clave('Muffin de amapola Vitrina'), false);
+
 console.log(`\n${fallos ? '✗' : '✓'} ${ok} bien, ${fallos} mal\n`);
 process.exit(fallos ? 1 : 0);
