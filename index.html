@@ -570,11 +570,6 @@
                    font-weight:800;cursor:pointer;padding:3px 5px}
   .tl-hfila button:active{transform:scale(.94)}
 
-  /* La marca NUEVO late apenas: la idea es que dé ganas de entrar, no llamar
-     la atención. Se apaga con prefers-reduced-motion. */
-  @keyframes nuevo-late{0%,100%{background:var(--orange)}50%{background:#F0733F}}
-  .tab-nuevo.late{animation:nuevo-late 2.6s ease-in-out infinite}
-  @media (prefers-reduced-motion: reduce){ .tab-nuevo.late{animation:none} }
   /* ---------- lotes de vencimiento (cantidad + fecha) ---------- */
   /* tres columnas con su propio espacio: en iOS el campo de fecha se dibuja
      más ancho que su caja y se montaba encima de la ✕ */
@@ -716,9 +711,6 @@
            font-size:21px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;
            box-shadow:0 2px 8px rgba(220,68,5,.55)}
   .sec-fija{cursor:default}
-  .tab-nuevo{background:var(--orange);color:#fff;border-radius:999px;padding:1px 7px;
-             font-size:9.5px;font-weight:800;letter-spacing:.4px;margin-left:5px;vertical-align:middle}
-  .tab.active .tab-nuevo{background:#fff;color:var(--orange)}
   /* ---------- reparto ---------- */
   .rep-result{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px;margin-bottom:6px;cursor:pointer}
   .rep-result:hover{border-color:var(--orange);background:#FFF7F3}
@@ -906,6 +898,23 @@
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .aj-prod.off .nm b{text-decoration:line-through}
   .aj-prod .nm span{font-size:12.5px;color:var(--muted)}
+  /* AGREGAR ES UN "+" NARANJA, no una caja gris que dice "Agregar".
+     El "+" relleno ya significa "crear/sumar" en toda la app (el botón
+     flotante del inventario), así que acá no hay nada nuevo que aprender —
+     y una palabra menos en pantalla (§2.1). */
+  .aj-prod .mas{flex:0 0 auto;width:34px;height:34px;border-radius:999px;border:none;
+    background:var(--orange);color:#fff;font-size:21px;line-height:1;font-weight:700;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 7px rgba(220,68,5,.32);transition:transform .12s ease}
+  .aj-prod .mas:active{transform:scale(.9)}
+  /* Los ya elegidos se ven distintos y su acción es quitarlos: aro naranja
+     en vez de relleno, para que no compitan con el "+" de agregar. */
+  .aj-prod.puesto{background:#FFF3EE;box-shadow:inset 0 0 0 1.5px rgba(220,68,5,.28)}
+  .aj-prod .quitar{flex:0 0 auto;width:34px;height:34px;border-radius:999px;
+    border:1.5px solid var(--border);background:#fff;color:var(--muted);font-size:16px;
+    line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:transform .12s ease}
+  .aj-prod .quitar:active{transform:scale(.9)}
   .aj-filtros{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 
   /* ---- la barra de la competencia ----
@@ -913,6 +922,15 @@
      meta. Se lee sin números: quien tiene la barra más larga va ganando. */
   .meta-caja{background:#fff;border-radius:14px;padding:14px 16px;margin-bottom:12px;
     box-shadow:0 1px 3px rgba(15,30,49,.06)}
+  /* Cerrar (reversible) va primero y en gris; Eliminar (para siempre) va
+     después y en rojo. El camino del que no se vuelve nunca es el cómodo. */
+  .meta-acciones{display:flex;gap:8px;margin-top:12px;padding-top:11px;
+    border-top:1px solid var(--border)}
+  .meta-ax{padding:7px 14px;border-radius:999px;border:1px solid var(--border);
+    background:#fff;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;
+    transition:transform .12s ease}
+  .meta-ax:active{transform:scale(.94)}
+  .meta-ax.mal{margin-left:auto;color:var(--red-fg);border-color:#F3C9C3}
   .meta-tit{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:2px}
   .meta-tit b{font-size:16px;font-weight:800;color:var(--text)}
   .meta-tit .obj{font-size:13px;color:var(--muted);font-weight:700}
@@ -1130,9 +1148,6 @@
            font-size:21px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center;
            box-shadow:0 2px 8px rgba(220,68,5,.55)}
   .sec-fija{cursor:default}
-  .tab-nuevo{background:var(--orange);color:#fff;border-radius:999px;padding:1px 7px;
-             font-size:9.5px;font-weight:800;letter-spacing:.4px;margin-left:5px;vertical-align:middle}
-  .tab.active .tab-nuevo{background:#fff;color:var(--orange)}
   /* ---------- reparto ---------- */
   .rep-fila{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 12px;
             margin-bottom:8px;display:flex;flex-direction:column;gap:9px;box-shadow:0 1px 2px rgba(15,30,49,.04)}
@@ -1240,8 +1255,8 @@
     <button class="tab tab-icon active" data-tab="inv" aria-label="Inventario" title="Inventario">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v9a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1v-9"></path></svg>
     </button>
-    <button class="tab" data-tab="reparto">Reparto <span class="tab-nuevo" id="tabNuevo" style="display:none">NUEVO</span><span class="tab-badge" id="repBadge" style="display:none"></span></button>
-    <button class="tab" data-tab="recetas">Recetas <span class="tab-nuevo late" id="tabNuevoRec" style="display:none">NUEVO</span></button>
+    <button class="tab" data-tab="reparto">Reparto <span class="tab-badge" id="repBadge" style="display:none"></span></button>
+    <button class="tab" data-tab="recetas">Recetas</button>
     <!-- solo en Bodega, igual que la franja de crítico -->
     <button class="tab" data-tab="mermas" id="tabMermas" style="display:none">Mermas</button>
     <!-- BODEGA · el reparto son DOS trabajos distintos y cada uno tiene su
@@ -1965,25 +1980,13 @@ const fmtFecha = iso => { const [y,m,d]=iso.split('-'); return `${d}-${m}-${y}`;
 const fmtPildora = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
 const fmtCorta   = iso => { const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
 
-/* La marca NUEVO de la pestaña Reparto es un aviso, no un adorno: sirve para
-   que el equipo entre a ver la pantalla nueva. Se apaga sola en esta fecha
-   (una semana), así nadie tiene que acordarse de sacarla. */
-const FIN_NUEVO = '2026-08-03';
-/* La marca de Recetas dura más porque lo que hay que aprender es más: no es una
-   pantalla nueva, es una forma nueva de trabajar. Se apaga sola en la fecha —
-   no depende de que alguien se acuerde de sacarla. */
-const FIN_NUEVO_REC = '2026-09-05';
-/* MANDA EL INTERRUPTOR, y desde el 2026-08-18 nace APAGADO: Jhon pidió sacar
-   la marca de Reparto y de Recetas. No se borró el mecanismo — encenderlo en
-   Ajustes -> Interruptores lo devuelve tal cual, con sus fechas de siempre
-   (§2.2: apagar es volver a lo anterior, no dejar un hueco). */
-function marcarNuevo(){
-  const ver = ajVal('marca_nuevo', '', false);
-  const b = $('tabNuevo');
-  if(b) b.style.display = (ver && hoyISO() < FIN_NUEVO) ? 'inline-block' : 'none';
-  const r = $('tabNuevoRec');
-  if(r) r.style.display = (ver && hoyISO() < FIN_NUEVO_REC) ? 'inline-block' : 'none';
-}
+/* LA MARCA "NUEVO" YA NO EXISTE, en ninguna pestaña (Jhon, 2026-08-19).
+   Ayer se apagó con un interruptor y quedó a medias: seguía saliendo en
+   Recetas, porque el interruptor era uno para las dos y la fecha de Recetas
+   todavía no se cumplía. Un aviso que se quita "por sección" es justo lo que
+   él no quería. Se borró entero —el rótulo, sus dos fechas, su animación y su
+   interruptor—: dejar un interruptor para algo que ya no está solo confunde a
+   quien abra Ajustes.                                                     */
 
 /* lotes de vencimiento por producto: { producto_id: [{id,cantidad,vencimiento}] } */
 let LOTES = {};
@@ -2540,7 +2543,6 @@ function pickSede(s){
   REPARTOS=[]; cajasAbiertas.clear(); setModoEdicion(false);   // se recupera abajo si estaba puesto
   $('body-cerrados').style.display='none';
   $('repartos-abiertos').innerHTML='';
-  marcarNuevo();
   cargarPermisos();
   cargarTareas();
   loadData();
@@ -3292,6 +3294,12 @@ async function repcEnviar(sede){
     console.error('enviar reparto', err);
     avisar('No se pudo enviar. Revisa tu señal e inténtalo de nuevo.');
     repcPintarCajas();
+  } finally {
+    /* Mismo caso que el ⟳: el botón se suelta pase lo que pase. Antes solo
+       volvía si fallaba —porque el catch repintaba las cajas—, así que
+       cualquier tropiezo en el camino bueno lo dejaba muerto hasta
+       recargar la página. */
+    if(btn && btn.isConnected){ btn.disabled=false; btn.textContent='Enviar'; }
   }
 }
 
@@ -5484,7 +5492,10 @@ $('btnRegistrarReparto').addEventListener('click', async()=>{
    "pronto": el armazón completo desde el primer día deja ver a dónde va
    esto, y evita la sensación de que faltan cosas sin saber cuáles.        */
 const ICO = {
-  interruptores:'<path d="M9 5H5a5 5 0 0 0 0 10h4"></path><path d="M15 19h4a5 5 0 0 0 0-10h-4"></path><circle cx="9" cy="10" r="2.4"></circle>',
+  /* Un interruptor de verdad: la cápsula entera y la perilla a un lado.
+     El anterior eran dos medias cápsulas sueltas, una arriba y otra abajo,
+     que no llegaban a tocarse — de ahí que se viera partido por la mitad. */
+  interruptores:'<rect x="2.5" y="7" width="19" height="10" rx="5"></rect><circle cx="16.5" cy="12" r="2.4"></circle>',
   productos:'<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"></path><path d="M3 7.5 12 12l9-4.5"></path><path d="M12 12v9"></path>',
   secciones:'<rect x="3" y="4" width="18" height="5" rx="1.5"></rect><rect x="3" y="14" width="18" height="5" rx="1.5"></rect>',
   relaciones:'<path d="M9.5 14.5 14.5 9.5"></path><path d="M8 12H6a3.5 3.5 0 0 1 0-7h2"></path><path d="M16 12h2a3.5 3.5 0 0 1 0 7h-2"></path>',
@@ -5523,8 +5534,7 @@ const AJUSTES = [
       if(!AJ_FUS.length) ajCargarFusiones();
       const bq = $('aj-prq');
       if(bq){
-        bq.addEventListener('input', ()=>{ AJ_PRQ = bq.value; pintarAjustes();
-          const n = $('aj-prq'); if(n){ n.focus(); n.setSelectionRange(n.value.length, n.value.length); } });
+        bq.addEventListener('input', ()=>{ AJ_PRQ = bq.value; ajRepintarProds(); });
       }
       ajMontar('aj-slot-productos','adm-sec-productos');
       $('adm-edicion').classList.toggle('on', modoEdicion);
@@ -6135,13 +6145,38 @@ function ajProductosHTML(){
   if(AJ_PRODS.error) return cab + '<div class="aj-caja"><p>No se pudo leer. Revisa la señal.</p></div>';
 
   const apagados = AJ_PRODS.filter(p=>p.activo !== 'SÍ');
+
+  return cab + `<div class="aj-caja">
+      <div class="aj-filtros" id="aj-prfiltros">
+        <button type="button" class="aj-sede${AJ_VER_OFF?'':' on'}" data-ajproff="0">Todos</button>
+        <button type="button" class="aj-sede${AJ_VER_OFF?' on':''}" data-ajproff="1">Apagados · ${apagados.length}</button>
+      </div>
+      <input type="text" class="aj-buscar" id="aj-prq" placeholder="Buscar producto…" value="${esc(AJ_PRQ)}">
+      <div id="aj-prlista" style="margin-top:12px">${ajProdListaHTML()}</div>
+    </div>`;
+}
+
+/* LA LISTA VIVE APARTE, y ese es el arreglo del bug que Jhon describió como
+   "a veces no funcionan o se quedan parpadeando, aunque un simple refresco lo
+   soluciona".
+
+   Escribir en el buscador llamaba a pintarAjustes(), o sea rehacía el PANEL
+   ENTERO en cada tecla: el campo de texto se destruía y volvía a nacer —por
+   eso había que devolverle el foco y el cursor a mano, que era la pista— la
+   pantalla parpadeaba, y cualquier botón que uno estuviera tocando
+   desaparecía debajo del dedo justo antes de recibir el toque. El toque caía
+   en un elemento que ya no existía y no pasaba nada.
+
+   Ahora se repinta SOLO esta lista. Nada de lo que la rodea se toca, así que
+   ni el foco ni los toques se pierden. */
+function ajProdListaHTML(){
+  if(!Array.isArray(AJ_PRODS)) return '';
   const q = normNombre(AJ_PRQ);
-  let lista = AJ_VER_OFF ? apagados : AJ_PRODS;
+  let lista = AJ_VER_OFF ? AJ_PRODS.filter(p=>p.activo !== 'SÍ') : AJ_PRODS;
   if(q) lista = lista.filter(p=>normNombre(p.producto).includes(q));
   /* Sin buscar no se pintan 240 filas: la lista larga tarda y además nadie
      recorre 240 productos con el dedo. Se busca y aparece. */
-  const mostrar = q || AJ_VER_OFF ? lista.slice(0,60) : [];
-
+  const mostrar = (q || AJ_VER_OFF) ? lista.slice(0,60) : [];
   const filas = mostrar.map(p=>{
     const on = p.activo === 'SÍ';
     return `<div class="aj-prod${on?'':' off'}">
@@ -6151,19 +6186,18 @@ function ajProductosHTML(){
         aria-label="${on?'Apagar':'Encender'}"></button>
     </div>`;
   }).join('');
+  return (filas || `<div class="aj-vacio">${AJ_VER_OFF
+      ? 'No hay ningún producto apagado en esta sede.'
+      : 'Escribe para buscar un producto.'}</div>`)
+    + (mostrar.length >= 60 ? '<div class="aj-vacio">Se muestran los primeros 60 · afina la búsqueda</div>' : '');
+}
 
-  return cab + `<div class="aj-caja">
-      <div class="aj-filtros">
-        <button type="button" class="aj-sede${AJ_VER_OFF?'':' on'}" data-ajproff="0">Todos</button>
-        <button type="button" class="aj-sede${AJ_VER_OFF?' on':''}" data-ajproff="1">Apagados · ${apagados.length}</button>
-      </div>
-      <input type="text" class="aj-buscar" id="aj-prq" placeholder="Buscar producto…" value="${esc(AJ_PRQ)}">
-      <div style="margin-top:12px">${
-        filas || `<div class="aj-vacio">${AJ_VER_OFF
-          ? 'No hay ningún producto apagado en esta sede.'
-          : 'Escribe para buscar un producto.'}</div>`}</div>
-      ${mostrar.length >= 60 ? '<div class="aj-vacio">Se muestran los primeros 60 · afina la búsqueda</div>' : ''}
-    </div>`;
+/* Repinta solo lo que cambió. Si la pantalla abierta es otra, no hace nada. */
+function ajRepintarProds(){
+  const c = $('aj-prlista'); if(c) c.innerHTML = ajProdListaHTML();
+  const f = $('aj-prfiltros');
+  if(f) f.querySelectorAll('[data-ajproff]').forEach(b=>
+    b.classList.toggle('on', (b.dataset.ajproff === '1') === AJ_VER_OFF));
 }
 
 async function ajToggleProducto(id){
@@ -6183,7 +6217,9 @@ async function ajToggleProducto(id){
   const enFudo = (d.en_fudo||[]).length;
   aviso('✓ ' + p.producto + (encender ? ' encendido' : ' apagado')
         + (enFudo ? ' · ' + enFudo + ' en Fudo' : ''), 4500);
-  pintarAjustes();
+  /* Solo la lista: repintar el panel entero borraría lo que se escribió en
+     el buscador y devolvería la pantalla al principio. */
+  ajRepintarProds();
   if(AJ_PRSEDE === SEDE){ await loadData(); metrics(); render(); }
 }
 
@@ -6337,9 +6373,6 @@ const INTERRUPTORES = [
   { clave:'modo_enlazar', porSede:[''], defecto:false,
     tit:'Recetas · el modo Enlazar',
     sub:'Servía para ponerse al día con los enlaces que faltaban. Se enciende si entra una sede nueva.' },
-  { clave:'marca_nuevo', porSede:[''], defecto:false,
-    tit:'Marca NUEVO en las pestañas',
-    sub:'La etiqueta naranja que invita a entrar a una pantalla recién hecha.' },
   { clave:'aviso_motor', porSede:[''], defecto:true,
     tit:'Aviso de sincronización',
     sub:'La franja bajo las pestañas cuando el reloj lleva rato sin correr. Solo la ve administración.' },
@@ -6397,10 +6430,6 @@ async function ajToggleInterruptor(clave, sede){
    un interruptor que hay que "recargar para ver" no se siente como un
    interruptor. */
 function aplicarInterruptores(){
-  const tab = $('tabNuevo'), tabR = $('tabNuevoRec');
-  const verNuevo = ajVal('marca_nuevo', '', true);
-  if(tab && !verNuevo)  tab.style.display  = 'none';
-  if(tabR && !verNuevo) tabR.style.display = 'none';
   /* El modo Enlazar de Recetas. Con él apagado la fila de modos queda con
      un solo botón, y una fila de un botón no es una fila: se esconde
      entera y la pantalla abre directo en Combos. */
@@ -6412,7 +6441,6 @@ function aplicarInterruptores(){
   if(!ajVal('aviso_motor','',true)) $('motorAviso').classList.remove('ver');
   /* Las dos de abajo ENCIENDEN y APAGAN, no solo apagan: cada una es la
      única dueña de lo suyo y se vuelve a preguntar el valor entero. */
-  marcarNuevo();
   if(SEDE) cargarTareas();
 }
 
@@ -6606,7 +6634,10 @@ const metaVigente = m => {
 /* La barra. `plaza` a la izquierda y `angamos` a la derecha, siempre en el
    mismo orden: si cambiara según quién va ganando, habría que leer los
    nombres cada vez para saber cuál es cuál. */
-function metaBarraHTML(m){
+/* `conAcciones` va en false por defecto a propósito: la misma tarjeta se
+   pinta en el inventario, donde la ve todo el equipo, y ahí no puede haber
+   un botón de eliminar. Las acciones existen únicamente en Ajustes. */
+function metaBarraHTML(m, conAcciones){
   const av = META_AVANCE[m.id] || {};
   const a = av.plaza || 0, b = av.angamos || 0;
   const obj = +m.objetivo || 1;
@@ -6631,6 +6662,12 @@ function metaBarraHTML(m){
         ganoA && ganoB ? 'Las dos llegaron a la meta'
         : ganoA ? esc(SEDES.plaza.label) + ' llegó a la meta'
         : esc(SEDES.angamos.label) + ' llegó a la meta'}</div>` : ''}
+      ${conAcciones ? `<div class="meta-acciones">
+        <button type="button" class="meta-ax" data-metacerrar="${m.id}"
+          data-abrir="${m.cerrada_at ? '1' : '0'}">${m.cerrada_at ? 'Reabrir' : 'Cerrar'}</button>
+        <button type="button" class="meta-ax mal" data-metaborrar="${m.id}"
+          data-nom="${esc(m.titulo)}">Eliminar</button>
+      </div>` : ''}
     </div>`;
 }
 
@@ -6673,16 +6710,21 @@ function ajMetasHTML(){
       <div id="meta-elegidos"></div>
       <button type="button" class="adm-btn" id="meta-crear" style="margin-top:10px" disabled>Crear meta</button>
     </div>`
-    + (vivas.length ? '<div class="aj-caja"><h3>En curso</h3></div>' + vivas.map(metaBarraHTML).join('') : '')
-    + (otras.length ? '<div class="aj-caja"><h3>Terminadas</h3></div>' + otras.slice(0,6).map(metaBarraHTML).join('') : '');
+    + (vivas.length ? '<div class="aj-caja"><h3>En curso</h3></div>'
+        + vivas.map(m=>metaBarraHTML(m, true)).join('') : '')
+    + (otras.length ? '<div class="aj-caja"><h3>Terminadas</h3></div>'
+        + otras.slice(0,6).map(m=>metaBarraHTML(m, true)).join('') : '');
 }
 
 let META_SEL = [];
 function pintarMetaElegidos(){
   const c = $('meta-elegidos'); if(!c) return;
-  c.innerHTML = META_SEL.map(p=>`<div class="aj-prod">
+  c.innerHTML = (META_SEL.length
+    ? '<p class="aj-nota" style="margin:12px 0 8px">Cuentan para la meta:</p>' : '')
+    + META_SEL.map(p=>`<div class="aj-prod puesto">
       <div class="nm"><b>${esc(p.nombre)}</b></div>
-      <button type="button" class="rep-deshacer" data-metaquitar="${esc(p.id)}">Quitar</button>
+      <button type="button" class="quitar" aria-label="Quitar ${esc(p.nombre)}"
+        data-metaquitar="${esc(p.id)}">✕</button>
     </div>`).join('');
   const ok = $('meta-crear');
   if(ok) ok.disabled = !(META_SEL.length && $('meta-titulo').value.trim()
@@ -6706,11 +6748,17 @@ async function metaBuscar(){
     vistos.get(k).ids.push(f.fudo_product_id);
   }
   const filas = [...vistos.values()].slice(0,10);
-  c.innerHTML = filas.length ? filas.map(f=>`<div class="aj-prod">
-      <div class="nm"><b>${esc(f.nombre)}</b><span>${f.ids.length} en la carta</span></div>
-      <button type="button" class="arr" data-metaadd="${esc(f.ids.join(','))}"
-        data-nom="${esc(f.nombre)}">Agregar</button>
-    </div>`).join('') : '<div class="aj-vacio">Nada con ese nombre en Fudo.</div>';
+  c.innerHTML = filas.length ? filas.map(f=>{
+    const ids = f.ids.join(',');
+    const puesto = META_SEL.some(x=>x.id===ids);
+    return `<div class="aj-prod${puesto?' puesto':''}">
+      <div class="nm"><b>${esc(f.nombre)}</b><span>${puesto ? 'ya está en la meta'
+        : f.ids.length + (f.ids.length===1?' en la carta':' en la carta')}</span></div>
+      ${puesto ? '<span class="mas" style="background:var(--green-fg);box-shadow:none">✓</span>'
+        : `<button type="button" class="mas" aria-label="Agregar ${esc(f.nombre)}"
+            data-metaadd="${esc(ids)}" data-nom="${esc(f.nombre)}">+</button>`}
+    </div>`;
+  }).join('') : '<div class="aj-vacio">Nada con ese nombre en Fudo.</div>';
 }
 
 async function metaCrear(){
@@ -6730,6 +6778,39 @@ async function metaCrear(){
   if(e2){ avisar('La meta se creó pero no se guardaron los productos: ' + e2.message); return; }
   META_SEL = [];
   aviso('✓ Meta creada');
+  await cargarMetas();
+  pintarAjustes();
+}
+
+/* CERRAR ES LO NORMAL; ELIMINAR ES LA EXCEPCIÓN, y por eso son dos botones
+   distintos y no uno.
+
+   Cerrar solo pone la fecha de cierre: la meta desaparece del inventario,
+   se va a "Terminadas" y se puede reabrir con el mismo botón. Es la salida
+   reversible, y por eso va primera y en gris.
+
+   Eliminar la borra de verdad, con sus productos (la base los borra en
+   cascada). No hay deshacer, así que el aviso lo dice con esas palabras y
+   nombra la meta — el §6.2 pide vista previa antes de cualquier acción que
+   no se pueda volver atrás, y acá la vista previa es saber exactamente qué
+   se lleva. */
+async function metaCerrar(id, abrir){
+  const {error} = await sb.from('metas')
+    .update({cerrada_at: abrir ? null : new Date().toISOString()}).eq('id', id);
+  if(error){ avisar(error.message || 'No se pudo cambiar la meta.'); return; }
+  aviso(abrir ? '✓ Meta reabierta' : '✓ Meta cerrada');
+  await cargarMetas();
+  pintarAjustes();
+}
+
+async function metaBorrar(id, nombre){
+  if(!await preguntar('Eliminar “' + nombre + '”',
+      'Se borra la meta entera y los productos que contaba. Esto no se puede deshacer.\n\n'
+      + 'Si solo quieres que deje de mostrarse, usa Cerrar: eso se puede reabrir.',
+      'Eliminar')) return;
+  const {error} = await sb.from('metas').delete().eq('id', id);
+  if(error){ avisar(error.message || 'No se pudo eliminar la meta.'); return; }
+  aviso('✓ Meta eliminada');
   await cargarMetas();
   pintarAjustes();
 }
@@ -6797,7 +6878,7 @@ $('aj-pane').addEventListener('click', e=>{
   const prs = e.target.closest('[data-ajprsede]');
   if(prs){ AJ_PRSEDE = prs.dataset.ajprsede; AJ_PRQ=''; ajCargarProds(); return; }
   const pof = e.target.closest('[data-ajproff]');
-  if(pof){ AJ_VER_OFF = pof.dataset.ajproff === '1'; pintarAjustes(); return; }
+  if(pof){ AJ_VER_OFF = pof.dataset.ajproff === '1'; ajRepintarProds(); return; }
   const pt = e.target.closest('[data-ajprod]');
   if(pt){ ajToggleProducto(+pt.dataset.ajprod); return; }
   const fu = e.target.closest('[data-ajfus]');
@@ -6810,10 +6891,19 @@ $('aj-pane').addEventListener('click', e=>{
   if(ma){
     if(!META_SEL.some(x=>x.id===ma.dataset.metaadd))
       META_SEL.push({id:ma.dataset.metaadd, nombre:ma.dataset.nom});
-    $('meta-q').value=''; $('meta-res').innerHTML=''; pintarMetaElegidos(); return;
+    /* La caja de búsqueda NO se vacía: casi siempre se agregan dos o tres
+       productos seguidos de la misma familia ("agua con gas", "agua sin
+       gas"), y borrarla obliga a escribir lo mismo otra vez. La fila que se
+       agregó pasa a mostrar un ✓ en el momento. */
+    pintarMetaElegidos(); metaBuscar(); return;
   }
+  const mc = e.target.closest('[data-metacerrar]');
+  if(mc){ metaCerrar(+mc.dataset.metacerrar, mc.dataset.abrir === '1'); return; }
+  const mb = e.target.closest('[data-metaborrar]');
+  if(mb){ metaBorrar(+mb.dataset.metaborrar, mb.dataset.nom); return; }
   const mq = e.target.closest('[data-metaquitar]');
-  if(mq){ META_SEL = META_SEL.filter(x=>x.id!==mq.dataset.metaquitar); pintarMetaElegidos(); return; }
+  if(mq){ META_SEL = META_SEL.filter(x=>x.id!==mq.dataset.metaquitar);
+          pintarMetaElegidos(); metaBuscar(); return; }
 });
 
 $('aj-volver').addEventListener('click', ()=>pickTab('inv'));
@@ -7608,52 +7698,72 @@ async function actualizarTodo(){
   ULTIMO_EMPUJE = null;
   const btn = $('btnActualizar');
   btn.disabled = true; btn.classList.add('girando');
-  /* Ventana de "trabajando" con el fondo desenfocado, no un avisito.
-     Desde que este botón además le escribe a Fudo, tarda unos segundos y
-     hace algo que sale de la app: tiene que verse que está ocurriendo, y
-     nadie tiene que poder apretarlo dos veces mientras tanto. */
-  trabajando('Actualizando…');
+  /* TODO LO QUE SIGUE VA DENTRO DE UN try/finally, y no es un detalle.
+     Antes, si CUALQUIER cosa de acá abajo reventaba —la ventana de
+     trabajando, el aviso, el detalle de descuentos, el resumen del empuje—
+     el botón se quedaba apretado, girando sin parar, y `actualizando`
+     nunca volvía a false: la primera línea de esta función lo hacía
+     rebotar para siempre. Es exactamente lo que describió Jhon: "a veces
+     no funcionan o se quedan parpadeando, aunque un simple refresco lo
+     soluciona". Un refresco lo arreglaba porque reiniciaba la variable.
 
-  const logros = [], fallos = [], graves = [];
-  const t0 = new Date(Date.now() - 5000).toISOString();   // 5 s de holgura por el reloj
-  for(const paso of PASOS_SYNC){
-    try{
-      const r = await paso.fn();
-      if(r) logros.push(r);
-    }catch(e){
-      console.error('Falló la sincronización de ' + paso.nombre, e);
-      fallos.push(paso.nombre);
-      // un corte de señal se avisa con un toast; que el motor no descuente
-      // NADA es otra cosa y tiene que detener a quien esté mirando
-      if(e && e.grave) graves.push(e.message);
-    }
-  }
-
-  // La pantalla se relee SIEMPRE, aunque algún paso haya fallado:
-  // puede haber cambios de otros dispositivos igual.
+     Ahora el botón se suelta pase lo que pase. La regla general: TODO lo
+     que se apaga para trabajar se vuelve a encender en un `finally`, no al
+     final del camino feliz. */
   try{
-    ultimaRecarga = 0;                       // salta el freno de recargas seguidas
-    await resincronizar();
-    if($('view-recetas').style.display !== 'none') await loadRecetas();
-  }catch(e){ console.error('No se pudo releer la pantalla', e); }
+    /* Ventana de "trabajando" con el fondo desenfocado, no un avisito.
+       Desde que este botón además le escribe a Fudo, tarda unos segundos y
+       hace algo que sale de la app: tiene que verse que está ocurriendo, y
+       nadie tiene que poder apretarlo dos veces mientras tanto. */
+    trabajando('Actualizando…');
 
-  listo();
-  btn.disabled = false; btn.classList.remove('girando');
-  actualizando = false;
+    const logros = [], fallos = [], graves = [];
+    const t0 = new Date(Date.now() - 5000).toISOString();   // 5 s de holgura por el reloj
+    for(const paso of PASOS_SYNC){
+      try{
+        const r = await paso.fn();
+        if(r) logros.push(r);
+      }catch(e){
+        console.error('Falló la sincronización de ' + paso.nombre, e);
+        fallos.push(paso.nombre);
+        // un corte de señal se avisa con un toast; que el motor no descuente
+        // NADA es otra cosa y tiene que detener a quien esté mirando
+        if(e && e.grave) graves.push(e.message);
+      }
+    }
 
-  if(graves.length){
-    avisar('El inventario no se está descontando\n\n' + graves.join('\n\n'));
-  } else if(fallos.length === PASOS_SYNC.length){
-    aviso('⚠ No se pudo actualizar. Revisa la conexión.');
-  } else if(fallos.length){
-    aviso('⚠ Falló: ' + fallos.join(', ') + (logros.length ? ' · ' + logros.join(' · ') : ''));
-  } else {
-    aviso('✓ ' + (logros.join(' · ') || 'Todo al día'));
-    /* Se pregunta DESPUÉS del aviso, porque tarda: primero se ve el "✓" y el
-       puntito naranja aparece un instante después si hubo algo que descontar. */
-    ofrecerDetalle(await traerDescuentos(t0));
+    // La pantalla se relee SIEMPRE, aunque algún paso haya fallado:
+    // puede haber cambios de otros dispositivos igual.
+    try{
+      ultimaRecarga = 0;                       // salta el freno de recargas seguidas
+      await resincronizar();
+      if($('view-recetas').style.display !== 'none') await loadRecetas();
+    }catch(e){ console.error('No se pudo releer la pantalla', e); }
+
+    /* La ventana de "trabajando" se cierra ACÁ, antes de los avisos: si se
+       cerrara recién en el finally, el "✓" y el detalle del empuje saldrían
+       debajo del desenfoque. En el finally se vuelve a cerrar por si algo de
+       acá abajo revienta — cerrarla dos veces no hace nada. */
+    listo();
+
+    if(graves.length){
+      avisar('El inventario no se está descontando\n\n' + graves.join('\n\n'));
+    } else if(fallos.length === PASOS_SYNC.length){
+      aviso('⚠ No se pudo actualizar. Revisa la conexión.');
+    } else if(fallos.length){
+      aviso('⚠ Falló: ' + fallos.join(', ') + (logros.length ? ' · ' + logros.join(' · ') : ''));
+    } else {
+      aviso('✓ ' + (logros.join(' · ') || 'Todo al día'));
+      /* Se pregunta DESPUÉS del aviso, porque tarda: primero se ve el "✓" y el
+         puntito naranja aparece un instante después si hubo algo que descontar. */
+      ofrecerDetalle(await traerDescuentos(t0));
+    }
+    mostrarEmpuje();
+  } finally {
+    listo();
+    btn.disabled = false; btn.classList.remove('girando');
+    actualizando = false;
   }
-  mostrarEmpuje();
 }
 $('btnActualizar').addEventListener('click', actualizarTodo);
 
