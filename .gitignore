@@ -1,1 +1,7 @@
 .vercel
+
+# Playwright y lo que instala. Las pruebas de pantalla lo necesitan, pero
+# son 300 MB que no tienen nada que hacer en el repo: se instala con
+#   npm install
+# y las pruebas que no lo encuentran se saltan solas en vez de fallar.
+node_modules/

@@ -9,9 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
-let chromium;
-try { ({ chromium } = await import('playwright')); }
-catch { console.log('\n(se salta: Playwright no está instalado)\n'); process.exit(0); }
+import { abrirNavegador } from './navegador.mjs';
 
 const PRODUCTOS = [
   {id:10, sede:'plaza',   producto:'Trozo torta amor', rubro:'Vitrina', stock_actual:4, stock_min:2, stock_max:10, activo:'SÍ'},
@@ -22,8 +20,8 @@ const TAREAS = [
   {id:2, sede:'angamos', texto:'Botar lo vencido',                 hecha:true},
 ];
 
-const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium';
-const browser = await chromium.launch(existsSync(CHROME) ? { executablePath: CHROME } : {});
+const browser = await abrirNavegador();
+if (!browser) { console.log('\n(se salta: no hay navegador instalado)\n'); process.exit(0); }
 const page = await browser.newPage();
 
 await page.addInitScript(({PRODUCTOS, TAREAS}) => {

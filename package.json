@@ -1,0 +1,11 @@
+{
+  "name": "inventario-cafe-del-desierto",
+  "private": true,
+  "description": "La app es index.html y no se construye: esto existe solo para las pruebas de pantalla, que necesitan un navegador. `npm install` y después `node pruebas/<la que sea>.mjs`.",
+  "scripts": {
+    "test": "for f in pruebas/*.mjs; do [ \"$(basename $f)\" = navegador.mjs ] || node \"$f\" || exit 1; done"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  }
+}

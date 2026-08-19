@@ -69,6 +69,16 @@ caso('una cerrada NO',        metaVigente(cerrada) === false);
 caso('una que ya pasó NO',    metaVigente({...viva, hasta:'2026-08-10'}) === false);
 caso('una que no empezó NO',  metaVigente({...viva, desde:'2026-09-01'}) === false);
 
+console.log('\nEl número se tiene que poder leer:');
+/* Iba en gris sobre el gris de la pista, y encima se pintaba BLANCO desde el
+   18% "porque la barra lo tapa" — pero la barra crece hacia el número desde
+   el otro extremo, así que al 18% no lo tapaba nada: quedaba blanco sobre
+   gris claro. Jhon: "son casi del mismo color que el fondo". */
+caso('con la barra corta, el número NO se pinta blanco',
+  !metaBarraHTML(viva).includes('val on'));
+caso('con la barra casi llena, sí (ahí sí lo tapa)',
+  metaBarraHTML({...viva, id:2}).includes('val on'));
+
 console.log('\nLlegar a la meta se celebra:');
 caso('avisa quién llegó', metaBarraHTML(ganada, true).includes('llegó a la meta'));
 

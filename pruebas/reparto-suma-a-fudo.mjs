@@ -10,9 +10,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
-let chromium;
-try { ({ chromium } = await import('playwright')); }
-catch { console.log('\n(se salta: Playwright no está instalado)\n'); process.exit(0); }
+import { abrirNavegador } from './navegador.mjs';
 
 /* El inventario dice 4 a propósito: 3 en la vitrina + 1 en una mesa abierta.
    Si la app mandara el total, Fudo quedaría en 4 — y eso es justo el error. */
@@ -29,8 +27,8 @@ const ITEMS = [
    cantidad_pedida:2, cantidad_recibida:null, estado:'pendiente'},
 ];
 
-const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium';
-const browser = await chromium.launch(existsSync(CHROME) ? { executablePath: CHROME } : {});
+const browser = await abrirNavegador();
+if (!browser) { console.log('\n(se salta: no hay navegador instalado)\n'); process.exit(0); }
 const page = await browser.newPage();
 
 await page.addInitScript(({PRODUCTOS, REPARTOS, ITEMS}) => {

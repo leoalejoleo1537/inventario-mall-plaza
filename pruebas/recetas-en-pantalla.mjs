@@ -10,9 +10,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
-let chromium;
-try { ({ chromium } = await import('playwright')); }
-catch { console.log('\n(se salta: Playwright no está instalado)\n'); process.exit(0); }
+import { abrirNavegador } from './navegador.mjs';
 
 /* ---------- la base falsa ---------- */
 const FUDO = [
@@ -33,12 +31,8 @@ const CATS = [
   {categoria_id:'18', rubro:'Combos y promociones'},
 ];
 
-/* El navegador que ya viene instalado en la máquina. Si la versión de
-   Playwright pide otro build, se usa este igual en vez de bajarse uno. */
-const CHROME = process.env.CHROME_PATH || '/opt/pw-browsers/chromium';
-const browser = await chromium.launch(
-  existsSync(CHROME) ? { executablePath: CHROME } : {}
-);
+const browser = await abrirNavegador();
+if (!browser) { console.log('\n(se salta: no hay navegador instalado)\n'); process.exit(0); }
 const page = await browser.newPage();
 const escrito = [];            // lo que la app le mandó a la base
 
@@ -48,8 +42,12 @@ await page.addInitScript(({FUDO, PRODUCTOS, CATS}) => {
   const tabla = n => ({
     productos: PRODUCTOS, fudo_productos: FUDO, fudo_categorias: CATS,
     recetas: [], receta_items: [], fudo_no_lleva_receta: [],
+    /* El modo Enlazar nace APAGADO desde el 2026-08-18 (Jhon lo pidió
+       escondido), así que Recetas abre en Combos. Acá se enciende para
+       poder probar la portada, que sigue existiendo entera. */
+    ajustes: [{clave:'modo_enlazar', sede:'', valor:true}],
     producto_lotes: [], app_permisos: [], repartos: [], reparto_items: [],
-    fudo_sync: [], historial: [],
+    fudo_sync: [], historial: [], secciones: [], metas: [],
   }[n] || []);
   let seq = 500;
   const q = (nombre) => {

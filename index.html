@@ -915,6 +915,38 @@
     line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;
     transition:transform .12s ease}
   .aj-prod .quitar:active{transform:scale(.9)}
+  /* la fila de una sección: flechas, nombre, turno y borrar */
+  .aj-sec{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;
+    background:var(--bg);margin-bottom:7px}
+  .aj-sec .mov{display:flex;flex-direction:column;gap:2px;flex:0 0 auto}
+  .aj-sec .fl{width:26px;height:20px;border:none;background:#fff;border-radius:6px;
+    color:var(--muted);font-size:10px;line-height:1;cursor:pointer;
+    box-shadow:0 1px 2px rgba(15,30,49,.08)}
+  .aj-sec .fl:disabled{opacity:.28;cursor:default}
+  .aj-sec .fl:active:not(:disabled){transform:scale(.9)}
+  .aj-sec .nm{flex:1;min-width:0}
+  .aj-sec .nm b{display:block;font-size:14.5px;font-weight:700;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .aj-sec .nm span{font-size:12.5px;color:var(--muted)}
+  /* AM y PM en el mismo lugar y con la misma forma: lo que cambia es el
+     color, que es lo que se lee de un vistazo sin comparar palabras. */
+  .aj-turno{flex:0 0 auto;min-width:44px;padding:6px 11px;border-radius:999px;border:none;
+    background:var(--gray-bg);color:var(--gray-fg);font-size:12px;font-weight:800;
+    letter-spacing:.4px;cursor:pointer;transition:transform .12s ease}
+  .aj-turno.am{background:var(--amber-bg);color:var(--amber-fg)}
+  .aj-turno:active{transform:scale(.92)}
+  .aj-sec .quitar{flex:0 0 auto;width:30px;height:30px;border-radius:999px;
+    border:1px solid var(--border);background:#fff;color:var(--muted);font-size:14px;
+    line-height:1;cursor:pointer}
+  .aj-sec .quitar:active{transform:scale(.9)}
+  .aj-mover{flex:0 0 auto;max-width:46%;height:36px;padding:0 8px;border-radius:9px;
+    border:1px solid var(--border);background:#fff;color:var(--text);font-size:13px}
+  /* la última corrida: un renglón que se lee sin comparar números */
+  .aj-ultima{margin-top:11px;background:var(--green-bg);color:var(--green-fg);
+    border-radius:10px;padding:10px 12px;font-size:13px}
+  .aj-ultima.mal{background:var(--red-bg);color:var(--red-fg)}
+  .aj-ultima b{display:block;font-weight:800;font-size:13.5px}
+  .aj-ultima span{opacity:.86}
   .aj-filtros{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 
   /* ---- la barra de la competencia ----
@@ -942,11 +974,21 @@
   .meta-lado .barra{position:absolute;top:0;bottom:0;transition:width .5s cubic-bezier(.2,.8,.3,1)}
   .meta-lado.izq .barra{right:0;background:var(--navy);border-radius:10px 0 0 10px}
   .meta-lado.der .barra{left:0;background:var(--orange);border-radius:0 10px 10px 0}
-  .meta-lado .val{position:relative;z-index:1;font-size:13.5px;font-weight:800;padding:0 11px;
-    color:var(--muted);white-space:nowrap}
+  /* EL NÚMERO SE TIENE QUE LEER, y antes casi no se leía: iba en gris sobre
+     el gris de la pista. Cada lado lleva el color de SU barra —navy a la
+     izquierda, naranja a la derecha—, que además dice de un vistazo cuál es
+     cuál sin tener que mirar el nombre de abajo. */
+  .meta-lado .val{position:relative;z-index:1;font-size:14.5px;font-weight:800;padding:0 11px;
+    white-space:nowrap;letter-spacing:.2px}
+  .meta-lado.izq .val{color:var(--navy)}
+  .meta-lado.der .val{color:var(--orange-dark)}
   .meta-lado.izq{justify-content:flex-start}
   .meta-lado.der{justify-content:flex-end}
-  .meta-lado.izq .val.on,.meta-lado.der .val.on{color:#fff}
+  /* Blanco SOLO cuando la barra de verdad llegó hasta debajo del número.
+     El número va en el extremo de afuera y la barra crece hacia allá, así
+     que eso pasa recién casi al final — antes se ponía blanco al 18% y
+     quedaba blanco sobre gris claro, que es lo que no se veía. */
+  .meta-lado .val.on{color:#fff}
   .meta-centro{width:2px;background:var(--border);flex-shrink:0}
   .meta-pies{display:flex;justify-content:space-between;margin-top:5px}
   .meta-pies span{font-size:12.5px;font-weight:750;color:var(--muted)}
@@ -2334,6 +2376,16 @@ async function renombrarSeccion(actual, n){
   if(r.error){ avisar('No se pudo renombrar.\n\nDetalle: '+r.error.message); return; }
   DATA.forEach(d=>{ if(d.rubro===actual) d.rubro=limpio; });
   if(openSecs.has(actual)){ openSecs.delete(actual); openSecs.add(limpio); }
+  /* La fila de `secciones` también se muda, para no perder el orden ni el
+     turno al renombrar. Si la tabla no existe todavía, no pasa nada: el
+     renombre de los productos ya ocurrió y es lo que de verdad importa. */
+  const vieja = secFila(actual);
+  if(vieja){
+    await sb.from('secciones').insert(
+      {sede:SEDE, nombre:limpio, turno:vieja.turno, orden:vieja.orden});
+    await sb.from('secciones').delete().eq('sede',SEDE).eq('nombre',actual);
+    await cargarSecciones();
+  }
   metrics(); render();
   aviso(`✓ ${n} producto${n===1?'':'s'} en "${limpio}"`);
 }
@@ -2545,6 +2597,7 @@ function pickSede(s){
   $('repartos-abiertos').innerHTML='';
   cargarPermisos();
   cargarTareas();
+  cargarSecciones();
   loadData();
   loadRepartos();
   revisarMotor();          // si el motor está caído, se ve al entrar
@@ -2640,7 +2693,35 @@ const SEC_ORDEN=['Vitrina de tortas','Limpieza','Sándwiches','Mesones','Congela
    de la mañana, el resto el de la tarde. Para mover una sección de turno,
    basta sacarla o agregarla a esta lista. */
 const SEC_AM=['Limpieza','Mesones','Té','Congelador','Mueble de mezclas','Mueble de bolsas','Mueble de caja'];
-const esAM = sec => SEC_AM.some(s=>normNombre(s)===normNombre(sec));
+
+/* LAS SECCIONES DE ESTA SEDE, leídas de la base. Las dos listas de arriba
+   pasan a ser el valor de fábrica: si la tabla no existe todavía, o está
+   vacía para esta sede, todo se comporta exactamente como siempre. Esa es
+   la red — una función nueva no puede cambiar la pantalla de nadie por no
+   haber corrido un script.
+
+   `orden` decide de arriba abajo, `turno` decide AM o PM. Las dos cosas se
+   editan desde Ajustes -> Secciones y turnos.                            */
+let SECCIONES = [];
+async function cargarSecciones(){
+  if(!SEDE) return;
+  const {data,error} = await sb.from('secciones').select('*').eq('sede',SEDE);
+  SECCIONES = error ? [] : (data||[]);
+  if(ajActual === 'secciones' && vistaActual === 'ajustes') pintarAjustes();
+}
+const secFila = nom => SECCIONES.find(x=>normNombre(x.nombre)===normNombre(nom));
+const esAM = sec => {
+  const f = secFila(sec);
+  return f ? f.turno === 'am' : SEC_AM.some(s=>normNombre(s)===normNombre(sec));
+};
+/* Más chico va más arriba. Lo que no está en ninguna lista va al final, y
+   entre iguales manda el alfabeto — igual que antes. */
+const secPeso = sec => {
+  const f = secFila(sec);
+  if(f) return f.orden;
+  const i = SEC_ORDEN.indexOf(sec);
+  return i < 0 ? 1000 : i;
+};
 /* La sección de sándwiches lleva el botón de copiar resumen para Adriana */
 const esSandwiches = sec => normNombre(sec).startsWith('sandwich');
 function metrics(){
@@ -3895,10 +3976,8 @@ function render(){
   // agrupar por sección
   const grupos=new Map();
   rows.forEach(p=>{const s=p.rubro||'Sin sección'; if(!grupos.has(s))grupos.set(s,[]); grupos.get(s).push(p);});
-  const orden=[...grupos.keys()].sort((a,b)=>{
-    const ia=SEC_ORDEN.indexOf(a),ib=SEC_ORDEN.indexOf(b);
-    return (ia<0?SEC_ORDEN.length:ia)-(ib<0?SEC_ORDEN.length:ib)||a.localeCompare(b,'es');
-  });
+  const orden=[...grupos.keys()].sort((a,b)=>
+    secPeso(a)-secPeso(b) || a.localeCompare(b,'es'));
   const filtrando=!!q||!!filterState||!!tipoSel;   // al buscar o filtrar, las secciones con resultados se abren solas
   const secHTML=sec=>{
     const items=grupos.get(sec);
@@ -5517,7 +5596,7 @@ const AJUSTES = [
   { id:'interruptores', ico:'interruptores', tit:'Interruptores',
     sub:'Encender y apagar sin tocar código. Apagar siempre devuelve lo que había antes.',
     render:()=>ajInterruptoresHTML(),
-    montar:()=>{ if(AJUSTES_VAL === null) ajCargarAjustes(); } },
+    montar:()=>{ if(AJUSTES_VAL === null) ajUnaVez('interruptores', ajCargarAjustes); } },
 
   { id:'productos', ico:'productos', tit:'Productos',
     sub:'Activar, desactivar y ordenar el catálogo. Lo que se apaga desaparece de la app y de Fudo.',
@@ -5530,8 +5609,8 @@ const AJUSTES = [
       'Tipo y unidad de medida, en lote',
     ]),
     montar:()=>{
-      if(!AJ_PRSEDE && SEDE) { AJ_PRSEDE = SEDE; ajCargarProds(); }
-      if(!AJ_FUS.length) ajCargarFusiones();
+      if(!AJ_PRSEDE && SEDE) { AJ_PRSEDE = SEDE; ajUnaVez('prods', ajCargarProds); }
+      if(!AJ_FUS.length) ajUnaVez('fusiones', ajCargarFusiones);
       const bq = $('aj-prq');
       if(bq){
         bq.addEventListener('input', ()=>{ AJ_PRQ = bq.value; ajRepintarProds(); });
@@ -5553,28 +5632,27 @@ const AJUSTES = [
     } },
 
   { id:'secciones', ico:'secciones', tit:'Secciones y turnos',
-    sub:'Dónde vive cada producto, y qué se cuenta en la mañana y qué en la tarde.',
-    render:()=>`<div class="aj-caja">
-        <h3>Renombrar una sección</h3>
-        <p>Cambia el nombre en esta sede. Los productos no se mueven.</p>
-        <button type="button" class="adm-btn fantasma" id="aj-renombrar-sec"
-          style="margin-top:10px">Elegir sección</button>
-      </div>` + ajPronto([
-      'Crear, borrar y reordenar secciones',
-      'Mover productos entre secciones',
-      'Qué secciones son AM y cuáles PM',
-    ]),
-    montar:()=>{ $('aj-renombrar-sec').addEventListener('click', abrirSecciones); } },
+    sub:'Dónde vive cada producto, en qué orden se cuenta y qué toca en la mañana y qué en la tarde.',
+    render:()=>ajSeccionesHTML(),
+    montar:()=>{
+      const b = $('aj-renombrar-sec');
+      if(b) b.addEventListener('click', abrirSecciones);
+      const nq = $('aj-sec-q');
+      if(nq) nq.addEventListener('input', ()=>{ AJ_SECQ = nq.value; ajRepintarMover(); });
+      const nu = $('aj-sec-nueva-ok');
+      if(nu) nu.addEventListener('click', ajCrearSeccion);
+    } },
 
   { id:'relaciones', ico:'relaciones', tit:'Relaciones',
     sub:'Qué producto va con cuál. Es lo que la app no sabía editar, y donde un nombre mal puesto rompe algo sin que se note.',
-    render:()=>ajRelacionesHTML() },
+    render:()=>ajRelacionesHTML(),
+    montar:()=>{ if(AJ_CATS === null) ajUnaVez('categorias', ajCargarCategorias); } },
 
   { id:'metas', ico:'metas', tit:'Metas de venta',
     sub:'Un objetivo con premio y fecha. Las dos sedes compiten por llegar primero.',
     render:()=>ajMetasHTML(),
     montar:()=>{
-      if(METAS === null) cargarMetas();
+      if(METAS === null) ajUnaVez('metas', cargarMetas);
       const q = $('meta-q');
       if(q) q.addEventListener('input', metaBuscar);
       ['meta-titulo','meta-objetivo','meta-hasta'].forEach(id=>{
@@ -5588,28 +5666,26 @@ const AJUSTES = [
     sub:'Quién entra acá. Es un solo permiso: se entra a Ajustes o no se entra.',
     render:()=>ajPersonasHTML(),
     montar:()=>{
-      if(!PERSONAS || !PERSONAS.length) cargarPersonas();
+      if(!PERSONAS || !PERSONAS.length) ajUnaVez('personas', cargarPersonas);
       const ok = $('aj-nuevo-ok');
       if(ok) ok.addEventListener('click', ajAgregarPersona);
     } },
 
   { id:'fudo', ico:'fudo', tit:'Fudo',
     sub:'El puente con el sistema de ventas.',
-    render:()=>'<div id="aj-slot-fudo"></div><div id="aj-slot-hist"></div>' + ajPronto([
-      'Modo prueba o real, por sede',
-      'El reloj: encenderlo, apagarlo y ver cuándo corrió',
-    ]),
+    render:()=>ajFudoSedesHTML() + '<div id="aj-slot-fudo"></div><div id="aj-slot-hist"></div>',
     montar:()=>{
       ajMontar('aj-slot-fudo','adm-sec-fudo');
       ajMontar('aj-slot-hist','adm-sec-hist');
-      cargarHistorialFudo();
+      ajUnaVez('histfudo', cargarHistorialFudo);
+      if(AJ_SYNC === null) ajUnaVez('sync', ajCargarSync);
     } },
 
   { id:'respaldos', ico:'respaldos', tit:'Respaldos',
     sub:'La red. Si algo se rompe, de acá se vuelve.',
     render:()=>ajRespaldosHTML(),
     montar:()=>{
-      if(!AJ_REST.length) ajCargarRestauraciones();
+      if(!AJ_REST.length) ajUnaVez('restauraciones', ajCargarRestauraciones);
       const b = $('aj-restaurar');
       if(b) b.addEventListener('click', ajRestaurar);
     } },
@@ -5617,14 +5693,346 @@ const AJUSTES = [
   { id:'actividad', ico:'actividad', tit:'Actividad',
     sub:'Quién hizo qué y cuándo, todo en un solo lugar. Últimos 30 días.',
     render:()=>ajActividadHTML(),
-    montar:()=>{ if(AJ_ACT === null) ajCargarActividad(); } },
+    montar:()=>{ if(AJ_ACT === null) ajUnaVez('actividad', ajCargarActividad); } },
 
   { id:'salud', ico:'salud', tit:'Salud del sistema',
     sub:'Lo que hoy hay que preguntarle a la base con SQL.',
     render:()=>ajSaludHTML(),
-    montar:()=>{ if(AJ_SALUD === null) ajCargarSalud(); } },
+    montar:()=>{ if(AJ_SALUD === null) ajUnaVez('salud', ajCargarSalud); } },
 ];
 
+
+/* ---------------- Fudo · el modo y el reloj ----------------
+
+   LAS DOS PERILLAS QUE HASTA HOY SOLO SE TOCABAN CON SQL, y las dos son de
+   Jhon por decisión suya (§6.2): "existe la posibilidad de que yo un día me
+   vaya y necesito entregar un sistema que sea completamente manejable".
+
+   · MODO. `prueba` anota lo que se vendió pero NO baja el stock; `real`
+     descuenta de verdad. Bajar de real a prueba es lo único de esta
+     pantalla que apaga algo que está funcionando, así que lo pregunta con
+     todas las letras.
+   · EL RELOJ. Es quien llama solo cada 15 minutos. Apagarlo no rompe nada:
+     queda el ⟳ de la barra, que hace lo mismo cuando alguien lo aprieta.
+
+   OJO CON UN MALENTENDIDO QUE YA COSTÓ UNA VUELTA: `cron_activo` NO es el
+   reloj. Es el interruptor del AVISO — le dice a la app "se supone que
+   esto corre solo, así que si lleva horas sin correr, alarma". La tarea
+   agendada vive en la base y se agenda una vez. Por eso acá dice
+   "vigilar", que es lo que de verdad hace.                              */
+let AJ_SYNC = null;
+
+async function ajCargarSync(){
+  const {data,error} = await sb.from('fudo_sync').select('*').order('sede');
+  AJ_SYNC = error ? {error:true} : (data||[]);
+  if(ajActual === 'fudo') pintarAjustes();
+}
+
+function ajFudoSedesHTML(){
+  if(AJ_SYNC === null) return '<div class="aj-caja"><p>Cargando…</p></div>';
+  if(AJ_SYNC.error) return '<div class="aj-caja"><p>No se pudo leer el estado de Fudo. Revisa la señal.</p></div>';
+
+  const filas = ['plaza','angamos'].map(sd=>{
+    const f = (AJ_SYNC||[]).find(x=>x.sede===sd);
+    if(!f) return `<div class="aj-caja"><h3>${esc(SEDES[sd].label)}</h3>
+      <p class="aj-nota">Esta sede todavía no tiene fila de sincronización.</p></div>`;
+    const real = f.modo === 'real';
+    /* `haceCuanto` habla en minutos, así que se convierte acá. Se reusa a
+       propósito: es la misma frase que ya dice la franja del motor, y dos
+       formas de decir "hace 20 min" en la misma app se leen como dos cosas
+       distintas. */
+    const corrio = f.ultima_corrida_at
+      ? haceCuanto(Math.round((Date.now() - new Date(f.ultima_corrida_at)) / 60000))
+      : null;
+    const err = +f.ultimos_errores || 0;
+    return `<div class="aj-caja">
+      <h3>${esc(SEDES[sd].label)}</h3>
+
+      <div class="aj-fila">
+        <div class="nm"><b>Descuenta de verdad</b>
+          <span>${real ? 'modo real · cada venta baja el stock'
+                       : 'modo prueba · anota las ventas pero NO toca el stock'}</span></div>
+        <button type="button" class="aj-sw${real?' on':''}" data-fmodo="${sd}"
+          aria-label="${real?'Pasar a prueba':'Pasar a real'}"></button>
+      </div>
+
+      <div class="aj-fila">
+        <div class="nm"><b>Vigilar el reloj</b>
+          <span>${f.cron_activo
+            ? 'encendido · si deja de correr, la app avisa'
+            : 'apagado · nadie va a avisar si el reloj se detiene'}</span></div>
+        <button type="button" class="aj-sw${f.cron_activo?' on':''}" data-fcron="${sd}"
+          aria-label="${f.cron_activo?'Dejar de vigilar':'Vigilar'}"></button>
+      </div>
+
+      <div class="aj-ultima${err ? ' mal' : ''}">
+        ${corrio
+          ? `<b>Corrió ${esc(corrio)}</b>
+             <span>${f.ultima_corrida_por === 'cron' ? 'sola' : 'a mano'}
+               · ${fmt(+f.ultimos_items||0)} ítems leídos
+               · ${fmt(+f.ultimos_movimientos||0)} descuentos${
+                 err ? ' · <b>' + err + ' con error</b>' : ''}</span>`
+          : '<b>Todavía no ha corrido</b><span>En una sede recién encendida esto es normal.</span>'}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="aj-caja">
+      <h3>Cada sede, por separado</h3>
+      <p class="aj-nota">Son las dos perillas del puente con Fudo. Ninguna de las dos
+        toca recetas ni productos.</p>
+    </div>` + filas;
+}
+
+/* Las dos escrituras piden de vuelta la fila, como todas las de esta zona:
+   `fudo_sync` estaba abierta solo para las visitas sin sesión, así que
+   desde una cuenta con sesión el cambio no ocurría y no avisaba. Es el
+   mismo caso de los permisos de Adriana. */
+async function ajGuardarSync(sede, cambios, textoOk){
+  const {data,error} = await sb.from('fudo_sync').update(cambios).eq('sede',sede).select();
+  if(error || !data || !data.length){
+    avisar('No se pudo cambiar\n\n'
+      + (error?.message || 'La base no dejó escribir en la configuración de Fudo. '
+        + '¿Corriste "2026-08-secciones-y-fudo-desde-ajustes.sql"?'));
+    return;
+  }
+  const f = (AJ_SYNC||[]).find(x=>x.sede===sede);
+  if(f) Object.assign(f, cambios);
+  aviso(textoOk);
+  pintarAjustes();
+}
+
+async function ajModoSede(sede){
+  const f = (AJ_SYNC||[]).find(x=>x.sede===sede); if(!f) return;
+  const aReal = f.modo !== 'real';
+  /* Bajar a prueba es lo único de acá que apaga algo que está funcionando,
+     y por eso lo pregunta nombrando la consecuencia en vez de un
+     "¿Confirmar?" (regla 0.1.7: que el sistema ya descuente es un logro
+     del proyecto, no un riesgo a mitigar). */
+  if(!aReal && !await preguntar('Dejar de descontar en ' + SEDES[sede].label,
+      'Las ventas se van a seguir anotando, pero el stock NO va a bajar. El inventario '
+      + 'de esa sede se va a ir quedando por encima de la realidad hasta que lo vuelvas a '
+      + 'poner en real.', 'Pasar a prueba')) return;
+  ajGuardarSync(sede, {modo: aReal ? 'real' : 'prueba'},
+    aReal ? '✓ ' + SEDES[sede].label + ' descuenta de verdad' : SEDES[sede].label + ' quedó en prueba');
+}
+
+async function ajCronSede(sede){
+  const f = (AJ_SYNC||[]).find(x=>x.sede===sede); if(!f) return;
+  ajGuardarSync(sede, {cron_activo: !f.cron_activo},
+    f.cron_activo ? 'Ya no se vigila el reloj' : '✓ Se vigila el reloj');
+}
+
+/* ---------------- Secciones y turnos ----------------
+
+   QUÉ RESUELVE. El orden de las secciones y cuáles se cuentan en la mañana
+   vivían ESCRITOS EN EL CÓDIGO (`SEC_ORDEN` y `SEC_AM`). Mover una sección
+   de turno era pedírmelo a mí, y eso es exactamente lo que la zona de
+   Ajustes viene a terminar (§6.2).
+
+   LA RED, y va primero porque es lo que hace esto seguro: la tabla
+   `secciones` MANDA cuando existe, y si no existe o está vacía la app usa
+   las listas de siempre. Una sección que nadie tocó se ve igual que ayer.
+
+   UNA SECCIÓN NO ES UNA FICHA: es el nombre que llevan sus productos. Por
+   eso acá hay dos cosas distintas que conviene no mezclar:
+     · la FILA de `secciones` guarda el orden y el turno;
+     · el `rubro` de cada producto es lo que de verdad lo pone ahí.
+   Renombrar toca las dos; mover un producto toca solo la segunda.        */
+let AJ_SECQ = '';          // lo que se escribió en "mover productos"
+
+function ajSeccionesHTML(){
+  /* La lista junta las dos fuentes: las secciones guardadas y las que
+     existen porque hay productos con ese rubro. Si una está solo en los
+     productos, igual aparece — si no, una sección de verdad quedaría
+     invisible acá por no estar todavía en la tabla. */
+  const deProductos = [...new Set(DATA.map(d=>d.rubro).filter(Boolean))];
+  const nombres = [...new Set([...SECCIONES.map(x=>x.nombre), ...deProductos])]
+    .sort((a,b)=> secPeso(a)-secPeso(b) || a.localeCompare(b,'es'));
+  const cuenta = nom => DATA.filter(d=>d.rubro===nom).length;
+
+  const filas = nombres.map((nom,i)=>{
+    const n = cuenta(nom);
+    const am = esAM(nom);
+    return `<div class="aj-sec">
+      <div class="mov">
+        <button type="button" class="fl" data-secsube="${esc(nom)}" ${i===0?'disabled':''}
+          aria-label="Subir ${esc(nom)}">▲</button>
+        <button type="button" class="fl" data-secbaja="${esc(nom)}" ${i===nombres.length-1?'disabled':''}
+          aria-label="Bajar ${esc(nom)}">▼</button>
+      </div>
+      <div class="nm"><b>${esc(nom)}</b>
+        <span>${n} producto${n===1?'':'s'}${SEDE==='central' ? '' : ' · cuenta ' + (am?'en la mañana':'en la tarde')}</span></div>
+      ${SEDE==='central' ? '' : `<button type="button" class="aj-turno${am?' am':''}"
+        data-secturno="${esc(nom)}">${am?'AM':'PM'}</button>`}
+      <button type="button" class="quitar" data-secborrar="${esc(nom)}" data-n="${n}"
+        aria-label="Borrar ${esc(nom)}">✕</button>
+    </div>`;
+  }).join('');
+
+  return `<div class="aj-caja">
+      <h3>Las secciones de ${esc(SEDES[SEDE]?.label || 'esta sede')}</h3>
+      <p class="aj-nota">El orden es el que ves al contar${SEDE==='central' ? '' :
+        `, y la píldora dice qué turno la cuenta. <b>AM</b> es la mañana`}.
+        Una sección solo se puede borrar cuando no le queda ningún producto.</p>
+      <div style="margin-top:12px">${filas || '<div class="aj-vacio">Esta sede todavía no tiene secciones.</div>'}</div>
+    </div>
+
+    <div class="aj-caja">
+      <h3>Crear una sección</h3>
+      <p>Nace vacía y al final de la lista. Después se le mueven productos desde acá abajo.</p>
+      <div class="aj-alta">
+        <input type="text" id="aj-sec-nueva" maxlength="40" placeholder="Ej: Vitrina de bebidas" autocomplete="off">
+        <button type="button" class="adm-btn fantasma" id="aj-sec-nueva-ok">Crear</button>
+      </div>
+    </div>
+
+    <div class="aj-caja">
+      <h3>Renombrar una sección</h3>
+      <p>Cambia el nombre en esta sede y en todos sus productos a la vez.</p>
+      <button type="button" class="adm-btn fantasma" id="aj-renombrar-sec"
+        style="margin-top:10px">Elegir sección</button>
+    </div>
+
+    <div class="aj-caja">
+      <h3>Mover productos de sección</h3>
+      <p class="aj-nota">Busca el producto y elige a dónde va. Solo cambia dónde se cuenta:
+        el stock, las fechas y las recetas quedan igual — van por id, no por sección.</p>
+      <input type="text" class="aj-buscar" id="aj-sec-q" placeholder="Buscar producto…" value="${esc(AJ_SECQ)}">
+      <div id="aj-sec-lista" style="margin-top:12px">${ajMoverListaHTML()}</div>
+    </div>`;
+}
+
+/* Solo la lista, como en Productos: repintar el panel entero en cada tecla
+   destruye el campo de texto y se pierde el foco (y los toques). */
+function ajMoverListaHTML(){
+  const q = normNombre(AJ_SECQ);
+  if(q.length < 2) return '<div class="aj-vacio">Escribe para buscar un producto.</div>';
+  const hallados = DATA.filter(p=>normNombre(p.producto).includes(q)).slice(0,25);
+  if(!hallados.length) return '<div class="aj-vacio">Ningún producto con ese nombre.</div>';
+  const nombres = [...new Set([...SECCIONES.map(x=>x.nombre), ...DATA.map(d=>d.rubro)])]
+    .filter(Boolean).sort((a,b)=> secPeso(a)-secPeso(b) || a.localeCompare(b,'es'));
+  return hallados.map(p=>`<div class="aj-prod">
+      <div class="nm"><b>${esc(p.producto)}</b><span>hoy en ${esc(p.rubro||'—')}</span></div>
+      <select class="aj-mover" data-secmover="${p.id}">
+        ${nombres.map(n=>`<option${n===p.rubro?' selected':''}>${esc(n)}</option>`).join('')}
+      </select>
+    </div>`).join('');
+}
+function ajRepintarMover(){
+  const c = $('aj-sec-lista'); if(c) c.innerHTML = ajMoverListaHTML();
+}
+
+/* GUARDAR UNA SECCIÓN. `upsert` porque puede no tener fila todavía: hasta
+   hoy las secciones existían solo dentro de los productos. */
+async function ajGuardarSeccion(nombre, cambios){
+  const previa = secFila(nombre) || {sede:SEDE, nombre, turno: esAM(nombre)?'am':'pm', orden: secPeso(nombre)};
+  const fila = {sede:SEDE, nombre, turno:previa.turno, orden:previa.orden, ...cambios};
+  const {data,error} = await sb.from('secciones')
+    .upsert(fila, {onConflict:'sede,nombre'}).select();
+  if(error || !data || !data.length){
+    avisar('No se pudo guardar la sección\n\n'
+      + (error?.message || 'La base no dejó escribir. ¿Corriste "2026-08-secciones-y-fudo-desde-ajustes.sql"?'));
+    return false;
+  }
+  await cargarSecciones();
+  return true;
+}
+
+/* SUBIR Y BAJAR. Se reescribe el orden ENTERO, de 0 en adelante, en vez de
+   intercambiar dos números: hoy muchas secciones comparten el 100 (el
+   valor por defecto), y con empates un intercambio no mueve nada visible.
+   Reescribir todo deja la lista igual a lo que se ve.                    */
+async function ajMoverSeccion(nombre, dir){
+  const deProductos = [...new Set(DATA.map(d=>d.rubro).filter(Boolean))];
+  const lista = [...new Set([...SECCIONES.map(x=>x.nombre), ...deProductos])]
+    .sort((a,b)=> secPeso(a)-secPeso(b) || a.localeCompare(b,'es'));
+  const i = lista.indexOf(nombre), j = i + dir;
+  if(i < 0 || j < 0 || j >= lista.length) return;
+  lista.splice(j, 0, lista.splice(i, 1)[0]);
+  const filas = lista.map((nom, k)=>({
+    sede:SEDE, nombre:nom, orden:k,
+    turno: (secFila(nom)||{}).turno || (esAM(nom) ? 'am' : 'pm'),
+  }));
+  const {data,error} = await sb.from('secciones')
+    .upsert(filas, {onConflict:'sede,nombre'}).select();
+  if(error || !data || !data.length){
+    avisar('No se pudo cambiar el orden\n\n'
+      + (error?.message || 'La base no dejó escribir. ¿Corriste "2026-08-secciones-y-fudo-desde-ajustes.sql"?'));
+    return;
+  }
+  await cargarSecciones();
+  pintarAjustes();
+  render();
+}
+
+async function ajTurnoSeccion(nombre){
+  const am = esAM(nombre);
+  if(await ajGuardarSeccion(nombre, {turno: am ? 'pm' : 'am'})){
+    aviso(am ? 'Pasa a la tarde' : '✓ Pasa a la mañana');
+    pintarAjustes();
+    render();
+  }
+}
+
+async function ajCrearSeccion(){
+  const inp = $('aj-sec-nueva');
+  const nom = (inp.value||'').trim();
+  if(!nom){ avisar('Escribe el nombre de la sección.'); return; }
+  const existe = [...SECCIONES.map(x=>x.nombre), ...DATA.map(d=>d.rubro)]
+    .filter(Boolean).some(x=>normNombre(x)===normNombre(nom));
+  if(existe){ avisar('Ya existe una sección con ese nombre en esta sede.'); return; }
+  const orden = Math.max(0, ...SECCIONES.map(x=>x.orden||0)) + 1;
+  const {data,error} = await sb.from('secciones')
+    .insert({sede:SEDE, nombre:nom, turno:'pm', orden}).select();
+  if(error || !data || !data.length){
+    avisar('No se pudo crear\n\n'
+      + (error?.message || 'La base no dejó escribir. ¿Corriste "2026-08-secciones-y-fudo-desde-ajustes.sql"?'));
+    return;
+  }
+  inp.value = '';
+  await cargarSecciones();
+  aviso('✓ Sección creada · muévele productos desde abajo');
+  pintarAjustes();
+}
+
+/* BORRAR SOLO SI ESTÁ VACÍA, y el aviso dice cuántos productos la tienen.
+   Borrar una sección con productos adentro los dejaría sin sección, o sea
+   escondidos del conteo — que es la clase de daño silencioso que este
+   proyecto ya pagó caro. Con productos dentro, el camino es moverlos. */
+async function ajBorrarSeccion(nombre, n){
+  if(n > 0){
+    avisar('“' + nombre + '” todavía tiene ' + n + ' producto' + (n===1?'':'s')
+      + '\n\nMuévelos a otra sección desde abajo y después bórrala. Si se borrara ahora, '
+      + 'esos productos quedarían sin sección y desaparecerían del conteo.');
+    return;
+  }
+  if(!await preguntar('Borrar “' + nombre + '”',
+      'La sección está vacía, así que no se pierde ningún producto. Se puede volver a crear.',
+      'Borrar')) return;
+  const {error} = await sb.from('secciones').delete()
+    .eq('sede',SEDE).eq('nombre',nombre);
+  if(error){ avisar('No se pudo borrar\n\n' + error.message); return; }
+  await cargarSecciones();
+  aviso('Sección borrada');
+  pintarAjustes();
+}
+
+async function ajMoverProducto(id, destino){
+  const p = DATA.find(x=>x.id===id); if(!p || p.rubro===destino) return;
+  const antes = p.rubro;
+  const {data,error} = await sb.from('productos')
+    .update({rubro:destino}).eq('id',id).select();
+  if(error || !data || !data.length){
+    avisar('No se pudo mover\n\n' + (error?.message || 'La base no cambió ninguna fila.'));
+    ajRepintarMover();
+    return;
+  }
+  p.rubro = destino;
+  aviso('✓ ' + p.producto + ': de ' + (antes||'sin sección') + ' a ' + destino, 4000);
+  ajRepintarMover();
+  render(); metrics();
+}
 
 /* ---------------- Personas y acceso ----------------
 
@@ -5688,14 +6096,41 @@ function ajPersonasHTML(){
     </div>`;
 }
 
+/* SE COMPRUEBA QUE LA ESCRITURA HAYA OCURRIDO, y esto es el arreglo del
+   fallo que reportó Jhon: "he habilitado a Adriana y a Massiel pero cada
+   tanto se desactivan".
+
+   No se desactivaban: NUNCA SE ACTIVARON. `app_permisos` tiene la puerta
+   cerrada para escribir —solo se le dio permiso de LEER cuando se creó en
+   julio, porque entonces los permisos se daban a mano desde Supabase—. Un
+   update contra una fila que la puerta no deja tocar **no da error**:
+   simplemente no cambia ninguna fila y contesta que todo bien. La app
+   ponía el interruptor en verde, decía "✓ Ahora entra a Ajustes"… y al
+   volver a leer la lista, la base seguía diciendo false.
+
+   Es la falla callada de siempre, y la más cara de todas en este proyecto:
+   la pantalla afirmando algo que no pasó. La regla que sale de acá vale
+   para cualquier escritura futura: **pedir de vuelta lo que se escribió**.
+   Un `.select()` al final del update devuelve las filas que de verdad
+   cambiaron; si vienen cero, se escribió nada y hay que decirlo.
+
+   El permiso de escritura se abre con `sql/2026-08-permisos-desde-la-app.sql`
+   y es solo para cuentas con sesión iniciada. */
 async function ajTogglePersona(correo){
   const p = PERSONAS.find(x=>x.correo === correo); if(!p) return;
   const valor = !p.puede_ajustes;
   if(!valor && !await preguntar('Quitarle el acceso a Ajustes',
       (p.nombre||correo)+' va a dejar de ver esta zona.','Quitar acceso')) return;
-  const {error} = await sb.from('app_permisos')
-    .update({puede_ajustes: valor}).eq('correo', correo);
-  if(error){ avisar(error.message || 'No se pudo cambiar el permiso.'); return; }
+  const {data:filas, error} = await sb.from('app_permisos')
+    .update({puede_ajustes: valor}).eq('correo', correo).select();
+  if(error){ avisar('No se pudo cambiar el permiso.\n\n' + (error.message||'')); return; }
+  if(!filas || !filas.length){
+    avisar('El permiso NO se guardó\n\n'
+      + 'La base no dejó escribir en la lista de personas, y no avisa: contesta que '
+      + 'todo bien sin cambiar nada. Hay que correr una vez '
+      + '"2026-08-permisos-desde-la-app.sql" en Supabase.');
+    return;
+  }
   p.puede_ajustes = valor;
   aviso(valor ? '✓ Ahora entra a Ajustes' : 'Acceso quitado');
   pintarAjustes();
@@ -5713,9 +6148,16 @@ async function ajAgregarPersona(){
   /* Se agrega SIN acceso. Darlo es un segundo gesto, a propósito: escribir
      un correo y que quede dentro de la zona de administración de una vez
      es demasiado fácil de hacer sin querer. */
-  const {error} = await sb.from('app_permisos')
-    .insert({correo, puede_ajustes:false, puede_fudo:false, puede_editar:true});
-  if(error){ avisar(error.message || 'No se pudo agregar.'); return; }
+  const {data:filas, error} = await sb.from('app_permisos')
+    .insert({correo, puede_ajustes:false, puede_fudo:false, puede_editar:true}).select();
+  if(error){ avisar('No se pudo agregar.\n\n' + (error.message||'')); return; }
+  // misma comprobación que el interruptor: sin fila de vuelta, no se escribió
+  if(!filas || !filas.length){
+    avisar('No se agregó\n\n'
+      + 'La base no deja escribir en la lista de personas. Hay que correr una vez '
+      + '"2026-08-permisos-desde-la-app.sql" en Supabase.');
+    return;
+  }
   inp.value = '';
   await cargarPersonas();
   aviso('✓ Agregada · enciéndele el acceso cuando quieras');
@@ -6071,9 +6513,88 @@ function ajRelacionesHTML(){
         <span class="nm"><b>Recetas</b>
           <span>Qué descuenta cada producto de Fudo al venderse</span></span>
         <span class="flecha">›</span></button>
-    </div>` + ajPronto(['Traducir las categorías de Fudo a nuestras secciones']);
+    </div>`;
 
-  return sedes + cuerpo + otros;
+  return sedes + cuerpo + ajCategoriasHTML() + otros;
+}
+
+/* ---------------- Las categorías de Fudo ----------------
+
+   QUÉ ES ESTO Y PARA QUÉ SIRVE, porque el nombre no lo dice y Jhon
+   preguntó justamente eso: "creaste una opción de traducir las categorías
+   de Fudo a nuestras secciones, la verdad no sé qué hace".
+
+   Fudo ordena su carta con SUS categorías ("Tortas", "Café"). Nosotros
+   ordenamos el inventario con NUESTRAS secciones ("Vitrina de tortas",
+   "Mesones"). Son dos idiomas para lo mismo, y no coinciden.
+
+   Eso importa en un solo sitio, pero importa: la portada de Recetas
+   agrupa los productos de Fudo que todavía no tienen receta, y los agrupa
+   por NUESTRA sección porque —decisión de Jhon, §6.3— "los trabajadores
+   están más familiarizados con 'Vitrina de tortas' que con 'tortas'".
+
+   Y ahí hay un huevo y gallina: un producto de Fudo SIN receta todavía no
+   está enlazado a ningún producto nuestro, así que no tiene sección
+   nuestra de dónde sacarla. Esta tabla es la salida: se dice UNA VEZ a
+   qué sección corresponde cada categoría de Fudo, y desde entonces todo lo
+   que entre en esa categoría cae en la barra correcta.
+
+   Lo que NO hace, y conviene decirlo: no mueve productos, no toca recetas
+   y no cambia nada del inventario. Es solo cómo se agrupan las barras de
+   la portada de Recetas. Una categoría sin traducir cae en "Sin sección",
+   que es lo que pasa hoy — o sea que dejarla vacía no rompe nada.        */
+function ajCategoriasHTML(){
+  if(!AJ_PSEDE) return '';
+  if(AJ_CATS === null) return '<div class="aj-caja"><p>Cargando las categorías de Fudo…</p></div>';
+  if(AJ_CATS.error) return '<div class="aj-caja"><h3>Las categorías de Fudo</h3>'
+    + '<p class="aj-nota">No se pudo leer la tabla. Puede que todavía no se haya corrido '
+    + '"2026-08-categorias-de-fudo.sql".</p></div>';
+
+  const secs = [...new Set([...SECCIONES.map(x=>x.nombre), ...DATA.map(d=>d.rubro)])]
+    .filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+  const mias = AJ_CATS.filter(c=>c.sede === AJ_PSEDE);
+  const faltan = mias.filter(c=>!c.rubro).length;
+
+  return `<div class="aj-caja">
+      <h3>Las categorías de Fudo</h3>
+      <p class="aj-nota">Fudo ordena su carta con sus categorías y nosotros el inventario
+        con nuestras secciones. Esto dice cuál es cuál, y sirve para <b>una sola cosa</b>:
+        que en la portada de Recetas los productos sin receta salgan agrupados con los
+        nombres que el equipo reconoce. No mueve productos ni toca recetas.
+        ${faltan ? `<br><b>${faltan}</b> sin traducir · caen en “Sin sección”.` : ''}</p>
+      <div style="margin-top:12px">${mias.length ? mias.map(c=>`
+        <div class="aj-prod">
+          <div class="nm"><b>Categoría ${esc(c.categoria_id)}</b>
+            <span>${esc((c.ejemplos||'—').slice(0,70))}</span></div>
+          <select class="aj-mover" data-ajcat="${esc(c.categoria_id)}">
+            <option value="">— sin traducir —</option>
+            ${secs.map(x=>`<option${x===c.rubro?' selected':''}>${esc(x)}</option>`).join('')}
+          </select>
+        </div>`).join('')
+        : '<div class="aj-vacio">No hay categorías cargadas para esta sede.</div>'}</div>
+    </div>`;
+}
+
+let AJ_CATS = null;
+async function ajCargarCategorias(){
+  const {data,error} = await sb.from('fudo_categorias').select('*').order('categoria_id');
+  AJ_CATS = error ? {error:true} : (data||[]);
+  if(ajActual === 'relaciones') pintarAjustes();
+}
+
+async function ajGuardarCategoria(catId, rubro){
+  const {data,error} = await sb.from('fudo_categorias')
+    .update({rubro: rubro || null, updated_at:new Date().toISOString()})
+    .eq('sede',AJ_PSEDE).eq('categoria_id',catId).select();
+  if(error || !data || !data.length){
+    avisar('No se pudo guardar\n\n'
+      + (error?.message || 'La base no dejó escribir en las categorías. '
+        + '¿Corriste "2026-08-secciones-y-fudo-desde-ajustes.sql"?'));
+    return;
+  }
+  const c = (AJ_CATS||[]).find(x=>x.sede===AJ_PSEDE && x.categoria_id===catId);
+  if(c) c.rubro = rubro || null;
+  aviso(rubro ? '✓ Va a “' + rubro + '”' : 'Sin traducir');
 }
 
 async function ajRenombrarPar(id, nuevo){
@@ -6642,6 +7163,9 @@ function metaBarraHTML(m, conAcciones){
   const a = av.plaza || 0, b = av.angamos || 0;
   const obj = +m.objetivo || 1;
   const pa = Math.min(100, a/obj*100), pb = Math.min(100, b/obj*100);
+  /* El número solo se pinta blanco cuando la barra llegó hasta debajo de
+     él. Ver el comentario de `.meta-lado .val.on` en el CSS. */
+  const tapa = v => v >= 92;
   const ganoA = a >= obj, ganoB = b >= obj;
   const dias = Math.ceil((new Date(m.hasta+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
   return `<div class="meta-caja">
@@ -6652,10 +7176,10 @@ function metaBarraHTML(m, conAcciones){
         dias === 0 ? ' · <b>último día</b>' : ' · quedan ' + dias + (dias===1?' día':' días')}</p>
       <div class="meta-pista">
         <div class="meta-lado izq"><div class="barra" style="width:${pa}%"></div>
-          <span class="val${pa>18?' on':''}">${fmt(a)}</span></div>
+          <span class="val${tapa(pa)?' on':''}">${fmt(a)}</span></div>
         <div class="meta-centro"></div>
         <div class="meta-lado der"><div class="barra" style="width:${pb}%"></div>
-          <span class="val${pb>18?' on':''}">${fmt(b)}</span></div>
+          <span class="val${tapa(pb)?' on':''}">${fmt(b)}</span></div>
       </div>
       <div class="meta-pies"><span>${esc(SEDES.plaza.label)}</span><span>${esc(SEDES.angamos.label)}</span></div>
       ${ganoA || ganoB ? `<div class="meta-gano">🎉 ${
@@ -6843,13 +7367,53 @@ function ajMontar(slotId, nodoId){
   slot.appendChild(nodo);
 }
 
+/* NO SE PUEDE LLAMAR DOS VECES AL MISMO CARGADOR, y esto arregla el fallo
+   más grande que reportó Jhon: "el área de salud del sistema aparece y
+   desaparece información rápidamente, las recetas parece su cantidad luego
+   cero luego nuevamente su cantidad".
+
+   Era un BUCLE INFINITO, y la forma es fácil de repetir sin darse cuenta:
+
+     ajCargarSalud()  ->  pone AJ_SALUD en null  ->  repinta para mostrar
+     "Cargando…"      ->  al repintar corre montar()  ->  montar ve
+     AJ_SALUD === null  ->  vuelve a llamar a ajCargarSalud()  ->  …
+
+   O sea que cada repintado disparaba otra consulta, y cada consulta otro
+   repintado. Los números aparecían al llegar los datos y volvían a cero al
+   instante siguiente, la app se llenaba de consultas —de ahí el "mucho
+   lag"— y el riel de la izquierda se rehacía tantas veces por segundo que
+   un toque casi nunca alcanzaba a caer sobre un botón vivo: eso es el
+   "el botón de Fudo no responde, solo parpadea".
+
+   Con esto, mientras una carga está en camino, pedirla otra vez no hace
+   nada. Se corta el bucle en el único punto donde puede nacer.          */
+const AJ_CARGANDO = new Set();
+function ajUnaVez(clave, fn){
+  if(AJ_CARGANDO.has(clave)) return;
+  AJ_CARGANDO.add(clave);
+  Promise.resolve().then(fn).finally(()=>AJ_CARGANDO.delete(clave));
+}
+
+/* EL RIEL SE PINTA UNA SOLA VEZ. Antes lo rehacía cada repintado del panel
+   —o sea cada vez que llegaban datos—, y un botón que se destruye y vuelve
+   a nacer debajo del dedo no recibe el toque. Ahora solo se le cambia cuál
+   está encendido, que es lo único que de verdad cambia. */
+function ajPintarRail(){
+  const r = $('aj-rail');
+  if(!r.dataset.hecho){
+    r.innerHTML = '<div class="aj-rail-tit">AJUSTES</div>' + AJUSTES.map(a=>`
+      <button type="button" class="aj-it" data-aj="${a.id}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICO[a.ico]}</svg>
+        <span>${esc(a.tit)}</span>
+      </button>`).join('');
+    r.dataset.hecho = '1';
+  }
+  r.querySelectorAll('[data-aj]').forEach(b=>b.classList.toggle('on', b.dataset.aj === ajActual));
+}
+
 function pintarAjustes(){
   ajDevolver();                 // primero a su casa: el innerHTML los borraría
-  $('aj-rail').innerHTML = '<div class="aj-rail-tit">AJUSTES</div>' + AJUSTES.map(a=>`
-    <button type="button" class="aj-it${a.id===ajActual?' on':''}" data-aj="${a.id}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICO[a.ico]}</svg>
-      <span>${esc(a.tit)}</span>
-    </button>`).join('');
+  ajPintarRail();
 
   const a = AJUSTES.find(x=>x.id===ajActual) || AJUSTES[0];
   $('aj-pane').innerHTML = `
@@ -6859,6 +7423,16 @@ function pintarAjustes(){
     </div>` + a.render();
   if(a.montar) a.montar();
 }
+
+/* El desplegable de mover producto no dispara un clic útil: se escucha el
+   cambio de valor. Va en el panel entero y no en cada fila, así sigue
+   funcionando cuando la lista se repinta. */
+$('aj-pane').addEventListener('change', e=>{
+  const mv = e.target.closest('[data-secmover]');
+  if(mv){ ajMoverProducto(+mv.dataset.secmover, mv.value); return; }
+  const ct = e.target.closest('[data-ajcat]');
+  if(ct){ ajGuardarCategoria(ct.dataset.ajcat, ct.value); return; }
+});
 
 $('aj-pane').addEventListener('click', e=>{
   const sw = e.target.closest('[data-persona]');
@@ -6897,6 +7471,18 @@ $('aj-pane').addEventListener('click', e=>{
        agregó pasa a mostrar un ✓ en el momento. */
     pintarMetaElegidos(); metaBuscar(); return;
   }
+  const fm = e.target.closest('[data-fmodo]');
+  if(fm){ ajModoSede(fm.dataset.fmodo); return; }
+  const fc = e.target.closest('[data-fcron]');
+  if(fc){ ajCronSede(fc.dataset.fcron); return; }
+  const ss = e.target.closest('[data-secsube]');
+  if(ss){ ajMoverSeccion(ss.dataset.secsube, -1); return; }
+  const sb2 = e.target.closest('[data-secbaja]');
+  if(sb2){ ajMoverSeccion(sb2.dataset.secbaja, 1); return; }
+  const st = e.target.closest('[data-secturno]');
+  if(st){ ajTurnoSeccion(st.dataset.secturno); return; }
+  const sx = e.target.closest('[data-secborrar]');
+  if(sx){ ajBorrarSeccion(sx.dataset.secborrar, +sx.dataset.n); return; }
   const mc = e.target.closest('[data-metacerrar]');
   if(mc){ metaCerrar(+mc.dataset.metacerrar, mc.dataset.abrir === '1'); return; }
   const mb = e.target.closest('[data-metaborrar]');
@@ -7980,6 +8566,10 @@ async function resincronizar(){
   ultimaRecarga=Date.now();
   await loadData();
   await loadRepartos();
+  /* Las secciones cambian poco, pero cuando cambian tienen que llegar: si
+     alguien reordena desde otro teléfono, acá se vería el orden viejo
+     hasta recargar la página. */
+  await cargarSecciones();
   /* Se revisa acá y no solo al abrir la app: `resincronizar` corre al volver
      del fondo, al recuperar señal y después de cada ⟳, que son justo los
      momentos en que el teléfono se pone al día con lo que pasó sin mirar. */
