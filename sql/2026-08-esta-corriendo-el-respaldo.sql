@@ -40,6 +40,33 @@ group by a.fecha
 order by a.fecha desc;
 
 -- ================================================================
+-- BLOQUE 2 — ¿O ES QUE TODAVÍA NO LLEGA LA HORA?   (otro Run)
+--
+-- Si al último día le falta la foto de la noche, hay DOS explicaciones y se
+-- parecen mucho: que haya fallado, o que todavía no sean las 22:00 allá.
+-- Adivinar cuál es manda a revisar algo que está bien.
+--
+-- QUÉ VER:
+--   · `hora_ahora` es la hora en Antofagasta, no la del servidor.
+--   · Si son menos de las 22:00, que falte la foto de la noche de HOY es
+--     lo normal: todavía no le toca.
+--   · Si ya pasaron las 22:00 y falta, esa corrida falló.
+--   · Lo mismo con las 15:00 y la foto de la tarde.
+-- ================================================================
+select
+  (now() at time zone 'America/Santiago')::date            as hoy_en_antofagasta,
+  to_char(now() at time zone 'America/Santiago', 'HH24:MI') as hora_ahora,
+  (select max(fecha) from public.historial_auto)            as ultima_foto,
+  case
+    when to_char(now() at time zone 'America/Santiago','HH24')::int >= 22
+      then 'ya pasaron las dos horas de hoy'
+    when to_char(now() at time zone 'America/Santiago','HH24')::int >= 15
+      then 'ya pasó la de las 15:00; la de las 22:00 todavía no'
+    else 'todavía no toca ninguna de hoy'
+  end                                                       as a_esta_hora;
+
+
+-- ================================================================
 -- CÓMO SE LEE EL RESULTADO, y son tres casos distintos que se confunden:
 --
 --  · Salen los últimos días con "✅ las dos fotos" y las tres sedes con
