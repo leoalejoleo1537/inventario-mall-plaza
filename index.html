@@ -947,6 +947,18 @@
   .aj-ultima.mal{background:var(--red-bg);color:var(--red-fg)}
   .aj-ultima b{display:block;font-weight:800;font-size:13.5px}
   .aj-ultima span{opacity:.86}
+  /* cuánto le falta a una tabla para el tope: se lee sin números */
+  .aj-tope{background:var(--bg);border-radius:11px;padding:11px 13px;margin-bottom:8px}
+  .aj-tope .cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .aj-tope .cab b{font-size:14.5px;font-weight:700;color:var(--text)}
+  .aj-tope .cab span{font-size:12.5px;font-weight:700;color:var(--muted)}
+  .aj-tope .pista{height:8px;border-radius:999px;background:#fff;overflow:hidden;margin-top:8px}
+  .aj-tope .lleno{height:100%;border-radius:999px;background:var(--green-fg);
+    transition:width .5s cubic-bezier(.2,.8,.3,1)}
+  .aj-tope.aviso .lleno{background:var(--amber-fg)}
+  .aj-tope.mal .lleno{background:var(--red-fg)}
+  .aj-tope p{margin:7px 0 0;font-size:12.5px;color:var(--muted);line-height:1.45}
+  .aj-tope.mal p{color:var(--red-fg);font-weight:600}
   .aj-filtros{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 
   /* ---- la barra de la competencia ----
@@ -2586,6 +2598,7 @@ function pickSede(s){
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
   $('view-inv').style.display='block'; $('view-ajustes').style.display='none'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none'; $('view-enlaces').style.display='none'; $('view-repcentral').style.display='none';
   vistaActual='inv';
+  barraPestanas(true);   // si se cambió de sede estando en Ajustes, estaba escondida
   listEl.innerHTML='';
   $('gate').classList.add('hidden');
   $('liveText').textContent='conectando…'; $('live').classList.remove('off');
@@ -7080,12 +7093,26 @@ function ajSaludHTML(){
     </div>`;
   }).join('');
 
-  const cerca = S.tope.filter(t=>t.n !== null && t.n >= 800);
-  const topeHTML = cerca.length
-    ? cerca.map(t=>`<div class="aj-fila"><div class="nm"><b>${esc(t.t)}</b>
-        <span>${t.n} filas · Supabase corta en 1000 y no avisa</span></div>
-        <span class="emp-salto baja">${t.n}</span></div>`).join('')
-    : `<div class="aj-vacio">Ninguna tabla cerca del tope de 1000 filas.</div>`;
+  /* SE MUESTRAN SIEMPRE LAS DOS, no solo cuando ya están cerca. Un aviso
+     que aparece recién a las 800 filas no deja ver que se venía acercando,
+     que es justo lo que sirve para no llegar tarde (§0.7: números y
+     barras, no una lista que hay que leer). */
+  const topeHTML = S.tope.map(t=>{
+    const n = t.n;
+    if(n === null) return `<div class="aj-fila"><div class="nm"><b>${esc(t.t)}</b>
+      <span>no se pudo contar</span></div></div>`;
+    const pct = Math.min(100, n/1000*100);
+    const nivel = n >= 900 ? 'mal' : n >= 700 ? 'aviso' : 'bien';
+    return `<div class="aj-tope ${nivel}">
+      <div class="cab"><b>${esc(t.t)}</b><span>${fmt(n)} de 1000</span></div>
+      <div class="pista"><div class="lleno" style="width:${pct}%"></div></div>
+      <p>${n >= 900
+        ? 'Está por cruzar el tope. Hay que agrupar esta lectura en la base ANTES de llegar.'
+        : n >= 700
+          ? 'Se está acercando. Todavía sobra tiempo, pero conviene mirarlo cada mes.'
+          : 'Con espacio de sobra.'}</p>
+    </div>`;
+  }).join('');
 
   return `<div class="aj-caja">
       <h3>El motor, por sede</h3>
@@ -7106,9 +7133,18 @@ function ajSaludHTML(){
     </div>
     <div class="aj-caja">
       <h3>El tope de las 1000 filas</h3>
-      <p class="aj-nota">Supabase corta cualquier lectura en 1000 filas <b>sin avisar</b>: la app
-        pide todo, recibe 1000 y sigue como si tuviera el resto.</p>
-      <div style="margin-top:10px">${topeHTML}</div>
+      <p class="aj-nota">Cuando la app le pide una lista a la base, <b>Supabase nunca devuelve
+        más de 1000 filas de una vez</b>. Y no avisa: si hay 1200, manda 1000 y contesta como
+        si eso fuera todo. La app se lo cree.<br><br>
+        Ya pasó una vez, en julio: el Historial ofrecía días viejos porque pedía todas las
+        filas y le llegaban solo las primeras 1000. Nadie vio ningún error — simplemente
+        faltaban días. Por eso se mira acá: <b>no es una alarma, es un contador.</b><br><br>
+        La que va a cruzar primero es <b>receta_items</b>, que suma una fila por cada
+        ingrediente de cada receta. El día que pase de 1000, la pantalla de Recetas
+        empezaría a mostrar recetas incompletas sin decir nada. El arreglo es de una tarde
+        —hacer que la base entregue el resumen ya contado en vez de la lista entera—, pero
+        hay que hacerlo <b>antes</b> de cruzar, no después.</p>
+      <div style="margin-top:12px">${topeHTML}</div>
     </div>`;
 }
 
@@ -7504,6 +7540,25 @@ $('aj-rail').addEventListener('click', e=>{
   if(window.innerWidth < 720) window.scrollTo({top:0, behavior:'smooth'});
 });
 
+/* LA BARRA DE PESTAÑAS SE ESCONDE EN UN SOLO LUGAR, y de ahí salió un bug
+   real (Jhon, 2026-08-20): "desaparece la barra horizontal donde están las
+   opciones de reparto, recetas, etc; tengo que refrescar la página".
+
+   Ajustes esconde la barra a propósito —se entró a otra zona y dejar la
+   navegación de la anterior encima haría dudar de dónde está uno—, y la
+   devuelve al salir. El problema era la puerta de atrás: al **cambiar de
+   sede** desde adentro de Ajustes, `pickSede()` armaba la vuelta al
+   inventario a mano —escondía la vista, marcaba la pestaña activa— pero
+   nunca pasaba por acá, así que la barra se quedaba escondida. Quedabas en
+   el inventario sin ninguna forma de ir a Reparto salvo recargar.
+
+   Esconder algo y volver a mostrarlo tienen que ser la misma función
+   llamada al revés. Cuando son dos trozos de código distintos, tarde o
+   temprano aparece un camino que solo pasa por uno. */
+function barraPestanas(ver){
+  document.querySelector('.tabs').style.display = ver ? '' : 'none';
+}
+
 function pickTab(tab){
   if(!SEDE)return;
   /* En Bodega "Reparto" ya no existe como pestaña: son dos. Si algo llama
@@ -7534,7 +7589,7 @@ function pickTab(tab){
   /* En Ajustes se esconden las pestañas y la franja del motor: se entró a
      otra zona, y dejar la navegación de la anterior encima haría dudar de
      dónde está uno. La tuerca sigue arriba para poder salir. */
-  document.querySelector('.tabs').style.display = tab==='ajustes' ? 'none' : '';
+  barraPestanas(tab !== 'ajustes');
   if(tab==='mermas') loadMermas();
   /* El formulario se arma DESPUÉS de cargar, no antes (2026-08-17). Las
      secciones de Plaza y Angamos salen de SEDE_PROD, que la llena

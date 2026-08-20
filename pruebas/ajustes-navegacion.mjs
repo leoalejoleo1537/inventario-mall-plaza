@@ -303,6 +303,22 @@ await page.waitForTimeout(300);
 await caso('vuelve al inventario', async () => await page.isVisible('#view-inv') || 'no volvió');
 await caso('y las pestañas reaparecen', async () => await page.isVisible('.tabs') || 'siguen escondidas');
 
+/* LA PUERTA DE ATRÁS. Ajustes esconde la barra de pestañas, y hasta el
+   2026-08-20 solo la devolvía al salir POR EL BOTÓN DE VOLVER. Cambiando de
+   sede desde adentro, la barra se quedaba escondida: quedabas en el
+   inventario sin forma de ir a Reparto salvo recargar la página.
+   Jhon lo encontró usándolo, no las pruebas. */
+console.log('\nY también se sale por la puerta de atrás (cambiar de sede):');
+await page.click('#btnMenu'); await page.waitForTimeout(200);
+await page.click('[data-accion="ajustes"]'); await page.waitForTimeout(400);
+await caso('estando en Ajustes, la barra está escondida', async () =>
+  !(await page.isVisible('.tabs')) || 'no se escondió');
+await page.click('#btnMenu'); await page.waitForTimeout(200);
+await page.click('[data-accion="cambiar-sede"]'); await page.waitForTimeout(300);
+await page.click('.gate-btn[data-sede="angamos"]'); await page.waitForTimeout(500);
+await caso('al cambiar de sede desde Ajustes, la barra VUELVE', async () =>
+  await page.isVisible('.tabs') || 'quedó escondida: hay que recargar la página para navegar');
+
 await caso('ningún error de JavaScript en todo el recorrido', () =>
   errores.length === 0 || errores.join(' | ').slice(0,300));
 
