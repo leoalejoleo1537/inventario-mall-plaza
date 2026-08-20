@@ -1,0 +1,454 @@
+<title>El botón y el contenedor</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap">
+
+<style>
+:root{
+  --pg-bg:#EFF1F4; --pg-card:#fff; --pg-tx:#16202C; --pg-mut:#6A7583;
+  --pg-line:#DFE3E8; --pg-acc:#DC4405;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --pg-bg:#0D141C; --pg-card:#161F2A; --pg-tx:#E6EAEF; --pg-mut:#94A0AE;
+    --pg-line:#25313D; --pg-acc:#FF6A2B;
+  }
+}
+:root[data-theme="dark"]{
+  --pg-bg:#0D141C; --pg-card:#161F2A; --pg-tx:#E6EAEF; --pg-mut:#94A0AE;
+  --pg-line:#25313D; --pg-acc:#FF6A2B;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--pg-bg); color:var(--pg-tx);
+  font-family:"IBM Plex Sans",system-ui,sans-serif; font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Archivo",system-ui,sans-serif; margin:0; text-wrap:balance}
+.col{width:min(100% - 32px, 1080px); margin-inline:auto}
+.kicker{font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--pg-acc); font-weight:700}
+header.tapa{padding:clamp(30px,6vw,56px) 0 clamp(20px,3vw,30px)}
+header.tapa h1{font-size:clamp(30px,6vw,50px); font-weight:800; letter-spacing:-.025em; line-height:1.05; margin-top:12px}
+header.tapa p{max-width:64ch; color:var(--pg-mut); margin:16px 0 0; font-size:clamp(15px,2vw,17.5px)}
+section{padding:clamp(26px,4vw,44px) 0; border-top:1px solid var(--pg-line)}
+section > .col > h2{font-size:clamp(21px,3.2vw,27px); font-weight:700; letter-spacing:-.012em}
+section > .col > p{max-width:66ch; color:var(--pg-mut); margin:12px 0 0}
+.txt{font-size:14px; color:var(--pg-mut); line-height:1.55; margin:12px 0 0}
+b.f{color:var(--pg-tx); font-weight:650}
+
+/* ══════════ el lienzo con la piel C (Aire), que es la elegida ══════════ */
+.aire{
+  --bg:#F4F5F7; --card:#fff; --line:#EAECEF; --tx:#141C26; --mut:#727C89;
+  --navy:#0F1E31; --orange:#DC4405; --pizarra:#2F4A6D;
+  --ok-bg:#E6F4E6; --ok-tx:#2E7D32; --mal-bg:#FDECEA; --mal-tx:#C0392B;
+  --avi-bg:#FFF3E0; --avi-tx:#B26A00;
+  background:var(--bg); color:var(--tx); font-family:"IBM Plex Sans",sans-serif;
+  border-radius:20px; padding:16px; border:1px solid var(--pg-line);
+}
+.fila{display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
+  background:var(--card); border-radius:20px; padding:14px 16px; margin-bottom:9px;
+  box-shadow:0 2px 4px rgba(15,30,49,.03), 0 12px 28px -18px rgba(15,30,49,.3)}
+.fila b{display:block; font-size:15px; font-weight:650}
+.fila .sub{font-size:12px; color:var(--mut); margin-top:2px}
+.chip{font-size:11px; padding:5px 11px; border-radius:999px; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--ok-bg); color:var(--ok-tx)}
+.chip.mal{background:var(--mal-bg); color:var(--mal-tx)}
+.chip.avi{background:var(--avi-bg); color:var(--avi-tx)}
+
+/* ── LAS CUATRO FORMAS DE CONTENER UNA SECCIÓN ── */
+.opts{display:grid; gap:16px; margin-top:24px}
+@media (min-width:820px){ .opts{grid-template-columns:repeat(2,1fr)} }
+.opt{background:var(--pg-card); border:1px solid var(--pg-line); border-radius:16px; padding:18px}
+.opt > .n{display:flex; align-items:baseline; gap:9px; margin-bottom:4px}
+.opt > .n b{font-family:"Archivo",sans-serif; font-size:18px; font-weight:700}
+.opt > .n span{font-size:12px; color:var(--pg-mut); font-weight:600}
+.opt .lienzo{margin-top:14px}
+
+/* 1 · HOY: el ladrillo */
+.h-hoy{display:flex; justify-content:space-between; align-items:center; gap:10px;
+  background:#2F4A6D; color:#fff; border-radius:12px; padding:13px 15px;
+  font-weight:800; font-size:15px; font-family:"Archivo",sans-serif; margin-bottom:9px}
+.h-hoy .c{font-size:10.5px; background:rgba(255,255,255,.22); padding:3px 9px; border-radius:999px}
+
+/* 2 · RIEL: contiene desde el costado */
+.g-riel{border-left:4px solid var(--pizarra); border-radius:4px 20px 20px 4px; padding-left:13px}
+.h-riel{display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:2px 4px 11px; font-family:"Archivo",sans-serif; font-weight:800; font-size:13.5px;
+  letter-spacing:.07em; text-transform:uppercase; color:var(--pizarra)}
+.h-riel .c{font-size:10.5px; background:var(--mal-bg); color:var(--mal-tx); padding:3px 9px;
+  border-radius:999px; letter-spacing:0; text-transform:none; font-weight:800}
+
+/* 3 · TARJETA: la sección entera es una caja */
+.g-caja{background:#EDF0F4; border-radius:22px; padding:13px 12px 5px}
+.h-caja{display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:0 6px 12px; font-family:"Archivo",sans-serif; font-weight:800; font-size:14px;
+  color:var(--pizarra)}
+.h-caja .c{font-size:10.5px; background:var(--mal-bg); color:var(--mal-tx); padding:3px 9px; border-radius:999px}
+.g-caja .fila{box-shadow:0 1px 2px rgba(15,30,49,.05)}
+
+/* 4 · CÁPSULA: píldora que solo abraza el texto */
+.h-caps{display:flex; align-items:center; gap:9px; margin-bottom:11px; padding-left:2px}
+.h-caps .p{background:var(--pizarra); color:#fff; border-radius:999px; padding:7px 16px;
+  font-family:"Archivo",sans-serif; font-weight:700; font-size:13.5px}
+.h-caps .c{font-size:10.5px; background:var(--mal-bg); color:var(--mal-tx); padding:4px 10px;
+  border-radius:999px; font-weight:800}
+.h-caps .linea{flex:1; height:1px; background:var(--line)}
+
+/* ══════════ EL BOTÓN ══════════ */
+.barra{
+  background:var(--navy, #0F1E31); color:#fff; border-radius:18px;
+  padding:13px 15px; display:flex; align-items:center; gap:13px; position:relative;
+}
+.barra .ham{width:20px; display:grid; gap:4px; flex:0 0 auto}
+.barra .ham i{height:2px; background:#fff; border-radius:2px; display:block; opacity:.85}
+.barra .t{flex:1; min-width:0}
+.barra .t b{display:block; font-family:"Archivo",sans-serif; font-size:17px; font-weight:700; line-height:1.2}
+.barra .t span{display:block; font-size:12px; opacity:.62}
+.barra .sec-ico{width:32px; height:32px; border-radius:10px; background:rgba(255,255,255,.1); flex:0 0 auto}
+
+/* ---- el ⟳, tres tratamientos ---- */
+.sync{
+  position:relative; width:46px; height:46px; flex:0 0 auto; border:none; padding:0;
+  border-radius:999px; cursor:pointer; background:transparent; color:#fff;
+  display:grid; place-items:center; font:inherit;
+  -webkit-tap-highlight-color:transparent;
+}
+.sync .disco{
+  position:absolute; inset:0; border-radius:999px; background:var(--orange);
+  transition:box-shadow .45s ease, background .3s ease, transform .16s cubic-bezier(.2,1.5,.4,1);
+}
+.sync:active .disco{transform:scale(.9)}
+.sync svg{position:relative; z-index:2; width:22px; height:22px; display:block}
+.sync svg path{fill:none; stroke:#fff; stroke-width:2.3; stroke-linecap:round}
+/* el anillo de progreso */
+.sync .aro{position:absolute; inset:-5px; z-index:1; transform:rotate(-90deg)}
+.sync .aro circle{fill:none; stroke-width:3; stroke-linecap:round}
+.sync .aro .pista{stroke:rgba(255,255,255,.16)}
+.sync .aro .avance{stroke:#fff; stroke-dasharray:157; stroke-dashoffset:157;
+  transition:stroke-dashoffset .5s cubic-bezier(.4,.1,.3,1), stroke .3s}
+
+/* estados */
+.sync[data-estado="alDia"]  .disco{box-shadow:0 4px 14px -4px rgba(220,68,5,.55)}
+.sync[data-estado="tibio"]  .disco{box-shadow:0 0 0 0 rgba(220,68,5,.55); animation:respira 2.6s ease-in-out infinite}
+.sync[data-estado="frio"]   .disco{animation:respira 1.5s ease-in-out infinite}
+.sync[data-estado="malo"]   .disco{background:#C0392B; animation:respira-mal 1.1s ease-in-out infinite}
+.sync[data-estado="trabajando"] svg{animation:gira 1.05s linear infinite}
+.sync[data-estado="listo"]  .disco{background:#2E7D32; box-shadow:0 0 0 10px rgba(46,125,50,0)}
+.sync[data-estado="listo"]  .aro .avance{stroke:#fff}
+
+@keyframes respira{
+  0%,100%{box-shadow:0 0 0 0 rgba(220,68,5,.5), 0 4px 14px -4px rgba(220,68,5,.5)}
+  50%    {box-shadow:0 0 0 11px rgba(220,68,5,0), 0 4px 14px -4px rgba(220,68,5,.5)}
+}
+@keyframes respira-mal{
+  0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.65)}
+  50%    {box-shadow:0 0 0 12px rgba(192,57,43,0)}
+}
+@keyframes gira{to{transform:rotate(360deg)}}
+
+/* tratamiento NEÓN */
+.barra[data-trato="neon"] .sync .disco{
+  background:linear-gradient(150deg,#FF6A2B,#DC4405 58%,#A83403);
+  box-shadow:0 0 0 1px rgba(255,140,80,.55) inset,
+             0 0 18px rgba(255,90,20,.75), 0 0 44px rgba(255,90,20,.4),
+             0 6px 18px -6px rgba(0,0,0,.6);
+}
+.barra[data-trato="neon"] .sync[data-estado="tibio"] .disco,
+.barra[data-trato="neon"] .sync[data-estado="frio"]  .disco{animation:neon 2.2s ease-in-out infinite}
+@keyframes neon{
+  0%,100%{box-shadow:0 0 0 1px rgba(255,140,80,.55) inset, 0 0 16px rgba(255,90,20,.6), 0 0 38px rgba(255,90,20,.3), 0 6px 18px -6px rgba(0,0,0,.6)}
+  50%    {box-shadow:0 0 0 1px rgba(255,170,120,.9) inset, 0 0 26px rgba(255,110,40,.95), 0 0 70px rgba(255,90,20,.6), 0 6px 18px -6px rgba(0,0,0,.6)}
+}
+/* tratamiento RELIEVE */
+.barra[data-trato="relieve"] .sync .disco{
+  background:linear-gradient(180deg,#F2622A,#DC4405 55%,#9E3204);
+  box-shadow:0 1px 0 rgba(255,255,255,.4) inset, 0 -3px 0 rgba(0,0,0,.28) inset,
+             0 5px 0 #7E2803, 0 9px 16px -6px rgba(0,0,0,.6);
+}
+.barra[data-trato="relieve"] .sync:active .disco{
+  transform:translateY(4px) scale(1);
+  box-shadow:0 1px 0 rgba(255,255,255,.3) inset, 0 -2px 0 rgba(0,0,0,.25) inset,
+             0 1px 0 #7E2803, 0 4px 9px -5px rgba(0,0,0,.6);
+}
+.barra[data-trato="relieve"] .sync[data-estado="tibio"] .disco,
+.barra[data-trato="relieve"] .sync[data-estado="frio"] .disco{animation:none}
+.barra[data-trato="relieve"] .sync[data-estado="tibio"] .aro .pista{stroke:rgba(255,255,255,.3)}
+
+.mandos{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px}
+.mando{border:1px solid var(--pg-line); background:var(--pg-card); color:var(--pg-tx);
+  font:inherit; font-size:13px; font-weight:650; padding:7px 14px; border-radius:999px; cursor:pointer}
+.mando[aria-pressed="true"]{border-color:var(--pg-acc); color:var(--pg-acc)}
+.mando:active{transform:scale(.95)}
+
+.pasos{display:flex; gap:7px; margin-top:14px; font-size:12.5px; color:var(--pg-mut)}
+.paso{flex:1; text-align:center; padding:8px 4px; border-radius:10px; background:var(--pg-bg);
+  border:1px solid var(--pg-line); transition:all .3s ease}
+.paso.on{background:var(--pg-acc); border-color:var(--pg-acc); color:#fff; font-weight:650}
+.paso.hecho{background:#E6F4E6; border-color:#C4E3C6; color:#2E7D32; font-weight:650}
+
+.rej{display:grid; gap:14px; margin-top:22px}
+@media (min-width:760px){ .rej{grid-template-columns:repeat(3,1fr)} }
+.caja{background:var(--pg-card); border:1px solid var(--pg-line); border-radius:16px; padding:18px}
+.caja h3{font-size:16px; font-weight:700}
+.lbl{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--pg-mut); font-weight:700}
+
+footer{padding:38px 0 60px; color:var(--pg-mut); font-size:14.5px; border-top:1px solid var(--pg-line)}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important} }
+</style>
+
+<header class="tapa">
+  <div class="col">
+    <p class="kicker">Segunda vuelta · sobre la piel C</p>
+    <h1>Qué contiene el título, y el botón que lo mueve todo</h1>
+    <p>
+      Tu objeción es la correcta: un rótulo suelto pierde jerarquía, y eso no se paga con
+      estética. Pero la respuesta tampoco es volver al ladrillo azul —<b>hay cuatro formas
+      de contener algo</b>, y rellenarlo es solo una—. Abajo están las cuatro sobre la misma
+      sección real, y después el ⟳ tratado como lo que es.
+    </p>
+  </div>
+</header>
+
+<section>
+  <div class="col">
+    <h2>Cuatro formas de contener</h2>
+    <p>
+      Contener no es rellenar. Un marco contiene, un riel contiene, un fondo contiene y una
+      cápsula contiene. Lo que hay que conservar es que <b>de un vistazo se vea dónde
+      empieza y dónde termina una sección</b>, y que el color siga significando lo mismo.
+    </p>
+
+    <div class="opts">
+
+      <div class="opt">
+        <div class="n"><b>Hoy</b><span>el ladrillo</span></div>
+        <p class="txt" style="margin-top:0">Contiene perfecto. El problema es que el azul sólido pesa tanto como una alerta, y repetido ocho veces corta la lista en bloques.</p>
+        <div class="lienzo aire">
+          <div class="h-hoy"><span>Sándwiches</span><span class="c">3 crít.</span></div>
+          <div class="fila"><div><b>Croasán jamón queso</b><div class="sub">mín 6 · máx 20</div></div><span class="chip mal">4</span></div>
+          <div class="fila"><div><b>Sándwich Serrano</b><div class="sub">mín 4 · máx 12</div></div><span class="chip mal">0</span></div>
+        </div>
+      </div>
+
+      <div class="opt">
+        <div class="n"><b>1 · El riel</b><span>contiene desde el costado</span></div>
+        <p class="txt" style="margin-top:0">Una barra vertical que abraza la sección entera. <b class="f">Ves dónde empieza y dónde termina sin ningún relleno</b>, y el azul sigue ahí — solo que como línea, no como mancha.</p>
+        <div class="lienzo aire">
+          <div class="g-riel">
+            <div class="h-riel"><span>Sándwiches</span><span class="c">3 crít.</span></div>
+            <div class="fila"><div><b>Croasán jamón queso</b><div class="sub">mín 6 · máx 20</div></div><span class="chip mal">4</span></div>
+            <div class="fila"><div><b>Sándwich Serrano</b><div class="sub">mín 4 · máx 12</div></div><span class="chip mal">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="opt">
+        <div class="n"><b>2 · La bandeja</b><span>la sección entera es la caja</span></div>
+        <p class="txt" style="margin-top:0">El título y sus filas viven <b class="f">dentro de una misma bandeja gris</b>. Es la que más jerarquía da de las cuatro — hoy la barra flota y las filas van sueltas; acá se ve que se pertenecen.</p>
+        <div class="lienzo aire">
+          <div class="g-caja">
+            <div class="h-caja"><span>Sándwiches</span><span class="c">3 crít.</span></div>
+            <div class="fila"><div><b>Croasán jamón queso</b><div class="sub">mín 6 · máx 20</div></div><span class="chip mal">4</span></div>
+            <div class="fila"><div><b>Sándwich Serrano</b><div class="sub">mín 4 · máx 12</div></div><span class="chip mal">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="opt">
+        <div class="n"><b>3 · La cápsula</b><span>abraza solo el texto</span></div>
+        <p class="txt" style="margin-top:0">El azul se queda relleno, pero <b class="f">solo del ancho de la palabra</b>. Pesa una cuarta parte y sigue leyéndose como etiqueta. La línea que sigue marca hasta dónde llega la sección.</p>
+        <div class="lienzo aire">
+          <div class="h-caps"><span class="p">Sándwiches</span><span class="c">3 crít.</span><span class="linea"></span></div>
+          <div class="fila"><div><b>Croasán jamón queso</b><div class="sub">mín 6 · máx 20</div></div><span class="chip mal">4</span></div>
+          <div class="fila"><div><b>Sándwich Serrano</b><div class="sub">mín 4 · máx 12</div></div><span class="chip mal">0</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="rej">
+      <div class="caja">
+        <div class="lbl">Mi recomendación</div>
+        <h3 style="margin-top:8px">La bandeja</h3>
+        <p class="txt">Es la única que <b class="f">mejora</b> la jerarquía en vez de conservarla. Hoy la cabecera y sus filas son objetos separados que están cerca; en la bandeja se ve que son una sola cosa. Y deja el azul disponible para el conteo de críticos, que es lo que de verdad hay que mirar.</p>
+      </div>
+      <div class="caja">
+        <div class="lbl">Y encima</div>
+        <h3 style="margin-top:8px">Que la cabecera se quede pegada</h3>
+        <p class="txt">Al desplazar una sección larga, el título se queda arriba hasta que empieza la siguiente. <b class="f">Nunca dejas de saber en qué sección estás</b>, que es exactamente lo que el ladrillo daba y lo que daba miedo perder. Funciona con las cuatro.</p>
+      </div>
+      <div class="caja">
+        <div class="lbl">La regla que no se rompe</div>
+        <h3 style="margin-top:8px">Un color, un significado</h3>
+        <p class="txt">Naranja es acción y urgencia. Rojo es crítico. Azul pizarra <b class="f">ordena y no alarma</b>. Ninguna de las cuatro toca eso: lo único que cambia es cuánta superficie ocupa el azul.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <h2>El ⟳ — el botón más importante de la app</h2>
+    <p>
+      Tienes razón en que merece otro trato. Ese botón hace las tres cosas del sistema en
+      cadena: <b>lee lo que se vendió</b>, <b>descuenta el inventario</b> y
+      <b>le devuelve el stock a Fudo</b>. Es el latido del puente.
+    </p>
+    <p>
+      Pero un brillo permanente rompería la regla de la casa: si el naranja brilla siempre,
+      deja de significar <i>esto necesita atención</i>. Así que la propuesta es esta —
+      <b>el botón brilla porque hace falta apretarlo, no porque quede bonito</b>. Mientras
+      todo está al día está sereno; a medida que pasa el tiempo sin sincronizar, respira más
+      fuerte. La estética se vuelve información.
+    </p>
+
+    <div class="rej" style="grid-template-columns:1fr">
+      <div class="caja">
+        <div class="lbl">Tócalo, y prueba los estados</div>
+        <div class="barra" id="barra" data-trato="pulso" style="margin-top:14px">
+          <span class="ham"><i></i><i></i><i></i></span>
+          <span class="t"><b>Inventario</b><span>Café Mall Plaza</span></span>
+          <span class="sec-ico"></span>
+          <button class="sync" id="sync" data-estado="alDia" aria-label="Actualizar">
+            <svg class="aro" viewBox="0 0 60 60"><circle class="pista" cx="30" cy="30" r="25"></circle><circle class="avance" cx="30" cy="30" r="25"></circle></svg>
+            <span class="disco"></span>
+            <svg viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"></path><path d="M20.6 4.4v4.3h-4.3"></path></svg>
+          </button>
+        </div>
+
+        <div class="pasos" id="pasos">
+          <div class="paso" data-p="0">catálogo</div>
+          <div class="paso" data-p="1">ventas</div>
+          <div class="paso" data-p="2">empujar a Fudo</div>
+        </div>
+
+        <div class="mandos">
+          <button class="mando" data-est="alDia" aria-pressed="true">Al día</button>
+          <button class="mando" data-est="tibio" aria-pressed="false">Hace 20 min</button>
+          <button class="mando" data-est="frio" aria-pressed="false">Hace 2 horas</button>
+          <button class="mando" data-est="malo" aria-pressed="false">Falló</button>
+        </div>
+
+        <p class="txt">
+          <b class="f">Al día:</b> quieto, con una sombra suave. ·
+          <b class="f">Hace rato:</b> respira despacio, como un pulso. ·
+          <b class="f">Hace mucho:</b> respira más rápido. ·
+          <b class="f">Falló:</b> se pone rojo y <b class="f">no se calma solo</b> — es la regla
+          de que nada puede fallar en silencio, llevada al botón.
+        </p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:30px; font-size:19px">Tres acabados para el mismo botón</h3>
+    <div class="mandos" style="margin-top:12px">
+      <button class="mando" data-trato="pulso" aria-pressed="true">A · Pulso</button>
+      <button class="mando" data-trato="neon" aria-pressed="false">B · Neón</button>
+      <button class="mando" data-trato="relieve" aria-pressed="false">C · Relieve</button>
+    </div>
+
+    <div class="rej">
+      <div class="caja">
+        <div class="lbl">A</div>
+        <h3 style="margin-top:8px">Pulso</h3>
+        <p class="txt">Un disco naranja limpio con un halo que late. La onda sale del botón y se disuelve, como una gota en el agua. Discreto de cerca, evidente de reojo — que es como se mira una barra mientras se cuenta inventario.</p>
+      </div>
+      <div class="caja">
+        <div class="lbl">B</div>
+        <h3 style="margin-top:8px">Neón</h3>
+        <p class="txt">Lo que pediste, sin timidez: degradado, borde encendido por dentro y dos capas de resplandor. Sobre el navy oscuro queda <b class="f">precioso</b>. El riesgo es que grita, y en una barra donde también viven alertas rojas puede ganarle la pelea a algo más urgente.</p>
+      </div>
+      <div class="caja">
+        <div class="lbl">C</div>
+        <h3 style="margin-top:8px">Relieve</h3>
+        <p class="txt">Un botón físico, con cuerpo y sombra dura abajo. Al tocarlo <b class="f">se hunde de verdad</b>. Es el que mejor se siente con el dedo y el que más invita a apretarlo. Pruébalo tocando.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <h2>Y de paso, la barra de arriba</h2>
+    <p>Tres cambios chicos que no mueven nada de sitio.</p>
+    <div class="rej">
+      <div class="caja">
+        <div class="lbl">1</div>
+        <h3 style="margin-top:8px">La sede, en cápsula</h3>
+        <p class="txt">Hoy “Café Mall Plaza” es un texto gris pequeño bajo el título. En una app donde equivocarse de sede tiene consecuencias, merece una cápsula clara. Cambiar de sede se vuelve un gesto visible, no un descubrimiento.</p>
+      </div>
+      <div class="caja">
+        <div class="lbl">2</div>
+        <h3 style="margin-top:8px">Las pestañas, con un carril que se desliza</h3>
+        <p class="txt">En vez de que el naranja salte de una pestaña a otra, que <b class="f">viaje</b>. Son 200 milisegundos y convierten un cambio brusco en un movimiento que se sigue con el ojo.</p>
+      </div>
+      <div class="caja">
+        <div class="lbl">3</div>
+        <h3 style="margin-top:8px">La casita, con su ícono</h3>
+        <p class="txt">Hoy es un emoji 🏠, que se dibuja distinto en cada teléfono. Un ícono propio, del mismo trazo que los demás, hace que la barra se vea de una sola mano.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="col">
+    <b>Lo que necesito de ti:</b> cuál de los cuatro contenedores (mi voto: la bandeja, con
+    la cabecera pegajosa), y cuál de los tres acabados del ⟳ (mi voto: <b>Relieve</b> para
+    el cuerpo y <b>Pulso</b> para el halo — se hunde al tocarlo y respira cuando hace falta,
+    sin gritar). Con eso lo implemento entero.
+  </div>
+</footer>
+
+<script>
+const sync  = document.getElementById('sync');
+const barra = document.getElementById('barra');
+const pasos = [...document.querySelectorAll('.paso')];
+const avance = sync.querySelector('.avance');
+let reposo = 'alDia', corriendo = false;
+
+function setEstado(e){ sync.dataset.estado = e; }
+function limpiarPasos(){ pasos.forEach(p => p.classList.remove('on','hecho')); }
+
+/* El ciclo de verdad son tres pasos en orden, y el anillo los dibuja: cada
+   tercio que se completa es un paso que terminó. No es decoración — es la
+   única forma de saber en cuál va sin leer nada. */
+async function correr(){
+  if(corriendo) return;
+  corriendo = true;
+  limpiarPasos();
+  setEstado('trabajando');
+  avance.style.strokeDashoffset = 157;
+  for(let i = 0; i < 3; i++){
+    pasos[i].classList.add('on');
+    await new Promise(r => setTimeout(r, 620));
+    pasos[i].classList.remove('on');
+    pasos[i].classList.add('hecho');
+    avance.style.strokeDashoffset = String(157 - 157 * ((i + 1) / 3));
+  }
+  setEstado('listo');
+  await new Promise(r => setTimeout(r, 900));
+  avance.style.strokeDashoffset = 157;
+  limpiarPasos();
+  reposo = 'alDia';
+  document.querySelectorAll('[data-est]').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.est === 'alDia')));
+  setEstado('alDia');
+  corriendo = false;
+}
+sync.addEventListener('click', correr);
+
+document.querySelectorAll('[data-est]').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('[data-est]').forEach(x =>
+      x.setAttribute('aria-pressed', String(x === b)));
+    reposo = b.dataset.est;
+    if(!corriendo){ limpiarPasos(); setEstado(reposo); }
+  });
+});
+
+document.querySelectorAll('[data-trato]').forEach(b => {
+  if(!b.classList.contains('mando')) return;
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.mando[data-trato]').forEach(x =>
+      x.setAttribute('aria-pressed', String(x === b)));
+    barra.dataset.trato = b.dataset.trato;
+  });
+});
+</script>
