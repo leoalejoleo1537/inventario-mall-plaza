@@ -1,0 +1,455 @@
+<title>Paletas para el inicio cerrado</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap">
+
+<style>
+:root{
+  --pg-bg:#EFF1F4; --pg-card:#fff; --pg-tx:#16202C; --pg-mut:#6A7583;
+  --pg-line:#DFE3E8; --pg-acc:#DC4405;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --pg-bg:#0D141C; --pg-card:#161F2A; --pg-tx:#E6EAEF; --pg-mut:#94A0AE;
+    --pg-line:#25313D; --pg-acc:#FF6A2B;
+  }
+}
+:root[data-theme="dark"]{
+  --pg-bg:#0D141C; --pg-card:#161F2A; --pg-tx:#E6EAEF; --pg-mut:#94A0AE;
+  --pg-line:#25313D; --pg-acc:#FF6A2B;
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--pg-bg); color:var(--pg-tx);
+  font-family:"IBM Plex Sans",system-ui,sans-serif; font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Archivo",system-ui,sans-serif; margin:0; text-wrap:balance}
+.col{width:min(100% - 32px, 1180px); margin-inline:auto}
+.kicker{font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--pg-acc); font-weight:700}
+header.tapa{padding:clamp(28px,5vw,50px) 0 clamp(16px,3vw,26px)}
+header.tapa h1{font-size:clamp(28px,5.6vw,46px); font-weight:800; letter-spacing:-.025em; line-height:1.05; margin-top:12px}
+header.tapa p{max-width:64ch; color:var(--pg-mut); margin:16px 0 0; font-size:clamp(15px,2vw,17.5px)}
+section{padding:clamp(24px,4vw,40px) 0; border-top:1px solid var(--pg-line)}
+section > .col > h2{font-size:clamp(20px,3vw,26px); font-weight:700; letter-spacing:-.012em}
+section > .col > p{max-width:66ch; color:var(--pg-mut); margin:12px 0 0}
+.txt{font-size:14px; color:var(--pg-mut); line-height:1.55; margin:11px 0 0}
+b.f{color:var(--pg-tx); font-weight:650}
+.caja{background:var(--pg-card); border:1px solid var(--pg-line); border-radius:16px; padding:18px}
+.caja h3{font-size:16px; font-weight:700; margin-top:7px}
+.lbl{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--pg-mut); font-weight:700}
+.rej{display:grid; gap:14px; margin-top:20px}
+@media (min-width:760px){ .rej{grid-template-columns:repeat(3,1fr)} }
+.mandos{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px}
+.mando{border:1px solid var(--pg-line); background:var(--pg-card); color:var(--pg-tx);
+  font:inherit; font-size:13px; font-weight:650; padding:7px 14px; border-radius:999px; cursor:pointer}
+.mando[aria-pressed="true"]{border-color:var(--pg-acc); color:var(--pg-acc)}
+.mando:active{transform:scale(.95)}
+
+/* ══════════ el selector, tal como iría en Ajustes ══════════ */
+.selector{background:var(--pg-card); border:1px solid var(--pg-line); border-radius:18px; padding:20px; margin-top:22px}
+.selector > b{font-family:"Archivo",sans-serif; font-size:17px; font-weight:700}
+.selector > p{margin:5px 0 0; font-size:13.5px; color:var(--pg-mut); line-height:1.5}
+.paletas{display:grid; gap:10px; margin-top:16px}
+@media (min-width:640px){ .paletas{grid-template-columns:repeat(3,1fr)} }
+@media (min-width:1000px){ .paletas{grid-template-columns:repeat(5,1fr)} }
+.pal{background:transparent; border:2px solid var(--pg-line); border-radius:14px; padding:12px;
+  cursor:pointer; font:inherit; color:inherit; text-align:left; transition:border-color .18s ease}
+.pal[aria-pressed="true"]{border-color:var(--pg-acc)}
+.pal:active{transform:scale(.98)}
+.pal .tiras{display:flex; height:34px; border-radius:9px; overflow:hidden; margin-bottom:9px}
+.pal .tiras i{flex:1; display:block}
+.pal .tiras i.acc{flex:0 0 22%}
+.pal b{display:block; font-family:"Archivo",sans-serif; font-size:15px; font-weight:700}
+.pal span{display:block; font-size:12px; color:var(--pg-mut); margin-top:2px; line-height:1.4}
+
+.doscol{display:grid; gap:26px; margin-top:24px; align-items:start}
+@media (min-width:980px){ .doscol{grid-template-columns:392px minmax(0,1fr)} }
+
+/* ══════════════════════════════════════════════════════════════
+   LA APP
+   ══════════════════════════════════════════════════════════════ */
+.tel{border-radius:30px; overflow:hidden; border:1px solid var(--pg-line);
+  box-shadow:0 20px 50px -22px rgba(10,20,32,.5); position:sticky; top:18px}
+@media (max-width:979px){ .tel{position:static} }
+.app{
+  --bg:#EEF3F8; --card:#FFFFFF; --line:#DFE7F0;
+  --tx:#16283C; --mut:#6B7B8D;
+  --cap-bg:#DCE7F3; --cap-tx:#274866; --filo:#5B8AB8;
+  --orange:#DC4405;
+  --ok-bg:#E4F1E5; --ok-tx:#2E7D32;
+  --mal-bg:#FCE9E6; --mal-tx:#C0392B;
+  --avi-bg:#FDF0DE; --avi-tx:#9C6209;
+  background:var(--bg); color:var(--tx); font-family:"IBM Plex Sans",sans-serif;
+  transition:background .35s ease, color .35s ease;
+}
+/* ── las paletas ── */
+.app[data-pal="hielo"]{ --bg:#EEF3F8; --card:#fff; --line:#DFE7F0; --tx:#16283C; --mut:#6B7B8D;
+  --cap-bg:#DCE7F3; --cap-tx:#274866; --filo:#5B8AB8 }
+.app[data-pal="cielo"]{ --bg:#E7F1FA; --card:#fff; --line:#D3E5F5; --tx:#0F3049; --mut:#5E7C93;
+  --cap-bg:#CFE3F6; --cap-tx:#1B4C74; --filo:#3E8DC9 }
+.app[data-pal="bruma"]{ --bg:#F1F4F7; --card:#fff; --line:#E2E8EE; --tx:#1B2733; --mut:#6E7A87;
+  --cap-bg:#E1E9F1; --cap-tx:#35506E; --filo:#7E96B2 }
+.app[data-pal="acero"]{ --bg:#E9EEF5; --card:#FDFEFF; --line:#D6DFEB; --tx:#121E2C; --mut:#61707F;
+  --cap-bg:#D0DDEC; --cap-tx:#1F3A5C; --filo:#41628C }
+.app[data-pal="hoy"]{ --bg:#F2F3F5; --card:#fff; --line:#E3E5E8; --tx:#1C2733; --mut:#6B7684;
+  --cap-bg:#2F4A6D; --cap-tx:#fff; --filo:#2F4A6D }
+
+/* ── la barra clara ── */
+.barra{background:var(--card); color:var(--tx); padding:12px 15px; display:flex;
+  align-items:center; gap:12px; box-shadow:0 1px 0 var(--line); position:relative}
+.barra .ham{width:20px; display:grid; gap:4px; flex:0 0 auto; cursor:pointer}
+.barra .ham i{height:2px; border-radius:2px; display:block; background:currentColor; opacity:.75}
+.barra .quien{flex:1; min-width:0}
+.barra .quien .sede{font-family:"Archivo",sans-serif; font-size:19px; font-weight:700; letter-spacing:-.015em; line-height:1.15}
+.barra .quien .abajo{font-size:11.5px; color:var(--mut); margin-top:1px}
+.barra .cosa{width:34px; height:34px; border-radius:11px; flex:0 0 auto; display:grid; place-items:center;
+  background:var(--bg); cursor:pointer}
+.barra .cosa svg{width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round}
+
+/* ── EL BOTÓN: plano, alargado, sin relieve y sin neón ── */
+.sync{position:relative; border:none; padding:0; cursor:pointer; font:inherit; flex:0 0 auto;
+  height:38px; border-radius:999px; background:transparent; color:#fff;
+  -webkit-tap-highlight-color:transparent}
+.sync .cuerpo{
+  position:relative; z-index:2; height:38px; border-radius:999px; padding:0 16px 0 13px;
+  background:var(--orange); display:flex; align-items:center; gap:8px;
+  font-family:"Archivo",sans-serif; font-weight:700; font-size:13.5px;
+  transition:transform .13s cubic-bezier(.2,1.5,.4,1);
+}
+.sync:active .cuerpo{transform:scale(.93)}
+.sync .cuerpo svg{width:16px; height:16px; fill:none; stroke:#fff; stroke-width:2.4; stroke-linecap:round; flex:0 0 auto}
+/* el pulso: una onda que sale y se disuelve. Ni relieve ni resplandor. */
+.sync .onda{position:absolute; inset:0; z-index:1; border-radius:999px; opacity:0}
+.sync[data-estado="tibio"] .onda{animation:onda 2.6s ease-out infinite}
+.sync[data-estado="frio"]  .onda{animation:onda 1.5s ease-out infinite}
+.sync[data-estado="malo"]  .cuerpo{background:var(--mal-tx)}
+.sync[data-estado="malo"]  .onda{animation:onda-mal 1.1s ease-out infinite}
+.sync[data-estado="trabajando"] .cuerpo svg{animation:gira 1.05s linear infinite}
+@keyframes onda{
+  0%  {opacity:.5; box-shadow:0 0 0 0 rgba(220,68,5,.45)}
+  70% {opacity:0;  box-shadow:0 0 0 13px rgba(220,68,5,0)}
+  100%{opacity:0;  box-shadow:0 0 0 0 rgba(220,68,5,0)}
+}
+@keyframes onda-mal{
+  0%  {opacity:.6; box-shadow:0 0 0 0 rgba(192,57,43,.5)}
+  70% {opacity:0;  box-shadow:0 0 0 14px rgba(192,57,43,0)}
+  100%{opacity:0;  box-shadow:0 0 0 0 rgba(192,57,43,0)}
+}
+@keyframes gira{to{transform:rotate(360deg)}}
+
+.tabs{position:relative; display:flex; gap:4px; padding:9px 12px 10px; overflow-x:auto; background:var(--bg)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{position:relative; z-index:2; padding:7px 15px; border:none; background:transparent;
+  color:var(--mut); font:inherit; font-size:13px; font-weight:650; white-space:nowrap;
+  flex:0 0 auto; cursor:pointer; border-radius:999px; transition:color .22s ease}
+.tab.on{color:#fff}
+.carril{position:absolute; z-index:1; top:9px; height:32px; border-radius:999px;
+  background:var(--orange); transition:transform .34s cubic-bezier(.34,1.2,.4,1), width .34s cubic-bezier(.34,1.2,.4,1)}
+
+.pant{padding:12px 14px 26px}
+.turno{font-size:10.5px; font-weight:800; letter-spacing:.13em; color:var(--mut); margin:16px 2px 8px}
+.turno:first-child{margin-top:2px}
+
+/* ══════ LA SECCIÓN CERRADA · tres formas ══════ */
+.sec{
+  display:flex; align-items:center; gap:10px; margin-bottom:8px; cursor:pointer;
+  border-radius:18px; padding:15px 16px;
+  transition:background .3s ease, box-shadow .3s ease, transform .12s ease;
+}
+.sec:active{transform:scale(.988)}
+.sec .nom{flex:1; min-width:0; font-family:"Archivo",sans-serif; font-weight:700; font-size:15.5px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.sec .crit{background:var(--mal-bg); color:var(--mal-tx); border-radius:999px; padding:4px 11px;
+  font-size:11px; font-weight:800; white-space:nowrap; flex:0 0 auto}
+.sec .cuantos{font-size:11.5px; color:var(--mut); font-weight:600; white-space:nowrap; flex:0 0 auto}
+.sec .flecha{width:16px; height:16px; flex:0 0 auto; opacity:.4}
+.sec .flecha svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round}
+
+/* forma 1 · tarjeta (igual que una fila de producto) */
+.app[data-forma="tarjeta"] .sec{background:var(--card); color:var(--tx);
+  box-shadow:0 2px 4px rgba(20,40,70,.04), 0 12px 26px -18px rgba(20,40,70,.34)}
+/* forma 2 · tarjeta con filo de color */
+.app[data-forma="filo"] .sec{background:var(--card); color:var(--tx);
+  box-shadow:0 2px 4px rgba(20,40,70,.04), 0 12px 26px -18px rgba(20,40,70,.34),
+             inset 5px 0 0 var(--filo); padding-left:22px}
+/* forma 3 · barra suave (la cápsula, de ancho completo) */
+.app[data-forma="suave"] .sec{background:var(--cap-bg); color:var(--cap-tx); box-shadow:none}
+.app[data-forma="suave"][data-pal="hoy"] .sec .crit{background:rgba(255,255,255,.92)}
+
+/* abierta */
+.sec.abierta{margin-bottom:9px}
+.sec.abierta .flecha{transform:rotate(90deg)}
+.cuerpo-sec{overflow:hidden}
+.fila{display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
+  background:var(--card); border-radius:18px; padding:13px 16px; margin:0 0 8px 10px;
+  box-shadow:0 2px 4px rgba(20,40,70,.04), 0 12px 26px -18px rgba(20,40,70,.34);
+  animation:entra .3s cubic-bezier(.2,.8,.3,1) both}
+.fila:nth-child(2){animation-delay:.05s} .fila:nth-child(3){animation-delay:.1s}
+@keyframes entra{from{opacity:0; transform:translateY(7px)} to{opacity:1; transform:none}}
+.fila b{display:block; font-size:14.5px; font-weight:650}
+.fila .sub{font-size:12px; color:var(--mut); margin-top:2px}
+.chip{font-size:11px; padding:5px 11px; border-radius:999px; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--ok-bg); color:var(--ok-tx)}
+.chip.mal{background:var(--mal-bg); color:var(--mal-tx)}
+.chip.avi{background:var(--avi-bg); color:var(--avi-tx)}
+
+.mets{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.met{background:var(--card); border-radius:16px; padding:11px 6px; text-align:center;
+  box-shadow:0 2px 4px rgba(20,40,70,.04), 0 12px 26px -18px rgba(20,40,70,.34)}
+.met.sel{box-shadow:0 0 0 2px var(--orange), 0 12px 26px -18px rgba(20,40,70,.34)}
+.met .n{font-size:22px; font-weight:800; font-family:"Archivo",sans-serif; line-height:1.1}
+.met .l{font-size:10.5px; color:var(--mut); margin-top:1px; font-weight:600}
+.met.crit .n{color:var(--mal-tx)}
+
+.fab{position:absolute; right:15px; bottom:15px; width:54px; height:54px; border-radius:999px;
+  background:var(--orange); color:#fff; border:none; font-size:29px; line-height:1; cursor:pointer;
+  box-shadow:0 8px 20px -6px rgba(220,68,5,.55)}
+.telbody{position:relative; height:600px; overflow-y:auto}
+.telbody::-webkit-scrollbar{display:none}
+
+footer{padding:36px 0 60px; color:var(--pg-mut); font-size:14.5px; border-top:1px solid var(--pg-line)}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important} }
+</style>
+
+<header class="tapa">
+  <div class="col">
+    <p class="kicker">Cuarta vuelta · el inicio de verdad</p>
+    <h1>La pantalla que se abre todas las mañanas</h1>
+    <p>
+      Tenías razón y era el reclamo importante: <b>nunca te mostré las secciones cerradas</b>,
+      que es como se ve la app el 90% del tiempo. Y ahí el problema salta a la vista —
+      <b>doce barras azules apiladas</b>. Acá está esa misma pantalla, con paletas
+      celestes para elegir y el botón ya plano.
+    </p>
+  </div>
+</header>
+
+<section>
+  <div class="col">
+    <h2>El selector de paletas, tal como iría en Ajustes</h2>
+    <p>
+      Esto no es solo para la maqueta: es <b>una sección nueva de Ajustes</b>. Se elige una y
+      cambia la app entera, en todos los teléfonos. Y como todo lo de Ajustes, <b>se puede
+      volver atrás</b> — “Como hoy” es una opción más de la lista.
+    </p>
+
+    <div class="selector">
+      <b>El color de la app</b>
+      <p>Cambia el fondo, las tarjetas y los rótulos. <b>El naranja de acción y los colores de
+        alerta no se tocan</b>: rojo sigue siendo crítico y ámbar sigue siendo aviso.</p>
+      <div class="paletas" role="group" aria-label="Elegir paleta">
+        <button type="button" class="pal" data-pal="hielo" aria-pressed="true">
+          <span class="tiras"><i style="background:#EEF3F8"></i><i style="background:#DCE7F3"></i><i style="background:#274866"></i><i class="acc" style="background:#DC4405"></i></span>
+          <b>Hielo</b><span>El celeste más neutro. Casi blanco.</span>
+        </button>
+        <button type="button" class="pal" data-pal="cielo" aria-pressed="false">
+          <span class="tiras"><i style="background:#E7F1FA"></i><i style="background:#CFE3F6"></i><i style="background:#1B4C74"></i><i class="acc" style="background:#DC4405"></i></span>
+          <b>Cielo</b><span>Azul de verdad, el más luminoso de los cinco.</span>
+        </button>
+        <button type="button" class="pal" data-pal="bruma" aria-pressed="false">
+          <span class="tiras"><i style="background:#F1F4F7"></i><i style="background:#E1E9F1"></i><i style="background:#35506E"></i><i class="acc" style="background:#DC4405"></i></span>
+          <b>Bruma</b><span>Gris con azul dentro. El más sobrio.</span>
+        </button>
+        <button type="button" class="pal" data-pal="acero" aria-pressed="false">
+          <span class="tiras"><i style="background:#E9EEF5"></i><i style="background:#D0DDEC"></i><i style="background:#1F3A5C"></i><i class="acc" style="background:#DC4405"></i></span>
+          <b>Acero</b><span>Más contraste. El que mejor se lee con sol.</span>
+        </button>
+        <button type="button" class="pal" data-pal="hoy" aria-pressed="false">
+          <span class="tiras"><i style="background:#F2F3F5"></i><i style="background:#2F4A6D"></i><i style="background:#0F1E31"></i><i class="acc" style="background:#DC4405"></i></span>
+          <b>Como hoy</b><span>Lo que hay en producción, para comparar.</span>
+        </button>
+      </div>
+    </div>
+
+    <h2 style="margin-top:32px; font-size:clamp(19px,2.6vw,23px)">Y qué forma tiene la sección cerrada</h2>
+    <div class="mandos">
+      <button class="mando" data-forma="tarjeta" aria-pressed="true">1 · Tarjeta</button>
+      <button class="mando" data-forma="filo" aria-pressed="false">2 · Tarjeta con filo</button>
+      <button class="mando" data-forma="suave" aria-pressed="false">3 · Barra suave</button>
+    </div>
+    <div class="mandos">
+      <button class="mando" data-est="alDia" aria-pressed="true">⟳ al día</button>
+      <button class="mando" data-est="tibio" aria-pressed="false">⟳ hace 20 min</button>
+      <button class="mando" data-est="frio" aria-pressed="false">⟳ hace 2 horas</button>
+      <button class="mando" data-est="malo" aria-pressed="false">⟳ falló</button>
+    </div>
+
+    <div class="doscol">
+      <div class="tel">
+        <div class="app" id="app" data-pal="hielo" data-forma="tarjeta">
+          <div class="barra">
+            <span class="ham"><i></i><i></i><i></i></span>
+            <span class="quien">
+              <span class="sede">Café Mall Plaza</span>
+              <span class="abajo">7 críticos · 232 productos</span>
+            </span>
+            <span class="cosa" title="Tareas">
+              <svg viewBox="0 0 24 24"><path d="M4 7h3l2 2 4-4"></path><path d="M12 7h8"></path><path d="M4 15h3l2 2 4-4"></path><path d="M12 15h8"></path></svg>
+            </span>
+            <button class="sync" id="sync" data-estado="alDia">
+              <span class="onda"></span>
+              <span class="cuerpo">
+                <svg viewBox="0 0 24 24"><path d="M20.5 12a8.5 8.5 0 1 1-2.6-6.1"></path><path d="M20.6 4.4v4.3h-4.3"></path></svg>
+                Actualizar
+              </span>
+            </button>
+          </div>
+
+          <div class="tabs" id="tabs">
+            <span class="carril" id="carril"></span>
+            <button class="tab on">Inicio</button>
+            <button class="tab">Reparto</button>
+            <button class="tab">Recetas</button>
+            <button class="tab">Mermas</button>
+          </div>
+
+          <div class="telbody">
+            <div class="pant">
+              <div class="mets">
+                <div class="met crit"><div class="n">7</div><div class="l">Crítico</div></div>
+                <div class="met"><div class="n">198</div><div class="l">En rango</div></div>
+                <div class="met"><div class="n">12</div><div class="l">Sin dato</div></div>
+              </div>
+
+              <div class="turno">AM</div>
+              <div id="am"></div>
+              <div class="turno">PM</div>
+              <div id="pm"></div>
+            </div>
+            <button class="fab">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="notas" style="display:grid; gap:14px"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <h2>Qué cambió, punto por punto</h2>
+    <div class="rej">
+      <div class="caja">
+        <div class="lbl">El botón</div>
+        <h3>Plano. Sin relieve, sin neón</h3>
+        <p class="txt">Como pediste: alargado, con la palabra <b class="f">Actualizar</b>, y nada más. La animación es el <b class="f">pulso</b> — una onda que sale del contorno y se disuelve, sin que el botón cambie de forma ni se ilumine. Al tocarlo encoge apenas y vuelve.</p>
+      </div>
+      <div class="caja">
+        <div class="lbl">La barra</div>
+        <h3>Clara, como te gustó</h3>
+        <p class="txt">Blanca, con la sede de protagonista. El navy desaparece de las superficies y <b class="f">se queda como color del texto</b>, que es donde de verdad hace falta: en un fondo claro, un azul muy oscuro se lee mejor que el negro y no endurece la pantalla.</p>
+      </div>
+      <div class="caja">
+        <div class="lbl">Las secciones</div>
+        <h3>Se abren y se cierran</h3>
+        <p class="txt"><b class="f">Toca cualquiera</b> y se despliega con sus filas escalonadas. La flecha gira. Así ves las dos vistas —la de todos los días y la de contar— sin cambiar de maqueta.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="col">
+    <b>Con dos palabras lo implemento:</b> el nombre de la paleta y el número de la forma.
+    Mi voto: <b>Hielo</b> y <b>2 · Tarjeta con filo</b> — el filo devuelve el azul como
+    señal sin volver a llenar la pantalla de bloques, y deja el rojo de los críticos
+    completamente solo.
+  </div>
+</footer>
+
+<script>
+/* Las mismas secciones de tu captura, con sus números */
+const AM = [
+  ['Limpieza', 2, 9], ['Mesones', 0, 14], ['Congelador', 22, 31], ['Té', 1, 17],
+  ['Mueble de mezclas', 7, 12], ['Mueble de bolsas', 9, 15], ['Mueble de caja', 0, 8],
+];
+const PM = [
+  ['Vitrina de tortas', 20, 18], ['Sándwiches', 6, 11], ['Vitrina de dulces', 3, 21],
+  ['Bebidas', 6, 19], ['Leches', 5, 7],
+];
+const FILAS = {
+  'Sándwiches': [['Croasán jamón queso','mín 6 · máx 20','mal','4'],
+                 ['Sándwich Serrano','mín 4 · máx 12','mal','0'],
+                 ['Sándwich Azapa','mín 5 · máx 14','ok','9']],
+  'Congelador': [['Brownie Congelador','Total: 17 · con Vitrina','ok','15'],
+                 ['Mini muffin Congelador','mín 8 · máx 24','mal','2'],
+                 ['Cinnamon roll vegano','mín 6 · máx 18','mal','0']],
+};
+const POR_DEFECTO = [['Producto A','mín 3 · máx 10','ok','6'],
+                     ['Producto B','mín 2 · máx 8','avi','3']];
+
+const FLECHA = '<span class="flecha"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg></span>';
+
+function secHTML([nom, crit, cuantos]){
+  return `<div class="sec" data-sec="${nom}">
+      <span class="nom">${nom}</span>
+      ${crit ? `<span class="crit">${crit} crít.</span>` : ''}
+      <span class="cuantos">${cuantos}</span>
+      ${FLECHA}
+    </div><div class="cuerpo-sec" data-cuerpo="${nom}"></div>`;
+}
+document.getElementById('am').innerHTML = AM.map(secHTML).join('');
+document.getElementById('pm').innerHTML = PM.map(secHTML).join('');
+
+document.querySelectorAll('.sec').forEach(s => {
+  s.addEventListener('click', () => {
+    const nom = s.dataset.sec;
+    const cuerpo = document.querySelector(`[data-cuerpo="${nom}"]`);
+    const abierta = s.classList.toggle('abierta');
+    if(!abierta){ cuerpo.innerHTML = ''; return; }
+    cuerpo.innerHTML = (FILAS[nom] || POR_DEFECTO).map(([n, sub, cls, val]) =>
+      `<div class="fila"><div><b>${n}</b><div class="sub">${sub}</div></div>
+        <span class="chip ${cls}">${val}</span></div>`).join('');
+  });
+});
+
+const app = document.getElementById('app');
+const notas = document.getElementById('notas');
+const NOTAS_PAL = {
+  hielo:['Hielo','El celeste más neutro de los cinco: se nota que no es gris, pero no se declara azul. Es el que menos discute con el naranja, y en una pantalla llena de rojos y ámbares eso importa.'],
+  cielo:['Cielo','El más luminoso y el que más se siente “otra app”. Cuidado con una cosa: cuanto más azul el fondo, más pelean los chips de alerta, porque el rojo sobre azul vibra.'],
+  bruma:['Bruma','Gris con azul adentro. El cambio más pequeño respecto de hoy — si te gusta la idea pero te da miedo el salto, esta es.'],
+  acero:['Acero','Más contraste entre el fondo y las tarjetas, así que las filas se despegan más. <b>Es el que mejor se lee con sol</b>, y en un mesón junto a una ventana eso no es un detalle.'],
+  hoy:['Como hoy','Para comparar. Fíjate en la pantalla cerrada: doce bloques azules seguidos. El dato es correcto y la forma es la que cansa.'],
+};
+const NOTAS_FORMA = {
+  tarjeta:['1 · Tarjeta','La sección usa el mismo lenguaje que una fila de producto: tarjeta blanca, nombre a la izquierda, estado a la derecha. Lo más limpio, y lo que menos cosas nuevas obliga a aprender. El riesgo: cerrada, una sección y un producto se parecen mucho.'],
+  filo:['2 · Tarjeta con filo','Igual, más un filo de color a la izquierda. <b>Resuelve justo ese riesgo</b>: se distingue de un producto al instante, el azul vuelve como señal y no como superficie, y el rojo del crítico queda completamente solo. <b>Mi voto.</b>'],
+  suave:['3 · Barra suave','La barra de ancho completo, en el azul clarito de la paleta. Es lo más parecido a hoy sin el peso. Contiene muy bien; el costo es que doce barras seguidas siguen leyéndose como una pila, aunque sea una pila suave.'],
+};
+function pintarNotas(){
+  const [t1,p1] = NOTAS_PAL[app.dataset.pal], [t2,p2] = NOTAS_FORMA[app.dataset.forma];
+  notas.innerHTML =
+    `<div class="caja"><div class="lbl">La paleta</div><h3>${t1}</h3><p class="txt">${p1}</p></div>` +
+    `<div class="caja"><div class="lbl">La forma</div><h3>${t2}</h3><p class="txt">${p2}</p></div>`;
+}
+function grupo(sel, attr, fn){
+  document.querySelectorAll(sel).forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll(sel).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      fn(b.dataset[attr]);
+    });
+  });
+}
+grupo('.pal[data-pal]', 'pal', v => { app.dataset.pal = v; pintarNotas(); });
+grupo('.mando[data-forma]', 'forma', v => { app.dataset.forma = v; pintarNotas(); });
+grupo('.mando[data-est]', 'est', v => { document.getElementById('sync').dataset.estado = v; });
+pintarNotas();
+
+const tabs = document.getElementById('tabs'), carril = document.getElementById('carril');
+function moverCarril(b){ carril.style.width = b.offsetWidth+'px'; carril.style.transform = `translateX(${b.offsetLeft}px)`; }
+tabs.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+  tabs.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === b));
+  moverCarril(b);
+}));
+requestAnimationFrame(() => moverCarril(tabs.querySelector('.tab.on')));
+
+document.getElementById('sync').addEventListener('click', async e => {
+  const s = e.currentTarget;
+  if(s.dataset.estado === 'trabajando') return;
+  s.dataset.estado = 'trabajando';
+  await new Promise(r => setTimeout(r, 2200));
+  s.dataset.estado = 'alDia';
+  document.querySelectorAll('.mando[data-est]').forEach(x =>
+    x.setAttribute('aria-pressed', String(x.dataset.est === 'alDia')));
+});
+</script>

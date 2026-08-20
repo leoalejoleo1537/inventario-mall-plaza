@@ -6,7 +6,9 @@
 
 Maquetas: `propuesta-estetica.html` (las tres pieles),
 `propuesta-estetica-2.html` (el contenedor y el ⟳) y
-`propuesta-estetica-3.html` (la lista completa, el dial y la barra).
+`propuesta-estetica-3.html` (la lista completa, el dial y la barra) y
+**`propuesta-estetica-4.html` (el inicio CERRADO, las paletas y el botón plano)** —
+esta última es la que manda; las anteriores quedan como registro de cómo se llegó.
 
 ---
 
@@ -48,7 +50,25 @@ suelto:
 
 </details>
 
-### El ⟳ — **rehecho según lo que pidió**
+### El ⟳ — **CERRADO** (Jhon, 2026-08-20)
+
+Textual: *"el botón de actualizar NUNCA CON RELIEVE 3D, nunca hagas eso. Solo
+alárgalo con el texto de actualizar, sus animaciones, déjalo como pulso, 2D
+sin relieve ni neón."*
+
+Queda así y no se discute más:
+
+| | |
+|---|---|
+| Forma | pastilla alargada, **plana** |
+| Texto | **Actualizar** |
+| Relieve 3D | ❌ nunca |
+| Neón / resplandor | ❌ |
+| Animación | **el pulso**: una onda que sale del contorno y se disuelve, sin que el botón cambie de forma |
+| Al tocarlo | encoge apenas y vuelve |
+| Mientras trabaja | la ventana de carga con fondo desenfocado que ya existe, tal cual |
+
+<details><summary>Lo que se descartó, para no volver a proponerlo</summary>
 
 Ya no es un círculo con ícono. Es una **pastilla alargada que dice
 "Actualizar"**, con:
@@ -61,9 +81,9 @@ Ya no es un círculo con ícono. Es una **pastilla alargada que dice
   queda tal cual**, porque ya funciona y le gusta. El botón avisa *cuándo* hay
   que apretarlo; la ventana muestra *mientras*.
 
-**Falta:** confirmar si la palabra es "Actualizar" u otra.
+</details>
 
-### La barra superior — tres opciones, falta elegir
+### La barra superior — **elegida: CLARA**
 
 Fuera el texto **"Inventario"**: era redundante con la pestaña. El
 protagonista pasa a ser **la sede**, en grande, y debajo un dato que sirve
@@ -71,16 +91,48 @@ protagonista pasa a ser **la sede**, en grande, y debajo un dato que sirve
 
 | | |
 |---|---|
-| **A · Profunda** | Navy con degradado suave, para que no sea una plancha plana |
-| **B · Clara** | Barra blanca. La más ligera, y la que más deja brillar al botón. Cuesta el marco oscuro que hoy le da peso a la app |
-| **C · Filo de sede** ⭐ | Como la profunda, más un filo de color al pie que **cambia según la sede**: naranja Plaza, verde Angamos, morado Bodega |
+Jhon: *"me gusta la barra de color claro"*. Blanca, con la sede de
+protagonista y sin el texto "Inventario", que era redundante con la pestaña.
 
-**Recomendación: C.** Equivocarse de sede tiene consecuencias, y el color te
-dice dónde estás antes de leer.
+**El navy no desaparece: se muda al texto.** En un fondo claro, un azul muy
+oscuro se lee mejor que el negro y no endurece la pantalla.
 
 Más: **las pestañas con un carril que se desliza** en vez de que el naranja
 salte, y **la casita con ícono propio** en vez del emoji 🏠, que cada teléfono
 dibuja distinto.
+
+---
+
+## 🆕 Nueva sección de Ajustes · **El color de la app**
+
+Pedido por Jhon el 2026-08-20: un selector de paletas dentro de Ajustes, con
+opciones de **azul claro**, que cambie la app entera.
+
+No es solo para la maqueta: es una sección más de Ajustes, y como todo lo de
+esa zona **se puede volver atrás** — *"Como hoy"* es una opción de la lista.
+
+| Paleta | Qué es |
+|---|---|
+| **Hielo** ⭐ | El celeste más neutro. El que menos discute con el naranja |
+| **Cielo** | El más luminoso. Ojo: cuanto más azul el fondo, más vibra el rojo de las alertas |
+| **Bruma** | Gris con azul dentro. El salto más chico desde hoy |
+| **Acero** | Más contraste. **El que mejor se lee con sol**, que en un mesón junto a una ventana no es un detalle |
+| **Como hoy** | Para comparar y para volver |
+
+**Lo que ninguna paleta toca:** el naranja de acción y los colores de alerta.
+Rojo sigue siendo crítico, ámbar aviso, verde en rango.
+
+### La sección CERRADA — falta elegir la forma
+
+Esta es la vista que se abre todas las mañanas, y hasta la cuarta maqueta
+nunca se había mostrado. Ahí el problema del ladrillo se ve entero: **doce
+barras navy apiladas**.
+
+| | |
+|---|---|
+| **1 · Tarjeta** | Mismo lenguaje que una fila de producto. Lo más limpio; el riesgo es que cerrada, una sección y un producto se parecen mucho |
+| **2 · Tarjeta con filo** ⭐ | Igual, más un filo de color a la izquierda. Resuelve ese riesgo: el azul vuelve como **señal** y no como superficie, y el rojo del crítico queda solo |
+| **3 · Barra suave** | La barra de ancho completo en el azul clarito. Contiene muy bien; doce seguidas siguen leyéndose como pila, aunque sea suave |
 
 ---
 
