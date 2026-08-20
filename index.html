@@ -21,18 +21,36 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.111.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
+  /* ══════════ PALETA "ACERO" (Jhon, 2026-08-20) ══════════
+     Elegida entre cinco celestes, con este argumento: es la que más contraste
+     tiene entre el fondo y las tarjetas, así que las filas se despegan más y
+     **es la que mejor se lee con sol**. En un mesón junto a una ventana eso
+     no es un detalle de gusto.
+
+     LO QUE NO CAMBIÓ, Y NO CAMBIA CON NINGUNA PALETA: el naranja de acción y
+     los tres colores de alerta. Rojo es crítico, ámbar es aviso, verde es en
+     rango. Esa es la línea entre cambiar el clima y romper la jerarquía.
+
+     EL NAVY NO DESAPARECIÓ: SE MUDÓ AL TEXTO. Antes era la superficie de la
+     barra; ahora es la tinta. En un fondo claro un azul muy oscuro se lee
+     mejor que el negro y no endurece la pantalla. */
   :root{
     --navy:#0F1E31; --navy2:#16283F;
     --orange:#DC4405; --orange-dark:#B93A04;
-    --bg:#F2F3F5; --card:#ffffff; --border:#E3E5E8;
-    --text:#1C2733; --muted:#6B7684;
-    --red-bg:#FDECEA; --red-fg:#C0392B;
-    --green-bg:#E6F4E6; --green-fg:#2E7D32;
-    --amber-bg:#FFF3E0; --amber-fg:#B26A00;
-    --gray-bg:#EDEEF0; --gray-fg:#5F6670;
-    /* cabeceras de sección: azul pizarra. Deja el naranja libre para lo que
-       de verdad es acción o alerta (botones, urgentes, críticos). */
-    --sec-bg:#2F4A6D; --sec-tx:#ffffff; --sec-line:rgba(255,255,255,.32);
+    --bg:#E9EEF5; --card:#FDFEFF; --border:#D6DFEB;
+    --text:#121E2C; --muted:#61707F;
+    --red-bg:#FCE9E6; --red-fg:#C0392B;
+    --green-bg:#E4F1E5; --green-fg:#2E7D32;
+    --amber-bg:#FDF0DE; --amber-fg:#9C6209;
+    --gray-bg:#E1E8F1; --gray-fg:#54677D;
+    /* la sección: cápsula clara y un filo de color. Ya no es un bloque
+       relleno — ver el comentario de .sec-head. */
+    --sec-bg:#D0DDEC; --sec-tx:#1F3A5C; --sec-line:rgba(31,58,92,.22);
+    --sec-filo:#41628C;
+    /* las sombras del aire: dos capas, una fina para despegar y otra muy
+       difusa para dar profundidad sin dibujar un borde */
+    --sombra:0 2px 4px rgba(20,40,70,.04), 0 12px 26px -18px rgba(20,40,70,.34);
+    --r-card:20px; --r-sec:18px;
   }
   *{box-sizing:border-box}
   html,body{touch-action:manipulation}
@@ -72,20 +90,73 @@
     .btn-switch{padding:6px 10px;font-size:12px}
   }
   /* ---------- top bar ---------- */
-  .topbar{background:var(--navy);color:#fff;padding:10px 8px}
+  /* LA BARRA, CLARA. Jhon la eligió entre tres. El costo que se acepta: se
+     pierde el marco oscuro que le daba peso a la app. A cambio, el naranja
+     del botón salta como no saltaba sobre el navy, y la pantalla entera se
+     siente de un solo material. */
+  .topbar{background:var(--card);color:var(--text);padding:10px 8px;
+          box-shadow:0 1px 0 var(--border)}
   .topbar .inner{max-width:900px;margin:0 auto;display:flex;align-items:center;gap:4px}
-  .topbar h1{font-size:19px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
+  /* EL TÍTULO ES LA SEDE, no "Inventario". Jhon: "el texto de Inventario me
+     parece redundante, innecesario; me parece más útil la sede en la que
+     estamos". Y tiene razón: la pestaña activa ya dice en qué pantalla estás,
+     mientras que equivocarse de sede sí tiene consecuencias. */
+  .topbar h1{font-size:19px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15;letter-spacing:-.015em}
   /* La sede va SIEMPRE a la vista, bajo el título. Motivo real: con dos sedes
      vivas es fácil entrar a la equivocada, editar y no darse cuenta. Antes
      solo se veía abriendo el menú ☰, o sea justo cuando ya no se está mirando
      la lista. */
   .top-tit{flex:1;min-width:0;margin:0 4px}
-  .top-sede{font-size:12.5px;font-weight:600;color:#A9B7C6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.2px;margin-top:1px}
+  .top-sede{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
   .top-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}
-  .icon-btn{width:42px;height:42px;border:none;background:transparent;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0}
-  .icon-btn:active{background:rgba(255,255,255,.16)}
+  .icon-btn{width:42px;height:42px;border:none;background:transparent;color:var(--text);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0;
+            transition:transform .12s cubic-bezier(.2,1.5,.4,1)}
+  .icon-btn:active{background:var(--bg);transform:scale(.9)}
   .icon-btn svg{width:22px;height:22px;display:block}
   .icon-btn.girando svg{animation:sync-spin .8s linear infinite}
+
+  /* ══════════ EL BOTÓN ACTUALIZAR ══════════
+     PLANO. Sin relieve y sin neón, por pedido expreso de Jhon: "NUNCA CON
+     RELIEVE 3D, nunca hagas eso. Solo alárgalo con el texto de actualizar,
+     déjalo como pulso, 2D sin relieve ni neón."
+
+     LA ANIMACIÓN ES INFORMACIÓN, NO ADORNO. El halo late según cuánto hace
+     que no se sincroniza, y estando al día NO late. Si el naranja brillara
+     siempre dejaría de significar "esto necesita atención", y en una barra
+     donde también viven las alertas rojas le ganaría la pelea a algo más
+     urgente. Por eso el botón brilla porque hace falta apretarlo. */
+  .sync-btn{position:relative;flex-shrink:0;border:none;padding:0;background:transparent;
+            color:#fff;font-family:inherit;cursor:pointer;height:38px;border-radius:999px;
+            -webkit-tap-highlight-color:transparent}
+  .sync-btn .cuerpo{position:relative;z-index:2;height:38px;border-radius:999px;padding:0 15px 0 12px;
+            background:var(--orange);display:flex;align-items:center;gap:7px;
+            font-size:13.5px;font-weight:800;letter-spacing:.01em;
+            transition:transform .13s cubic-bezier(.2,1.5,.4,1),background .2s ease}
+  .sync-btn:active .cuerpo{transform:scale(.93);background:var(--orange-dark)}
+  .sync-btn .cuerpo svg{width:16px;height:16px;display:block;flex-shrink:0}
+  /* La onda sale del contorno y se disuelve. El botón no cambia de forma ni
+     se ilumina: lo único que se mueve es el aro que se expande. */
+  .sync-btn .onda{position:absolute;inset:0;z-index:1;border-radius:999px;opacity:0;pointer-events:none}
+  .sync-btn[data-pulso="tibio"] .onda{animation:sync-onda 2.6s ease-out infinite}
+  .sync-btn[data-pulso="frio"]  .onda{animation:sync-onda 1.5s ease-out infinite}
+  .sync-btn[data-pulso="malo"]  .onda{animation:sync-onda-mal 1.1s ease-out infinite}
+  .sync-btn[data-pulso="malo"]  .cuerpo{background:var(--red-fg)}
+  .sync-btn.girando .cuerpo svg{animation:sync-spin 1.05s linear infinite}
+  .sync-btn:disabled{cursor:default}
+  @keyframes sync-onda{
+    0%  {opacity:.5;box-shadow:0 0 0 0 rgba(220,68,5,.45)}
+    70% {opacity:0; box-shadow:0 0 0 13px rgba(220,68,5,0)}
+    100%{opacity:0; box-shadow:0 0 0 0 rgba(220,68,5,0)}
+  }
+  @keyframes sync-onda-mal{
+    0%  {opacity:.6;box-shadow:0 0 0 0 rgba(192,57,43,.5)}
+    70% {opacity:0; box-shadow:0 0 0 14px rgba(192,57,43,0)}
+    100%{opacity:0; box-shadow:0 0 0 0 rgba(192,57,43,0)}
+  }
+  /* en pantallas muy angostas el texto se va y queda el ícono, para no
+     empujar el nombre de la sede fuera de la barra */
+  @media (max-width:370px){ .sync-btn .cuerpo .tx{display:none} .sync-btn .cuerpo{padding:0 11px} }
+  @media (prefers-reduced-motion: reduce){ .sync-btn .onda{animation:none !important} }
   .icon-btn:disabled{opacity:.55;cursor:default}
   .icon-btn.on{background:rgba(255,255,255,.18)}
   .icon-btn{position:relative}
@@ -196,7 +267,7 @@
   .burbuja-lista .vacio{padding:18px;text-align:center;color:var(--muted);font-size:14px}
   @media (prefers-reduced-motion: reduce){ .burbuja{animation:none} .toast.hay-detalle::after{animation:none} }
   /* ---------- tabs (píldoras, estilo Fudo) ---------- */
-  .tabs{background:#fff;border-bottom:1px solid var(--border);padding:9px 14px;position:sticky;top:0;z-index:20}
+  .tabs{background:var(--bg);padding:9px 14px;position:sticky;top:0;z-index:20}
   /* ---------- aviso del motor ----------
      Solo aparece cuando hay algo que decir. Si el motor va bien no se ve
      nada: la pantalla limpia ES el mensaje de que todo está en orden. */
@@ -215,10 +286,21 @@
   /* La fila SE CORRE, no recorta. En Bodega son cinco pestañas y con
      flex-shrink los nombres terminaban en "Enviar a loc…", que es peor que
      tener que deslizar: un nombre a medias hay que adivinarlo. */
-  .tabs .inner{max-width:900px;margin:0 auto;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .tabs .inner{position:relative;max-width:900px;margin:0 auto;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .tabs .inner::-webkit-scrollbar{display:none}
-  .tab{padding:8px 15px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--text);font-size:13.5px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0}
-  .tab.active{background:var(--orange);border-color:var(--orange);color:#fff}
+  /* EL NARANJA VIAJA, no salta. Son 340 milisegundos y convierten un cambio
+     brusco en un movimiento que el ojo puede seguir. El carril se MIDE del
+     botón activo, así funciona con cualquier cantidad de pestañas y con
+     cualquier nombre — nada escrito a mano. */
+  .tab-carril{position:absolute;z-index:1;top:0;left:0;height:100%;border-radius:999px;
+              background:var(--orange);pointer-events:none;opacity:0;
+              transition:transform .34s cubic-bezier(.34,1.2,.4,1),width .34s cubic-bezier(.34,1.2,.4,1),opacity .2s ease}
+  .tab-carril.listo{opacity:1}
+  .tab{position:relative;z-index:2;padding:8px 15px;border-radius:999px;border:none;background:var(--card);color:var(--text);font-size:13.5px;font-weight:650;cursor:pointer;white-space:nowrap;flex-shrink:0;
+       box-shadow:0 1px 2px rgba(20,40,70,.05);transition:color .22s ease,transform .12s ease}
+  .tab:active{transform:scale(.95)}
+  .tab.active{background:transparent;color:#fff;box-shadow:none}
+  @media (prefers-reduced-motion: reduce){ .tab-carril{transition:none} }
   .tab-badge{background:var(--amber-fg);color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:5px}
   .tab.active .tab-badge{background:#fff;color:var(--orange)}
   .tab-icon{flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:8px 13px}
@@ -236,8 +318,13 @@
   .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
   /* con la tarjeta de Urgente son cuatro; si la columna no existe en la base,
      se queda en tres y la pantalla se ve igual que antes */
-  .mcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;user-select:none}
-  .mcard.sel{border:2px solid var(--orange)}
+  /* SIN BORDE, y al elegirlas se marcan con un ANILLO de sombra en vez de un
+     borde más grueso: un borde que cambia de 1 a 2 px mueve el contenido un
+     píxel y la tarjeta "salta" al tocarla. */
+  .mcard{background:var(--card);border:none;border-radius:16px;padding:11px 6px;text-align:center;cursor:pointer;user-select:none;
+         box-shadow:var(--sombra);transition:box-shadow .2s ease,transform .12s ease}
+  .mcard:active{transform:scale(.97)}
+  .mcard.sel{box-shadow:0 0 0 2px var(--orange), 0 12px 26px -18px rgba(20,40,70,.34)}
   .mcard .n{font-size:22px;font-weight:700}
   .mcard .l{font-size:11px;color:var(--muted);margin-top:2px}
 
@@ -429,8 +516,8 @@
         transition:background .18s ease,color .18s ease,border-color .18s ease,transform .12s ease}
   .tipo:active{transform:scale(.94)}
   .tipo .n{font-size:10.5px;font-weight:800;opacity:.5;font-variant-numeric:tabular-nums}
-  .tipo.on{background:var(--sec-bg);border-color:var(--sec-bg);color:#fff;
-           box-shadow:0 2px 10px rgba(47,74,109,.35)}
+  .tipo.on{background:var(--sec-filo);border-color:var(--sec-filo);color:#fff;
+           box-shadow:0 2px 10px rgba(65,98,140,.4)}
   .tipo.on .n{opacity:.75}
 
   /* La lista brota de la píldora que se tocó: el origen se fija en JS a la
@@ -447,27 +534,78 @@
   .count{font-size:12px;color:var(--muted);margin:6px 0}
   /* turnos: el inventario de la mañana y el de la tarde son dos rondas
      distintas. Solo un fondo gris que las agrupa — nada más. */
-  .turno{background:var(--gray-bg);border-radius:14px;padding:10px 10px 2px;margin-bottom:12px}
-  .turno-lbl{font-size:11px;font-weight:800;color:var(--gray-fg);letter-spacing:.7px;padding:0 4px 8px}
+  /* EL TURNO YA NO ES UNA CAJA GRIS. Con las secciones convertidas en
+     tarjetas blancas, envolverlas en un recuadro gris agregaba un tercer
+     nivel —caja dentro de caja dentro de caja— y devolvía justo el encajonado
+     que se venía a sacar. El rótulo AM/PM solo, con aire alrededor, separa
+     igual de bien y pesa cero. */
+  .turno{background:transparent;border-radius:0;padding:0;margin-bottom:20px}
+  .turno-lbl{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.13em;padding:0 4px 9px}
+  /* Lo urgente SÍ conserva su caja: ahí el fondo no es decoración, es lo que
+     dice "esto está fuera de su sección y por eso está acá arriba". */
+  .turno-urg{background:var(--gray-bg);border-radius:16px;padding:11px 10px 3px}
   /* lo urgente, arriba del todo al filtrar por Crítico */
   .turno-urg .turno-lbl{color:var(--orange)}
   .turno-urg .row:last-child{margin-bottom:8px}
   /* secciones (acordeón) */
-  .sec{margin-bottom:8px}
-  /* Encabezado en naranja: al desplazar, marca dónde termina una sección y
-     empieza la siguiente. Antes era blanco igual que los productos y se perdía. */
-  /* la barra naranja es el contenedor; adentro van el botón de abrir/cerrar y,
-     en Sándwiches, el de copiar el resumen (un botón no puede ir dentro de otro) */
-  .sec-head{display:flex;align-items:stretch;background:var(--sec-bg);border:1px solid var(--sec-bg);border-radius:12px;box-shadow:0 1px 3px rgba(15,30,49,.14);overflow:hidden}
-  .sec.open .sec-head{border-bottom-left-radius:0;border-bottom-right-radius:0}
-  .sec-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:1;min-width:0;background:transparent;border:none;padding:14px;font-size:15px;font-weight:800;color:var(--sec-tx);cursor:pointer;text-align:left;font-family:inherit}
-  .sec-copy{width:48px;flex-shrink:0;border:none;border-left:1px solid var(--sec-line);background:transparent;color:var(--sec-tx);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-  .sec-copy:active{background:var(--sec-line)}
+  .sec{margin-bottom:9px}
+  /* ══════════ LA CABECERA DE SECCIÓN ══════════
+     TARJETA CON FILO, elegida por Jhon entre tres formas.
+
+     POR QUÉ SE FUE EL BLOQUE AZUL RELLENO. Cerrada —que es como se ve la app
+     el 90% del tiempo— la pantalla eran DOCE barras navy apiladas. El dato
+     era correcto y la forma cansaba: el azul sólido pesa tanto como una
+     alerta, y repetido doce veces convierte la lista en un muro.
+
+     POR QUÉ NO QUEDÓ UN RÓTULO SUELTO. Jhon lo planteó bien: "es importante
+     que no sacrifiquemos en el altar de la estética la jerarquía de colores y
+     formas". Un título sin contenedor pierde jerarquía. Pero contener no es
+     rellenar: acá contiene la TARJETA, igual que a un producto, y el filo de
+     color a la izquierda es lo que la distingue de un producto al instante.
+
+     Así el azul vuelve como SEÑAL y no como superficie, y el rojo del crítico
+     queda completamente solo en la fila — que es lo único que hay que mirar.
+
+     SIN REBORDES, en ninguna parte. Lo que separa es la sombra. */
+  .sec-head{display:flex;align-items:stretch;background:var(--card);border-radius:var(--r-sec);
+            box-shadow:var(--sombra), inset 5px 0 0 var(--sec-filo);overflow:hidden;
+            transition:box-shadow .25s ease,transform .12s ease}
+  .sec-head:active{transform:scale(.988)}
+  /* Abierta, la cabecera CONSERVA sus esquinas: el cuerpo ya no es una caja
+     pegada debajo sino filas sueltas, así que cortarle el redondeo dejaba un
+     borde recto contra el aire. */
+  .sec.open .sec-head{box-shadow:var(--sombra), inset 5px 0 0 var(--sec-filo)}
+  .sec-btn{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:1;min-width:0;background:transparent;border:none;padding:15px 15px 15px 19px;font-size:15.5px;font-weight:800;color:var(--text);cursor:pointer;text-align:left;font-family:inherit;letter-spacing:-.008em}
+  .sec-copy{width:48px;flex-shrink:0;border:none;border-left:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .sec-copy:active{background:var(--bg)}
   .sec-copy svg{width:19px;height:19px;display:block}
   .sec-tags{display:flex;align-items:center;gap:6px;flex-shrink:0}
-  .sec-crit{background:#fff;color:var(--red-fg);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800}
-  .sec-body{border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:8px;background:var(--bg)}
-  .sec-body .row:last-child{margin-bottom:0}
+  .sec-crit{background:var(--red-bg);color:var(--red-fg);border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:800}
+  .sec-body{padding:9px 0 2px 10px;background:transparent}
+  .sec-body .row:last-child{margin-bottom:4px}
+  /* ══════════ EL MOVIMIENTO ══════════
+     Al abrir una sección las filas llegan escalonadas, con seis centésimas
+     entre una y otra. Da la sensación de que la lista se arma sola en vez de
+     aparecer de golpe. Solo las primeras ocho llevan retraso: más allá, el
+     escalón se convierte en espera. */
+  .sec.open .sec-body .row{animation:fila-entra .3s cubic-bezier(.2,.8,.3,1) both}
+  .sec.open .sec-body .row:nth-child(2){animation-delay:.05s}
+  .sec.open .sec-body .row:nth-child(3){animation-delay:.1s}
+  .sec.open .sec-body .row:nth-child(4){animation-delay:.15s}
+  .sec.open .sec-body .row:nth-child(5){animation-delay:.2s}
+  .sec.open .sec-body .row:nth-child(6){animation-delay:.24s}
+  .sec.open .sec-body .row:nth-child(7){animation-delay:.28s}
+  .sec.open .sec-body .row:nth-child(8){animation-delay:.31s}
+  @keyframes fila-entra{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  /* El número LATE cuando cambia solo. Al vender en Fudo el stock baja en la
+     pantalla de todos, y hasta hoy el número cambiaba sin avisar: medio
+     segundo de latido dice "esto se acaba de mover". */
+  @keyframes pill-late{0%,100%{transform:scale(1)}40%{transform:scale(1.18)}}
+  .pill.cambio{animation:pill-late .5s cubic-bezier(.3,1.4,.4,1)}
+  @media (prefers-reduced-motion: reduce){
+    .sec.open .sec-body .row{animation:none}
+    .pill.cambio{animation:none}
+  }
   /* recetas */
   .rec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;box-shadow:0 1px 2px rgba(15,30,49,0.04)}
   .rec-card .rn{font-weight:700;font-size:15px}
@@ -601,7 +739,10 @@
   .pick-sub{color:var(--muted);font-size:12px;margin-left:auto;flex-shrink:0}
   .pick-empty{padding:11px 12px;color:var(--muted);font-size:14px}
   /* ---------- product rows (FUDO cards) ---------- */
-  .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 2px rgba(15,30,49,0.04);
+  /* LA FILA, SIN BORDE. Lo que la separa del fondo es la sombra, no una
+     línea: doscientas líneas de 1 px apiladas son lo que hace que una lista
+     se vea como una planilla. */
+  .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);border:none;border-radius:var(--r-card);padding:14px 16px;margin-bottom:9px;box-shadow:var(--sombra);
        position:relative;touch-action:pan-y}
   /* Deslizar la fila hacia el lado la manda al reparto. touch-action:pan-y deja
      que el dedo siga desplazando la lista hacia arriba y abajo sin pelear. */
@@ -1293,8 +1434,12 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"></path></svg>
     </button>
     <div class="top-tit">
-      <h1 id="topTitle">Inventario</h1>
-      <div class="top-sede" id="topSede">—</div>
+      <!-- ARRIBA VA LA SEDE, no el nombre de la pantalla. La pestaña activa
+           ya dice en qué pantalla estás; equivocarse de sede, en cambio, sí
+           tiene consecuencias. Debajo, en chico, la pantalla — por si alguien
+           llegó desde el menú y no desde una pestaña. -->
+      <h1 id="topTitle">—</h1>
+      <div class="top-sede" id="topSede">Inventario</div>
     </div>
     <div class="top-actions">
       <!-- Lista de tareas del turno. Va en la barra de arriba y no en una
@@ -1305,8 +1450,17 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h10"></path><path d="M9 12h10"></path><path d="M9 19h10"></path><path d="m3 5 1.5 1.5L7 4"></path><path d="m3 12 1.5 1.5L7 11"></path><path d="M3.5 18.5h2.5"></path></svg>
         <span class="pto" id="tareasPto" style="display:none"></span>
       </button>
-      <button type="button" class="icon-btn" id="btnActualizar" aria-label="Actualizar" title="Actualizar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
+      <!-- EL BOTÓN MÁS IMPORTANTE DE LA APP, y por eso dejó de ser un ícono
+           adivinable. Hace las tres cosas del sistema en cadena: lee lo que se
+           vendió, descuenta el inventario y le devuelve el stock a Fudo.
+           Jhon: "es el botón más importante de todos, debería tener un trato
+           especial". -->
+      <button type="button" class="sync-btn" id="btnActualizar" aria-label="Actualizar" title="Actualizar">
+        <span class="onda" aria-hidden="true"></span>
+        <span class="cuerpo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
+          <span class="tx">Actualizar</span>
+        </span>
       </button>
 
     </div>
@@ -1315,6 +1469,7 @@
 
 <div class="tabs">
   <div class="inner">
+    <span class="tab-carril" id="tabCarril" aria-hidden="true"></span>
     <button class="tab tab-icon active" data-tab="inv" aria-label="Inventario" title="Inventario">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"></path><path d="M5.5 10v9a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1v-9"></path></svg>
     </button>
@@ -2571,8 +2726,8 @@ let vistaActual = 'inv';
 /* ---------------- selección de sede ---------------- */
 function pickSede(s){
   SEDE = s;
-  $('topTitle').textContent = TITULOS.inv;
-  $('topSede').textContent = SEDES[s].label;
+  $('topTitle').textContent = SEDES[s].label;
+  $('topSede').textContent = TITULOS.inv;
   $('footText').textContent = SEDES[s].label + ' · sincronizado en tiempo real';
   // reset estado/filtros
   DATA=[]; filterState=null; modalProd=null; carrito=[];
@@ -2605,6 +2760,7 @@ function pickSede(s){
   entCarrito=[]; entUltimas=[];
   // volver a la pestaña Inventario
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
+  moverCarril();
   $('view-inv').style.display='block'; $('view-ajustes').style.display='none'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none'; $('view-enlaces').style.display='none'; $('view-repcentral').style.display='none';
   vistaActual='inv';
   barraPestanas(true);   // si se cambió de sede estando en Ajustes, estaba escondida
@@ -3948,6 +4104,21 @@ function rowHTML(p, conSeccion){
     </div>
   </div>`;
 }
+/* El número late medio segundo cuando el stock cambió SOLO —una venta en
+   Fudo, un reparto confirmado desde otro teléfono—. Hasta hoy el número
+   cambiaba sin avisar y nadie se enteraba de que se había movido.
+
+   Va después del render, porque render() rehace la fila entera: marcar antes
+   sería marcar un elemento que está por desaparecer. */
+function latirPildora(id){
+  const fila = listEl.querySelector(`.row[data-row="${id}"] .pill`);
+  if(!fila) return;
+  fila.classList.remove('cambio');
+  void fila.offsetWidth;                 // reinicia la animación si ya corrió
+  fila.classList.add('cambio');
+  setTimeout(()=>fila.classList.remove('cambio'), 700);
+}
+
 function pasaFiltro(p){
   if(!filterState) return true;
   // Adriana arma el pedido para Mall Plaza entrando por Crítico: lo que el
@@ -4930,11 +5101,32 @@ $('m-eliminar').addEventListener('click', async()=>{
 });
 
 /* ---------------- nuevo producto ---------------- */
-$('btnNuevo').addEventListener('click',()=>{
+$('btnNuevo').addEventListener('click', async ()=>{
   /* En bodega el + es un atajo a Enlaces: un producto nuevo casi nunca es solo
      de bodega — hay que crearlo también en los locales y dejarlo enlazado, o
      nace suelto y el reparto no lo puede mover. */
   if(SEDE==='central'){ pickTab('enlaces'); setTimeout(()=>$('enl-n-nombre').focus(), 260); return; }
+
+  /* Y DESDE UN LOCAL, LO MISMO — porque el problema es el mismo (Jhon,
+     2026-08-20). Un producto creado suelto en Plaza no tiene pareja en
+     bodega, así que el reparto no lo puede mover y hay que volver a crearlo
+     allá. Desde Enlaces nace en bodega, en los locales que se elijan, en Fudo
+     y con su receta, todo en un gesto.
+
+     Se PREGUNTA en vez de saltar solo: cambiar de sede rehace la pantalla
+     entera, y hacer eso sin avisar sería el peor tipo de sorpresa. Quien
+     igual quiera el camino corto lo tiene abajo. */
+  const irABodega = await preguntar('Crear un producto',
+    'Lo mejor es crearlo desde Bodega: nace allá, en los locales que elijas, en Fudo y '
+    + 'con su receta, todo de una vez.\n\nSi lo creas solo acá queda suelto, y el reparto '
+    + 'no lo va a poder mover hasta que exista en bodega.',
+    'Ir a Bodega');
+  if(irABodega){
+    await pickSede('central');
+    pickTab('enlaces');
+    setTimeout(()=>{ const n=$('enl-n-nombre'); if(n) n.focus(); }, 320);
+    return;
+  }
   $('n-sede-label').textContent = 'Se agregará a ' + SEDES[SEDE].label;
   $('n-nombre').value=''; $('n-perec').checked=false;   // n-rubro se rearma abajo
   $('n-stock').value=''; $('n-min').value=''; $('n-max').value='';
@@ -7646,8 +7838,25 @@ $('aj-rail').addEventListener('click', e=>{
    Esconder algo y volver a mostrarlo tienen que ser la misma función
    llamada al revés. Cuando son dos trozos de código distintos, tarde o
    temprano aparece un camino que solo pasa por uno. */
+/* Mueve el carril debajo de la pestaña activa. Se llama después de pintar,
+   y en el siguiente cuadro: si se midiera en el mismo, `offsetLeft` daría la
+   posición vieja porque el navegador todavía no rehizo el trazado. */
+function moverCarril(){
+  const c = $('tabCarril'); if(!c) return;
+  const b = document.querySelector('.tab.active');
+  if(!b || !b.offsetWidth){ c.classList.remove('listo'); return; }
+  requestAnimationFrame(()=>{
+    c.style.width = b.offsetWidth + 'px';
+    c.style.transform = `translateX(${b.offsetLeft}px)`;
+    c.classList.add('listo');
+  });
+}
+
 function barraPestanas(ver){
   document.querySelector('.tabs').style.display = ver ? '' : 'none';
+  /* Al volver de Ajustes la barra estaba escondida, así que las pestañas
+     medían 0 y el carril no se podía colocar. Se remide al reaparecer. */
+  if(ver) moverCarril();
 }
 
 function pickTab(tab){
@@ -7657,6 +7866,7 @@ function pickTab(tab){
      pantalla en blanco. */
   if(tab==='reparto' && SEDE==='central') tab='recepcion';
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab));
+  moverCarril();
   $('view-inv').style.display = tab==='inv'?'block':'none';
   /* Los dos trabajos del reparto. En Plaza y Angamos hay uno solo y se
      llama "Reparto": recibir lo que manda bodega. En Bodega son dos y cada
@@ -7676,7 +7886,11 @@ function pickTab(tab){
   $('view-enlaces').style.display = tab==='enlaces'?'block':'none';
   $('view-ajustes').style.display = tab==='ajustes'?'block':'none';
   if(tab!=='ajustes') ajDevolver();   // si no, quedan colgando fuera de la vista
-  vistaActual=tab; $('topTitle').textContent=TITULOS[tab]||TITULOS.inv;
+  /* El título es la sede y el subtítulo la pantalla: al revés de como estaba.
+     Ver el comentario del <h1> en la barra. */
+  vistaActual=tab;
+  $('topTitle').textContent = SEDE ? SEDES[SEDE].label : '—';
+  $('topSede').textContent  = TITULOS[tab] || TITULOS.inv;
   /* En Ajustes se esconden las pestañas y la franja del motor: se entró a
      otra zona, y dejar la navegación de la anterior encima haría dudar de
      dónde está uno. La tuerca sigue arriba para poder salir. */
@@ -8345,6 +8559,19 @@ function juzgarMotor(sync, ahora){
   return null;                        // todo bien: no se muestra nada
 }
 
+/* EL PULSO DEL BOTÓN. Es lo mismo que ya mide la franja del motor, dicho en
+   el botón: cuánto hace que no se sincroniza. Se reusa a propósito — dos
+   formas distintas de medir "hace rato" en la misma app terminan
+   contradiciéndose. */
+function pulsoDelBoton(min, malo){
+  const b = $('btnActualizar'); if(!b) return;
+  const p = malo ? 'malo'
+          : (min === null || min === undefined) ? ''
+          : min >= 90 ? 'frio'
+          : min >= 20 ? 'tibio' : '';
+  if(p) b.dataset.pulso = p; else delete b.dataset.pulso;
+}
+
 function haceCuanto(min){
   if(min === null || min === undefined) return '';
   if(min < 2)  return 'recién';
@@ -8443,6 +8670,7 @@ async function actualizarTodo(){
   ULTIMO_EMPUJE = null;
   const btn = $('btnActualizar');
   btn.disabled = true; btn.classList.add('girando');
+  delete btn.dataset.pulso;          // mientras trabaja no invita: ya se apretó
   /* TODO LO QUE SIGUE VA DENTRO DE UN try/finally, y no es un detalle.
      Antes, si CUALQUIER cosa de acá abajo reventaba —la ventana de
      trabajando, el aviso, el detalle de descuentos, el resumen del empuje—
@@ -8502,6 +8730,7 @@ async function actualizarTodo(){
       /* Se pregunta DESPUÉS del aviso, porque tarda: primero se ve el "✓" y el
          puntito naranja aparece un instante después si hubo algo que descontar. */
       ofrecerDetalle(await traerDescuentos(t0));
+      pulsoDelBoton(0, false);      // recién sincronizado: deja de latir
     }
     mostrarEmpuje();
   } finally {
@@ -8756,9 +8985,15 @@ function subscribeRealtime(){
       const row=payload.new; if(!row||!row.id||row.sede!==SEDE)return;
       if(recienBorrado(row.id)) return;   // lo acabamos de eliminar: ningún evento lo revive
       const idx=DATA.findIndex(d=>d.id===row.id);
+      /* ¿CAMBIÓ EL STOCK DE VERDAD? Se compara ANTES de reemplazar la fila,
+         porque después ya no hay con qué comparar. Solo eso hace latir el
+         número: un renombre o un cambio de mínimo no son "esto se movió". */
+      const movio = idx>=0 && row.activo==='SÍ'
+                    && Number(DATA[idx].stock_actual) !== Number(row.stock_actual);
       if(row.activo!=='SÍ'){ if(idx>=0)DATA.splice(idx,1); }   // eliminado por otro usuario
       else if(idx>=0)DATA[idx]=row; else DATA.push(row);        // editado o agregado
       metrics(); render();
+      if(movio) latirPildora(row.id);
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'producto_lotes'},async()=>{
       await loadLotes(); metrics(); render();   // otro dispositivo cambió una fecha

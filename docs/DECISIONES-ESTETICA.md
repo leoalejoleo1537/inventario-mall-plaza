@@ -1,8 +1,31 @@
 # La estética — decisiones tomadas y lo que falta elegir
 
-> **Estado: NADA IMPLEMENTADO todavía.** Jhon pidió expresamente guardar esto
-> y no aplicarlo hasta ver la pantalla de inicio. Este archivo existe para que
-> la decisión no se pierda entre sesiones.
+> **Estado: IMPLEMENTADO Y EN PRODUCCIÓN** (2026-08-20). Jhon: *"bien,
+> apliquemos los cambios"*. Este archivo queda como registro de qué se eligió
+> y por qué, y de lo que se descartó — para que nadie lo vuelva a proponer.
+
+## Lo que quedó
+
+| | |
+|---|---|
+| **Paleta** | **Acero**. Elegida entre cinco celestes porque es la que más contraste tiene entre el fondo y las tarjetas: **es la que mejor se lee con sol**, y en un mesón junto a una ventana eso pesa más que el gusto |
+| **Barra** | **Clara**. El navy no desapareció: se mudó al texto |
+| **Título** | **La sede**, en grande. "Inventario" pasó abajo y en chico |
+| **Secciones** | **Tarjeta con filo** azul a la izquierda. El azul vuelve como señal, no como superficie |
+| **Filas** | Sin borde. Lo que separa es la sombra |
+| **Botón ⟳** | Pastilla plana que dice **Actualizar**, con el pulso. Sin relieve y sin neón |
+| **Pestañas** | El naranja **viaja** en vez de saltar |
+| **Turnos AM/PM** | Ya no son una caja gris: solo el rótulo. Envolver tarjetas en un recuadro devolvía el encajonado |
+| **Animaciones** | Filas escalonadas al abrir · el número late cuando el stock cambia solo |
+| **El "+"** | Ofrece crear desde Bodega, enlazado. Preguntando, no saltando solo |
+
+**Probado con `pruebas/estetica-no-rompio-nada.mjs`**, que existe por lo que
+Jhon pidió cuidar: *"espero esto no genere bugs en la barra de búsqueda ni en
+la gráfica de meta de ventas"*. 37 comprobaciones, incluida una que atrapa la
+forma más silenciosa de romper una paleta: una regla que apunte a una variable
+de color que ya no existe — el navegador no da error, simplemente no pinta.
+
+---
 
 Maquetas: `propuesta-estetica.html` (las tres pieles),
 `propuesta-estetica-2.html` (el contenedor y el ⟳) y
