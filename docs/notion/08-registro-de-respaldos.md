@@ -64,6 +64,35 @@ Los cuatro archivos se **guardan acá, adjuntos a esta página**:
 
 ---
 
+## ¿Dónde se guardan? **Acá, en Notion.**
+
+No en una carpeta del computador y no en GitHub. La razón es una sola y vale la
+pena entenderla:
+
+> **Un respaldo que vive en el mismo lugar que la cosa respaldada no es un
+> respaldo.**
+
+Los CSV salen de Supabase. Si se guardaran ahí mismo, el día que se pierda esa
+cuenta se pierden las dos cosas a la vez. Y en GitHub tampoco: es la misma
+familia de cuentas, y además el repositorio es para código — un archivo de datos
+ahí envejece y nadie sabe cuál es el bueno.
+
+Notion es **un tercer lugar**, y encima es donde ya vive el manual. Adjuntos a
+la fila del registro, cada archivo llega con su fecha y su motivo pegados: no
+hay que adivinar qué es `productos (3).csv`.
+
+**Cuántos guardar:**
+
+- **Los últimos tres o cuatro.** Más es ruido
+- **Y uno "bueno conocido" que no se borra nunca**: el de antes del último
+  cambio grande, y el del día de la entrega
+
+**Un cuarto lugar, si se quiere dormir tranquilo:** una copia de esos mismos
+cuatro archivos en el Drive de la empresa. Cuesta un arrastre y cubre el caso
+de perder también Notion.
+
+---
+
 ## La tabla del registro
 
 > Crear acá una tabla de Notion con estas columnas y **una fila por respaldo**.
