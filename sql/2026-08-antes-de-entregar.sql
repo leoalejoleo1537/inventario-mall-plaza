@@ -90,14 +90,23 @@ order by jobname;
 -- ================================================================
 -- BLOQUE 3 — ¿QUÉ CONTESTARON LAS ÚLTIMAS CORRIDAS?  (otro Run)
 --
--- QUÉ VER: `status` en 200. Si dice 500 y el texto habla de
+-- ⚠️ ESTE BLOQUE ES EL QUE IMPORTA, aunque parezca el menos vistoso. Los
+-- relojes del bloque 2 pueden estar los cuatro en `activa = true` y aun así
+-- no estar haciendo nada: "activa" quiere decir que el reloj SUENA, no que
+-- lo que llama esté funcionando. Esto mira lo que contestaron de verdad.
+--
+-- (La primera versión decía `r.status` y esa columna se llama
+-- `status_code`. Un nombre escrito de memoria en vez de copiado tumba la
+-- consulta entera.)
+--
+-- QUÉ VER: `codigo` en 200. Si dice 500 y el texto habla de
 -- "SISTEMA_TOKEN", falta ese secreto:
 --   Supabase -> Edge Functions -> Secrets -> SISTEMA_TOKEN
 --   (cualquier texto largo inventado)
 --
 -- Si no devuelve ninguna fila, ninguna tarea llamó todavía a nada.
 -- ================================================================
-select r.created as cuando, r.status,
+select r.created as cuando, r.status_code as codigo,
        left(r.content, 240) as que_contesto
 from net._http_response r
 order by r.created desc

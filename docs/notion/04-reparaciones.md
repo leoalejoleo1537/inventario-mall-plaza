@@ -316,7 +316,7 @@ from cron.job order by jobname;
 ### ¿Corrieron, y qué contestaron?
 
 ```sql
-select r.status, r.content, r.created
+select r.status_code as codigo, r.content, r.created
 from net._http_response r
 order by r.created desc limit 10;
 ```
