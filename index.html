@@ -6200,19 +6200,47 @@ let AJ_REST  = [];       // restauraciones hechas
 
 const AJ_SEDES = ['plaza','angamos','central'];
 
+/* LA LISTA DE DÍAS LA ARMA LA BASE, y ese es el arreglo de un bug que
+   estaba vivo y no se veía.
+
+   Antes se pedían "las fechas del historial" y se contaban acá. Pero el
+   historial guarda UNA FILA POR PRODUCTO Y POR DÍA —unas 250 por sede— y
+   Supabase nunca devuelve más de 1000 filas de una vez, sin avisar:
+
+       1000 filas ÷ 250 productos = 4 días.
+
+   O sea que esta pantalla ofrecía los últimos 3 o 4 días aunque en la base
+   hubiera un mes entero, y la lista corta parecía completa. Duele el doble
+   acá, porque esta es la red de emergencia: el día que haga falta volver
+   atrás, uno quiere elegir el día bueno, no el que alcanzó a entrar en las
+   primeras 1000 filas.
+
+   La regla general para este tope: **si lo que se necesita es un resumen,
+   se agrupa en la base**. Una fila por día son 60 filas, no 15.000.
+
+   Si la función todavía no existe, se cae al camino viejo — corto, pero
+   mejor que una pantalla vacía. */
 async function ajCargarDias(){
   AJ_DIAS = null; AJ_DIA = null; AJ_PREVIA = null;
   if(ajActual === 'respaldos') pintarAjustes();
   const sede = AJ_SEDE;
-  const [man, aut] = await Promise.all([
-    sb.from('historial').select('fecha').eq('sede',sede).order('fecha',{ascending:false}).limit(1000),
-    sb.from('historial_auto').select('fecha').eq('sede',sede).order('fecha',{ascending:false}).limit(1000),
-  ]);
+
+  const rpc = await sb.rpc('fotos_por_dia', {p_sede: sede});
   if(sede !== AJ_SEDE) return;               // cambiaron de sede mientras cargaba
-  const dias = {};
-  (man.data||[]).forEach(f=>{ dias[f.fecha] = 'contada a mano'; });
-  (aut.data||[]).forEach(f=>{ if(!dias[f.fecha]) dias[f.fecha] = 'automática'; });
-  AJ_DIAS = Object.keys(dias).sort().reverse().slice(0,60).map(f=>({fecha:f, tipo:dias[f]}));
+
+  if(!rpc.error && Array.isArray(rpc.data)){
+    AJ_DIAS = rpc.data.map(d=>({fecha:d.fecha, tipo:d.tipo, cuantos:d.cuantos}));
+  } else {
+    const [man, aut] = await Promise.all([
+      sb.from('historial').select('fecha').eq('sede',sede).order('fecha',{ascending:false}).limit(1000),
+      sb.from('historial_auto').select('fecha').eq('sede',sede).order('fecha',{ascending:false}).limit(1000),
+    ]);
+    if(sede !== AJ_SEDE) return;
+    const dias = {};
+    (man.data||[]).forEach(f=>{ dias[f.fecha] = 'contada a mano'; });
+    (aut.data||[]).forEach(f=>{ if(!dias[f.fecha]) dias[f.fecha] = 'automática'; });
+    AJ_DIAS = Object.keys(dias).sort().reverse().slice(0,60).map(f=>({fecha:f, tipo:dias[f]}));
+  }
   if(ajActual === 'respaldos') pintarAjustes();
 }
 
@@ -8045,14 +8073,27 @@ async function loadRecetas(){
      a poco durante semanas, y una cola que se reinicia cada vez nunca avanza. */
   const ps = await sb.from('fudo_pospuestos').select('fudo_product_id').eq('sede',SEDE).limit(2000);
   if(!ps.error) (ps.data||[]).forEach(p=> POSPUESTOS.add(p.fudo_product_id));
-  const rc = await sb.from('recetas').select('*').eq('sede',SEDE).order('fudo_product_nombre');
+  /* Con tope explícito, no porque sobren: sin `.limit()` Supabase corta en
+     1000 igual y **no avisa**. Escrito acá, el día que se cruce se ve en el
+     código en vez de aparecer como recetas que faltan sin motivo. El
+     contador de Ajustes -> Salud del sistema vigila que no se acerque. */
+  const rc = await sb.from('recetas').select('*').eq('sede',SEDE)
+    .order('fudo_product_nombre').limit(2000);
   if(rc.error){
     $('rec-list').innerHTML='<div class="empty">Las recetas aún no están activadas en la base de datos.</div>';
     $('rec-count').textContent=''; return;
   }
   const ids=(rc.data||[]).map(r=>r.id);
   let items=[];
-  if(ids.length){ const ri=await sb.from('receta_items').select('*').in('receta_id',ids); items=ri.data||[]; }
+  if(ids.length){
+    /* LA QUE VA A CRUZAR PRIMERO. Es una fila por cada ingrediente de cada
+       receta, así que crece justo cuando se avanza con la cobertura. Al
+       pasar de 1000, la pantalla mostraría recetas incompletas sin decir
+       nada — el arreglo ese día es pedirle a la base el resumen ya contado,
+       no subir este número. */
+    const ri = await sb.from('receta_items').select('*').in('receta_id',ids).limit(5000);
+    items = ri.data||[];
+  }
   RECETAS=(rc.data||[]).map(r=>({...r, items: items.filter(it=>it.receta_id===r.id)}));
   renderRecetas();
   renderPortada();
