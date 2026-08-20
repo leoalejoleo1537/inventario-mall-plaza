@@ -158,6 +158,49 @@ caso('la cabecera lleva el filo de color a la izquierda', await page.evaluate(()
   const h = document.querySelector('.sec-head');
   return !!h && getComputedStyle(h).boxShadow.includes('inset');
 }) || 'no tiene el filo');
+/* ─── EL GESTO DE DESLIZAR ─────────────────────────────────────────────────
+   Esta prueba nace de un bug real (2026-08-20). La animación de entrada de
+   las filas se puso con `animation-fill-mode: both`, y eso deja pegado el
+   último fotograma para siempre — un fotograma que dice `transform:none`.
+   Como una animación le gana a un estilo puesto a mano, la fila quedaba
+   clavada: al deslizarla asomaba el símbolo, pero **la fila no se movía**.
+
+   Jhon lo reportó así: "si bien ahí deslizó sí sale para mermar y para
+   agregar a reparto, pero no se mueve literalmente el producto".
+
+   Por eso lo que se comprueba NO es que el símbolo aparezca —eso seguía
+   funcionando con el bug— sino que la fila **se haya movido de verdad**. */
+console.log('\nDeslizar mueve la fila, no solo el símbolo:');
+{
+  const fila = await page.$('.sec-body .row');
+  const caja = await fila.boundingBox();
+  const y = caja.y + caja.height / 2;
+  await page.mouse.move(caja.x + 40, y);
+  await page.mouse.down();
+  await page.mouse.move(caja.x + 140, y, {steps: 12});
+  await page.waitForTimeout(120);
+
+  const movida = await page.evaluate(() => {
+    const r = document.querySelector('.sec-body .row.desliza') || document.querySelector('.sec-body .row');
+    const t = getComputedStyle(r).transform;
+    if (!t || t === 'none') return 0;
+    return Math.abs(parseFloat(t.split(',')[4] || 0));   // el desplazamiento en X
+  });
+  caso('la fila se corre con el dedo', movida > 40 || `solo se movió ${movida}px — algo le está pisando el transform`);
+  caso('y el símbolo asoma detrás', await page.isVisible('#swipe-icono') || 'no apareció');
+  caso('hacia la derecha dice Mermar, no "+"', await page.evaluate(() =>
+    document.getElementById('swipe-icono').textContent.trim() === 'Mermar')
+    || 'dice: ' + await page.textContent('#swipe-icono'));
+
+  await page.mouse.up();
+  await page.waitForTimeout(600);
+  caso('al soltar, se abre la ventana de mermar', await page.evaluate(() =>
+    [...document.querySelectorAll('.overlay.open h2')].some(h => h.textContent.includes('Mermar')))
+    || 'no se abrió');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+}
+
 caso('el carril de las pestañas se colocó', await page.evaluate(() => {
   const c = document.getElementById('tabCarril');
   return !!c && c.classList.contains('listo') && parseFloat(c.style.width) > 0;

@@ -588,7 +588,21 @@
      entre una y otra. Da la sensación de que la lista se arma sola en vez de
      aparecer de golpe. Solo las primeras ocho llevan retraso: más allá, el
      escalón se convierte en espera. */
-  .sec.open .sec-body .row{animation:fila-entra .3s cubic-bezier(.2,.8,.3,1) both}
+  /* ⚠️ `backwards` Y NO `both`, y esto no es un detalle: con `both` la
+     animación DEJA PEGADO su último fotograma para siempre, y ese último
+     fotograma dice `transform:none`. Como una animación le gana a un estilo
+     puesto a mano, la fila quedaba clavada: al deslizarla asomaba el símbolo
+     —eso lo dibuja otro elemento— pero **la fila no se movía ni un píxel**.
+     Un bug que se ve como "el gesto no responde" y en realidad es una regla
+     de CSS pisando a otra.
+
+     Con `backwards` el primer fotograma se aplica antes de empezar (para que
+     no parpadee durante el retraso) y al terminar la fila vuelve a sus
+     estilos normales, así que el deslizar manda. */
+  .sec.open .sec-body .row{animation:fila-entra .3s cubic-bezier(.2,.8,.3,1) backwards}
+  /* Y por si alguna animación futura vuelve a pisar el transform: mientras se
+     arrastra, ninguna anima esta fila. */
+  .row.desliza,.row.vuelve{animation:none}
   .sec.open .sec-body .row:nth-child(2){animation-delay:.05s}
   .sec.open .sec-body .row:nth-child(3){animation-delay:.1s}
   .sec.open .sec-body .row:nth-child(4){animation-delay:.15s}
