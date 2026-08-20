@@ -1,0 +1,658 @@
+<title>Las llaves de Llamita</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    /* La paleta es la de la casa (CLAUDE.md §2). El naranja se reserva para
+       acción y alerta; el azul pizarra ordena, no grita. */
+    --papel:#F5F6F8; --carta:#FFFFFF; --tinta:#14202E; --tenue:#667283;
+    --naranja:#DC4405; --pizarra:#2F4A6D; --linea:#E1E5EA;
+    --alto:#FDECEA; --alto-tx:#B4342A;
+    --ok:#E8F2E9; --ok-tx:#2E7D32;
+    --avi:#FFF3E0; --avi-tx:#9C5C00;
+    --codigo:#EDEFF3;
+    --sombra:0 1px 2px rgba(20,32,46,.05), 0 8px 24px -16px rgba(20,32,46,.28);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --papel:#0E1620; --carta:#18222E; --tinta:#E7EBF0; --tenue:#93A0B1;
+      --naranja:#FF6A2B; --pizarra:#9FB6D4; --linea:#28353F;
+      --alto:#3A1E1B; --alto-tx:#FF9A8D;
+      --ok:#16301C; --ok-tx:#8ED89A;
+      --avi:#33260F; --avi-tx:#F0BE6A;
+      --codigo:#212C39;
+      --sombra:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.8);
+    }
+  }
+  :root[data-theme="dark"]{
+    --papel:#0E1620; --carta:#18222E; --tinta:#E7EBF0; --tenue:#93A0B1;
+    --naranja:#FF6A2B; --pizarra:#9FB6D4; --linea:#28353F;
+    --alto:#3A1E1B; --alto-tx:#FF9A8D;
+    --ok:#16301C; --ok-tx:#8ED89A;
+    --avi:#33260F; --avi-tx:#F0BE6A;
+    --codigo:#212C39;
+    --sombra:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--papel); color:var(--tinta);
+    font-family:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    font-size:16.5px; line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:"Archivo", system-ui, sans-serif; text-wrap:balance; margin:0}
+  code, .mono{font-family:"IBM Plex Mono", ui-monospace, monospace}
+
+  /* ---------- portada ---------- */
+  .tapa{
+    background:linear-gradient(168deg, #14202E 0%, #1B2C41 62%, #22384F 100%);
+    color:#EEF1F5; padding:clamp(38px,7vw,74px) 0 clamp(34px,6vw,60px);
+  }
+  .col{width:min(100% - 40px, 1120px); margin-inline:auto}
+  .tapa .col{max-width:1120px}
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace; font-size:12px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--naranja); font-weight:500;
+  }
+  .tapa .eyebrow{color:#FF8A5C}
+  .tapa h1{
+    font-size:clamp(34px,6.6vw,60px); font-weight:700; line-height:1.03;
+    letter-spacing:-.022em; margin:14px 0 0; max-width:16ch;
+  }
+  .tapa .bajada{
+    margin:18px 0 0; max-width:60ch; font-size:clamp(16px,2.2vw,19px);
+    color:#B9C4D2; line-height:1.55;
+  }
+  .tapa .firma{
+    margin-top:30px; padding-top:22px; border-top:1px solid rgba(255,255,255,.14);
+    display:flex; flex-wrap:wrap; gap:10px 34px; font-size:13.5px; color:#93A2B4;
+  }
+  .tapa .firma b{color:#DCE3EB; font-weight:600}
+
+  /* ---------- cuerpo: índice fijo + columna de lectura ---------- */
+  .cuerpo{
+    width:min(100% - 40px, 1120px); margin:clamp(30px,5vw,56px) auto clamp(60px,9vw,110px);
+    display:grid; grid-template-columns:1fr; gap:clamp(28px,4vw,54px);
+  }
+  @media (min-width:960px){
+    .cuerpo{grid-template-columns:236px minmax(0,1fr)}
+  }
+  .indice{align-self:start}
+  @media (min-width:960px){ .indice{position:sticky; top:26px} }
+  .indice h2{
+    font-size:11.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--tenue); font-weight:600; margin-bottom:12px;
+    font-family:"IBM Plex Mono", monospace;
+  }
+  .indice a{
+    display:block; padding:7px 0 7px 13px; border-left:2px solid var(--linea);
+    color:var(--tenue); text-decoration:none; font-size:14.5px; line-height:1.35;
+    transition:color .15s ease, border-color .15s ease;
+  }
+  .indice a:hover, .indice a:focus-visible{color:var(--naranja); border-color:var(--naranja)}
+
+  main{min-width:0; max-width:70ch}
+  section + section{margin-top:clamp(44px,6vw,72px)}
+  section h2{
+    font-size:clamp(23px,3.4vw,30px); font-weight:700; letter-spacing:-.014em;
+    line-height:1.16; margin:8px 0 0; scroll-margin-top:24px;
+  }
+  section > p:first-of-type{margin-top:14px}
+  h3{
+    font-size:17.5px; font-weight:600; letter-spacing:-.006em;
+    margin:34px 0 0; color:var(--tinta);
+  }
+  p{margin:14px 0 0}
+  strong{font-weight:600}
+  a{color:var(--naranja)}
+
+  /* ---------- las llaves: lo primero, porque es la respuesta ---------- */
+  .llaves{display:grid; gap:11px; margin-top:22px}
+  @media (min-width:620px){ .llaves{grid-template-columns:1fr 1fr} }
+  .llave{
+    background:var(--carta); border-radius:13px; padding:15px 17px;
+    box-shadow:var(--sombra); border:1px solid var(--linea);
+  }
+  .llave .q{
+    font-family:"IBM Plex Mono", monospace; font-size:11.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--pizarra); font-weight:500;
+  }
+  .llave b{display:block; font-family:"Archivo",sans-serif; font-size:17px; font-weight:600; margin-top:5px}
+  .llave span{display:block; font-size:14px; color:var(--tenue); margin-top:5px; line-height:1.45}
+
+  /* ---------- tablas ---------- */
+  .tabla{overflow-x:auto; margin-top:20px; border-radius:12px; border:1px solid var(--linea); background:var(--carta)}
+  table{width:100%; border-collapse:collapse; font-size:14.5px; min-width:460px}
+  th{
+    text-align:left; font-family:"IBM Plex Mono",monospace; font-size:11.5px;
+    letter-spacing:.09em; text-transform:uppercase; color:var(--tenue);
+    font-weight:500; padding:11px 15px; border-bottom:1px solid var(--linea);
+    white-space:nowrap;
+  }
+  td{padding:11px 15px; border-bottom:1px solid var(--linea); vertical-align:top; line-height:1.45}
+  tr:last-child td{border-bottom:none}
+  td:first-child{font-weight:600}
+  .num{font-variant-numeric:tabular-nums; white-space:nowrap}
+
+  /* ---------- avisos ---------- */
+  .nota{
+    border-radius:12px; padding:15px 18px; margin-top:22px; font-size:15px;
+    line-height:1.55; border:1px solid transparent;
+  }
+  .nota p{margin:10px 0 0} .nota p:first-child{margin:0}
+  .nota .t{font-family:"Archivo",sans-serif; font-weight:600; font-size:15.5px}
+  .nota.grave{background:var(--alto); color:var(--alto-tx); border-color:color-mix(in srgb, var(--alto-tx) 22%, transparent)}
+  .nota.aviso{background:var(--avi); color:var(--avi-tx); border-color:color-mix(in srgb, var(--avi-tx) 22%, transparent)}
+  .nota.bien{background:var(--ok); color:var(--ok-tx); border-color:color-mix(in srgb, var(--ok-tx) 22%, transparent)}
+
+  /* ---------- listas ---------- */
+  ul{margin:14px 0 0; padding-left:0; list-style:none}
+  ul li{position:relative; padding-left:20px; margin-top:9px}
+  ul li::before{
+    content:""; position:absolute; left:2px; top:.68em; width:6px; height:6px;
+    border-radius:50%; background:var(--naranja);
+  }
+  ol{margin:14px 0 0; padding-left:22px}
+  ol li{margin-top:9px}
+
+  /* la lista de traspaso sí es una lista de tareas, así que se ve como una */
+  .checklist{list-style:none; padding:0; margin:20px 0 0}
+  .checklist li{
+    position:relative; padding:13px 16px 13px 46px; background:var(--carta);
+    border:1px solid var(--linea); border-radius:11px; margin-top:9px; font-size:15px;
+  }
+  .checklist li::before{
+    content:""; position:absolute; left:16px; top:15px; width:17px; height:17px;
+    border:2px solid var(--naranja); border-radius:5px; background:transparent;
+  }
+  .checklist li b{display:block; font-family:"Archivo",sans-serif; font-weight:600; font-size:15.5px}
+  .checklist li span{display:block; color:var(--tenue); font-size:14px; margin-top:3px; line-height:1.45}
+
+  code{
+    background:var(--codigo); padding:1.5px 6px; border-radius:5px;
+    font-size:.87em; color:var(--tinta); white-space:nowrap;
+  }
+  .ruta{color:var(--pizarra); font-weight:500}
+
+  hr{border:none; border-top:1px solid var(--linea); margin:34px 0 0}
+  .pie{
+    width:min(100% - 40px, 1120px); margin:0 auto clamp(40px,7vw,80px);
+    padding-top:26px; border-top:1px solid var(--linea);
+    font-size:13.5px; color:var(--tenue);
+  }
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+
+<header class="tapa">
+  <div class="col">
+    <p class="eyebrow">Traspaso · agosto 2026</p>
+    <h1>Ahí vive Llamita, y es de ustedes.</h1>
+    <p class="bajada">
+      Esta página es el mapa completo del sistema de inventario de Café del Desierto:
+      qué piezas lo componen, dónde vive cada una, qué cuentas hay que cambiar de nombre
+      y qué hay que saber para operarlo sin ayuda de nadie.
+    </p>
+    <div class="firma">
+      <span><b>3</b> sedes conectadas</span>
+      <span><b>2</b> cuentas de Fudo</span>
+      <span><b>Todo</b> corre en la nube</span>
+      <span><b>Sin</b> nada instalado en ningún computador</span>
+    </div>
+  </div>
+</header>
+
+<div class="cuerpo">
+  <nav class="indice" aria-label="Índice">
+    <h2>En esta página</h2>
+    <a href="#llaves">Las llaves</a>
+    <a href="#que-es">Qué es Llamita</a>
+    <a href="#donde">Dónde vive cada pieza</a>
+    <a href="#traspaso">La lista del traspaso</a>
+    <a href="#operar">Operarlo, día a día</a>
+    <a href="#falla">Cuando algo falla</a>
+    <a href="#reglas">Las cinco reglas que no se tocan</a>
+    <a href="#costos">Qué cuesta mantenerlo</a>
+    <a href="#pendiente">Lo que queda pendiente</a>
+    <a href="#quien">Quién puede seguir esto</a>
+  </nav>
+
+  <main>
+
+  <section id="llaves">
+    <p class="eyebrow">Lo primero</p>
+    <h2>Las llaves</h2>
+    <p>
+      El sistema no es un programa que se instala: son <strong>cinco cuentas</strong>.
+      Quien sea dueño de estas cinco es dueño de Llamita. Todo lo demás —el código,
+      la base de datos, los respaldos— vive adentro de ellas.
+    </p>
+    <div class="llaves">
+      <div class="llave">
+        <span class="q">La base de datos</span>
+        <b>Supabase</b>
+        <span>Ahí están los productos, el stock, las recetas, los repartos, el historial y los permisos. Es el corazón: si esto existe, el sistema se puede reconstruir.</span>
+      </div>
+      <div class="llave">
+        <span class="q">Publica la app</span>
+        <b>Vercel</b>
+        <span>Toma el código y lo pone en internet. La app que abre el personal es una dirección web, no una descarga.</span>
+      </div>
+      <div class="llave">
+        <span class="q">El código</span>
+        <b>GitHub</b>
+        <span>La historia completa de cada cambio, con su explicación. Es lo que permite que otra persona entienda por qué algo está hecho así.</span>
+      </div>
+      <div class="llave">
+        <span class="q">El punto de venta</span>
+        <b>Fudo · 2 cuentas</b>
+        <span>Mall Plaza y Parque Angamos, cada una con su clave de conexión. Son las que le avisan al inventario que se vendió algo.</span>
+      </div>
+      <div class="llave">
+        <span class="q">Los respaldos y las notas</span>
+        <b>Notion</b>
+        <span>Donde se guardan las copias en CSV y las decisiones que no son código. No es imprescindible, pero es donde está escrito el porqué de varias cosas.</span>
+      </div>
+    </div>
+    <div class="nota bien">
+      <p class="t">La respuesta corta a “¿qué les entrego?”</p>
+      <p>
+        <strong>El repositorio de GitHub y las cinco cuentas.</strong> No una carpeta con
+        archivos sueltos: el repositorio ya contiene el código, los 105 archivos SQL con
+        su índice, los 15 archivos de pruebas, los documentos de diseño y —lo más
+        importante— <code>CLAUDE.md</code>, que explica por qué cada decisión se tomó
+        como se tomó. Esta página es la portada de todo eso.
+      </p>
+    </div>
+  </section>
+
+  <section id="que-es">
+    <p class="eyebrow">El sistema</p>
+    <h2>Qué es Llamita</h2>
+    <p>
+      Un inventario multi-sede conectado al punto de venta. Reemplazó las planillas de
+      Excel que se llevaban a mano, y hace tres cosas que el Excel no hacía:
+    </p>
+    <ul>
+      <li><strong>Descuenta solo.</strong> Cuando se vende un cappuccino en Fudo, la leche
+        y el vaso bajan del inventario sin que nadie anote nada. Lo hace una lista de
+        recetas: cada producto de la carta dice qué insumos gasta.</li>
+      <li><strong>Le devuelve el stock a Fudo.</strong> Cada 15 minutos le manda a Fudo
+        cuánto queda de verdad, para que no se venda lo que ya no hay. Antes eso se hacía
+        a mano, producto por producto, y por eso se ponía “1.000” de todo.</li>
+      <li><strong>Muestra las tres sedes en vivo.</strong> Jefatura ve el stock real desde
+        el teléfono, con las fechas de vencimiento de cada sándwich a la vista.</li>
+    </ul>
+    <p>
+      Además maneja los repartos entre la bodega y los locales, las mermas, el historial
+      diario, las metas de venta y una zona de administración donde se configura todo sin
+      tocar código.
+    </p>
+    <h3>Las tres sedes</h3>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>En pantalla</th><th>Nombre interno</th><th>Qué es</th></tr></thead>
+        <tbody>
+          <tr><td>Café Mall Plaza</td><td><code>plaza</code></td><td>Local. Vende, descuenta y le escribe a Fudo.</td></tr>
+          <tr><td>Parque Angamos</td><td><code>angamos</code></td><td>Local. Igual que Plaza, con su propia cuenta de Fudo.</td></tr>
+          <tr><td>Bodega</td><td><code>central</code></td><td>Abastece a los dos locales. No vende.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="nota aviso">
+      <p class="t">Ojo con una palabra</p>
+      <p>
+        Existe una cuarta sede, <code>bodega</code>, que es <strong>la bodega vieja</strong>.
+        Ya no se ofrece en la app, pero sigue en la base con todo su historial porque hay
+        repartos y recetas antiguas que apuntan ahí. <strong>Una fila que diga
+        <code>bodega</code> es la vieja; la bodega de hoy es <code>central</code>.</strong>
+        No se borra y no se toca.
+      </p>
+    </div>
+  </section>
+
+  <section id="donde">
+    <p class="eyebrow">El mapa</p>
+    <h2>Dónde vive cada pieza</h2>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Pieza</th><th>Dónde está</th><th>Cómo se actualiza</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>La app</td>
+            <td><code class="ruta">index.html</code> — un solo archivo, sin compilar</td>
+            <td>Vercel publica la rama <code>master</code>. Se guarda un cambio ahí y en un minuto está en los teléfonos.</td>
+          </tr>
+          <tr>
+            <td>La app instalable</td>
+            <td><code class="ruta">manifest.json</code>, <code class="ruta">sw.js</code>, <code class="ruta">icons/</code></td>
+            <td>Va junto con lo anterior. Se agrega a la pantalla de inicio como cualquier app, pero no pasa por App Store ni Play Store.</td>
+          </tr>
+          <tr>
+            <td>La base de datos</td>
+            <td>Supabase (PostgreSQL)</td>
+            <td>Los cambios de estructura se corren a mano en <strong>SQL Editor</strong>, pegando uno de los archivos de <code class="ruta">sql/</code>.</td>
+          </tr>
+          <tr>
+            <td>El puente con Fudo</td>
+            <td><code class="ruta">supabase/functions/</code> — 8 funciones vivas</td>
+            <td><strong>No se despliegan solas.</strong> Hay que copiar el código y pegarlo en Supabase → Edge Functions → Deploy.</td>
+          </tr>
+          <tr>
+            <td>Las claves de Fudo</td>
+            <td>Supabase → Edge Functions → Secrets</td>
+            <td>Se llaman <code>FUDO_PLAZA_APIKEY</code>, <code>FUDO_ANGAMOS_APIKEY</code> y sus <code>APISECRET</code>. El nombre no es libre: se arma con el nombre de la sede.</td>
+          </tr>
+          <tr>
+            <td>Los relojes</td>
+            <td>Supabase → Database → Cron</td>
+            <td>Tres tareas: sincronizar con Fudo cada 15 min, y la foto del inventario a las 15:00 y a las 22:00.</td>
+          </tr>
+          <tr>
+            <td>El porqué de todo</td>
+            <td><code class="ruta">CLAUDE.md</code></td>
+            <td>El documento más importante del repositorio. Cada regla dura viene de una falla real y cuenta cuál fue.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="nota grave">
+      <p class="t">La trampa que ya costó dos veces</p>
+      <p>
+        <strong>Vercel publica <code>master</code>, no la rama de trabajo.</strong> Si un
+        cambio no llega al teléfono, casi siempre es porque quedó en otra rama sin fusionar.
+      </p>
+      <p>
+        <strong>Y que un archivo <code>.sql</code> esté en el repositorio no significa que
+        se haya corrido en la base.</strong> En julio el sistema estuvo 15 horas leyendo
+        ventas sin descontar nada —mostrando “✓” en la pantalla— porque se dio por corrido
+        un archivo que nunca se ejecutó. Para saber qué se corrió de verdad está la tabla
+        <code>migraciones_aplicadas</code>.
+      </p>
+    </div>
+  </section>
+
+  <section id="traspaso">
+    <p class="eyebrow">Lo que hay que hacer</p>
+    <h2>La lista del traspaso</h2>
+    <p>
+      Esto es lo que convierte “funciona” en “es de ustedes”. Son cambios de titularidad,
+      no de código: hasta que estén hechos, el sistema sigue dependiendo de cuentas
+      personales.
+    </p>
+    <ol class="checklist">
+      <li>
+        <b>Pasar el proyecto de Supabase a una cuenta de la empresa</b>
+        <span>Es lo único verdaderamente irreemplazable: ahí están los datos. Se hace transfiriendo la organización, o invitando a la cuenta de la empresa como dueña.</span>
+      </li>
+      <li>
+        <b>Pasar el repositorio de GitHub</b>
+        <span>Transferir el repositorio a la organización de la empresa. Se lleva consigo toda la historia y las explicaciones.</span>
+      </li>
+      <li>
+        <b>Reconectar Vercel al repositorio nuevo</b>
+        <span>Y ahí conviene decidir si se queda en Vercel o se pasa a Cloudflare Pages. Ver la sección de costos: no es un detalle.</span>
+      </li>
+      <li>
+        <b>Anotar dónde están las claves de Fudo</b>
+        <span>Están cargadas y funcionando, pero solo existen dentro de Supabase. Si alguna vez hay que recrearlas, se piden en el panel de Fudo de cada local.</span>
+      </li>
+      <li>
+        <b>Nombrar quién entra a Ajustes</b>
+        <span>Desde la app misma: menú → Ajustes → Personas y acceso. Quien entra ahí puede configurar todo, incluido escribirle a Fudo. Hoy es un permiso único: se entra o no se entra.</span>
+      </li>
+      <li>
+        <b>Guardar un respaldo el día del traspaso</b>
+        <span>Con <code>sql/2026-07-respaldo-para-guardar.sql</code>. Cuatro archivos CSV que se guardan fuera del sistema. Es la foto del día cero.</span>
+      </li>
+      <li>
+        <b>Decidir si se paga el plan Pro de Supabase</b>
+        <span>Es la única forma de tener respaldo diario automático de toda la base. Sin él, la red es la foto de las 15:00 y las 22:00, que cubre el inventario pero no la base entera.</span>
+      </li>
+    </ol>
+  </section>
+
+  <section id="operar">
+    <p class="eyebrow">El día a día</p>
+    <h2>Operarlo</h2>
+    <p>
+      Casi nada requiere intervención: el sistema se sincroniza solo y se respalda solo.
+      Lo que sí hay que saber es dónde está cada perilla.
+    </p>
+
+    <h3>Lo que hace solo</h3>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Cuándo</th><th>Qué pasa</th></tr></thead>
+        <tbody>
+          <tr><td class="num">cada 15 min</td><td>Lee las ventas de Fudo, descuenta el stock y le devuelve a Fudo el inventario entero.</td></tr>
+          <tr><td class="num">15:00 y 22:00</td><td>Le saca una foto al inventario de las tres sedes: nombre, sección, stock, mínimo, máximo. Queda en el Historial.</td></tr>
+          <tr><td class="num">al confirmar un reparto</td><td>Suma en el local que recibe, descuenta en bodega y le avisa a Fudo.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>El botón ⟳</h3>
+    <p>
+      Arriba a la derecha. Hace lo mismo que el reloj automático, pero en el momento:
+      trae el catálogo de Fudo, lee las ventas, descuenta y empuja el stock. Al terminar
+      muestra qué subió y qué bajó en Fudo. <strong>Lo puede usar cualquiera</strong> —no
+      hace falta permiso— porque tenerlo cerrado hacía que el mesón se quedara esperando.
+    </p>
+
+    <h3>Ajustes</h3>
+    <p>
+      Menú <strong>☰ → Ajustes</strong>. Es la zona que evita tener que llamar a alguien.
+      Diez secciones:
+    </p>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Sección</th><th>Para qué</th></tr></thead>
+        <tbody>
+          <tr><td>Interruptores</td><td>Encender y apagar funciones sin tocar código. Apagar siempre devuelve lo que había antes.</td></tr>
+          <tr><td>Productos</td><td>Encender y apagar productos, y juntar duplicados. Lo que se apaga desaparece de la app y de Fudo.</td></tr>
+          <tr><td>Secciones y turnos</td><td>Crear, borrar y reordenar secciones, moverles productos, y decidir qué se cuenta en la mañana y qué en la tarde.</td></tr>
+          <tr><td>Relaciones</td><td>Los pares vitrina/congelador, el enlace bodega–local, y qué sección nuestra corresponde a cada categoría de Fudo.</td></tr>
+          <tr><td>Metas de venta</td><td>Un objetivo con premio y fecha. Las dos sedes compiten en una barra que se ve en el inventario.</td></tr>
+          <tr><td>Personas y acceso</td><td>Quién entra a Ajustes.</td></tr>
+          <tr><td>Fudo</td><td>El modo prueba/real de cada sede, la vigilancia del reloj, y el empuje manual de stock.</td></tr>
+          <tr><td>Respaldos</td><td>Ver las fotos guardadas y restaurar una sede a un día concreto.</td></tr>
+          <tr><td>Actividad</td><td>Quién hizo qué y cuándo, de los últimos 30 días. Solo lectura.</td></tr>
+          <tr><td>Salud del sistema</td><td>Si el motor descuenta, si hay recetas rotas, y cuánto le falta a cada tabla para el tope de las 1.000 filas.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Prueba y real</h3>
+    <p>
+      Cada sede tiene un modo. En <strong>real</strong> cada venta baja el stock de verdad.
+      En <strong>prueba</strong> las ventas se anotan pero el stock no se toca: sirve para
+      encender una sede nueva y mirar qué habría pasado antes de dejarla suelta. Hoy las dos
+      sedes están en real.
+    </p>
+  </section>
+
+  <section id="falla">
+    <p class="eyebrow">Cuando pasa algo</p>
+    <h2>Los cuatro síntomas y qué hacer</h2>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Se ve así</th><th>Casi siempre es</th><th>Qué hacer</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Una franja roja bajo las pestañas</td>
+            <td>El reloj lleva rato sin correr</td>
+            <td>Apretar ⟳ una vez. Si vuelve a salir, mirar Ajustes → Fudo: dice cuándo corrió por última vez y cuántas ventas fallaron.</td>
+          </tr>
+          <tr>
+            <td>“El inventario no se está descontando”</td>
+            <td>El motor está fallando en las ventas</td>
+            <td>Es la alarma más seria y aparece a propósito. Correr el <strong>bloque 0</strong> de <code class="ruta">sql/2026-07-salud-del-sistema.sql</code>: dice en diez filas qué está mal.</td>
+          </tr>
+          <tr>
+            <td>Un cambio no llega al teléfono</td>
+            <td>Quedó sin fusionar a <code>master</code></td>
+            <td>Revisar en GitHub que el cambio esté en <code>master</code> y que Vercel haya publicado.</td>
+          </tr>
+          <tr>
+            <td>Fudo vende algo que no hay</td>
+            <td>Falta la receta de ese producto</td>
+            <td>Sin receta, el sistema no sabe qué descontar y Fudo lo sigue vendiendo sin límite. Se arregla en la pestaña Recetas.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="nota aviso">
+      <p class="t">Si un número está raro, cuéntenlo</p>
+      <p>
+        Un inventario puede ir atrasado respecto a la realidad —eso se corrige contando— y
+        el sistema está hecho para preferir eso antes que inventar un número que parece
+        exacto. Contar y corregir a mano nunca rompe nada.
+      </p>
+    </div>
+  </section>
+
+  <section id="reglas">
+    <p class="eyebrow">No negociables</p>
+    <h2>Las cinco reglas que no se tocan</h2>
+    <p>
+      Cada una viene de algo que salió mal. Están escritas completas en
+      <code>CLAUDE.md</code>, con la historia de cómo se aprendieron.
+    </p>
+    <ul>
+      <li><strong>Antes de escribir en una sede, sacarle una foto.</strong> El 9 de agosto
+        Angamos quedó en cero y no se pudo recuperar nada, porque nunca se le había
+        guardado un inventario. Desde entonces la foto es automática dos veces al día.</li>
+      <li><strong>El stock nunca puede ser negativo.</strong> No es una regla que alguien
+        deba recordar: la base misma rechaza cualquier número bajo cero, venga de donde
+        venga.</li>
+      <li><strong>Un perecedero entra solo por fechas.</strong> Los sándwiches no tienen
+        “cantidad”: tienen fechas de vencimiento, y la cantidad es la suma de esas fechas.
+        Y todas las fechas se muestran siempre, sin resumir.</li>
+      <li><strong>El sistema no simula movimientos que nadie hizo.</strong> Hubo una función
+        que trasladaba producto del congelador a la vitrina automáticamente; se apagó porque
+        la app decía que la vitrina tenía cuatro cuando el estante estaba vacío.</li>
+      <li><strong>Nada puede fallar en silencio.</strong> Si el motor lee ventas y no
+        descuenta ninguna, la app abre una ventana que lo dice. Un sistema que falla callado
+        es peor que uno que se cae, porque nadie va a buscar lo que parece estar bien.</li>
+    </ul>
+  </section>
+
+  <section id="costos">
+    <p class="eyebrow">La cuenta</p>
+    <h2>Qué cuesta mantenerlo</h2>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Servicio</th><th>Hoy</th><th>Lo que conviene</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Supabase</td>
+            <td class="num">Plan gratuito</td>
+            <td><strong>Pro, ~25 USD/mes.</strong> El plan gratuito <strong>no tiene punto de restauración</strong>: si se pierde algo, no hay a dónde volver salvo las fotos del inventario.</td>
+          </tr>
+          <tr>
+            <td>Publicación web</td>
+            <td class="num">Vercel gratuito</td>
+            <td><strong>Cloudflare Pages, gratis.</strong> El plan gratuito de Vercel es para uso personal; para una empresa corresponde pagarlo o mudarse. Cloudflare permite uso comercial sin costo.</td>
+          </tr>
+          <tr>
+            <td>Fudo</td>
+            <td class="num">Ya se paga</td>
+            <td>No cambia. El inventario se conecta a lo que ya existe.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      <strong>Total realista: entre 25 y 45 dólares al mes</strong>, y ese número no sube al
+      agregar sedes: Supabase cobra por proyecto, no por local. Una sede nueva son filas
+      nuevas, no otro sistema.
+    </p>
+  </section>
+
+  <section id="pendiente">
+    <p class="eyebrow">Honestidad</p>
+    <h2>Lo que queda pendiente</h2>
+    <p>
+      Nada de esto impide operar, pero es mejor que esté escrito acá y no que aparezca solo.
+    </p>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Qué</th><th>Por qué importa</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Cobertura de recetas</td>
+            <td>Alrededor de la mitad de los productos de la carta ya descuentan. El resto se vende sin descontar nada: no está mal, está incompleto. Se completa desde la pestaña Recetas, de a un producto.</td>
+          </tr>
+          <tr>
+            <td>Insumos a granel</td>
+            <td>El café, el té y las naranjas todavía no se descuentan, porque nadie sabe cuántos gramos lleva cada taza. Hay mediciones hechas y el sistema ya soporta cantidades con decimales; falta la pantalla.</td>
+          </tr>
+          <tr>
+            <td>El tope de las 1.000 filas</td>
+            <td>Supabase nunca devuelve más de 1.000 filas de una vez, y no avisa. Ninguna tabla está cerca todavía; Ajustes → Salud del sistema lo muestra con una barra. Hay que mirarlo una vez al mes.</td>
+          </tr>
+          <tr>
+            <td>Combos de elección libre</td>
+            <td>Un combo de “3 masitas a elección” no se puede descontar bien, porque Fudo no dice cuáles eligió el cliente. No tiene solución dentro de Fudo.</td>
+          </tr>
+          <tr>
+            <td>Panel de análisis</td>
+            <td>Las ventas de cada día ya están guardadas en la base, así que las gráficas son una pantalla nueva, no una integración. Conviene hacerlo después de subir la cobertura de recetas: un tablero sobre datos incompletos miente con autoridad.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="quien">
+    <p class="eyebrow">Después</p>
+    <h2>Quién puede seguir esto</h2>
+    <p>
+      No hace falta el equipo original. Hace falta alguien que sepa <strong>JavaScript y
+      SQL</strong> —no frameworks: la app es un solo archivo HTML sin compilar, y la base es
+      PostgreSQL corriente—. Lo que sí hay que exigirle es que lea
+      <code>CLAUDE.md</code> antes de tocar nada.
+    </p>
+    <p>
+      Ese archivo no es documentación de cortesía. Es donde está escrito por qué el stock no
+      puede ser negativo, por qué se apagó la reposición automática, por qué las recetas se
+      unen por identificador y no por nombre, y qué pasó las tres veces que algo falló en
+      silencio. Cada regla dura viene con la falla que la produjo.
+    </p>
+    <h3>Lo que hay dentro del repositorio</h3>
+    <div class="tabla">
+      <table>
+        <thead><tr><th>Carpeta</th><th>Qué hay</th></tr></thead>
+        <tbody>
+          <tr><td><code class="ruta">index.html</code></td><td>La app entera. Un archivo, sin compilar, sin dependencias que instalar.</td></tr>
+          <tr><td><code class="ruta">sql/</code></td><td>105 archivos. <strong>La mayoría es historia, no tareas</strong>: el <code>README.md</code> de esa carpeta dice cuáles se corren de nuevo y cuáles solo explican algo que ya pasó.</td></tr>
+          <tr><td><code class="ruta">supabase/functions/</code></td><td>Las funciones que hablan con Fudo. Se despliegan pegándolas en el panel.</td></tr>
+          <tr><td><code class="ruta">pruebas/</code></td><td>15 archivos que se corren con <code>node</code>. Comprueban lo delicado: que la alarma del motor suene cuando debe <em>y que no suene cuando no</em>, que un permiso guardado de verdad se guarde, que ninguna pantalla quede muda.</td></tr>
+          <tr><td><code class="ruta">docs/</code></td><td>Las propuestas de diseño que se aprobaron antes de construir, y la guía de capacitación de Angamos.</td></tr>
+          <tr><td><code class="ruta">CLAUDE.md</code></td><td>El archivo madre. Se lee entero antes de tocar nada.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="nota bien">
+      <p class="t">Lo que hace que esto sea entregable</p>
+      <p>
+        Ninguna de las perillas importantes quedó escondida en el código: el modo prueba/real,
+        los permisos, las secciones, los turnos, las relaciones entre productos y el reloj se
+        manejan desde la app. Esa fue una decisión explícita, y la razón está escrita:
+        un sistema que solo una persona puede operar no se puede entregar.
+      </p>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<footer class="pie">
+  <div>
+    Café del Desierto · Sistema de inventario · Documento de traspaso, agosto de 2026.
+    El detalle técnico completo vive en <code>CLAUDE.md</code>, dentro del repositorio.
+  </div>
+</footer>
