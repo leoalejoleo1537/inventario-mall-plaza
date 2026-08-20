@@ -36,17 +36,29 @@
 -- BLOQUE 1 — LA FUNCIÓN
 -- QUÉ VER: "Success". No devuelve filas.
 -- ================================================================
+-- LAS DOS SE CUENTAN POR SEPARADO, y no es un detalle.
+--
+-- La primera versión juntaba las dos y ponía "contada a mano" si había
+-- alguna manual. Resultado: un día con foto automática Y conteo a mano
+-- aparecía solo como "contada a mano", y la automática quedaba escondida.
+-- O sea que mirando la lista **no se podía saber si la red está puesta**,
+-- que es lo único que de verdad importa saber de un respaldo.
 create or replace function public.fotos_por_dia(p_sede text)
-returns table(fecha date, cuantos bigint, tipo text)
+returns table(fecha date, cuantos bigint, tipo text, a_mano bigint, automatica bigint)
 language sql
 stable
-as 'select f.fecha, sum(f.cuantos) as cuantos,
-           case when bool_or(f.manual) then ''contada a mano'' else ''automática'' end as tipo
+as 'select f.fecha,
+           sum(f.man) + sum(f.aut)                        as cuantos,
+           case when sum(f.man) > 0 and sum(f.aut) > 0 then ''contada a mano + automática''
+                when sum(f.man) > 0                   then ''contada a mano''
+                else ''automática'' end                    as tipo,
+           sum(f.man)                                     as a_mano,
+           sum(f.aut)                                     as automatica
       from (
-        select h.fecha::date as fecha, count(*) as cuantos, true as manual
+        select h.fecha::date as fecha, count(*) as man, 0::bigint as aut
           from public.historial h where h.sede = p_sede group by h.fecha::date
         union all
-        select a.fecha::date, count(*), false
+        select a.fecha::date, 0::bigint, count(*)
           from public.historial_auto a where a.sede = p_sede group by a.fecha::date
       ) f
      group by f.fecha
@@ -59,9 +71,14 @@ grant execute on function public.fotos_por_dia(text) to anon, authenticated;
 -- ================================================================
 -- BLOQUE 2 — COMPROBAR  (otro Run)
 --
--- QUÉ VER: una fila por día, con cuántos productos tiene la foto y si fue
--- contada a mano o automática. **Tienen que salir muchos más días de los
--- que hoy muestra la pantalla de Respaldos.**
+-- QUÉ VER: una fila por día, con **dos columnas separadas**: cuántas filas
+-- puso el conteo a mano y cuántas la foto automática.
+--
+-- Lo que hay que mirar de verdad es la columna `automatica`: si trae un
+-- número en los días recientes, la red está puesta. Si viene en 0 varios
+-- días seguidos, el respaldo automático no está corriendo.
+--
+-- Y tienen que salir muchos más días de los que mostraba la pantalla antes.
 --
 -- Si sale un error diciendo que `historial_auto` no existe, es que todavía
 -- no se corrió `2026-08-respaldo-automatico-de-verdad.sql`. Córrelo antes

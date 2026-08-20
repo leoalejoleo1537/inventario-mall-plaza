@@ -959,6 +959,12 @@
   .aj-tope.mal .lleno{background:var(--red-fg)}
   .aj-tope p{margin:7px 0 0;font-size:12.5px;color:var(--muted);line-height:1.45}
   .aj-tope.mal p{color:var(--red-fg);font-weight:600}
+  /* ¿está puesta la red? Va arriba de la lista de días y se lee sin contar */
+  .aj-red{border-radius:12px;padding:13px 16px;margin-bottom:12px}
+  .aj-red b{display:block;font-family:inherit;font-weight:800;font-size:15px}
+  .aj-red span{display:block;font-size:13px;margin-top:3px;opacity:.9;line-height:1.45}
+  .aj-red.bien{background:var(--green-bg);color:var(--green-fg)}
+  .aj-red.mal{background:var(--red-bg);color:var(--red-fg)}
   .aj-filtros{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 
   /* ---- la barra de la competencia ----
@@ -6229,7 +6235,8 @@ async function ajCargarDias(){
   if(sede !== AJ_SEDE) return;               // cambiaron de sede mientras cargaba
 
   if(!rpc.error && Array.isArray(rpc.data)){
-    AJ_DIAS = rpc.data.map(d=>({fecha:d.fecha, tipo:d.tipo, cuantos:d.cuantos}));
+    AJ_DIAS = rpc.data.map(d=>({fecha:d.fecha, tipo:d.tipo, cuantos:d.cuantos,
+                                aMano:d.a_mano, auto:d.automatica}));
   } else {
     const [man, aut] = await Promise.all([
       sb.from('historial').select('fecha').eq('sede',sede).order('fecha',{ascending:false}).limit(1000),
@@ -6310,11 +6317,35 @@ function ajRespaldosHTML(){
     dias = `<div class="aj-caja"><h3>No hay ninguna foto de esta sede</h3>
       <p>Se sacan solas a las 15:00 y a las 22:00. Si nunca corrieron, no hay a dónde volver.</p></div>`;
   } else {
-    dias = `<div class="aj-caja"><h3>Volver a un día</h3>
+    /* ARRIBA DE TODO, SI LA RED ESTÁ PUESTA. Es la única pregunta que de
+       verdad importa de un respaldo, y antes había que deducirla mirando
+       una lista de fechas. Se mira si hubo foto automática en los últimos
+       tres días: no hace falta que haya TODOS los días —alguien pudo abrir
+       la app tarde— pero tres seguidos sin ninguna es que el reloj se
+       detuvo. */
+    const conAuto = AJ_DIAS.filter(d=>(+d.auto||0) > 0);
+    const ultimaAuto = conAuto.length ? conAuto[0].fecha : null;
+    const diasSinAuto = ultimaAuto
+      ? Math.round((new Date(hoyISO()+'T12:00') - new Date(ultimaAuto+'T12:00'))/86400000)
+      : null;
+    const red = ultimaAuto === null
+      ? {n:'mal', t:'La foto automática nunca corrió en esta sede',
+         d:'La red no está puesta. Se instala corriendo "2026-08-respaldo-automatico-de-verdad.sql".'}
+      : diasSinAuto >= 3
+        ? {n:'mal', t:'Hace ' + diasSinAuto + ' días que no se saca sola',
+           d:'El reloj puede estar detenido. Mientras tanto, guarda el inventario a mano desde Historial.'}
+        : {n:'bien', t:'La red está puesta',
+           d:'La última foto automática es del ' + fmtFecha(ultimaAuto) + '. Se saca sola a las 15:00 y a las 22:00.'};
+
+    dias = `<div class="aj-red ${red.n}">
+        <b>${esc(red.t)}</b><span>${esc(red.d)}</span>
+      </div>
+      <div class="aj-caja"><h3>Volver a un día</h3>
       <p>Devuelve el stock, el mínimo, el máximo y la sección de cada producto.</p>
       <div style="margin-top:12px">${AJ_DIAS.map(d=>`
         <button type="button" class="aj-dia${d.fecha===AJ_DIA?' on':''}" data-ajdia="${d.fecha}">
-          <span class="nm"><b>${fmtFecha(d.fecha)}</b><span>${d.tipo}</span></span>
+          <span class="nm"><b>${fmtFecha(d.fecha)}</b><span>${esc(d.tipo)}${
+            (+d.auto||0) ? '' : ' · sin foto automática'}</span></span>
           <span class="flecha">›</span>
         </button>`).join('')}</div></div>`;
   }

@@ -18,14 +18,35 @@ como estaba cualquiera de esos días.
 > proyecto de Supabase completo, esta foto se iría con él. Para eso están los
 > CSV de abajo.
 
+### Cómo se comprueba que está corriendo
+
+**En la app:** Ajustes → Respaldos. Arriba de la lista de días hay una franja
+que lo dice en una frase: verde si la red está puesta, roja si hace tres días
+o más que no se saca sola.
+
+**Con SQL**, si se quiere el detalle día por día y sede por sede:
+`sql/2026-08-esta-corriendo-el-respaldo.sql`.
+
+> Mirar la lista de fechas **no alcanza**: un día con foto automática y conteo
+> a mano se veía solo como "contada a mano", y la automática quedaba escondida
+> detrás. Por eso ahora se cuentan por separado.
+
 ---
 
 ## Lo que hay que hacer a mano
 
 ### Cada cierto tiempo, y siempre antes de un cambio grande
 
-Correr `sql/2026-07-respaldo-para-guardar.sql` en Supabase. Genera cuatro
-archivos que se descargan y se **guardan acá, adjuntos a esta página**:
+Correr **`sql/2026-08-respaldo-CUATRO-ARCHIVOS.sql`**, y correr **cada bloque
+por separado**. Después de cada uno, botón **Download CSV** arriba a la derecha
+del resultado.
+
+> ⚠️ **No pegar el archivo entero y apretar Run una sola vez.** El editor de
+> Supabase corre todo pero **muestra solo el resultado de la última consulta**:
+> las cuatro copias se generan y se pierden, y en pantalla queda una línea
+> suelta. Parece que no funcionó. Funcionó — no había dónde verlo.
+
+Los cuatro archivos se **guardan acá, adjuntos a esta página**:
 
 | Archivo | Qué es |
 |---|---|
