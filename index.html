@@ -624,6 +624,9 @@
   #swipe-icono.ver{display:flex}
   /* En bodega el lado decide la sede, así que el símbolo deja de ser un "+" y
      dice el nombre: la píldora se ensancha para que quepa. */
+  /* la merma va en ROJO, que es el color de lo que se pierde. Verlo asomar
+     antes de soltar es lo que impide mermar por error */
+  #swipe-icono.mermar{background:var(--red-fg);box-shadow:0 6px 18px -4px rgba(192,57,43,.55)}
   #swipe-icono.ancho{width:auto;min-width:104px;height:44px;border-radius:999px;
     font-size:13.5px;font-weight:800;padding:0 16px;letter-spacing:.2px}
   /* ya está en el reparto: para no agregarlo dos veces sin darse cuenta */
@@ -4305,6 +4308,13 @@ listEl.addEventListener('animationend', ()=>listEl.classList.remove('brota'));
    cualquier lado (izquierda o derecha) porque no hay una segunda acción que
    confundir, y así no hay que acordarse de para dónde. */
 const SWIPE_MIN = 72;      // cuánto hay que arrastrar para que cuente
+/* ⚠️ CAMBIO DE HÁBITO, y hay que decirlo al equipo: hasta el 2026-08-20 los
+   dos lados hacían lo mismo. Ahora, en Plaza y Angamos, la DERECHA merma.
+   Quien venía deslizando a la derecha para agregar al reparto se va a
+   encontrar con la ventana de merma. No suma ni resta nada solo —abre una
+   ventana que hay que completar y se puede cerrar—, así que el peor caso es
+   un susto, no un dato malo. Aun así conviene avisarlo antes que lo
+   descubran. */
 let swRow=null, swX0=0, swY0=0, swDx=0, swEje=null;   // swEje: 'x' | 'y' | null
 let swRect=null;   // dónde estaba la fila ANTES de moverse
 let swArrastro=false, swPid=null;  // hubo arrastre de verdad · qué puntero lo hace
@@ -4319,13 +4329,28 @@ function swipeFin(pasa){
   swIco().classList.remove('ver');
   setTimeout(()=>row.classList.remove('vuelve'), 450);
   document.body.classList.remove('sin-seleccion');
+  const dx = swDx;
   swRow=null; swDx=0; swEje=null; swRect=null; swPid=null;
-  if(pasa) mandarAlReparto(id, swDx > 0 ? 'plaza' : 'angamos');
+  if(!pasa) return;
+  /* EN UN LOCAL, CADA LADO HACE UNA COSA (Jhon, 2026-08-20): a la izquierda
+     al reparto, a la derecha a mermar. Antes los dos lados hacían lo mismo
+     "para no tener que acordarse", pero mermar es de las acciones más
+     repetidas del día y llegar por la ficha son tres toques.
+
+     EN BODEGA NO SE TOCA: allá los lados ya significaban algo desde antes
+     —derecha Mall Plaza, izquierda Angamos— y ese gesto está en uso. */
+  if(SEDE === 'central'){ mandarAlReparto(id, dx > 0 ? 'plaza' : 'angamos'); return; }
+  if(dx > 0){
+    const p = DATA.find(d=>d.id===id);
+    if(p) abrirMerma(p);
+  } else {
+    mandarAlReparto(id, 'angamos');
+  }
 }
-/* En un LOCAL el gesto va a cualquier lado y hace lo mismo: no hay una segunda
-   acción que confundir. En BODEGA sí la hay, porque el envío tiene dos
-   destinos posibles, así que el lado decide: derecha Mall Plaza, izquierda
-   Angamos. Por eso el símbolo dice a dónde va mientras se arrastra. */
+/* En BODEGA el lado decide el destino: derecha Mall Plaza, izquierda Angamos.
+   En un LOCAL, la izquierda manda al reparto y la derecha abre la merma. En
+   los dos casos el símbolo dice a dónde va mientras se arrastra — sin eso, el
+   gesto sería una apuesta. */
 function mandarAlReparto(id, lado){
   const p=DATA.find(d=>d.id===id); if(!p) return;
 
@@ -4401,9 +4426,16 @@ listEl.addEventListener('pointermove', e=>{
   const lado = dx > 0 ? r.left + 8 : r.right - 64;
   /* En bodega el símbolo dice a dónde va, porque el lado ahora significa algo.
      En los locales sigue siendo un "+" a secas. */
+  /* EL SÍMBOLO DICE QUÉ VA A PASAR, y desde que cada lado hace algo distinto
+     eso dejó de ser un adorno: es lo único que evita mermar queriendo mandar
+     al reparto. En bodega dice a qué local va; en un local, "+" a la
+     izquierda y la gota de merma a la derecha. */
+  const merma = SEDE !== 'central' && dx > 0;
   ico.textContent = SEDE==='central'
-    ? (dx > 0 ? '→ '+SEDES.plaza.corto : SEDES.angamos.corto+' ←') : '+';
-  ico.classList.toggle('ancho', SEDE==='central');
+    ? (dx > 0 ? '→ '+SEDES.plaza.corto : SEDES.angamos.corto+' ←')
+    : (merma ? 'Mermar' : '+');
+  ico.classList.toggle('ancho', SEDE==='central' || merma);
+  ico.classList.toggle('mermar', merma);
   ico.classList.add('ver');
   ico.style.top  = Math.round(r.top + r.height/2 - 28) + 'px';
   ico.style.left = Math.round(lado) + 'px';

@@ -4,8 +4,9 @@
 > y no aplicarlo hasta ver la pantalla de inicio. Este archivo existe para que
 > la decisión no se pierda entre sesiones.
 
-Maquetas: `docs/propuesta-estetica.html` (las tres pieles) y
-`docs/propuesta-estetica-2.html` (el contenedor y el ⟳).
+Maquetas: `propuesta-estetica.html` (las tres pieles),
+`propuesta-estetica-2.html` (el contenedor y el ⟳) y
+`propuesta-estetica-3.html` (la lista completa, el dial y la barra).
 
 ---
 
@@ -20,7 +21,18 @@ Maquetas: `docs/propuesta-estetica.html` (las tres pieles) y
 
 ## ⏸️ Elegido a medias — falta que Jhon decida
 
-### El contenedor del título de sección
+### El contenedor del título de sección — **elegido: la cápsula**
+
+Jhon eligió la **cápsula** (opción 3), con una condición: *"me preocupa que se
+mezcle con el fondo y se vea casi invisible… no quiero un contraste tan
+notorio, y ya sabes que no me gustan los rebordes, eso sí que no"*.
+
+Por eso la maqueta 3 trae un **dial de cuatro niveles** en vez de un valor
+elegido por mí — el punto exacto entre "se pierde" y "vuelve el ladrillo" lo
+tiene que ver él, sobre cinco secciones apiladas. **Falta que diga el número.**
+Mi voto: el 2.
+
+<details><summary>Las otras tres que se descartaron</summary>
 
 Jhon lo planteó bien: *"me preocupa que no los contenga nada… es importante
 que no sacrifiquemos en el altar de la estética la jerarquía de colores y
@@ -34,19 +46,41 @@ suelto:
 | **3 · La cápsula** | El azul relleno, pero solo del ancho de la palabra |
 | **4 · Cabecera pegajosa** | Se queda arriba al desplazar. **Suma a cualquiera de las tres** |
 
-**Recomendación: la bandeja + pegajosa.** Es la única que *mejora* la
-jerarquía en vez de conservarla — hoy la cabecera y sus filas son objetos
-separados que están cerca; en la bandeja se ve que se pertenecen.
+</details>
 
-### El acabado del ⟳
+### El ⟳ — **rehecho según lo que pidió**
+
+Ya no es un círculo con ícono. Es una **pastilla alargada que dice
+"Actualizar"**, con:
+
+- **cuerpo en relieve** que se hunde de verdad al tocarlo,
+- **el neón como él lo imaginaba**: una luz naranja que sale **por detrás**
+  del botón y late — no un borde encendido, que fue lo que entendí mal la
+  primera vez,
+- y **la ventana de carga a pantalla completa con el fondo desenfocado se
+  queda tal cual**, porque ya funciona y le gusta. El botón avisa *cuándo* hay
+  que apretarlo; la ventana muestra *mientras*.
+
+**Falta:** confirmar si la palabra es "Actualizar" u otra.
+
+### La barra superior — tres opciones, falta elegir
+
+Fuera el texto **"Inventario"**: era redundante con la pestaña. El
+protagonista pasa a ser **la sede**, en grande, y debajo un dato que sirve
+—cuántos críticos hay ahora—.
 
 | | |
 |---|---|
-| **A · Pulso** | Disco limpio con un halo que late como una gota en el agua |
-| **B · Neón** | Degradado, borde encendido por dentro, dos capas de resplandor |
-| **C · Relieve** | Botón físico con cuerpo y sombra dura; se hunde al tocarlo |
+| **A · Profunda** | Navy con degradado suave, para que no sea una plancha plana |
+| **B · Clara** | Barra blanca. La más ligera, y la que más deja brillar al botón. Cuesta el marco oscuro que hoy le da peso a la app |
+| **C · Filo de sede** ⭐ | Como la profunda, más un filo de color al pie que **cambia según la sede**: naranja Plaza, verde Angamos, morado Bodega |
 
-**Recomendación: Relieve para el cuerpo + Pulso para el halo.**
+**Recomendación: C.** Equivocarse de sede tiene consecuencias, y el color te
+dice dónde estás antes de leer.
+
+Más: **las pestañas con un carril que se desliza** en vez de que el naranja
+salte, y **la casita con ícono propio** en vez del emoji 🏠, que cada teléfono
+dibuja distinto.
 
 ---
 
@@ -76,19 +110,23 @@ que terminó. Es la única forma de saber en cuál va sin leer texto.
 
 ---
 
-## ⬜ Lo que falta ver antes de aplicar
+## ✅ Ya implementado — no era estética
 
-Jhon: *"quiero ver propuestas para la pantalla de inicio, las barras, el
-home"*. Falta esa tercera maqueta.
+**Deslizar a la derecha merma** (Jhon, 2026-08-20): *"mermamos varias cosas y
+quiero que sea rápido"*.
 
-De la barra de arriba ya hay tres ideas propuestas y sin decidir:
+En **Plaza y Angamos**: izquierda → al reparto, derecha → abre la ventana de
+merma con motivo y cantidad. **En Bodega no cambia**, porque allá los lados ya
+significaban algo desde antes —derecha Mall Plaza, izquierda Angamos— y ese
+gesto está en uso.
 
-1. **La sede en cápsula** en vez de texto gris chico — equivocarse de sede
-   tiene consecuencias, así que merece verse.
-2. **Las pestañas con un carril que se desliza** en vez de que el naranja
-   salte.
-3. **La casita con ícono propio** en vez del emoji 🏠, que cada teléfono
-   dibuja distinto.
+Mientras se arrastra, el símbolo dice qué va a pasar: **"+" naranja** hacia un
+lado, **"Mermar" en rojo** hacia el otro. Sin eso el gesto sería una apuesta.
+
+⚠️ **Es un cambio de hábito y hay que avisarlo.** Quien venía deslizando a la
+derecha para el reparto se va a encontrar con la merma. No resta nada solo
+—abre una ventana que hay que completar y se puede cerrar—, así que el peor
+caso es un susto, pero conviene decirlo antes que lo descubran.
 
 ---
 
