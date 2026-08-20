@@ -1,0 +1,563 @@
+<title>Tres pieles para Llamita</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700;800&display=swap">
+
+<style>
+/* ══════════════════════════════════════════════════════════════
+   LA PÁGINA (el marco). Se mantiene neutra a propósito: si el marco
+   también opinara, las tres propuestas competirían con él en vez de
+   entre ellas.
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --pg-bg:#EFF1F4; --pg-card:#fff; --pg-tx:#16202C; --pg-mut:#6A7583;
+  --pg-line:#DFE3E8; --pg-acc:#DC4405;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --pg-bg:#0D141C; --pg-card:#161F2A; --pg-tx:#E6EAEF; --pg-mut:#94A0AE;
+    --pg-line:#25313D; --pg-acc:#FF6A2B;
+  }
+}
+:root[data-theme="dark"]{
+  --pg-bg:#0D141C; --pg-card:#161F2A; --pg-tx:#E6EAEF; --pg-mut:#94A0AE;
+  --pg-line:#25313D; --pg-acc:#FF6A2B;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--pg-bg); color:var(--pg-tx);
+  font-family:"IBM Plex Sans", system-ui, sans-serif; font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.col{width:min(100% - 32px, 1080px); margin-inline:auto}
+h1,h2,h3{font-family:"Archivo",system-ui,sans-serif; margin:0; text-wrap:balance}
+
+header.tapa{padding:clamp(30px,6vw,58px) 0 clamp(22px,4vw,34px)}
+.kicker{
+  font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--pg-acc); font-weight:700;
+}
+header.tapa h1{font-size:clamp(30px,6vw,50px); font-weight:800; letter-spacing:-.025em; line-height:1.04; margin-top:12px}
+header.tapa p{max-width:62ch; color:var(--pg-mut); margin:16px 0 0; font-size:clamp(15px,2vw,17.5px)}
+
+section{padding:clamp(26px,4vw,44px) 0; border-top:1px solid var(--pg-line)}
+section > .col > h2{font-size:clamp(21px,3.2vw,27px); font-weight:700; letter-spacing:-.012em}
+section > .col > p{max-width:66ch; color:var(--pg-mut); margin:12px 0 0}
+
+/* ── el selector de piel ── */
+.pieles{display:grid; gap:10px; margin:22px 0 0}
+@media (min-width:760px){ .pieles{grid-template-columns:repeat(3,1fr)} }
+.piel{
+  text-align:left; background:var(--pg-card); border:2px solid var(--pg-line);
+  border-radius:14px; padding:15px 17px; cursor:pointer; font:inherit; color:inherit;
+  transition:border-color .18s ease, transform .12s ease;
+}
+.piel:hover{border-color:var(--pg-mut)}
+.piel[aria-pressed="true"]{border-color:var(--pg-acc)}
+.piel:active{transform:scale(.985)}
+.piel .muestras{display:flex; gap:6px; margin-bottom:11px}
+.piel .muestras i{width:26px; height:26px; border-radius:8px; display:block}
+.piel b{display:block; font-family:"Archivo",sans-serif; font-size:17px; font-weight:700}
+.piel span{display:block; font-size:13.5px; color:var(--pg-mut); margin-top:4px; line-height:1.45}
+
+.telefono-wrap{display:grid; gap:24px; margin-top:26px; align-items:start}
+@media (min-width:900px){ .telefono-wrap{grid-template-columns:390px minmax(0,1fr)} }
+
+/* ══════════════════════════════════════════════════════════════
+   EL TELÉFONO — acá adentro vive la app de verdad, con las tres pieles.
+   Todo lo de adentro usa variables, así que cambiar de piel es cambiar
+   una línea. Eso también es la propuesta: si se elige una, implementarla
+   es reemplazar el bloque de tokens de index.html, no reescribir pantallas.
+   ══════════════════════════════════════════════════════════════ */
+.tel{
+  border-radius:32px; overflow:hidden; box-shadow:0 20px 50px -22px rgba(10,20,32,.5);
+  border:1px solid var(--pg-line); background:var(--bg); position:sticky; top:20px;
+}
+@media (max-width:899px){ .tel{position:static} }
+
+.app{
+  /* ── HOY (lo que hay en producción) ── */
+  --navy:#0F1E31; --orange:#DC4405; --orange-d:#B93A04;
+  --bg:#F2F3F5; --card:#fff; --line:#E3E5E8;
+  --tx:#1C2733; --mut:#6B7684;
+  --sec-bg:#2F4A6D; --sec-tx:#fff;
+  --ok-bg:#E6F4E6; --ok-tx:#2E7D32;
+  --mal-bg:#FDECEA; --mal-tx:#C0392B;
+  --avi-bg:#FFF3E0; --avi-tx:#B26A00;
+  --r-card:12px; --r-chip:999px; --r-big:12px;
+  --sombra:0 1px 2px rgba(15,30,49,.04);
+  --tipo:"IBM Plex Sans", system-ui, sans-serif;
+  --sec-forma:solida;   /* solida | riel */
+  background:var(--bg); font-family:var(--tipo); color:var(--tx);
+  transition:background .3s ease;
+}
+
+/* ── PIEL A · Papel ── */
+.app[data-piel="papel"]{
+  --navy:#1B2A3A; --orange:#D9480F; --orange-d:#B23A0B;
+  --bg:#F6F4F0; --card:#FFFDFB; --line:#E6E0D8;
+  --tx:#221E1A; --mut:#7A716A;
+  --sec-bg:transparent; --sec-tx:#3B4A5C;
+  --ok-bg:#E7F1E4; --ok-tx:#3B6E36;
+  --mal-bg:#FBE9E4; --mal-tx:#B23A2B;
+  --avi-bg:#FBEFDC; --avi-tx:#96601A;
+  --r-card:16px; --r-big:18px;
+  --sombra:0 1px 2px rgba(60,45,30,.05), 0 6px 16px -10px rgba(60,45,30,.22);
+  --sec-forma:riel;
+}
+/* ── PIEL B · Café ── */
+.app[data-piel="cafe"]{
+  --navy:#2A1A12; --orange:#C8551F; --orange-d:#A34317;
+  --bg:#F5F0E9; --card:#FFFCF8; --line:#E4D9CC;
+  --tx:#2B2019; --mut:#7E6F62;
+  --sec-bg:#3E2A1E; --sec-tx:#F6EDE3;
+  --ok-bg:#E6EEE0; --ok-tx:#4A6B32;
+  --mal-bg:#F8E4DC; --mal-tx:#A83E25;
+  --avi-bg:#F7E8CE; --avi-tx:#8A5B14;
+  --r-card:14px; --r-big:16px;
+  --sombra:0 1px 2px rgba(60,38,22,.06), 0 8px 20px -14px rgba(60,38,22,.34);
+  --sec-forma:solida;
+}
+/* ── PIEL C · Aire ── */
+.app[data-piel="aire"]{
+  --navy:#0F1E31; --orange:#DC4405; --orange-d:#B93A04;
+  --bg:#F4F5F7; --card:#fff; --line:#EAECEF;
+  --tx:#141C26; --mut:#727C89;
+  --sec-bg:transparent; --sec-tx:#2F4A6D;
+  --ok-bg:#E6F4E6; --ok-tx:#2E7D32;
+  --mal-bg:#FDECEA; --mal-tx:#C0392B;
+  --avi-bg:#FFF3E0; --avi-tx:#B26A00;
+  --r-card:20px; --r-big:22px;
+  --sombra:0 2px 4px rgba(15,30,49,.03), 0 12px 28px -18px rgba(15,30,49,.3);
+  --sec-forma:riel;
+}
+
+/* ── la barra de arriba ── */
+.top{background:var(--navy); color:#fff; padding:12px 15px; display:flex; align-items:center; gap:12px}
+.top .ham{width:20px; display:grid; gap:4px; flex:0 0 auto}
+.top .ham i{height:2px; background:#fff; border-radius:2px; display:block}
+.top .t{flex:1; min-width:0}
+.top .t b{display:block; font-family:"Archivo",sans-serif; font-size:17px; font-weight:700; line-height:1.2}
+.top .t span{display:block; font-size:12px; opacity:.66}
+.top .ico{width:30px; height:30px; border-radius:9px; background:rgba(255,255,255,.11); flex:0 0 auto}
+
+.tabs{background:var(--card); padding:9px 14px; display:flex; gap:7px; overflow-x:auto; border-bottom:1px solid var(--line)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  padding:7px 14px; border-radius:var(--r-chip); border:1px solid var(--line);
+  background:var(--card); color:var(--tx); font-size:13px; font-weight:600;
+  white-space:nowrap; flex:0 0 auto; font-family:inherit;
+}
+.tab.on{background:var(--orange); border-color:var(--orange); color:#fff}
+
+.pant{padding:14px}
+
+/* ── las tarjetas de estado ── */
+.mets{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.met{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r-card);
+  padding:11px 6px; text-align:center; box-shadow:var(--sombra);
+}
+.met.sel{border-color:var(--orange); border-width:2px; padding:10px 5px}
+.met .n{font-size:23px; font-weight:800; font-family:"Archivo",sans-serif; line-height:1.1}
+.met .l{font-size:10.5px; color:var(--mut); margin-top:2px; font-weight:600}
+.met.crit .n{color:var(--mal-tx)}
+
+/* ── la cabecera de sección: dos formas distintas ── */
+.turno{font-size:10.5px; font-weight:800; letter-spacing:.12em; color:var(--mut); margin:18px 0 8px}
+.sec{margin-bottom:12px}
+.sec-h{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--sec-bg); color:var(--sec-tx); border-radius:var(--r-big);
+  padding:13px 15px; font-weight:800; font-size:15px; font-family:"Archivo",sans-serif;
+}
+.app[data-piel="papel"] .sec-h,
+.app[data-piel="aire"]  .sec-h{
+  background:transparent; padding:6px 2px 10px; border-radius:0;
+  border-bottom:1px solid var(--line); font-size:13px; letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.app[data-piel="papel"] .sec-h{border-bottom:2px solid var(--orange); border-image:none}
+.sec-h .crit{
+  font-size:10.5px; font-weight:800; background:rgba(255,255,255,.2);
+  padding:3px 9px; border-radius:999px; letter-spacing:0; text-transform:none;
+}
+.app[data-piel="papel"] .sec-h .crit,
+.app[data-piel="aire"]  .sec-h .crit{background:var(--mal-bg); color:var(--mal-tx)}
+
+/* ── la fila de producto ── */
+.fila{
+  display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r-card);
+  padding:12px 14px; margin-bottom:8px; box-shadow:var(--sombra);
+}
+.app[data-piel="aire"] .fila{border-color:transparent; padding:15px 16px; margin-bottom:10px}
+.app[data-piel="papel"] .fila{border-color:var(--line)}
+.fila .nm{min-width:0}
+.fila .nm b{display:block; font-size:15px; font-weight:650; letter-spacing:-.006em}
+.fila .nm .sub{font-size:12px; color:var(--mut); margin-top:2px}
+.chip{
+  font-size:11px; padding:5px 11px; border-radius:var(--r-chip);
+  font-weight:700; white-space:nowrap; display:inline-block;
+}
+.chip.ok{background:var(--ok-bg); color:var(--ok-tx)}
+.chip.mal{background:var(--mal-bg); color:var(--mal-tx)}
+.chip.avi{background:var(--avi-bg); color:var(--avi-tx)}
+.chip.urg{background:var(--orange); color:#fff; box-shadow:0 3px 10px -2px rgba(220,68,5,.5)}
+.fechas{display:flex; gap:5px; flex-wrap:wrap; margin-top:7px}
+.fechas .chip{font-size:10.5px; padding:3px 9px}
+
+.fab{
+  position:absolute; right:16px; bottom:16px; width:54px; height:54px; border-radius:999px;
+  background:var(--orange); color:#fff; border:none; font-size:29px; line-height:1;
+  box-shadow:0 8px 22px -6px rgba(220,68,5,.6); cursor:pointer;
+}
+.telbody{position:relative; min-height:520px}
+
+/* ══════════ notas al lado ══════════ */
+.notas{display:grid; gap:14px}
+.nota{background:var(--pg-card); border:1px solid var(--pg-line); border-radius:14px; padding:16px 18px}
+.nota h3{font-size:16px; font-weight:700; margin-bottom:6px}
+.nota p{margin:0; font-size:14.5px; color:var(--pg-mut); line-height:1.55}
+.nota p + p{margin-top:9px}
+.nota b{color:var(--pg-tx); font-weight:600}
+
+/* ══════════ formas ══════════ */
+.rejilla{display:grid; gap:12px; margin-top:22px}
+@media (min-width:680px){ .rejilla{grid-template-columns:repeat(2,1fr)} }
+@media (min-width:1000px){ .rejilla{grid-template-columns:repeat(4,1fr)} }
+.demo{background:var(--pg-card); border:1px solid var(--pg-line); border-radius:14px; padding:16px}
+.demo .lbl{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--pg-mut); font-weight:700; margin-bottom:12px}
+.demo .txt{font-size:13.5px; color:var(--pg-mut); margin-top:12px; line-height:1.5}
+
+.caja-r{height:46px; background:var(--pg-acc); opacity:.16; border:2px solid var(--pg-acc)}
+.r12{border-radius:12px} .r16{border-radius:16px} .r20{border-radius:20px} .r999{border-radius:999px}
+
+/* ══════════ animaciones ══════════ */
+.anim{background:var(--pg-card); border:1px solid var(--pg-line); border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:12px}
+.anim .cab{display:flex; align-items:baseline; justify-content:space-between; gap:12px}
+.anim h3{font-size:16px; font-weight:700}
+.jugar{
+  border:1px solid var(--pg-line); background:transparent; color:var(--pg-acc);
+  font:inherit; font-size:13px; font-weight:700; padding:5px 13px; border-radius:999px; cursor:pointer;
+}
+.jugar:active{transform:scale(.94)}
+.escena{background:var(--pg-bg); border-radius:11px; padding:14px; min-height:96px; overflow:hidden}
+.mini{
+  background:var(--pg-card); border:1px solid var(--pg-line); border-radius:11px;
+  padding:10px 13px; margin-bottom:7px; display:flex; justify-content:space-between;
+  align-items:center; font-size:14px; font-weight:600;
+}
+.mini .p{font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; background:#E6F4E6; color:#2E7D32}
+.mini .p.baja{background:#FDECEA; color:#C0392B}
+
+@keyframes entra{from{opacity:0; transform:translateY(9px)} to{opacity:1; transform:none}}
+.corre .mini{animation:entra .34s cubic-bezier(.2,.75,.3,1) both}
+.corre .mini:nth-child(2){animation-delay:.06s}
+.corre .mini:nth-child(3){animation-delay:.12s}
+.corre .mini:nth-child(4){animation-delay:.18s}
+
+@keyframes late{0%,100%{transform:scale(1)} 40%{transform:scale(1.19)}}
+.corre .p.pulso{animation:late .5s cubic-bezier(.3,1.4,.4,1)}
+
+@keyframes marca{to{stroke-dashoffset:0}}
+.tick{width:34px; height:34px; flex:0 0 auto}
+.tick circle{fill:none; stroke:#2E7D32; stroke-width:2.4; opacity:.22}
+.tick path{fill:none; stroke:#2E7D32; stroke-width:3.2; stroke-linecap:round; stroke-linejoin:round;
+  stroke-dasharray:26; stroke-dashoffset:26}
+.corre .tick path{animation:marca .42s .1s cubic-bezier(.3,.9,.3,1) forwards}
+
+@keyframes brota{from{opacity:0; transform:scaleY(.4); transform-origin:top} to{opacity:1; transform:none}}
+.corre .desplegable{animation:brota .3s cubic-bezier(.2,1.25,.4,1) both}
+
+.cuenta{font-family:"Archivo",sans-serif; font-size:30px; font-weight:800; font-variant-numeric:tabular-nums}
+
+footer{padding:40px 0 60px; color:var(--pg-mut); font-size:14px; border-top:1px solid var(--pg-line)}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
+</style>
+
+<header class="tapa">
+  <div class="col">
+    <p class="kicker">Propuesta · antes de tocar código</p>
+    <h1>Tres pieles para Llamita</h1>
+    <p>
+      Dijiste que la app se ve <b>cuadrada y fría</b>. Eso casi nunca es una sola cosa: la
+      frialdad viene de los grises azulados, y lo cuadrado viene de los bloques de color
+      sólido y de las esquinas cortas. Cada propuesta ataca eso de una manera distinta.
+      <b>Toca una y la pantalla de al lado se rearma entera</b> — es la misma app, no un dibujo.
+    </p>
+  </div>
+</header>
+
+<section>
+  <div class="col">
+    <h2>Elige una</h2>
+    <p>
+      Las tres respetan lo que ya funciona: el naranja sigue significando <i>acción y
+      alerta</i>, el rojo sigue siendo lo crítico, y ninguna toca la forma de trabajar.
+      Lo que cambia es el clima.
+    </p>
+
+    <div class="pieles" role="group" aria-label="Elegir piel">
+      <button type="button" class="piel" data-set="hoy" aria-pressed="true">
+        <span class="muestras"><i style="background:#0F1E31"></i><i style="background:#2F4A6D"></i><i style="background:#DC4405"></i><i style="background:#F2F3F5"></i></span>
+        <b>Hoy</b>
+        <span>Lo que está en producción. Sirve de referencia para comparar.</span>
+      </button>
+      <button type="button" class="piel" data-set="papel" aria-pressed="false">
+        <span class="muestras"><i style="background:#1B2A3A"></i><i style="background:#D9480F"></i><i style="background:#F6F4F0"></i><i style="background:#E6E0D8"></i></span>
+        <b>A · Papel</b>
+        <span>Los grises se vuelven cálidos y las cabeceras dejan de ser bloques. Cambio grande, riesgo bajo.</span>
+      </button>
+      <button type="button" class="piel" data-set="cafe" aria-pressed="false">
+        <span class="muestras"><i style="background:#3E2A1E"></i><i style="background:#C8551F"></i><i style="background:#F5F0E9"></i><i style="background:#E4D9CC"></i></span>
+        <b>B · Café</b>
+        <span>La paleta sale del producto: espresso y leche en vez de azul marino.</span>
+      </button>
+      <button type="button" class="piel" data-set="aire" aria-pressed="false">
+        <span class="muestras"><i style="background:#0F1E31"></i><i style="background:#DC4405"></i><i style="background:#F4F5F7"></i><i style="background:#EAECEF"></i></span>
+        <b>C · Aire</b>
+        <span><b>Los mismos colores de hoy.</b> Lo único que cambia es el espacio y las formas.</span>
+      </button>
+    </div>
+
+    <div class="telefono-wrap">
+      <div class="tel">
+        <div class="app" id="app" data-piel="hoy">
+          <div class="top">
+            <span class="ham"><i></i><i></i><i></i></span>
+            <span class="t"><b>Inventario</b><span>Café Mall Plaza</span></span>
+            <span class="ico"></span><span class="ico"></span>
+          </div>
+          <div class="tabs">
+            <button class="tab on">🏠</button>
+            <button class="tab">Reparto</button>
+            <button class="tab">Recetas</button>
+            <button class="tab">Mermas</button>
+          </div>
+          <div class="telbody">
+            <div class="pant">
+              <div class="mets">
+                <div class="met sel crit"><div class="n">7</div><div class="l">Crítico</div></div>
+                <div class="met"><div class="n">198</div><div class="l">En rango</div></div>
+                <div class="met"><div class="n">12</div><div class="l">Sin dato</div></div>
+              </div>
+
+              <div class="turno">AM</div>
+              <div class="sec">
+                <div class="sec-h"><span>Sándwiches</span><span class="crit">3 crít.</span></div>
+                <div class="fila">
+                  <div class="nm">
+                    <b>Croasán jamón queso</b>
+                    <div class="sub">mín 6 · máx 20</div>
+                    <div class="fechas">
+                      <span class="chip mal">2 V 20/08/2026</span>
+                      <span class="chip avi">5 V 21/08/2026</span>
+                      <span class="chip ok">4 V 24/08/2026</span>
+                    </div>
+                  </div>
+                  <span class="chip mal">4</span>
+                </div>
+                <div class="fila">
+                  <div class="nm"><b>Sándwich Serrano</b><div class="sub">mín 4 · máx 12</div></div>
+                  <span class="chip urg">0</span>
+                </div>
+              </div>
+
+              <div class="sec">
+                <div class="sec-h"><span>Vitrina de tortas</span><span class="crit">1 crít.</span></div>
+                <div class="fila">
+                  <div class="nm"><b>Cheesecake maracuyá</b><div class="sub">mín 3 · máx 10</div></div>
+                  <span class="chip ok">8</span>
+                </div>
+                <div class="fila">
+                  <div class="nm"><b>Brownie Vitrina</b><div class="sub">Total: 17 · con Congelador</div></div>
+                  <span class="chip avi">2</span>
+                </div>
+              </div>
+            </div>
+            <button class="fab">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="notas" id="notas"></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <h2>Las formas</h2>
+    <p>
+      Lo “cuadrado” es medible: hoy casi todo tiene la esquina en 12&nbsp;px, que es el punto
+      donde una caja todavía se lee como caja. Subirlo cambia el carácter más que cualquier
+      color, y no cuesta nada.
+    </p>
+    <div class="rejilla">
+      <div class="demo">
+        <div class="lbl">Hoy · 12 px</div>
+        <div class="caja-r r12"></div>
+        <p class="txt">Correcto y neutro. Es la esquina de una planilla.</p>
+      </div>
+      <div class="demo">
+        <div class="lbl">A · 16 px</div>
+        <div class="caja-r r16"></div>
+        <p class="txt">Se ablanda sin perder seriedad. El salto más seguro.</p>
+      </div>
+      <div class="demo">
+        <div class="lbl">C · 20 px</div>
+        <div class="caja-r r20"></div>
+        <p class="txt">Ya se siente app de teléfono. Necesita más aire alrededor o se ve inflado.</p>
+      </div>
+      <div class="demo">
+        <div class="lbl">Píldoras · 999 px</div>
+        <div class="caja-r r999"></div>
+        <p class="txt">No se toca. Las píldoras de stock y de fecha ya son redondas y funcionan.</p>
+      </div>
+    </div>
+
+    <div class="rejilla" style="margin-top:16px">
+      <div class="demo" style="grid-column:1/-1">
+        <div class="lbl">El cambio que más se va a notar</div>
+        <p class="txt" style="margin-top:0">
+          <b style="color:var(--pg-tx)">Las cabeceras de sección.</b> Hoy son una barra azul pizarra
+          rellena, y son lo que más “bloquea” la pantalla: cortan la lista en ladrillos.
+          En <b style="color:var(--pg-tx)">A</b> y <b style="color:var(--pg-tx)">C</b> pasan a ser un
+          rótulo con una línea debajo — la sección se sigue entendiendo igual, pero la lista respira
+          y los colores fuertes quedan libres para lo que de verdad urge.
+          En <b style="color:var(--pg-tx)">B</b> se quedan rellenas, en espresso.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <h2>El movimiento</h2>
+    <p>
+      Cuatro animaciones concretas. Todas cortas —entre 0,3 y 0,5 segundos— y todas se apagan
+      solas si el teléfono tiene activado “reducir movimiento”. <b>Toca “ver” en cada una.</b>
+    </p>
+    <div class="rejilla" style="grid-template-columns:1fr">
+      <div class="rejilla" style="margin:0">
+
+        <div class="anim" data-anim>
+          <div class="cab"><h3>La lista entra escalonada</h3><button class="jugar" type="button">ver ▸</button></div>
+          <div class="escena">
+            <div class="mini"><span>Croasán jamón queso</span><span class="p baja">4</span></div>
+            <div class="mini"><span>Sándwich Serrano</span><span class="p baja">0</span></div>
+            <div class="mini"><span>Cheesecake maracuyá</span><span class="p">8</span></div>
+          </div>
+          <p class="txt">Al abrir una sección, las filas llegan con seis centésimas de diferencia. Da la sensación de que la lista se arma sola, en vez de aparecer de golpe.</p>
+        </div>
+
+        <div class="anim" data-anim>
+          <div class="cab"><h3>El número late cuando cambia</h3><button class="jugar" type="button">ver ▸</button></div>
+          <div class="escena">
+            <div class="mini"><span>Croasán jamón queso</span><span class="p pulso">3</span></div>
+            <div class="mini"><span>Brownie Vitrina</span><span class="p">17</span></div>
+          </div>
+          <p class="txt">Cuando alguien vende en Fudo, el stock baja solo en tu pantalla. Hoy el número cambia sin avisar. Un latido de medio segundo dice <i>esto se acaba de mover</i>.</p>
+        </div>
+
+        <div class="anim" data-anim>
+          <div class="cab"><h3>El ✓ del reparto se dibuja</h3><button class="jugar" type="button">ver ▸</button></div>
+          <div class="escena" style="display:flex; align-items:center; gap:13px">
+            <svg class="tick" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16"></circle><path d="M11 18.5l5 5 9-10"></path></svg>
+            <div><b style="font-size:15px">Llegó · 12 unidades</b><div style="font-size:12.5px; color:var(--pg-mut)">sumado al inventario</div></div>
+          </div>
+          <p class="txt">Confirmar una línea es la acción más repetida del reparto. El trazo que se dibuja confirma que se registró, sin una palabra de más.</p>
+        </div>
+
+        <div class="anim" data-anim>
+          <div class="cab"><h3>La sección brota, no salta</h3><button class="jugar" type="button">ver ▸</button></div>
+          <div class="escena">
+            <div class="mini" style="background:var(--pg-acc); color:#fff; border-color:transparent"><span>Sándwiches</span><span style="font-size:11px">3 crít.</span></div>
+            <div class="desplegable">
+              <div class="mini"><span>Croasán</span><span class="p baja">4</span></div>
+              <div class="mini"><span>Serrano</span><span class="p baja">0</span></div>
+            </div>
+          </div>
+          <p class="txt">Con un resorte que se pasa apenas y vuelve. Es el gesto que más se repite en el día y hoy es un corte seco.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <h2>Lo que no propongo tocar</h2>
+    <p>Vale decirlo, porque una propuesta estética invita a rediseñar cosas que ya están resueltas.</p>
+    <div class="rejilla">
+      <div class="demo"><div class="lbl">El naranja</div><p class="txt" style="margin-top:0">Sigue significando <b style="color:var(--pg-tx)">acción y alerta</b>, y nada más. Es lo que hace que un botón se distinga de un aviso.</p></div>
+      <div class="demo"><div class="lbl">Los colores de estado</div><p class="txt" style="margin-top:0">Rojo crítico, verde en rango, ámbar aviso. El equipo ya los lee sin pensar.</p></div>
+      <div class="demo"><div class="lbl">Las píldoras de fecha</div><p class="txt" style="margin-top:0">Todas visibles, la urgencia en el color, vencido distinto de vence-hoy. Eso no se resume nunca.</p></div>
+      <div class="demo"><div class="lbl">Dónde está cada cosa</div><p class="txt" style="margin-top:0">Ninguna propuesta mueve un botón de sitio. La gente ya sabe dónde tocar.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="col">
+    <b>Cómo sigue esto:</b> eliges una —o una mezcla, del tipo “la estructura de C con los
+    tonos de A”— y la implemento. Las tres están escritas como variables, así que aplicar
+    la elegida es reemplazar un bloque de veinte líneas en <code>index.html</code>, no
+    reescribir pantallas. Las animaciones van aparte y se pueden agregar de a una.
+  </div>
+</footer>
+
+<script>
+/* Las notas cambian con la piel: cada dirección tiene un argumento y un costo,
+   y decidir sin el costo a la vista no es decidir. */
+const NOTAS = {
+  hoy: [
+    ['Lo que ya funciona','El naranja como acción, el rojo como alerta y la jerarquía de estado están bien resueltos. Ninguna propuesta los toca.'],
+    ['De dónde viene lo frío','El fondo es un gris con azul dentro (#F2F3F5) y las cabeceras son bloques sólidos. Las dos cosas juntas dan el aire de planilla.'],
+    ['De dónde viene lo cuadrado','Esquinas de 12 px en todo, y filas separadas por una línea de 1 px. Es correcto y es plano.'],
+  ],
+  papel: [
+    ['La idea','Los grises dejan de tener azul y pasan a tener un punto de calidez, como el papel. El naranja baja medio tono para no gritar sobre un fondo cálido.'],
+    ['Lo que más cambia','Las cabeceras de sección dejan de ser barras rellenas: pasan a ser un rótulo con una línea naranja debajo. La lista deja de estar cortada en ladrillos.'],
+    ['El costo','Es el cambio más grande de percepción con el menor riesgo: no toca ni un color de estado ni la posición de nada. Si no gusta, se vuelve atrás cambiando cuatro valores.'],
+  ],
+  cafe: [
+    ['La idea','La paleta sale del producto, no del software: espresso en vez de azul marino, leche en vez de gris. Es la que más se parece al local.'],
+    ['A favor','Es la única con identidad propia. Deja de verse como “un sistema” y empieza a verse como algo del café.'],
+    ['El costo, y es real','El café oscuro puede leerse barato si la pantalla queda muy llena, y se aleja más de Fudo — quien use los dos todo el día va a notar el salto. Es la más linda y la más arriesgada.'],
+  ],
+  aire: [
+    ['La idea','No cambia ni un color. Cambia el espacio: esquinas de 20 px, filas sin borde y con sombra, y más aire entre secciones.'],
+    ['Por qué puede bastar','Buena parte de lo cuadrado no es el color: es que todo está pegado y todo tiene borde. Sacando los bordes y sumando aire, la misma paleta se siente mucho más blanda.'],
+    ['El costo','Ocupa más pantalla: entran una o dos filas menos por vista. En un teléfono contando inventario, eso se nota.'],
+  ],
+};
+
+const app = document.getElementById('app');
+const notas = document.getElementById('notas');
+function pintarNotas(k){
+  notas.innerHTML = NOTAS[k].map(([t,p]) =>
+    `<div class="nota"><h3>${t}</h3><p>${p}</p></div>`).join('');
+}
+document.querySelectorAll('.piel').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.piel').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    app.dataset.piel = b.dataset.set;
+    pintarNotas(b.dataset.set);
+  });
+});
+pintarNotas('hoy');
+
+/* Cada demo se reinicia quitando la clase y forzando un reflow: sin eso, la
+   segunda vez que se toca "ver" no pasa nada, porque la animación ya corrió. */
+document.querySelectorAll('[data-anim]').forEach(caja => {
+  const esc = caja.querySelector('.escena');
+  caja.querySelector('.jugar').addEventListener('click', () => {
+    esc.classList.remove('corre');
+    void esc.offsetWidth;
+    esc.classList.add('corre');
+  });
+});
+</script>
