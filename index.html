@@ -9010,11 +9010,41 @@ async function revisarMotor(){
   }
 }
 
+/* ---------------- UN PASO NO PUEDE DURAR PARA SIEMPRE ----------------
+
+   2026-08-21, en medio de un turno. Adriana avisó que Angamos no estaba
+   descontando; Jhon apretó ⟳ y la ventana de "Actualizando…" se quedó
+   girando **más de siete minutos**, en las dos sedes.
+
+   La causa no era el motor: era que `sb.functions.invoke` NO TIENE TOPE DE
+   TIEMPO. Si Fudo no contesta —su API caída, lenta, o cortada a mitad— la
+   promesa nunca termina, el `await` nunca vuelve, y la ventana se queda ahí
+   para siempre. La app no estaba colgada: estaba esperando, educadamente,
+   a alguien que no iba a contestar nunca.
+
+   Es la regla 0.5 en su otra cara. Aquella decía que un fallo no puede ser
+   invisible; esta dice que **un fallo tampoco puede ser eterno**. Una
+   ventana que gira sin fin no informa nada: no se distingue de "está
+   tardando", así que nadie sabe cuándo dejar de esperar. Un error a los 90
+   segundos sí es información — dice qué falló y deja la app libre.
+
+   `Promise.race` no cancela la llamada de abajo (eso lo decide el
+   navegador), pero sí libera la pantalla, que es lo único que le importa a
+   quien está en el mesón con la fila esperando.                          */
+function conTiempo(promesa, segundos, quien){
+  let reloj;
+  const tope = new Promise((_, rechazar) => {
+    reloj = setTimeout(() => rechazar(new Error(quien + ' no contestó en ' + segundos + ' s')), segundos * 1000);
+  });
+  return Promise.race([promesa, tope]).finally(() => clearTimeout(reloj));
+}
+
 const PASOS_SYNC = [
   {
     nombre: 'productos',
     fn: async () => {
-      const {data,error} = await sb.functions.invoke('fudo-sync-productos',{body:{sede:SEDE}});
+      const {data,error} = await conTiempo(
+        sb.functions.invoke('fudo-sync-productos',{body:{sede:SEDE}}), 60, 'El catálogo de Fudo');
       if(error) throw error;
       if(!data || !data.ok) throw new Error((data && data.error) || 'sin respuesta');
       return '';   // el catálogo es trabajo de fondo: no se informa si salió bien
@@ -9023,7 +9053,8 @@ const PASOS_SYNC = [
   {
     nombre: 'ventas',
     fn: async () => {
-      const {data,error} = await sb.functions.invoke('fudo-sync-ventas',{body:{sede:SEDE}});
+      const {data,error} = await conTiempo(
+        sb.functions.invoke('fudo-sync-ventas',{body:{sede:SEDE}}), 90, 'La lectura de ventas');
       if(error) throw error;
       if(!data || !data.ok) throw new Error((data && data.error) || 'sin respuesta');
       const v = juzgarVentas(data);
@@ -9055,8 +9086,11 @@ const PASOS_SYNC = [
          falta stock son los del mesón, no jefatura.
          Lo único que se comprueba es que haya un Fudo al otro lado. */
       if(SEDE !== 'plaza' && SEDE !== 'angamos') return '';
-      const {data,error} = await sb.functions.invoke('fudo-empujar-stock',
-        {body:{sede:SEDE, modo:'aplicar', incluir_ceros:true}});
+      /* Este es el más largo de los tres: le escribe a Fudo producto por
+         producto. 150 s es de sobra para los ~230 de una sede. */
+      const {data,error} = await conTiempo(
+        sb.functions.invoke('fudo-empujar-stock',
+          {body:{sede:SEDE, modo:'aplicar', incluir_ceros:true}}), 150, 'El empuje a Fudo');
       if(error || (data && data.error)) throw new Error(await motivoDeFuncion({error, data}));
       if(!data) throw new Error('sin respuesta');
       /* Se guarda para poder MOSTRARLO al final. Que la pantalla diga qué
@@ -9101,7 +9135,7 @@ async function actualizarTodo(){
        nadie tiene que poder apretarlo dos veces mientras tanto. */
     trabajando('Actualizando…');
 
-    const logros = [], fallos = [], graves = [];
+    const logros = [], fallos = [], graves = [], motivos = [];
     const t0 = new Date(Date.now() - 5000).toISOString();   // 5 s de holgura por el reloj
     for(const paso of PASOS_SYNC){
       try{
@@ -9110,9 +9144,18 @@ async function actualizarTodo(){
       }catch(e){
         console.error('Falló la sincronización de ' + paso.nombre, e);
         fallos.push(paso.nombre);
-        // un corte de señal se avisa con un toast; que el motor no descuente
-        // NADA es otra cosa y tiene que detener a quien esté mirando
-        if(e && e.grave) graves.push(e.message);
+        motivos.push((e && e.message) || ('Falló ' + paso.nombre));
+        /* Un corte de señal se avisa con un toast; que el motor no descuente
+           es otra cosa y tiene que detener a quien esté mirando.
+
+           Y desde el 2026-08-21, que el paso de VENTAS falle por lo que sea
+           —Fudo caído, sin señal, se acabó el tiempo— cuenta como grave. El
+           motivo es el del turno de ese día: si la lectura de ventas no
+           corre, el inventario NO se está descontando, y da exactamente lo
+           mismo por qué. Antes eso salía en un avisito que se iba solo, o
+           sea que se veía igual que "todo bien" tres segundos después. */
+        if(e && (e.grave || paso.nombre === 'ventas'))
+          graves.push((e && e.message) || 'no se pudo leer las ventas');
       }
     }
 
@@ -9120,8 +9163,11 @@ async function actualizarTodo(){
     // puede haber cambios de otros dispositivos igual.
     try{
       ultimaRecarga = 0;                       // salta el freno de recargas seguidas
-      await resincronizar();
-      if($('view-recetas').style.display !== 'none') await loadRecetas();
+      /* También con tope: si la base tarda, la pantalla se queda con los
+         datos que ya tenía, pero la ventana se cierra igual. */
+      await conTiempo(resincronizar(), 45, 'La relectura de la pantalla');
+      if($('view-recetas').style.display !== 'none')
+        await conTiempo(loadRecetas(), 45, 'La lectura de recetas');
     }catch(e){ console.error('No se pudo releer la pantalla', e); }
 
     /* La ventana de "trabajando" se cierra ACÁ, antes de los avisos: si se
@@ -9135,7 +9181,10 @@ async function actualizarTodo(){
     } else if(fallos.length === PASOS_SYNC.length){
       aviso('⚠ No se pudo actualizar. Revisa la conexión.');
     } else if(fallos.length){
-      aviso('⚠ Falló: ' + fallos.join(', ') + (logros.length ? ' · ' + logros.join(' · ') : ''));
+      /* El motivo, no solo el nombre del paso: "Falló: fudo" no le dice a
+         nadie si hay que esperar, reintentar o llamar a alguien. */
+      aviso('⚠ ' + (motivos[0] || 'Falló: ' + fallos.join(', '))
+        + (logros.length ? ' · ' + logros.join(' · ') : ''));
     } else {
       aviso('✓ ' + (logros.join(' · ') || 'Todo al día'));
       /* Se pregunta DESPUÉS del aviso, porque tarda: primero se ve el "✓" y el
