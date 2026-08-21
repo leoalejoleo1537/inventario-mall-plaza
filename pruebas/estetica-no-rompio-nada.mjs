@@ -124,6 +124,15 @@ caso('los dos lados tienen ancho, y distinto', await page.evaluate(() => {
   const a = parseFloat(b[0].style.width), c = parseFloat(b[1].style.width);
   return a > c && a > 0;
 }) || 'las barras no se pintaron como corresponde');
+caso('mientras se busca, la meta se va de la pantalla', await (async () => {
+  await page.fill('#q', 'croasan');
+  await page.waitForTimeout(200);
+  const fuera = !(await page.isVisible('#metaPortada'));
+  await page.fill('#q', '');
+  await page.waitForTimeout(200);
+  const vuelve = await page.isVisible('#metaPortada');
+  return (fuera && vuelve) || (fuera ? 'no volvió al vaciar el buscador' : 'siguió estorbando');
+})());
 caso('el número de cada sede se lee (no es del color del fondo)', await page.evaluate(() => {
   const v = document.querySelector('#metaPortada .meta-lado.izq .val');
   const c = getComputedStyle(v).color;

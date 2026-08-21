@@ -971,8 +971,12 @@
   .icon-btn.on{background:rgba(255,255,255,.16);border-radius:10px}
 
   /* filas de personas, con su interruptor */
-  .aj-fila{display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:11px;
-    background:var(--bg);margin-bottom:8px}
+  /* LAS FILAS DE AJUSTES SON TARJETAS, no rectángulos grises. Vivían en el
+     gris de la pantalla sobre una caja blanca, y con la paleta nueva eso se
+     lee como un recuadro pegado encima. Ahora usan el mismo material que
+     todo lo demás: fondo de tarjeta y sombra, sin borde. */
+  .aj-fila{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;
+    background:var(--card);box-shadow:var(--sombra);margin-bottom:9px}
   .aj-fila .nm{flex:1;min-width:0}
   .aj-fila .nm b{display:block;font-size:14.5px;font-weight:700;color:var(--text);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1017,8 +1021,8 @@
   .aj-grupo{margin-top:14px}
   .aj-grupo-tit{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.4px;
     padding:0 2px 8px;display:flex;align-items:center;gap:8px}
-  .aj-par{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;
-    background:var(--bg);margin-bottom:7px}
+  .aj-par{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:14px;
+    background:var(--card);box-shadow:var(--sombra);margin-bottom:8px}
   .aj-par.mal{background:var(--amber-bg)}
   .aj-par .nm{flex:1;min-width:0}
   .aj-par .nm b{display:block;font-size:14.5px;font-weight:700;color:var(--text)}
@@ -1048,8 +1052,8 @@
   .aj-buscar{width:100%;height:44px;padding:0 14px;border:1.5px solid var(--border);
     border-radius:11px;font-size:15.5px;background:#fff;color:var(--text);margin-top:10px}
   .aj-buscar:focus{outline:none;border-color:var(--orange)}
-  .aj-prod{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;
-    background:var(--bg);margin-bottom:7px}
+  .aj-prod{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:14px;
+    background:var(--card);box-shadow:var(--sombra);margin-bottom:8px}
   .aj-prod.off{opacity:.62}
   .aj-prod .nm{flex:1;min-width:0}
   .aj-prod .nm b{display:block;font-size:14.5px;font-weight:700;color:var(--text);
@@ -1074,12 +1078,12 @@
     transition:transform .12s ease}
   .aj-prod .quitar:active{transform:scale(.9)}
   /* la fila de una sección: flechas, nombre, turno y borrar */
-  .aj-sec{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:11px;
-    background:var(--bg);margin-bottom:7px}
+  .aj-sec{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:14px;
+    background:var(--card);box-shadow:var(--sombra),inset 4px 0 0 var(--sec-filo);
+    padding-left:18px;margin-bottom:8px}
   .aj-sec .mov{display:flex;flex-direction:column;gap:2px;flex:0 0 auto}
-  .aj-sec .fl{width:26px;height:20px;border:none;background:#fff;border-radius:6px;
-    color:var(--muted);font-size:10px;line-height:1;cursor:pointer;
-    box-shadow:0 1px 2px rgba(15,30,49,.08)}
+  .aj-sec .fl{width:26px;height:20px;border:none;background:var(--bg);border-radius:7px;
+    color:var(--muted);font-size:10px;line-height:1;cursor:pointer}
   .aj-sec .fl:disabled{opacity:.28;cursor:default}
   .aj-sec .fl:active:not(:disabled){transform:scale(.9)}
   .aj-sec .nm{flex:1;min-width:0}
@@ -1836,6 +1840,31 @@
   <!-- Las dos sedes, lado a lado en pantalla ancha y una sobre otra en el
        teléfono. Todo a la vista: el crítico, lo que va, y lo que ya salió. -->
   <div class="repc-cajas" id="repc-cajas"></div>
+
+  <!-- ---- FRANQUICIAS ----
+       Cafés que compran en bodega y NO tienen Llamita. Del otro lado no hay
+       nadie que confirme: la lista se arma acá, alguien de bodega la prepara
+       marcando línea por línea, y lo que sale se descuenta acá mismo. Como
+       allá no llega la app, el envío se acompaña de un resumen impreso. -->
+  <div class="enl-caja" id="repc-franq" style="margin-top:14px">
+    <div class="enl-cab">FRANQUICIAS</div>
+    <div class="enl-cuerpo">
+      <p class="rep-sub" style="margin:0 0 10px">Cafés que no tienen Llamita. Se les manda con una hoja impresa.</p>
+      <div class="field" style="margin-top:0">
+        <label>A qué franquicia</label>
+        <select id="fr-sede"></select>
+      </div>
+      <div class="controls busca" style="margin:10px 0 8px">
+        <input type="text" id="fr-q" placeholder="Buscar en bodega…">
+      </div>
+      <div id="fr-results"></div>
+      <div id="fr-carrito"></div>
+      <button class="btn btn-orange btn-block" id="fr-enviar" style="margin-top:10px;display:none">Crear la lista</button>
+    </div>
+  </div>
+
+  <!-- Las listas ya creadas, para que bodega las prepare -->
+  <div id="fr-abiertos"></div>
 
     </div><!-- /repc-salida -->
 
@@ -2908,6 +2937,38 @@ const esAM = sec => {
 };
 /* Más chico va más arriba. Lo que no está en ninguna lista va al final, y
    entre iguales manda el alfabeto — igual que antes. */
+/* LA LISTA DE SECCIONES DE ESTA SEDE, Y HAY UNA SOLA.
+   ---------------------------------------------------------------------------
+   De acá sale un bug que reportó Jhon el 2026-08-21: "al darle clic a un
+   producto y mover a otra sección aparecen todas las secciones borradas, y a
+   las que se le cambió el nombre no se modificó".
+
+   La causa: los desplegables de la ficha del producto y de "agregar producto"
+   armaban su lista con `SEC_ORDEN` —la lista escrita a mano dentro del
+   código— más los rubros de los productos. O sea que mostraban los nombres
+   de fábrica de julio, incluidos los que alguien renombró o borró desde
+   Ajustes. Mientras tanto, la pantalla de Secciones leía la tabla `secciones`
+   y mostraba lo correcto. Dos listas, dos verdades.
+
+   Es la misma forma del hueco que ya apareció con "crítico": una regla
+   escrita dos veces se desincroniza sin que nadie lo note. Ahora hay una
+   función y todos preguntan acá.
+
+   El orden que devuelve es el MISMO que se ve en el inventario, no
+   alfabético: si en la lista Congelador va antes que Té, en el desplegable
+   también. */
+function seccionesDeLaSede(){
+  const deLaTabla   = SECCIONES.map(x => x.nombre);
+  const deProductos = DATA.map(d => d.rubro);
+  /* SEC_ORDEN solo entra como red: si la tabla `secciones` no existe todavía
+     o está vacía para esta sede, la app se comporta como antes. Si la tabla
+     tiene algo, manda ella — y así una sección borrada deja de aparecer. */
+  const base = SECCIONES.length ? [] : SEC_ORDEN;
+  return [...new Set([...base, ...deLaTabla, ...deProductos])]
+    .filter(Boolean)
+    .sort((a, b) => secPeso(a) - secPeso(b) || a.localeCompare(b, 'es'));
+}
+
 const secPeso = sec => {
   const f = secFila(sec);
   if(f) return f.orden;
@@ -3501,6 +3562,9 @@ async function repcCargarAbiertos(){
 function repcAbrir(){
   $('repc-q').value=''; $('repc-results').innerHTML='';
   repcPintarCajas(); repcCargarAbiertos();
+  /* Las franquicias comparten pantalla con los envíos a los locales, pero no
+     comparten nada más: otras tablas, otro flujo y ninguna app del otro lado. */
+  frPintarSelector(); frPintarCarrito(); frCargarAbiertos();
 }
 
 /* Salida y entrada en la misma pestaña: son el mismo trabajo al revés. Abre
@@ -4456,7 +4520,7 @@ function irAlInicio(){
   window.scrollTo({top:0});
 }
 qEl.addEventListener('focus',()=>{ if(soltarFiltros()) render(); });
-qEl.addEventListener('input',()=>{ soltarFiltros(); render(); });
+qEl.addEventListener('input',()=>{ soltarFiltros(); render(); ajustarMetaPortada(); });
 document.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
   const f=c.dataset.f; filterState=filterState===f?null:f;
   document.querySelectorAll('.mcard').forEach(x=>x.classList.toggle('sel',x.dataset.f===filterState));
@@ -4890,8 +4954,11 @@ function openModal(id){
   modalProd=DATA.find(d=>d.id===id); if(!modalProd)return;
   $('m-nombre').textContent=modalProd.producto;
   $('m-producto').value=modalProd.producto??'';
-  const secs=[...new Set([...SEC_ORDEN,...DATA.map(d=>d.rubro)])];
-  $('m-seccion').innerHTML=secs.map(s=>`<option${s===modalProd.rubro?' selected':''}>${s}</option>`).join('');
+  /* La sección actual del producto se agrega aunque ya no exista en la lista:
+     si no, al abrir la ficha el desplegable saltaría solo a otra sección y
+     guardar sin querer lo movería de lugar. */
+  const secs=[...new Set([...seccionesDeLaSede(), modalProd.rubro].filter(Boolean))];
+  $('m-seccion').innerHTML=secs.map(s=>`<option${s===modalProd.rubro?' selected':''}>${esc(s)}</option>`).join('');
   $('m-stock').value=modalProd.stock_actual??'';
   $('m-min').value=modalProd.stock_min??'';
   $('m-max').value=modalProd.stock_max??'';
@@ -5144,11 +5211,10 @@ $('btnNuevo').addEventListener('click', async ()=>{
   $('n-sede-label').textContent = 'Se agregará a ' + SEDES[SEDE].label;
   $('n-nombre').value=''; $('n-perec').checked=false;   // n-rubro se rearma abajo
   $('n-stock').value=''; $('n-min').value=''; $('n-max').value='';
-  /* Solo secciones que existen: las del orden fijo más las que ya usa algún
-     producto de esta sede. Sin opción vacía, para que nunca se guarde sin sección. */
-  const secciones=[...new Set([...SEC_ORDEN,...DATA.map(d=>d.rubro)])].filter(Boolean)
-    .sort((a,b)=>a.localeCompare(b,'es'));
-  $('n-rubro').innerHTML=secciones.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
+  /* Solo secciones que existen de verdad, y en el mismo orden en que se ven
+     en el inventario. Sin opción vacía, para que nunca se guarde sin sección. */
+  $('n-rubro').innerHTML=seccionesDeLaSede()
+    .map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
   $('overlay-nuevo').classList.add('open');
   setTimeout(()=>$('n-nombre').focus(),50);
 });
@@ -6080,6 +6146,310 @@ async function ajCronSede(sede){
     f.cron_activo ? 'Ya no se vigila el reloj' : '✓ Se vigila el reloj');
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   FRANQUICIAS — lo que sale de bodega a cafés que NO tienen Llamita
+   ══════════════════════════════════════════════════════════════════════
+
+   POR QUÉ NO ES UN REPARTO NORMAL, y conviene entenderlo antes de tocar
+   nada: un reparto necesita, en cada línea, un producto de la sede que
+   recibe. Una franquicia no tiene productos en esta base. Forzarlo
+   —apuntando al producto de bodega— haría que al confirmar se SUMARA en
+   bodega en vez de restar: exactamente al revés.
+
+   Por eso viven en sus propias tablas y no tocan ni una línea del reparto
+   de los locales, que funciona todos los días.
+
+   EL FLUJO, tal como lo describió Jhon (2026-08-21):
+     1. Adriana arma la lista y elige a qué franquicia va.
+     2. Alguien de bodega la prepara y marca línea por línea qué salió y
+        qué no había. Cada "listo" descuenta de bodega en ese momento.
+     3. Se imprime la hoja y se manda con el envío, porque del otro lado no
+        hay ninguna pantalla donde mirarlo.                                */
+const FRANQUICIAS = [
+  'Mall EU Antofagasta (Urbano Café)',
+  'Mall Portada (Andrómeda)',
+  'Mall EU Viña del Mar (Comercializadora CPE CPA)',
+  'Mall Plaza Calama (Café Group)',
+  'Mall Easton Santiago (Premium Café)',
+];
+let frCarrito = [];      // lo que se está armando
+let frAbiertos = [];     // las listas ya creadas, con sus líneas
+
+function frPintarSelector(){
+  const sel = $('fr-sede'); if(!sel || sel.options.length) return;
+  sel.innerHTML = FRANQUICIAS.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+}
+
+function frBuscar(){
+  const q = normNombre($('fr-q').value);
+  const c = $('fr-results'); if(!c) return;
+  if(q.length < 2){ c.innerHTML = ''; return; }
+  /* Se busca en el inventario de BODEGA, que es de donde sale. No hay
+     enlaces ni gemelos que resolver: lo que se manda es literalmente lo que
+     bodega tiene. */
+  const hall = DATA.filter(p=>normNombre(p.producto).includes(q)).slice(0,12);
+  if(!hall.length){ c.innerHTML = '<div class="empty">Nada con ese nombre en bodega.</div>'; return; }
+  c.innerHTML = hall.map(p=>{
+    const ya = frCarrito.some(x=>x.id===p.id);
+    const hay = +p.stock_actual||0;
+    return `<div class="rep-result">
+      <div style="min-width:0;flex:1">
+        <div class="rn">${esc(p.producto)}</div>
+        <div class="rs">${esc(p.rubro||'—')}</div>
+        <span class="repc-bod${hay<=0?' nada':(hay<3?' poco':'')}">bodega: ${fmt(hay)}</span>
+      </div>
+      <div class="repc-ir">
+        <button type="button" class="${ya?'on':''}" data-fradd="${p.id}">${ya?'✓ puesto':'+ agregar'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function frPintarCarrito(){
+  const c = $('fr-carrito'); if(!c) return;
+  $('fr-enviar').style.display = frCarrito.length ? '' : 'none';
+  if(!frCarrito.length){ c.innerHTML=''; return; }
+  const total = frCarrito.reduce((n,x)=>n+(+x.cantidad||0),0);
+  c.innerHTML = `<div class="rep-sub" style="margin:12px 2px 6px">EN LA LISTA · ${frCarrito.length} producto(s) · ${fmt(total)} unidades</div>`
+    + frCarrito.map((x,i)=>{
+      const p = DATA.find(d=>d.id===x.id);
+      const hay = p ? (+p.stock_actual||0) : 0;
+      /* "hay N" al lado del campo: es la decisión que se toma acá, y sin el
+         número hay que salirse a mirarlo. No bloquea pedir más de lo que
+         hay —a veces se cuenta mal y aparece— pero avisa. */
+      return `<div class="rep-fila">
+        <div class="rep-nom">
+          <span class="nm">${esc(x.producto)}</span>
+          <span class="ped">hay ${fmt(hay)}</span>
+        </div>
+        <div class="rep-acc">
+          <input type="number" class="rep-cant" min="0" step="0.5" value="${x.cantidad}" data-frcant="${i}"
+                 aria-label="Cuánto de ${esc(x.producto)}">
+          <button type="button" class="rep-bt no" data-frquitar="${i}" aria-label="Quitar">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+async function frCrear(){
+  const franquicia = $('fr-sede').value;
+  const items = frCarrito.filter(x=>(+x.cantidad||0) > 0);
+  if(!items.length){ avisar('Ponle cantidad a por lo menos un producto.'); return; }
+  const btn = $('fr-enviar');
+  btn.disabled = true; btn.textContent = 'Creando…';
+  try{
+    const {data,error} = await conReintento(()=>sb.from('envios_franquicia')
+      .insert([{franquicia, creado_por:NOMBRE}]).select());
+    if(error || !data || !data[0]) throw error || new Error('sin envío');
+    const eid = data[0].id;
+    const {error:e2} = await conReintento(()=>sb.from('envios_franquicia_items').insert(
+      items.map(x=>({envio_id:eid, producto_id:x.id, producto:x.producto,
+                     cantidad_pedida:+x.cantidad}))));
+    if(e2){ await sb.from('envios_franquicia').delete().eq('id',eid); throw e2; }
+    frCarrito = [];
+    $('fr-q').value=''; $('fr-results').innerHTML='';
+    frPintarCarrito();
+    await frCargarAbiertos();
+    avisar('✓ Lista creada para ' + franquicia
+      + '\n\nAhora bodega la prepara marcando línea por línea, y ahí se descuenta.');
+  }catch(err){
+    console.error('crear envío franquicia', err);
+    avisar('No se pudo crear la lista. Revisa tu señal e inténtalo de nuevo.');
+  }finally{
+    if(btn.isConnected){ btn.disabled=false; btn.textContent='Crear la lista'; }
+  }
+}
+
+async function frCargarAbiertos(){
+  const {data,error} = await sb.from('envios_franquicia').select('*')
+    .eq('estado','abierto').order('created_at',{ascending:false}).limit(30);
+  if(error){ frAbiertos=[]; frPintarAbiertos(); return; }
+  const envios = data||[];
+  const ids = envios.map(e=>e.id);
+  let items = [];
+  if(ids.length){
+    const r = await sb.from('envios_franquicia_items').select('*')
+      .in('envio_id', ids).order('id').limit(2000);
+    items = r.data||[];
+  }
+  frAbiertos = envios.map(e=>({...e, items: items.filter(i=>i.envio_id===e.id)}));
+  frPintarAbiertos();
+}
+
+function frPintarAbiertos(){
+  const c = $('fr-abiertos'); if(!c) return;
+  if(!frAbiertos.length){ c.innerHTML=''; return; }
+  c.innerHTML = `<div class="rep-sub" style="margin:16px 2px 8px">POR PREPARAR</div>`
+    + frAbiertos.map(e=>{
+    const pend = e.items.filter(i=>i.estado==='pendiente').length;
+    const listo = e.items.filter(i=>i.estado==='listo').length;
+    const filas = e.items.map(i=>{
+      if(i.estado !== 'pendiente'){
+        const ok = i.estado==='listo';
+        return `<div class="rep-fila">
+          <div class="rep-nom"><span class="nm">${esc(i.producto)}</span></div>
+          <span class="rep-estado ${ok?'rec':'nol'}">${ok? '✓ salieron '+fmt(i.cantidad_enviada) : '✕ no había'}</span>
+        </div>`;
+      }
+      const p = DATA.find(d=>d.id===i.producto_id);
+      const hay = p ? (+p.stock_actual||0) : null;
+      return `<div class="rep-fila">
+        <div class="rep-nom">
+          <span class="nm">${esc(i.producto)}</span>
+          <span class="ped">pidió ${fmt(i.cantidad_pedida)}${hay===null?'':' · hay '+fmt(hay)}</span>
+        </div>
+        <div class="rep-acc">
+          <button type="button" class="rep-bt si" data-frlisto="${i.id}" data-cant="${i.cantidad_pedida}">Salió</button>
+          <input type="number" class="rep-cant" min="0" step="0.5" value="${i.cantidad_pedida}"
+                 data-frcantsale="${i.id}" aria-label="Cuánto salió de ${esc(i.producto)}">
+          <button type="button" class="rep-bt no" data-frnohay="${i.id}" aria-label="No había">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="enl-caja" style="margin-bottom:12px">
+      <div class="enl-cab">${esc(e.franquicia)}</div>
+      <div class="enl-cuerpo">
+        <p class="rep-sub" style="margin:0 0 8px">${esc(e.creado_por||'—')} · ${new Date(e.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'})}
+          · ${pend ? pend+' por preparar' : 'todo preparado'}</p>
+        ${filas}
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <button type="button" class="btn btn-gris" data-frhoja="${e.id}" style="flex:1">Imprimir la hoja</button>
+          <button type="button" class="btn btn-orange" data-frcerrar="${e.id}"
+                  style="flex:1"${pend?' disabled':''}>Cerrar el envío</button>
+        </div>
+        ${pend ? '<p class="rep-sub" style="margin:8px 2px 0">Se cierra cuando no queda ninguna línea por preparar.</p>' : ''}
+        ${listo ? '' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function frLinea(itemId, cant, hay){
+  const fn = hay ? 'franquicia_linea_lista' : 'franquicia_linea_no_hay';
+  const args = hay ? {p_item:itemId, p_cant:cant, p_quien:NOMBRE} : {p_item:itemId, p_quien:NOMBRE};
+  const {data,error} = await sb.rpc(fn, args);
+  if(error){ avisar('No se pudo marcar la línea.\n\n' + (error.message||'')); return; }
+  if(data && data.ok === false){ avisar(data.motivo || 'No se pudo marcar la línea.'); }
+  /* Se relee el inventario de bodega porque el stock acaba de bajar: si no,
+     la pantalla seguiría mostrando el número viejo al lado de las líneas
+     que faltan, y esa es justo la información con la que se decide. */
+  await loadData();
+  metrics(); render();
+  await frCargarAbiertos();
+}
+
+async function frCerrar(id){
+  const e = frAbiertos.find(x=>x.id===id); if(!e) return;
+  if(!await preguntar('Cerrar el envío a ' + e.franquicia,
+      'Se guarda como despachado y sale de la lista de por preparar. El stock ya se descontó al marcar cada línea.',
+      'Cerrar')) return;
+  const {error} = await sb.from('envios_franquicia')
+    .update({estado:'despachado', despachado_por:NOMBRE, despachado_at:new Date().toISOString()})
+    .eq('id', id);
+  if(error){ avisar('No se pudo cerrar.\n\n' + (error.message||'')); return; }
+  aviso('✓ Envío cerrado');
+  await frCargarAbiertos();
+}
+
+/* LA HOJA IMPRESA. Del otro lado no hay ninguna pantalla, así que el papel
+   ES el sistema: tiene que bastarse solo. Se abre en una ventana lista para
+   imprimir y el propio navegador ofrece "Guardar como PDF" — en el iPhone,
+   Compartir → Imprimir → guardar.
+
+   Es la versión provisoria: cuando llegue la plantilla de la empresa se
+   reemplaza el HTML de acá abajo y nada más. */
+function frHoja(id){
+  const e = frAbiertos.find(x=>x.id===id); if(!e) return;
+  const salen = e.items.filter(i=>i.estado==='listo');
+  const faltan = e.items.filter(i=>i.estado==='no_hay');
+  const pend  = e.items.filter(i=>i.estado==='pendiente');
+  const total = salen.reduce((n,i)=>n+(+i.cantidad_enviada||0),0);
+  const fila = (i, cant) => `<tr><td>${esc(i.producto)}</td><td class="n">${fmt(cant)}</td></tr>`;
+  const w = window.open('', '_blank');
+  if(!w){ avisar('El navegador bloqueó la ventana\n\nPermite las ventanas emergentes para esta página e inténtalo de nuevo.'); return; }
+  w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8">
+    <title>Envío ${esc(e.franquicia)}</title>
+    <style>
+      *{box-sizing:border-box}
+      body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#14202E;margin:0;padding:28px 30px;font-size:13px}
+      h1{font-size:21px;margin:0;letter-spacing:-.01em}
+      .cab{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
+           border-bottom:2px solid #DC4405;padding-bottom:12px;margin-bottom:6px}
+      .cab .d{text-align:right;font-size:12px;color:#5B6875;line-height:1.6}
+      .quien{font-size:12px;color:#5B6875;margin:10px 0 18px}
+      h2{font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:#41628C;margin:22px 0 8px}
+      table{width:100%;border-collapse:collapse}
+      th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#5B6875;
+         font-weight:600;padding:6px 8px;border-bottom:1px solid #C9D3E0}
+      td{padding:7px 8px;border-bottom:1px solid #E4EAF2}
+      td.n,th.n{text-align:right;width:90px;font-variant-numeric:tabular-nums}
+      .tot{margin-top:14px;padding:11px 14px;background:#EDF1F7;border-radius:8px;
+           display:flex;justify-content:space-between;font-weight:700;font-size:14px}
+      .falta td{color:#B23A2B}
+      .firmas{display:flex;gap:40px;margin-top:52px}
+      .firmas div{flex:1;border-top:1px solid #98A5B4;padding-top:7px;font-size:11.5px;color:#5B6875}
+      .pie{margin-top:26px;font-size:10.5px;color:#8A96A4;border-top:1px solid #E4EAF2;padding-top:9px}
+      @media print{ body{padding:0} @page{margin:16mm} }
+    </style></head><body>
+    <div class="cab">
+      <div><h1>Guía de envío</h1>
+        <div style="font-size:14px;font-weight:600;margin-top:3px">${esc(e.franquicia)}</div></div>
+      <div class="d">Café del Desierto · Bodega<br>${fmtFecha(hoyISO())}<br>N° ${e.id}</div>
+    </div>
+    <div class="quien">Preparado por ${esc(e.creado_por||'—')}${
+      pend.length ? ' · <b style="color:#B23A2B">'+pend.length+' línea(s) todavía sin preparar</b>' : ''}</div>
+
+    <h2>Lo que va</h2>
+    ${salen.length ? `<table><thead><tr><th>Producto</th><th class="n">Cantidad</th></tr></thead>
+      <tbody>${salen.map(i=>fila(i, i.cantidad_enviada)).join('')}</tbody></table>
+      <div class="tot"><span>Total</span><span>${fmt(total)} unidades</span></div>`
+      : '<p>Todavía no se ha preparado ninguna línea.</p>'}
+
+    ${faltan.length ? `<h2>No se pudo enviar</h2>
+      <table class="falta"><tbody>${faltan.map(i=>
+        `<tr><td>${esc(i.producto)}</td><td class="n">pedía ${fmt(i.cantidad_pedida)}</td></tr>`).join('')}</tbody></table>` : ''}
+
+    <div class="firmas"><div>Entrega · bodega</div><div>Recibe · ${esc(e.franquicia)}</div></div>
+    <div class="pie">Documento generado por Llamita, el inventario de Café del Desierto.
+      Formato provisorio.</div>
+    </body></html>`);
+  w.document.close();
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(err){} }, 350);
+}
+
+/* Un solo manejador para toda la zona: sobrevive a que la lista se repinte,
+   que es lo que pasa cada vez que se marca una línea. */
+$('view-repcentral').addEventListener('click', e=>{
+  const a = e.target.closest('[data-fradd]');
+  if(a){
+    const id = +a.dataset.fradd;
+    if(frCarrito.some(x=>x.id===id)) return;
+    const p = DATA.find(d=>d.id===id); if(!p) return;
+    frCarrito.push({id:p.id, producto:p.producto, cantidad:1});
+    frPintarCarrito(); frBuscar(); return;
+  }
+  const q = e.target.closest('[data-frquitar]');
+  if(q){ frCarrito.splice(+q.dataset.frquitar,1); frPintarCarrito(); frBuscar(); return; }
+  const li = e.target.closest('[data-frlisto]');
+  if(li){
+    const campo = document.querySelector(`[data-frcantsale="${li.dataset.frlisto}"]`);
+    const cant = campo ? Math.max(0, +campo.value||0) : +li.dataset.cant||0;
+    frLinea(+li.dataset.frlisto, cant, true); return;
+  }
+  const nh = e.target.closest('[data-frnohay]');
+  if(nh){ frLinea(+nh.dataset.frnohay, 0, false); return; }
+  const ce = e.target.closest('[data-frcerrar]');
+  if(ce && !ce.disabled){ frCerrar(+ce.dataset.frcerrar); return; }
+  const ho = e.target.closest('[data-frhoja]');
+  if(ho){ frHoja(+ho.dataset.frhoja); return; }
+});
+$('view-repcentral').addEventListener('input', e=>{
+  const c = e.target.closest('[data-frcant]');
+  if(c){ frCarrito[+c.dataset.frcant].cantidad = Math.max(0, +c.value||0); }
+});
+$('fr-q').addEventListener('input', frBuscar);
+$('fr-enviar').addEventListener('click', frCrear);
+
 /* ---------------- Secciones y turnos ----------------
 
    QUÉ RESUELVE. El orden de las secciones y cuáles se cuentan en la mañana
@@ -6103,9 +6473,7 @@ function ajSeccionesHTML(){
      existen porque hay productos con ese rubro. Si una está solo en los
      productos, igual aparece — si no, una sección de verdad quedaría
      invisible acá por no estar todavía en la tabla. */
-  const deProductos = [...new Set(DATA.map(d=>d.rubro).filter(Boolean))];
-  const nombres = [...new Set([...SECCIONES.map(x=>x.nombre), ...deProductos])]
-    .sort((a,b)=> secPeso(a)-secPeso(b) || a.localeCompare(b,'es'));
+  const nombres = seccionesDeLaSede();
   const cuenta = nom => DATA.filter(d=>d.rubro===nom).length;
 
   const filas = nombres.map((nom,i)=>{
@@ -6167,8 +6535,7 @@ function ajMoverListaHTML(){
   if(q.length < 2) return '<div class="aj-vacio">Escribe para buscar un producto.</div>';
   const hallados = DATA.filter(p=>normNombre(p.producto).includes(q)).slice(0,25);
   if(!hallados.length) return '<div class="aj-vacio">Ningún producto con ese nombre.</div>';
-  const nombres = [...new Set([...SECCIONES.map(x=>x.nombre), ...DATA.map(d=>d.rubro)])]
-    .filter(Boolean).sort((a,b)=> secPeso(a)-secPeso(b) || a.localeCompare(b,'es'));
+  const nombres = seccionesDeLaSede();
   return hallados.map(p=>`<div class="aj-prod">
       <div class="nm"><b>${esc(p.producto)}</b><span>hoy en ${esc(p.rubro||'—')}</span></div>
       <select class="aj-mover" data-secmover="${p.id}">
@@ -6201,9 +6568,9 @@ async function ajGuardarSeccion(nombre, cambios){
    valor por defecto), y con empates un intercambio no mueve nada visible.
    Reescribir todo deja la lista igual a lo que se ve.                    */
 async function ajMoverSeccion(nombre, dir){
-  const deProductos = [...new Set(DATA.map(d=>d.rubro).filter(Boolean))];
-  const lista = [...new Set([...SECCIONES.map(x=>x.nombre), ...deProductos])]
-    .sort((a,b)=> secPeso(a)-secPeso(b) || a.localeCompare(b,'es'));
+  /* La MISMA lista que se está viendo. Si acá se calculara distinto, el orden
+     que se escribe no sería el orden que se movió. */
+  const lista = seccionesDeLaSede();
   const i = lista.indexOf(nombre), j = i + dir;
   if(i < 0 || j < 0 || j >= lista.length) return;
   lista.splice(j, 0, lista.splice(i, 1)[0]);
@@ -6236,8 +6603,7 @@ async function ajCrearSeccion(){
   const inp = $('aj-sec-nueva');
   const nom = (inp.value||'').trim();
   if(!nom){ avisar('Escribe el nombre de la sección.'); return; }
-  const existe = [...SECCIONES.map(x=>x.nombre), ...DATA.map(d=>d.rubro)]
-    .filter(Boolean).some(x=>normNombre(x)===normNombre(nom));
+  const existe = seccionesDeLaSede().some(x=>normNombre(x)===normNombre(nom));
   if(existe){ avisar('Ya existe una sección con ese nombre en esta sede.'); return; }
   const orden = Math.max(0, ...SECCIONES.map(x=>x.orden||0)) + 1;
   const {data,error} = await sb.from('secciones')
@@ -6860,8 +7226,7 @@ function ajCategoriasHTML(){
     + '<p class="aj-nota">No se pudo leer la tabla. Puede que todavía no se haya corrido '
     + '"2026-08-categorias-de-fudo.sql".</p></div>';
 
-  const secs = [...new Set([...SECCIONES.map(x=>x.nombre), ...DATA.map(d=>d.rubro)])]
-    .filter(Boolean).sort((a,b)=>a.localeCompare(b,'es'));
+  const secs = seccionesDeLaSede();
   const mias = AJ_CATS.filter(c=>c.sede === AJ_PSEDE);
   const faltan = mias.filter(c=>!c.rubro).length;
 
@@ -7535,7 +7900,21 @@ function pintarMetaEnPortada(){
   const c = $('metaPortada'); if(!c) return;
   const viva = (METAS||[]).find(metaVigente);
   c.innerHTML = viva ? metaBarraHTML(viva) : '';
-  c.style.display = viva ? '' : 'none';
+  ajustarMetaPortada();
+}
+
+/* MIENTRAS SE BUSCA, LA META SE VA (Jhon, 2026-08-21: "cuando esté usando el
+   buscador que desaparezca la meta de ventas, estorba").
+
+   Y tiene razón por una razón concreta: buscar es lo que se hace cuando ya se
+   sabe qué se quiere, y en un teléfono la barra de la competencia empuja el
+   resultado fuera de la pantalla. La meta es para mirar de reojo al entrar,
+   no para leerla mientras se busca algo. */
+function ajustarMetaPortada(){
+  const c = $('metaPortada'); if(!c) return;
+  const hay = !!c.innerHTML;
+  const buscando = !!(qEl && qEl.value.trim());
+  c.style.display = (hay && !buscando) ? '' : 'none';
 }
 
 function ajMetasHTML(){
@@ -7924,7 +8303,7 @@ function pickTab(tab){
   }
   // Inicio devuelve la pantalla a como se abre: sin búsqueda, sin filtros y
   // con las secciones cerradas. Es la forma de "empezar de nuevo" sin pensar.
-  if(tab==='inv') irAlInicio();
+  if(tab==='inv'){ irAlInicio(); ajustarMetaPortada(); }
   if(tab==='hist') loadHistorial();
   if(repLocal || esRecepcion){
     if(esRecepcion){
