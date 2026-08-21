@@ -1209,7 +1209,17 @@
   /* En el teléfono la lista de secciones no cabe al lado: pasa arriba, en
      una franja que se desliza — el mismo gesto que la franja de tipos. */
   @media (max-width:719px){
-    .aj{flex-direction:column;gap:12px}
+    /* `align-items:flex-start` es lo que hace que el riel no se estire a lo
+       alto cuando está AL LADO. Puesto en columna significa otra cosa: cada
+       hijo se ancha lo que pida su contenido en vez de tomar el ancho de la
+       pantalla. Y el contenido pide mucho, porque las filas de Actividad y de
+       Productos llevan una línea de texto sin cortes (`white-space:nowrap`).
+       Resultado: el panel medía 470 px dentro de un teléfono de 390 y toda la
+       pantalla se corría — lo que Jhon vio como "no se adapta al teléfono, se
+       ve todo en formato grande". En columna se estira, que es lo que hace que
+       los puntos suspensivos del final del nombre entren a trabajar. */
+    .aj{flex-direction:column;gap:12px;align-items:stretch}
+    .aj-pane{width:100%;min-width:0;max-width:100%}
     .aj-rail{width:100%;position:static;display:flex;gap:6px;overflow-x:auto;
       -webkit-overflow-scrolling:touch;padding:8px;scrollbar-width:none}
     .aj-rail::-webkit-scrollbar{display:none}
@@ -1522,7 +1532,7 @@
   </div>
 
   <div class="drawer-sec">Atajos</div>
-  <button type="button" class="drawer-item" data-accion="actualizar">
+  <button type="button" class="drawer-item" id="drActualizar" data-accion="actualizar">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
     Actualizar
   </button>
@@ -2796,6 +2806,14 @@ function pickSede(s){
      mandar a los locales—, así que la de "Reparto" no va: sería un tercer
      nombre para los mismos dos trabajos. En Plaza y Angamos, al revés. */
   $('tabRecepcion').style.display = s==='central' ? '' : 'none';
+  /* Bodega no está conectada a Fudo: no tiene cuenta, no tiene ventas y no
+     tiene nada que sincronizar. El botón Actualizar ahí no fallaba, pero
+     prometía algo que no puede pasar — y un botón que no hace nada es peor
+     que uno que no está (Jhon, 2026-08-21). Se esconden los DOS: el de la
+     barra y el atajo del menú. Los de Ajustes no se tocan. */
+  $('btnActualizar').style.display  = s==='central' ? 'none' : '';
+  $('drActualizar').style.display   = s==='central' ? 'none' : '';
+
   $('tabEnvios').style.display    = s==='central' ? '' : 'none';
   document.querySelector('.tab[data-tab="reparto"]').style.display = s==='central' ? 'none' : '';
   MERMAS=[]; ENLACES=[]; SEDE_PROD={};
@@ -4301,7 +4319,7 @@ async function loadData(){
   if(!hasTipo) tipoSel=null;
   else if(tipoSel && !DATA.some(p=>tipoDe(p)===tipoSel)) tipoSel=null;  // se quedó sin productos
   $('m-fudo').style.display = PERMISOS.puede_fudo ? '' : 'none';
-  $('m-tipo-row').style.display = hasTipo ? 'flex' : 'none';
+  $('m-tipo-row').style.display = hasTipo ? '' : 'none';
   await loadLotes();
   metrics(); renderTipos(); render();
   /* sin await: las otras dos sedes son dos lecturas más y no tienen por qué
@@ -4962,7 +4980,7 @@ function openModal(id){
   $('m-stock').value=modalProd.stock_actual??'';
   $('m-min').value=modalProd.stock_min??'';
   $('m-max').value=modalProd.stock_max??'';
-  $('m-tipo-row').style.display = hasTipo ? 'flex' : 'none';
+  $('m-tipo-row').style.display = hasTipo ? '' : 'none';
   if(hasTipo){
     $('m-tipo').value = modalProd.tipo ?? '';
     // se ofrecen los tipos que ya existen, para no inventar uno nuevo por una tilde

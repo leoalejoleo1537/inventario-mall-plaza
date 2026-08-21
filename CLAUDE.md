@@ -2350,6 +2350,37 @@ donde se edita el stock— y no en cada fila de la lista.
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-08-21** — **Tres bugs del teléfono, y el del medio no se veía leyendo
+  el CSS.**
+  1. **Ajustes se salía de la pantalla en Productos y en Actividad.** Jhon:
+     *"no se adapta al teléfono y se ve todo en formato grande, sacando de
+     proporción todo"*. La causa es una regla que está BIEN donde estaba y
+     significa otra cosa al girar: `.aj` lleva `align-items:flex-start` para
+     que el riel no se estire a lo alto cuando va **al lado**; en el teléfono
+     esa misma regla —ya en columna— hace que cada hijo se anche **lo que pida
+     su contenido** en vez de tomar el ancho de la pantalla. Y el contenido
+     pedía mucho, porque las filas de Actividad y de Productos llevan una línea
+     sin cortes (`white-space:nowrap`): el panel medía **470 px dentro de un
+     teléfono de 390** y toda la app se corría hacia la izquierda. Arreglado
+     con `align-items:stretch` en la franja del teléfono — recién ahí los
+     puntos suspensivos del final del nombre entran a trabajar.
+     **La lección de método:** `min-width:0` ya estaba puesto y no alcanzaba,
+     porque en columna el que manda es el eje transversal. Mirar el CSS no lo
+     delataba; **medir sí**. La prueba nueva no pregunta "¿se ve bien?" sino
+     **cuánto mide el documento contra cuánto mide la pantalla** — un número
+     contra otro número, igual que el contador de consultas que destapó el
+     bucle de Salud.
+  2. **El botón Actualizar en Bodega prometía algo imposible.** Bodega no tiene
+     cuenta de Fudo: no hay ventas que leer ni stock que devolver. Se esconden
+     los dos —el de la barra y el atajo del menú— y **ninguno de los de
+     Ajustes**, que es lo que Jhon pidió con esas palabras.
+  3. **La etiqueta "Tipo" salía corrida.** Dos sitios mostraban la fila con
+     `display:flex`, y `.field` está pensado para apilar: la etiqueta se iba al
+     lado del campo en vez de encima. Ahora se muestra con `''`, o sea el
+     display que la hoja de estilo ya le da. Es cosmético y por eso importa:
+     una etiqueta torcida es lo que hace que una app se sienta poco seria.
+  Prueba nueva: `pruebas/telefono-y-bodega.mjs`, 17 casos.
+
 - **2026-08-13** — **El problema de los ID se cerró con la idea de Jhon, no con
   la mía. Y con eso se construyó el reparto desde bodega.**
   1. **Yo estaba emparejando dos catálogos que nunca fueron pensados para
