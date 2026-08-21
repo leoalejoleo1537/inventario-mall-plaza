@@ -128,6 +128,30 @@ await caso('usa la función que SUMA, no la que reemplaza', async () => {
 await caso('no salió ninguna ventana de confirmación', async () =>
   !(await page.isVisible('#overlay-ask')) || 'apareció un "¿seguro?" y Jhon pidió que fluyera');
 
+/* ---- EL CANDADO QUE CAUSÓ EL PROBLEMA DEL 21 DE AGOSTO ----
+   Jhon, desde el local: "llega reparto, lo van a aceptar, se aumenta en el
+   inventario, pero no se sube a Fudo". Eran dos candados encadenados: la app
+   se detenía sin sesión, y la Edge Function además exigía `puede_fudo`.
+   El resultado era el peor posible — inventario bien, Fudo mal, en silencio.
+   Esta prueba existe para que ninguno de los dos vuelva a aparecer. */
+console.log('\nSin sesión y sin permiso, el reparto IGUAL sube a Fudo:');
+await page.evaluate(()=>{
+  PERMISOS = {puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null};
+  window.__fudo.length = 0;
+});
+await page.evaluate(()=>sumarAFudo(77, 2, 503));
+await page.waitForTimeout(300);
+await caso('llama a Fudo igual', async () => {
+  const f = await page.evaluate(()=>window.__fudo.filter(x=>x.nombre==='fudo-sumar-stock'));
+  return f.length > 0 || 'no llamó: el candado sigue puesto y Fudo se queda atrás';
+});
+await caso('y con la cantidad que llegó', async () => {
+  const f = await page.evaluate(()=>window.__fudo.filter(x=>x.nombre==='fudo-sumar-stock'));
+  return (f[0] && f[0].body.cantidad === 2) || 'mandó '+(f[0]&&f[0].body.cantidad);
+});
+await caso('sin ventana pidiendo iniciar sesión', async () =>
+  !(await page.isVisible('#overlay-ask')) || 'apareció el aviso de "inicia sesión"');
+
 console.log('\nSi Fudo no contesta:');
 await page.evaluate(()=>{ window.__fudoFalla = true; window.__fudo.length = 0; });
 await page.evaluate(()=>sumarAFudo(77, 3, 502));

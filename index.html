@@ -5468,16 +5468,18 @@ function itemDeReparto(itemId){
 const FUDO_PENDIENTE = [];
 async function sumarAFudo(productoId, cantidad, itemId){
   if(!productoId || !(+cantidad > 0)) return;
-  /* La app funciona sin sesión iniciada (§6.1), pero escribir en Fudo NO:
-     la Edge Function comprueba el correo contra app_permisos. Sin sesión el
-     error que llega es "tu sesión caducó", que no le dice a nadie qué hacer.
-     Mejor decirlo antes y con la instrucción. */
-  if(!PERMISOS.correo){
-    avisar('El inventario se actualizó, pero Fudo no\n\n'
-      + 'Para que el reparto suba a Fudo hay que entrar con la cuenta. '
-      + 'Abre el menú ☰ e inicia sesión.');
-    return;
-  }
+  /* SIN CANDADO, desde el 2026-08-21 (Jhon, desde el local): "llega el
+     reparto, lo aceptan, se aumenta en el inventario, pero no se sube a
+     Fudo, y eso está causando muchos errores".
+
+     Antes esto se detenía acá si no había sesión, y la Edge Function además
+     exigía `puede_fudo`. Las dos cosas se cayeron, y por la misma razón: el
+     que acepta el reparto es el jefe de turno, y esto no decide nada — solo
+     le cuenta a Fudo algo que ya pasó en el mesón y que el inventario ya
+     anotó. Un permiso no evitaba que el pan llegara: evitaba que Fudo se
+     enterara, y el resultado era inventario bien y Fudo mal, en silencio.
+
+     La sesión se sigue leyendo cuando la hay, para firmar la bitácora. */
   const r = await sb.functions.invoke('fudo-sumar-stock',
     {body:{sede:SEDE, producto_id:productoId, cantidad:+cantidad, reparto_item_id:itemId}});
   /* Un fallo acá tenía UN solo mensaje —"sin conexión"— y eso escondía la

@@ -52,11 +52,10 @@
 // Cómo se llama:
 //   POST { sede, producto_id, cantidad, reparto_item_id? }
 //
-// Quién puede: los correos con puede_fudo en public.app_permisos, igual
-// que el resto. La lista se edita en SQL, no acá.
+// Quién puede: CUALQUIERA. Ver la nota larga adentro (2026-08-21).
 // ================================================================
 
-const VERSION = "2026-08-14";
+const VERSION = "2026-08-21";
 const AUTH_URL = "https://auth.fu.do/api";
 const API_BASE = "https://api.fu.do/v1alpha1";
 
@@ -75,22 +74,41 @@ Deno.serve(async (req) => {
     if (!SB_URL || !SB_KEY) return json({ error: "Falta la configuración de Supabase." }, 500);
     const cab = { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` };
 
-    // ---------- el candado, contra la sesión real ----------
-    const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-    if (!jwt) return json({ error: "Falta la sesión." }, 401);
-    const uRes = await fetch(`${SB_URL}/auth/v1/user`, {
-      headers: { "Authorization": `Bearer ${jwt}`, "apikey": SB_KEY },
-    });
+    // ---------- QUIÉN LO HIZO, no quién puede ----------
+    //
+    // DECISIÓN DE JHON, 2026-08-21, desde el local y con el problema en la
+    // mano: "llega el reparto, lo van a aceptar, se aumenta en el
+    // inventario, pero no se sube a Fudo, y eso está causando muchos
+    // errores. Necesito que todos puedan actualizar el Fudo."
+    //
+    // Es la misma apertura que ya se le hizo al botón ⟳ el 15 de agosto, y
+    // acá el argumento es todavía más fuerte:
+    //
+    //   Este camino NO decide nada. Alguien abrió una caja, contó lo que
+    //   llegó y lo aceptó en la app; el inventario YA subió. Esto solo le
+    //   cuenta a Fudo algo que pasó en el mesón hace un segundo. Un permiso
+    //   no evita que el pan llegue: solo evita que Fudo se entere.
+    //
+    //   Y el que acepta el reparto es el jefe de turno, no jefatura. Pedirle
+    //   que avise y espere es exactamente cómo se produjo este problema: el
+    //   inventario quedaba bien y Fudo mal, sin que nadie se enterara hasta
+    //   que faltaba stock para vender.
+    //
+    // LO QUE SIGUE CON LLAVE: deshacer un empuje (`fudo-deshacer-stock`).
+    // Ese revierte a un estado anterior y puede pisar el trabajo de otro.
+    //
+    // La sesión se sigue LEYENDO cuando existe, para que la bitácora diga
+    // quién fue. Ya no decide si puede: decide cómo firma.
     let correo: string | null = null;
-    try { correo = ((await uRes.json())?.email ?? "").toLowerCase() || null; } catch { /* no-JSON */ }
-    if (!uRes.ok || !correo) return json({ error: "Tu sesión caducó. Sal y vuelve a entrar." }, 401);
-
-    const pRes = await fetch(
-      `${SB_URL}/rest/v1/app_permisos?correo=eq.${encodeURIComponent(correo)}&select=puede_fudo`, { headers: cab });
-    const permisos = pRes.ok ? await pRes.json() : [];
-    if (!permisos?.[0]?.puede_fudo) {
-      return json({ error: "Esta cuenta no puede actualizar el stock de Fudo." }, 403);
+    const jwt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
+    if (jwt) {
+      const uRes = await fetch(`${SB_URL}/auth/v1/user`, {
+        headers: { "Authorization": `Bearer ${jwt}`, "apikey": SB_KEY },
+      });
+      try { correo = ((await uRes.json())?.email ?? "").toLowerCase() || null; } catch { /* no-JSON */ }
     }
+    // Que no se sepa el nombre no es motivo para dejar Fudo desactualizado.
+    if (!correo) correo = "equipo (sin sesión)";
 
     // ---------- qué se pidió ----------
     const body = await req.json().catch(() => ({}));
