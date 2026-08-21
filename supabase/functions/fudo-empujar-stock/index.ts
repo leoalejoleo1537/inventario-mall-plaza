@@ -42,7 +42,7 @@
 
 // Se devuelve en cada respuesta para poder saber qué versión está
 // desplegada sin entrar al panel (§8, prevención).
-const VERSION = "2026-08-21";
+const VERSION = "2026-08-21b";
 const AUTH_URL = "https://auth.fu.do/api";
 const API_BASE = "https://api.fu.do/v1alpha1";
 
@@ -218,7 +218,9 @@ Deno.serve(async (req) => {
     // desde el principio: se manda el valor ABSOLUTO y se saltan los que
     // ya están iguales. Así la corrida siguiente sigue exactamente donde
     // quedó esta. Cortar acá es una pausa, no una pérdida.
-    const TOPE_MS = 60_000;
+    // Se puede mover desde Secrets sin volver a desplegar, y es lo que
+    // permite probar el corte sin esperar un minuto de verdad.
+    const TOPE_MS = Number(Deno.env.get("EMPUJE_TOPE_MS") ?? 60_000);
     const arranque = Date.now();
     let pendientes = 0;
 
@@ -233,12 +235,21 @@ Deno.serve(async (req) => {
       }).catch(() => { /* que un fallo de bitácora no oculte el resultado */ });
     };
 
-    for (const f of porHacer) {
-      if (Date.now() - arranque > TOPE_MS) {
-        // No se sigue: lo que falta lo toma la próxima corrida.
-        pendientes = porHacer.length - hechos.length - fallados.length;
-        break;
-      }
+    // ---------- DE A CINCO, NO DE A UNO ----------
+    //
+    // El presupuesto de tiempo de arriba evita el 504, pero solo. Con ~150
+    // productos y uno por vez, la corrida se corta a la mitad y hay que
+    // apretar ⟳ tres o cuatro veces. Eso no sirve en el mesón: el botón
+    // tiene que hacer el trabajo, no la mitad del trabajo.
+    //
+    // Cinco a la vez y no veinte, a propósito: no sabemos qué tolera la API
+    // de Fudo, y quedarse sin saberlo con la entrega encima es una mala
+    // apuesta. Cinco baja una corrida de ~150 segundos a ~30 y sigue siendo
+    // un ritmo educado. El presupuesto de tiempo se queda igual, como red.
+    const EN_PARALELO = 5;
+    const cola = porHacer.slice();
+
+    const unProducto = async (f: Fila) => {
       const valor = Number(f.stock_calculado);
       let ok = false, detalle = "", confirmado: number | null = null;
       try {
@@ -269,9 +280,23 @@ Deno.serve(async (req) => {
         sede, lote, fudo_product_id: f.fudo_product_id, producto_fudo: f.producto_fudo,
         stock_anterior: f.stock_en_fudo, stock_enviado: valor, ok, detalle: detalle || null, quien: correo,
       });
-      // De a 25: si la plataforma corta la función, lo ya hecho está escrito.
-      if (bitacora.length >= 25) { await guardarBitacora(bitacora.splice(0, bitacora.length)); }
-    }
+    };
+
+    /* Cinco obreros sacando de la misma pila. Cada uno toma el siguiente
+       cuando termina el suyo, así ninguno se queda esperando al más lento —
+       que es lo que pasaría partiendo la lista en cinco pedazos fijos. */
+    const obrero = async () => {
+      for (;;) {
+        if (Date.now() - arranque > TOPE_MS) break;   // se acabó el tiempo
+        const f = cola.shift();
+        if (!f) break;
+        await unProducto(f);
+        // De a 25: si la plataforma corta la función, lo ya hecho está escrito.
+        if (bitacora.length >= 25) await guardarBitacora(bitacora.splice(0, bitacora.length));
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(EN_PARALELO, cola.length) }, obrero));
+    pendientes = cola.length;
 
     // Lo que quedó suelto de la última tanda.
     await guardarBitacora(bitacora);
