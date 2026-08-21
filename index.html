@@ -9098,7 +9098,14 @@ const PASOS_SYNC = [
          tener que ir a comprobarlo a mano cada vez. */
       ULTIMO_EMPUJE = data;
       if(data.con_error) throw new Error(data.con_error + ' productos que Fudo rechazó');
-      return data.actualizados ? data.actualizados + ' en Fudo' : '';
+      /* `pendientes` son los que no alcanzaron a entrar en esta corrida
+         (2026-08-21). No es un error: el empuje manda el valor absoluto y
+         se salta los que ya están iguales, así que el próximo ⟳ sigue donde
+         este quedó. Decirlo importa igual — "quedan 90" es información;
+         quedarse callado es justo lo que hacía el 504. */
+      const quedan = data.pendientes ? ' · quedan ' + data.pendientes : '';
+      return data.actualizados ? data.actualizados + ' en Fudo' + quedan
+           : (data.pendientes ? 'quedan ' + data.pendientes + ' por mandar a Fudo' : '');
     }
   },
 ];

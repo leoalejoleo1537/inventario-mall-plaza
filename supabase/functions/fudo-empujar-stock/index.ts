@@ -42,7 +42,7 @@
 
 // Se devuelve en cada respuesta para poder saber qué versión está
 // desplegada sin entrar al panel (§8, prevención).
-const VERSION = "2026-08-15";
+const VERSION = "2026-08-21";
 const AUTH_URL = "https://auth.fu.do/api";
 const API_BASE = "https://api.fu.do/v1alpha1";
 
@@ -195,7 +195,50 @@ Deno.serve(async (req) => {
     // un código por envío: es lo que después permite deshacer "el último"
     const lote = crypto.randomUUID();
     const hechos: unknown[] = [], fallados: unknown[] = [], bitacora: unknown[] = [];
+
+    // ---------- EL PRESUPUESTO DE TIEMPO (2026-08-21) ----------
+    //
+    // Esta función le manda a Fudo UN producto por vez, en fila. Mientras
+    // el botón ⟳ empujaba unos pocos, se notaba. Desde el 15 de agosto
+    // empuja TODO —así se pidió— o sea ~230 productos por corrida. A un
+    // segundo cada uno, eso pasa de los cuatro minutos, y la plataforma
+    // corta la función a medio camino: la app recibe un 504 y ni siquiera
+    // se entera de lo que sí alcanzó a hacer.
+    //
+    // Peor todavía: la bitácora se escribía RECIÉN AL FINAL, así que al
+    // cortarse no quedaba rastro de los productos que sí se actualizaron.
+    // Trabajo hecho, cero registro. Es la falla silenciosa de §0.5 con
+    // pasos extra: no solo no avisa, además borra la evidencia.
+    //
+    // Dos arreglos, y el orden importa:
+    //   1. se para a los 60 s y devuelve lo hecho + cuántos quedaron;
+    //   2. la bitácora se guarda EN EL CAMINO, de a tandas.
+    //
+    // Que se pueda cortar no rompe nada, y eso es por cómo está diseñado
+    // desde el principio: se manda el valor ABSOLUTO y se saltan los que
+    // ya están iguales. Así la corrida siguiente sigue exactamente donde
+    // quedó esta. Cortar acá es una pausa, no una pérdida.
+    const TOPE_MS = 60_000;
+    const arranque = Date.now();
+    let pendientes = 0;
+
+    // Guardar la bitácora de a tandas, para que un corte no la borre.
+    const guardarBitacora = async (filas: unknown[]) => {
+      if (!filas.length) return;
+      await fetch(`${SB_URL}/rest/v1/fudo_stock_push`, {
+        method: "POST",
+        headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`,
+                   "Content-Type": "application/json", "Prefer": "return=minimal" },
+        body: JSON.stringify(filas),
+      }).catch(() => { /* que un fallo de bitácora no oculte el resultado */ });
+    };
+
     for (const f of porHacer) {
+      if (Date.now() - arranque > TOPE_MS) {
+        // No se sigue: lo que falta lo toma la próxima corrida.
+        pendientes = porHacer.length - hechos.length - fallados.length;
+        break;
+      }
       const valor = Number(f.stock_calculado);
       let ok = false, detalle = "", confirmado: number | null = null;
       try {
@@ -226,23 +269,21 @@ Deno.serve(async (req) => {
         sede, lote, fudo_product_id: f.fudo_product_id, producto_fudo: f.producto_fudo,
         stock_anterior: f.stock_en_fudo, stock_enviado: valor, ok, detalle: detalle || null, quien: correo,
       });
+      // De a 25: si la plataforma corta la función, lo ya hecho está escrito.
+      if (bitacora.length >= 25) { await guardarBitacora(bitacora.splice(0, bitacora.length)); }
     }
 
-    // Bitácora: sin esto, un empuje equivocado no deja rastro.
-    if (bitacora.length) {
-      await fetch(`${SB_URL}/rest/v1/fudo_stock_push`, {
-        method: "POST",
-        headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`,
-                   "Content-Type": "application/json", "Prefer": "return=minimal" },
-        body: JSON.stringify(bitacora),
-      }).catch(() => { /* que un fallo de bitácora no oculte el resultado */ });
-    }
+    // Lo que quedó suelto de la última tanda.
+    await guardarBitacora(bitacora);
 
     return json({
       ...resumen,
       ok: fallados.length === 0,
       actualizados: hechos.length,
       con_error: fallados.length,
+      // Cuántos quedaron para la próxima corrida. La app lo dice en pantalla:
+      // "quedan 90" es información; quedarse callado es lo que hacía el 504.
+      pendientes,
       cambios: hechos,
       errores: fallados,
     });
