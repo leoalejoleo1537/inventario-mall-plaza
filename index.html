@@ -988,6 +988,11 @@
   .aj-sw.on{background:var(--green-fg)}
   .aj-sw.on::after{transform:translateX(18px)}
   .aj-sw:disabled{opacity:.45;cursor:default}
+  /* cuántas formas de actualizar Fudo tiene encendidas una cuenta */
+  .aj-cuenta{flex:0 0 auto;font-size:12.5px;font-weight:800;border-radius:999px;
+    padding:4px 10px;background:var(--green-bg);color:var(--green-fg)}
+  .aj-cuenta.mal{background:var(--amber-bg);color:var(--amber-fg)}
+  .mhead{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
   .aj-yo{font-size:11.5px;font-weight:800;color:var(--muted);background:var(--gray-bg);
     border-radius:999px;padding:3px 9px}
   .aj-alta{display:flex;gap:8px;margin-top:10px}
@@ -1761,6 +1766,22 @@
 </div>
 
 <!-- ================= AVISO DE CONFIRMACIÓN ================= -->
+<!-- Los permisos de Fudo de UNA persona. Ver ajFudoPermisosHTML(). -->
+<div class="overlay overlay-blur" id="overlay-fperm">
+  <div class="modal">
+    <div class="mhead">
+      <div style="flex:1;min-width:0">
+        <h2 id="fperm-titulo" style="margin:0">—</h2>
+        <div id="fperm-correo" class="aj-yo" style="background:none;padding:0;margin-top:2px"></div>
+      </div>
+      <button type="button" class="adm-x" id="fperm-x" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="fperm-cuerpo"></div>
+    <p class="aj-nota" style="margin-top:12px">Apagar algo acá no impide que
+      alguien lo haga por otro lado. Es un seguro contra el resbalón.</p>
+  </div>
+</div>
+
 <div class="overlay overlay-blur" id="overlay-ask">
   <div class="modal modal-ask">
     <h2 id="ask-titulo">¿Seguro?</h2>
@@ -2335,8 +2356,80 @@ function setModoEdicion(v){
    que lleva meses cuadrada, es caro de deshacer.
    Si la columna todavía no existe en la base, `fila.sede` viene undefined y el
    permiso queda como estaba: para todas las sedes. */
+/* ================= LOS CAMINOS QUE ESCRIBEN EN FUDO =================
+
+   DOCTRINA, fijada por Jhon el 2026-08-21 después de que el reparto dejara
+   de subir a Fudo. Está escrita acá y no en un documento aparte porque es
+   la clase de regla que se pierde: la próxima persona que agregue un camino
+   nuevo va a leer este archivo, no la bitácora.
+
+     1. El botón ⟳ lo aprieta CUALQUIERA. Sin excepción, sea jefe o no.
+     2. El reloj automático corre SIEMPRE, en la cuenta que sea.
+     3. El reparto sube a Fudo SIEMPRE, lo acepte quien lo acepte.
+     4. El ÚNICO candado del sistema es la puerta de Ajustes.
+     5. Y si algún día hay que cerrar algo de Fudo, se cierra desde Ajustes,
+        cuenta por cuenta — nunca escribiéndolo en el código.
+
+   De dónde salió el problema, porque entenderlo es lo que evita repetirlo:
+   `puede_fudo` nació el 2026-07-28 junto con el botón rojo de
+   administración, y en ese momento era razonable —había UN camino a Fudo y
+   era un empuje masivo hecho por jefatura—. Después se fueron agregando
+   caminos que no se parecen en nada a aquel: recibir un reparto, mermar,
+   el reloj. Cada uno copió el mismo candado "igual que el resto", sin que
+   nadie decidiera que correspondía. **El candado no se diseñó para esos
+   caminos: se heredó.** Y la cuenta nueva nacía con él puesto.
+
+   Esta lista existe para que eso no vuelva a pasar: cada camino que escribe
+   en Fudo tiene que estar acá, con su nombre en castellano y su explicación
+   de qué pasa si se apaga. Un camino que no esté en esta lista no se puede
+   apagar desde Ajustes, y eso es a propósito — obliga a agregarlo. */
+const FUDO_ACCIONES = [
+  { clave:'boton',   grupo:'Actualizar el stock', nom:'El botón ⟳ de la barra',
+    det:'Manda a Fudo el inventario completo de la sede.',
+    apagado:'El botón sigue leyendo las ventas y descontando; solo deja de devolverle el stock a Fudo.' },
+  { clave:'ficha',   grupo:'Actualizar el stock', nom:'Un producto suelto',
+    det:'El botón dentro de la ficha de un producto.',
+    apagado:'La ficha deja de mostrar ese botón.' },
+  { clave:'todo',    grupo:'Actualizar el stock', nom:'Todo el inventario, desde Ajustes',
+    det:'El empuje grande de la zona de administración.',
+    apagado:'El botón no aparece en Ajustes.' },
+  { clave:'reparto', grupo:'Solo, sin apretar nada', nom:'Al recibir un reparto',
+    det:'Le SUMA a Fudo lo que llegó. No manda el total.',
+    apagado:'El reparto igual sube al inventario, pero Fudo no se entera hasta el próximo ⟳.' },
+  { clave:'merma',   grupo:'Solo, sin apretar nada', nom:'Al mermar un producto',
+    det:'Le baja a Fudo lo que se botó, para que deje de venderlo.',
+    apagado:'La merma se anota igual; Fudo sigue ofreciendo lo que ya está en la basura.' },
+  { clave:'crear',   grupo:'El catálogo de Fudo', nom:'Crear un producto en Fudo',
+    det:'Da de alta un producto nuevo en la carta.',
+    apagado:'Se puede crear en el inventario, pero no en Fudo.' },
+  { clave:'apagar',  grupo:'El catálogo de Fudo', nom:'Encender o apagar un producto',
+    det:'Saca o devuelve un producto de la carta de Fudo.',
+    apagado:'El interruptor de la lista de productos deja de estar.' },
+  { clave:'deshacer',grupo:'Dar marcha atrás',     nom:'Deshacer el último empuje',
+    det:'Devuelve Fudo a los valores de antes del último envío.',
+    apagado:'No aparece el botón de deshacer.' },
+];
+
+/* EL RELOJ AUTOMÁTICO NO PREGUNTA. Punto 2 de la doctrina: corre con el
+   secret del sistema, no con una cuenta, así que no pasa por acá nunca. Si
+   alguna vez alguien le pone un candado, el inventario se desincroniza de
+   noche y nadie lo ve hasta la mañana. */
+
+/* ¿Puede esta cuenta hacer esto en Fudo?
+
+   Contesta que SÍ salvo que alguien lo haya apagado a mano. Y eso es
+   estructural, no un valor por defecto: la base guarda **lo que NO se
+   puede** (`fudo_bloqueos`), así que una cuenta nueva, una fila que falta,
+   la columna que todavía no existe o una lectura que no llegó significan
+   todas lo mismo — ningún bloqueo. Es exactamente al revés de lo que había,
+   y por eso el problema del 21 de agosto no se puede repetir. */
+function puedeEnFudo(clave){
+  const b = PERMISOS && PERMISOS.fudo_bloqueos;
+  return !(Array.isArray(b) && b.includes(clave));
+}
+
 function permisosDeLaSede(fila, sede){
-  if(!fila) return { puede_fudo:false, puede_editar:false, puede_ajustes:false, sede:null };
+  if(!fila) return { puede_fudo:false, puede_editar:false, puede_ajustes:false, sede:null, fudo_bloqueos:[] };
   const suya = fila.sede || null;
   const aqui = !suya || suya === sede;
   return {
@@ -2353,10 +2446,14 @@ function permisosDeLaSede(fila, sede){
        zona de administración que se abre sola por no haber corrido un
        script sería la peor forma de estrenarla. */
     puede_ajustes: !!fila.puede_ajustes && aqui,
+    /* Los bloqueos NO se acotan por sede: apagar algo es una decisión sobre
+       la persona, no sobre dónde está parada. Si la columna todavía no
+       existe, viene undefined y queda en lista vacía = todo permitido. */
+    fudo_bloqueos: Array.isArray(fila.fudo_bloqueos) ? fila.fudo_bloqueos : [],
   };
 }
 
-let PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null };
+let PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null, fudo_bloqueos:[] };
 /* UNA LECTURA QUE FALLA NO PUEDE QUITARLE EL PERMISO A NADIE.
 
    Este era el bug que reportó Jhon: "habilito el Modo edición para otra
@@ -2376,16 +2473,16 @@ async function cargarPermisos(){
     const {data:{session}} = await sb.auth.getSession();
     const correo = session?.user?.email?.toLowerCase() || null;
     if(!correo){
-      PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null };
+      PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null, fudo_bloqueos:[] };
     } else {
       const {data,error} = await sb.from('app_permisos').select('*').eq('correo',correo).maybeSingle();
       if(error){
         // la lectura no llegó: se deja lo de antes si es la misma persona
         PERMISOS = (antes.correo === correo) ? antes
-          : { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo, sede:null };
+          : { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo, sede:null, fudo_bloqueos:[] };
         console.warn('No se pudieron releer los permisos; se conservan los anteriores.', error);
       } else {
-        PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo, sede:null };
+        PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo, sede:null, fudo_bloqueos:[] };
         if(data) Object.assign(PERMISOS, permisosDeLaSede(data, SEDE));
       }
     }
@@ -2396,13 +2493,19 @@ async function cargarPermisos(){
 }
 function aplicarPermisos(){
   const admin = PERMISOS.puede_fudo || PERMISOS.puede_editar;
+  /* Los dos botones grandes de la zona roja, cada uno con su propia llave.
+     Están dentro de Ajustes, así que ya pasaron el único candado de verdad
+     (punto 4 de la doctrina); esto es la capa fina de arriba, la que Jhon
+     puede mover cuenta por cuenta si Adriana lo pide. */
+  const be = $('adm-empujar');  if(be)  be.style.display  = puedeEnFudo('todo')     ? '' : 'none';
+  const bd = $('adm-deshacer'); if(bd)  bd.style.display  = puedeEnFudo('deshacer') ? '' : 'none';
   // La puerta del menú es la MISMA que la de Ajustes: un solo permiso.
   $('bloqueAdmin').style.display = PERMISOS.puede_ajustes ? '' : 'none';
   // crear productos pasa a ser cosa de administración
   $('btnNuevo').style.display = PERMISOS.puede_editar ? '' : 'none';
   // también acá y no solo al abrir la ficha: si el permiso cambia con la
   // ficha abierta, el botón tiene que irse en el momento
-  $('m-fudo').style.display = PERMISOS.puede_fudo ? '' : 'none';
+  $('m-fudo').style.display = puedeEnFudo('ficha') ? '' : 'none';
   /* La franja de alarma del motor SOLO la ve administración.
      Motivo operativo, no técnico: el jefe de turno no puede arreglar un
      cron detenido, así que para él ese aviso rojo no es información —
@@ -3310,6 +3413,7 @@ function abrirMerma(prod){
    eso seguiría vendiendo lo que está en la basura.                      */
 function bajarEnFudo(prod){
   if(!prod || (SEDE !== 'plaza' && SEDE !== 'angamos')) return;
+  if(!puedeEnFudo('merma')) return;
   sb.functions.invoke('fudo-empujar-stock',
     {body:{sede:SEDE, modo:'aplicar', producto_id:prod.id, incluir_ceros:true}})
     .then(async r=>{
@@ -4125,7 +4229,7 @@ $('enl-crear').addEventListener('click', async ()=>{
 
      Se hace sede por sede porque cada local tiene su propio Fudo: son dos
      catálogos distintos y cada uno da su propio id. */
-  if($('enl-n-fudo').checked){
+  if($('enl-n-fudo').checked && puedeEnFudo('crear')){
     const precio = +$('enl-n-precio').value;
     for(const d of det){
       if(d.sede === 'central' || !d.id) continue;
@@ -4318,7 +4422,7 @@ async function loadData(){
   hasTipo = DATA.length>0 && ('tipo' in DATA[0]);
   if(!hasTipo) tipoSel=null;
   else if(tipoSel && !DATA.some(p=>tipoDe(p)===tipoSel)) tipoSel=null;  // se quedó sin productos
-  $('m-fudo').style.display = PERMISOS.puede_fudo ? '' : 'none';
+  $('m-fudo').style.display = puedeEnFudo('ficha') ? '' : 'none';
   $('m-tipo-row').style.display = hasTipo ? '' : 'none';
   await loadLotes();
   metrics(); renderTipos(); render();
@@ -5480,6 +5584,7 @@ async function sumarAFudo(productoId, cantidad, itemId){
      enterara, y el resultado era inventario bien y Fudo mal, en silencio.
 
      La sesión se sigue leyendo cuando la hay, para firmar la bitácora. */
+  if(!puedeEnFudo('reparto')) return;
   const r = await sb.functions.invoke('fudo-sumar-stock',
     {body:{sede:SEDE, producto_id:productoId, cantidad:+cantidad, reparto_item_id:itemId}});
   /* Un fallo acá tenía UN solo mensaje —"sin conexión"— y eso escondía la
@@ -6016,12 +6121,14 @@ const AJUSTES = [
 
   { id:'fudo', ico:'fudo', tit:'Fudo',
     sub:'El puente con el sistema de ventas.',
-    render:()=>ajFudoSedesHTML() + '<div id="aj-slot-fudo"></div><div id="aj-slot-hist"></div>',
+    render:()=>ajFudoSedesHTML() + ajFudoPermisosHTML()
+             + '<div id="aj-slot-fudo"></div><div id="aj-slot-hist"></div>',
     montar:()=>{
       ajMontar('aj-slot-fudo','adm-sec-fudo');
       ajMontar('aj-slot-hist','adm-sec-hist');
       ajUnaVez('histfudo', cargarHistorialFudo);
       if(AJ_SYNC === null) ajUnaVez('sync', ajCargarSync);
+      if(!PERSONAS || !PERSONAS.length) ajUnaVez('personas', cargarPersonas);
     } },
 
   { id:'respaldos', ico:'respaldos', tit:'Respaldos',
@@ -6069,6 +6176,115 @@ async function ajCargarSync(){
   const {data,error} = await sb.from('fudo_sync').select('*').order('sede');
   AJ_SYNC = error ? {error:true} : (data||[]);
   if(ajActual === 'fudo') pintarAjustes();
+}
+
+/* ============ PERMISOS DE ACTUALIZACIÓN A FUDO ============
+
+   Pedido por Jhon el 2026-08-21, el mismo día del incidente y con esta
+   razón: "nunca hay que desperdiciar una buena crisis". El caso que tiene
+   en la cabeza es concreto — si Adriana pide que los jefes de turno no
+   puedan actualizar a mano pero sí al recibir un reparto, eso tiene que
+   poder hacerse desde acá y no llamándome a mí.
+
+   LO IMPORTANTE, Y ES LA DIFERENCIA CON LO QUE HABÍA: acá NO se dan
+   permisos, se QUITAN. Todo el mundo puede todo hasta que alguien apague
+   algo, cuenta por cuenta. Una lista vacía —que es como nace cada cuenta—
+   quiere decir "puede todo".
+
+   Y se dice en pantalla que esto no es seguridad, porque no lo es: es un
+   seguro contra el resbalón, del mismo tipo que el Modo edición. Quien
+   quiera saltárselo puede. Es la doctrina de §6.1 y no se disfraza de otra
+   cosa — un candado que promete más de lo que cumple es peor que ninguno. */
+let AJ_PERM_ABIERTA = null;   // el correo cuya ventana está abierta
+
+function ajFudoPermisosHTML(){
+  if(PERSONAS === null) return `<div class="aj-caja"><h3>Permisos de actualización a Fudo</h3>
+      <p class="aj-nota">No se pudo leer la lista de personas.</p></div>`;
+  if(!PERSONAS) return `<div class="aj-caja"><h3>Permisos de actualización a Fudo</h3>
+      <p class="aj-nota">Cargando…</p></div>`;
+
+  const filas = PERSONAS.map(p=>{
+    const bl = Array.isArray(p.fudo_bloqueos) ? p.fudo_bloqueos : [];
+    const n  = FUDO_ACCIONES.filter(a=>!bl.includes(a.clave)).length;
+    const todo = n === FUDO_ACCIONES.length;
+    return `<div class="aj-fila" data-fperm="${esc(p.correo)}" style="cursor:pointer">
+      <div class="nm"><b>${esc(p.nombre || p.correo)}</b>
+        <span>${todo ? 'puede actualizar Fudo de todas las formas'
+                     : n + ' de ' + FUDO_ACCIONES.length + ' formas · ' + (FUDO_ACCIONES.length - n) + ' apagada' + (FUDO_ACCIONES.length - n === 1 ? '' : 's')}</span></div>
+      <span class="aj-cuenta${todo ? '' : ' mal'}">${n}/${FUDO_ACCIONES.length}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="aj-caja">
+      <h3>Permisos de actualización a Fudo</h3>
+      <p class="aj-nota">Todos pueden todo. Acá se apaga algo puntual, a una
+        cuenta puntual. Es un seguro contra el resbalón, no una cerradura.</p>
+      <div style="margin-top:11px">${filas || '<div class="aj-vacio">No hay nadie en la lista.</div>'}</div>
+    </div>`;
+}
+
+/* La ventana de una persona. Es una pantalla y no una lista dentro de la
+   lista: son ocho interruptores agrupados, y meterlos en la fila haría
+   ilegible lo único que ahí importa, que es de un vistazo quién tiene algo
+   apagado. */
+function ajAbrirPermisosFudo(correo){
+  const p = (PERSONAS||[]).find(x=>x.correo === correo); if(!p) return;
+  AJ_PERM_ABIERTA = correo;
+  ajPintarPermisosFudo();
+  $('overlay-fperm').classList.add('open');
+}
+
+function ajPintarPermisosFudo(){
+  const p = (PERSONAS||[]).find(x=>x.correo === AJ_PERM_ABIERTA); if(!p) return;
+  const bl = Array.isArray(p.fudo_bloqueos) ? p.fudo_bloqueos : [];
+  $('fperm-titulo').textContent = p.nombre || p.correo;
+  $('fperm-correo').textContent = p.correo;
+
+  const grupos = [...new Set(FUDO_ACCIONES.map(a=>a.grupo))];
+  $('fperm-cuerpo').innerHTML = grupos.map(g=>`
+    <div class="aj-grupo-tit">${esc(g)}</div>
+    ${FUDO_ACCIONES.filter(a=>a.grupo===g).map(a=>{
+      const on = !bl.includes(a.clave);
+      return `<div class="aj-fila">
+        <div class="nm"><b>${esc(a.nom)}</b>
+          <span>${esc(on ? a.det : a.apagado)}</span></div>
+        <button type="button" class="aj-sw${on?' on':''}" data-fpsw="${a.clave}"
+          aria-label="${on?'Apagar':'Encender'}"></button>
+      </div>`;
+    }).join('')}`).join('');
+}
+
+async function ajTogglePermisoFudo(clave){
+  const p = (PERSONAS||[]).find(x=>x.correo === AJ_PERM_ABIERTA); if(!p) return;
+  const accion = FUDO_ACCIONES.find(a=>a.clave === clave); if(!accion) return;
+  const bl = Array.isArray(p.fudo_bloqueos) ? p.fudo_bloqueos.slice() : [];
+  const estaba = !bl.includes(clave);
+
+  /* Apagar avisa lo que deja de pasar; encender no pregunta nada. Es la
+     misma asimetría de siempre: el camino que puede dejar a Fudo atrasado
+     se dice en voz alta, el que devuelve todo a la normalidad no estorba. */
+  if(estaba && !await preguntar('Apagar: ' + accion.nom,
+      accion.apagado + '\n\nSe puede volver a encender cuando quieras.', 'Apagar')) return;
+
+  const nuevos = estaba ? [...bl, clave] : bl.filter(x=>x !== clave);
+  const {data, error} = await sb.from('app_permisos')
+    .update({fudo_bloqueos: nuevos}).eq('correo', p.correo).select();
+  /* Sin fila de vuelta no se escribió, aunque no haya error. Es el caso
+     que ya nos mordió con los permisos de Adriana: la base contesta que
+     todo bien y no cambia nada. */
+  if(error || !data || !data.length){
+    avisar('No se pudo guardar\n\n'
+      + (error?.message || 'La base no dejó escribir. ¿Corriste "2026-08-permisos-de-fudo.sql"?'));
+    return;
+  }
+  p.fudo_bloqueos = nuevos;
+  /* Si me lo cambié a mí mismo, se aplica en el momento y no al día
+     siguiente: si no, uno apaga algo, prueba, y parece que no funcionó. */
+  if(PERMISOS.correo === p.correo) PERMISOS.fudo_bloqueos = nuevos;
+  aplicarPermisos();
+  ajPintarPermisosFudo();
+  pintarAjustes();
+  aviso(estaba ? '✓ Apagado · ' + accion.nom : '✓ Encendido · ' + accion.nom);
 }
 
 function ajFudoSedesHTML(){
@@ -6698,7 +6914,10 @@ async function cargarPersonas(){
   const {data,error} = await sb.from('app_permisos').select('*').order('correo');
   if(error){ console.error('personas', error); PERSONAS = null; }
   else PERSONAS = data || [];
-  if(ajActual === 'personas') pintarAjustes();
+  /* También en Fudo: desde el 2026-08-21 esa pantalla lista a las personas
+     para sus permisos de actualización. Sin esto el bloque se quedaba en
+     "Cargando…" para siempre — la lista llegaba y nadie la pintaba. */
+  if(ajActual === 'personas' || ajActual === 'fudo') pintarAjustes();
 }
 
 function ajPersonasHTML(){
@@ -7423,6 +7642,7 @@ async function ajToggleProducto(id){
       'Desaparece de la app y, si con eso deja de poder hacerse, también de Fudo.\n\n'
       + 'Se puede volver a encender cuando quieras.', 'Apagar')) return;
   trabajando(encender ? 'Encendiendo…' : 'Apagando…');
+  if(!puedeEnFudo('apagar')){ avisar('Esta cuenta tiene apagado encender y apagar productos en Fudo.'); return; }
   const r = await sb.functions.invoke('fudo-activar-producto',
     {body:{sede:AJ_PRSEDE, producto_id:id, activo:encender}});
   listo();
@@ -8166,6 +8386,18 @@ $('aj-pane').addEventListener('change', e=>{
   if(ct){ ajGuardarCategoria(ct.dataset.ajcat, ct.value); return; }
 });
 
+/* La ventana de permisos vive FUERA de #aj-pane, así que sus toques no le
+   llegan al delegado de arriba. Tiene el suyo. (Se me pasó una vez: el
+   interruptor se pintaba y no hacía nada — un botón muerto que parece vivo
+   es peor que uno que no está.) */
+$('overlay-fperm').addEventListener('click', e=>{
+  if(e.target === $('overlay-fperm') || e.target.closest('#fperm-x')){
+    $('overlay-fperm').classList.remove('open'); AJ_PERM_ABIERTA = null; return;
+  }
+  const fs = e.target.closest('[data-fpsw]');
+  if(fs) ajTogglePermisoFudo(fs.dataset.fpsw);
+});
+
 $('aj-pane').addEventListener('click', e=>{
   const sw = e.target.closest('[data-persona]');
   if(sw && !sw.disabled){ ajTogglePersona(sw.dataset.persona); return; }
@@ -8203,6 +8435,8 @@ $('aj-pane').addEventListener('click', e=>{
        agregó pasa a mostrar un ✓ en el momento. */
     pintarMetaElegidos(); metaBuscar(); return;
   }
+  const fp = e.target.closest('[data-fperm]');
+  if(fp){ ajAbrirPermisosFudo(fp.dataset.fperm); return; }
   const fm = e.target.closest('[data-fmodo]');
   if(fm){ ajModoSede(fm.dataset.fmodo); return; }
   const fc = e.target.closest('[data-fcron]');
@@ -9088,6 +9322,10 @@ const PASOS_SYNC = [
          falta stock son los del mesón, no jefatura.
          Lo único que se comprueba es que haya un Fudo al otro lado. */
       if(SEDE !== 'plaza' && SEDE !== 'angamos') return '';
+      /* Punto 1 de la doctrina: esto lo aprieta cualquiera. Lo único que
+         puede apagarlo es que alguien lo haya hecho a mano en Ajustes,
+         cuenta por cuenta. */
+      if(!puedeEnFudo('boton')) return '';
       /* Este es el más largo de los tres: le escribe a Fudo producto por
          producto. 150 s es de sobra para los ~230 de una sede. */
       const {data,error} = await conTiempo(

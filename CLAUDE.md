@@ -662,6 +662,87 @@ pendiente** — no se avanza por defecto.
 
 ---
 
+## 0.65 REGLA DURA — quién puede escribir en Fudo (doctrina, 2026-08-21)
+
+> Fijada por Jhon el día que el reparto dejó de subir a Fudo. Él la escribió
+> punto por punto para que "en futuros cambios no se ponga un candado".
+
+1. **El botón ⟳ lo aprieta CUALQUIERA.** Sin excepción, sea jefe o no. Hace
+   lo mismo que el empuje de administración: manda el inventario COMPLETO,
+   no una suma.
+2. **El reloj automático corre SIEMPRE**, en la cuenta que sea. Usa
+   `SISTEMA_TOKEN` y no pasa por ningún permiso — si alguien se lo pone, el
+   inventario se desincroniza de noche y nadie lo ve hasta la mañana.
+3. **El reparto sube a Fudo SIEMPRE**, lo acepte quien lo acepte. Y suma, no
+   reemplaza.
+4. **El ÚNICO candado del sistema es la puerta de Ajustes** (`puede_ajustes`).
+5. **No hay restricciones para escribir en Fudo.** Si algún día hay que
+   cerrar algo, se cierra desde Ajustes, cuenta por cuenta — nunca
+   escribiéndolo en el código.
+
+### De dónde salió el candado que rompió el reparto
+
+`puede_fudo` nació el **2026-07-28** con el botón rojo de administración, y
+ahí era razonable: había UN camino a Fudo y era un empuje masivo de jefatura.
+Después se agregaron caminos que no se parecen en nada a aquel —recibir un
+reparto, mermar, el reloj— y **cada uno copió el mismo candado "igual que el
+resto"**, sin que nadie decidiera que correspondía. El comentario original de
+`fudo-sumar-stock` lo dice con esas palabras.
+
+**El candado no se diseñó para esos caminos: se heredó.** Y el golpe de
+gracia fue que la app creaba las cuentas nuevas con `puede_fudo:false`
+(`index.html`, alta desde Ajustes), así que **nacían sin poder actualizar
+Fudo** y había que acordarse de dárselo.
+
+**La lección general, que vale más que el caso:** un permiso pensado para una
+acción no se hereda a otra solo porque toca el mismo sistema externo. Lo que
+importa no es *qué* toca, sino **si decide algo**. Recibir un reparto no
+decide nada — alguien ya abrió la caja y contó. Un permiso ahí no evitaba que
+el pan llegara: evitaba que Fudo se enterara.
+
+### Cómo quedó: se guarda lo que NO se puede
+
+`app_permisos.fudo_bloqueos text[]`, vacío para todos
+(`sql/2026-08-permisos-de-fudo.sql`).
+
+**Guardar los bloqueos y no los permisos es lo que hace que el incidente no
+se pueda repetir.** Una cuenta nueva, una fila que falta, la columna que
+todavía no existe, una lectura que no llegó o ninguna sesión significan todas
+lo mismo: **ningún bloqueo, o sea puede todo**. Nacer abierto deja de ser un
+valor por defecto que alguien puede cambiar sin querer, y pasa a ser la forma
+de la tabla.
+
+### Los ocho caminos que escriben en Fudo
+
+Viven en `FUDO_ACCIONES` (`index.html`) con su nombre en castellano y qué
+pasa si se apagan. **Un camino nuevo se agrega ahí**; si no está, no se puede
+apagar desde Ajustes, y eso es a propósito.
+
+| clave | Qué es |
+|---|---|
+| `boton` | el ⟳ de la barra · manda el inventario completo |
+| `ficha` | el botón dentro de la ficha de un producto |
+| `todo` | el empuje grande de Ajustes |
+| `reparto` | al recibir un reparto · **suma** lo que llegó |
+| `merma` | al mermar · le baja a Fudo lo botado |
+| `crear` | crear un producto en Fudo |
+| `apagar` | encender o apagar un producto en Fudo |
+| `deshacer` | deshacer el último empuje |
+
+**No están acá, y es correcto:** el reloj automático (punto 2), leer el
+catálogo y leer las ventas — esas no escriben en Fudo.
+
+**Esto es un seguro contra el resbalón, no seguridad**, igual que el Modo
+edición (§6.1, §9.6). Se comprueba en la app, no en el servidor, **y eso es
+deliberado**: un candado del lado del servidor es exactamente lo que produjo
+el 403 silencioso del 21 de agosto. Se dice en pantalla con esas palabras.
+
+Pantalla: **Ajustes → Fudo → "Permisos de actualización a Fudo"**.
+Prueba: `pruebas/permisos-de-fudo.mjs`, 44 casos — la mitad dedicados a
+comprobar que todo lo que puede fallar signifique "puede todo".
+
+---
+
 ## 0.7 REGLA DURA — la bodega es `central`, y `bodega` es la vieja
 
 > Decisión de Jhon del 2026-08-10, después del incidente de §0.6: en vez de
