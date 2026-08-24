@@ -27,6 +27,8 @@ const BODEGA = [
      el local YA baja de otro. Antes la pantalla no mostraba nada y se leía
      como "no existe el mecanismo". */
   {id:903, sede:'central', producto:'Media Luna', rubro:'Bodega', stock_actual:0, stock_min:2, stock_max:40, activo:'SÍ'},
+  {id:904, sede:'central', producto:'Cinnamon rolls', rubro:'Bodega', stock_actual:0, stock_min:2, stock_max:40, activo:'SÍ'},
+  {id:905, sede:'central', producto:'Cinnamon roll vegano', rubro:'Bodega', stock_actual:0, stock_min:2, stock_max:40, activo:'SÍ'},
 ];
 /* Sandwich Serrano va marcado URGENTE **estando sobre su mínimo**: es
    justamente el caso que la marca manual existe para cubrir, y el que se
@@ -52,12 +54,20 @@ const ANGAMOS = [
   /* NO comparte ninguna palabra con "Servilleta". Es el caso que obliga a
      buscar a mano — el mismo hueco que tenía la otra dirección. */
   {id:22, sede:'angamos', producto:'Papel de mesa', rubro:'Bolsas', stock_actual:1, stock_min:5, stock_max:30, activo:'SÍ'},
+  /* El bug del 24 de agosto: comparte la palabra "roll" con "Cinnamon roll
+     vegano" (bodega), así que sale como candidato — pero ya baja de OTRO
+     producto de bodega, con un nombre largo. El detalle "· ya baja de …"
+     es lo que le quitaba el ancho al nombre y lo partía a la mitad. */
+  {id:23, sede:'angamos', producto:'Cinnamon rolls', rubro:'Vitrina', stock_actual:1, stock_min:2, stock_max:20, activo:'SÍ'},
 ];
 const ENLACES = [
   {sede:'plaza', producto_bodega_id:900, producto_sede_id:10},
   {sede:'plaza', producto_bodega_id:901, producto_sede_id:11},
   {sede:'plaza', producto_bodega_id:902, producto_sede_id:14},
   {sede:'angamos', producto_bodega_id:900, producto_sede_id:20},
+  /* "Cinnamon rolls" de Angamos ya baja de un tercer producto de bodega
+     (901), que no es el que se está mirando (900). */
+  {sede:'angamos', producto_bodega_id:904, producto_sede_id:23},
 ];
 
 const page = await browser.newPage();
@@ -428,6 +438,23 @@ await caso('"Media Luna" encuentra a "Medialuna": el espacio no separa', async (
 await caso('y no propone cualquier cosa por ablandar el criterio', async () => {
   const t = await page.textContent('.enl-desde-cands');
   return !t.includes('Servilleta') || 'propone productos sin relación';
+});
+
+console.log('\nEl nombre no se aplasta cuando el detalle es largo:');
+await caso('candidato con detalle largo: el nombre no se parte a la mitad', async () => {
+  await page.fill('#enl-desde-q', 'cinnamon roll vegano');
+  await page.waitForTimeout(350);
+  await page.click('[data-enldesde="905-angamos"]');
+  await page.waitForTimeout(350);
+  const cand = await page.$('.enl-cand.tomado');
+  if(!cand) return 'no aparece el candidato tomado';
+  /* Mide, no mira (§0.7): el nombre y su detalle tienen que estar en
+     renglones separados —cada uno con su propio alto en la caja—, no
+     compartiendo una sola línea donde uno le come el ancho al otro. */
+  const bBox = await cand.$eval('b', el => el.getBoundingClientRect());
+  const spanBox = await cand.$eval('span', el => el.getBoundingClientRect());
+  return (spanBox.top >= bBox.bottom - 2)
+    || 'el detalle no bajó de línea: nombre y detalle se encajonan en la misma fila';
 });
 
 console.log('\nSin errores de JavaScript:');
