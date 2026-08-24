@@ -1004,6 +1004,17 @@
   .cart-row{display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px 8px 12px;margin-bottom:6px}
   /* El interruptor de origen cruza las dos columnas: es una decisión sobre la
      línea entera, no un detalle del nombre. */
+  /* La X de sacar del reparto. Gris y chica: existe siempre pero no compite
+     con el contador, que es lo que se toca todo el rato. */
+  .cart-x{grid-column:2;grid-row:1;justify-self:end;align-self:start;border:none;background:none;
+    color:var(--muted);font-family:inherit;font-size:15px;font-weight:800;line-height:1;
+    width:26px;height:26px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s}
+  .cart-x:hover{background:var(--red-bg);color:var(--red-fg)}
+  .cart-x:active{transform:scale(.88)}
+  /* Con la X arriba, el contador baja a su propio renglón. */
+  .cart-row{grid-template-rows:auto auto}
+  .cart-row .cn{grid-column:1;grid-row:1}
+  .cart-row .qty{grid-column:1 / -1;grid-row:2;justify-self:end}
   .cart-row .repc-orig, .cart-row .repc-orig-falta{grid-column:1 / -1}
   .cart-row .cn{min-width:0}
   .cart-row .cnn{font-size:14px;font-weight:600}
@@ -3971,6 +3982,16 @@ function repcFaltaHTML(sede){
 }
 
 function repcPintarCajas(){
+  /* DÓNDE IBA LEYENDO NO SE PIERDE. Jhon, 2026-08-22: "cuando elijo uno se
+     agrega pero me devuelve otra vez al inicio de la lista".
+
+     Con 85 productos bajo el mínimo, volver arriba en cada toque obliga a
+     buscar de nuevo por dónde iba — y agregar veinte productos se vuelve
+     insufrible. Se guarda a qué altura estaba la lista y se devuelve ahí
+     después de repintar. Es lo mismo que no repintar el campo mientras se
+     escribe: lo que la persona tenía en la mano no se le quita. */
+  const scroll = (()=>{ const c = $('repc-cajas').querySelector('.rf-caja');
+                        return c ? c.scrollTop : null; })();
   $('repc-cajas').innerHTML = [repcDest].filter(x=>SEDES_ENLACE.includes(x)).map(sede=>{
     const car = repcCarritos[sede];
     const total = car.reduce((n,c)=>n+(+c.cantidad||0),0);
@@ -4034,9 +4055,16 @@ function repcPintarCajas(){
          propio renglón, a todo el ancho. Metido al lado del contador se
          aplastaba en el teléfono hasta partir el texto en seis líneas — y un
          botón ilegible no es un botón. */
+      /* LA X PARA SACARLO, SIEMPRE VISIBLE. Antes había que bajar la cantidad
+         a cero a mano para quitar una línea, y con 20 unidades eso son veinte
+         toques. Agregar cuesta un toque; sacar tiene que costar lo mismo.
+         Va arriba a la derecha, separada del contador: quitar no es "restar
+         mucho", es otra cosa, y ponerlas juntas invita a errar el dedo. */
       return `<div class="cart-row">
         <div class="cn"><div class="cnn">${esc(c.producto)}</div>
           <div class="cns">allá hay <b style="color:${cf.fg}">${p?fmt(p.stock_actual):'—'}</b>${llenar}</div></div>
+        <button type="button" class="cart-x" data-repcquitar="${sede}-${i}"
+          aria-label="Sacar ${esc(c.producto)} del reparto">✕</button>
         <div class="qty">
           <button type="button" class="qbtn qleft ${esUno?'is-trash':''}" data-repcleft="${sede}-${i}" aria-label="${esUno?'Quitar':'Restar'}">${esUno?TRASH_SVG:'−'}</button>
           <input type="number" step="0.5" min="0" value="${c.cantidad}" data-repcidx="${sede}-${i}" aria-label="Cantidad de ${esc(c.producto)}">
@@ -4075,6 +4103,15 @@ function repcPintarCajas(){
       </div>
     </div>`;
   }).join('');
+  /* Se devuelve a la altura que tenía. El `scrollHeight` de la línea de abajo
+     no es decorativo: leerlo OBLIGA al navegador a calcular la lista recién
+     creada. Sin eso, el alto todavía es cero cuando se asigna `scrollTop`, el
+     navegador lo recorta a 0 y la lista salta arriba igual — que es justo el
+     bug que se está arreglando. Lo delató la prueba: 120 → 0. */
+  if(scroll){
+    const c = $('repc-cajas').querySelector('.rf-caja');
+    if(c){ void c.scrollHeight; c.scrollTop = scroll; }
+  }
 }
 
 async function repcCargarAbiertos(){
@@ -4238,6 +4275,10 @@ $('view-repcentral').addEventListener('click', async e=>{
       : c.producto + ' · sale de bodega');
     return;
   }
+  const qx = e.target.closest('[data-repcquitar]');
+  if(qx){ const [sd,i] = qx.dataset.repcquitar.split('-');
+          repcCarritos[sd].splice(+i,1);
+          repcPintarCajas(); repcPintarResultados(); return; }
   const ll = e.target.closest('[data-repcllenar]');
   if(ll){ const [s,i]=ll.dataset.repcllenar.split('-'); repcCarritos[s][+i].cantidad=+ll.dataset.cant; repcPintarCajas(); return; }
   const inc = e.target.closest('[data-repcinc]');
@@ -4924,7 +4965,25 @@ async function enlUnir(sede, sid, bid){
   const {data,error} = await sb.from('producto_enlace')
     .insert({sede, producto_bodega_id:bid, producto_sede_id:sid}).select();
   if(error || !data || !data.length){
-    avisar('No se pudo enlazar\n\n' + (error?.message || 'La base no dejó escribir.'));
+    /* EL CANDADO QUE TODAVÍA VIVE EN LA BASE. `producto_enlace_uno_por_sede`
+       impide que un producto de bodega vaya a dos del local, y eso está mal
+       —el par vitrina/congelador lo necesita—. Se decidió quitarlo el 12 de
+       agosto y quedó un script para eso, pero el script no se corrió.
+
+       Es la regla 0.1.2 otra vez: **un `.sql` en el repo dice lo que se
+       ejecutó alguna vez, no lo que está ahora.** Yo mismo di por hecho que
+       estaba corrido y saqué el filtro de la app confiando en eso.
+
+       Mientras no se corra, el error de Postgres es ilegible. Acá se traduce
+       y se dice exactamente qué hay que hacer. */
+    const m = error?.message || '';
+    avisar(/uno_por_sede/.test(m)
+      ? 'Falta correr un script\n\n'
+        + 'La base todavía tiene una regla que impide que un producto de bodega '
+        + 'vaya a dos del mismo local, y el par vitrina/congelador la necesita.\n\n'
+        + 'Se quita con "2026-08-bodega-arreglar-enlace.sql". Es un solo bloque '
+        + 'y no toca ningún dato.'
+      : 'No se pudo enlazar\n\n' + (m || 'La base no dejó escribir.'));
     return;
   }
   ENLACES.push(data[0]);

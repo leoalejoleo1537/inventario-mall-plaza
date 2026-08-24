@@ -33,6 +33,13 @@ const PLAZA = [
   {id:12, sede:'plaza', producto:'Cachito',         rubro:'Vitrina de dulces', stock_actual:9, stock_min:3,  stock_max:12, activo:'SÍ'},
   {id:13, sede:'plaza', producto:'Sandwich Serrano',rubro:'Sándwiches',        stock_actual:9, stock_min:3,  stock_max:14, activo:'SÍ', urgente:true},
   {id:14, sede:'plaza', producto:'Servilleta',      rubro:'Mueble de bolsas',  stock_actual:2, stock_min:20, stock_max:80, activo:'SÍ'},
+  /* Relleno, para que la lista de "le falta a" sea LARGA de verdad. Con cinco
+     productos no se puede desplazar, y entonces la prueba del scroll no
+     probaría nada: pasaría en verde sin haber mirado el bug. En el local real
+     son 85. */
+  ...Array.from({length:30}, (_,i)=>({
+    id:100+i, sede:'plaza', producto:'Relleno '+(i+1), rubro:'Mueble de mezclas',
+    stock_actual:0, stock_min:2, stock_max:6, activo:'SÍ'})),
 ];
 const ANGAMOS = [
   {id:20, sede:'angamos', producto:'Medialuna', rubro:'Vitrina', stock_actual:0, stock_min:5, stock_max:10, activo:'SÍ'},
@@ -267,6 +274,51 @@ await caso('buscar "al" pone los que EMPIEZAN con "al" primero', async () => {
   if(!b.length) return 'no encontró nada';
   return b[0].toLowerCase().startsWith('al')
     || 'el primero es "'+b[0]+'": lo que uno escribió queda sepultado';
+});
+
+console.log('\nLa lista no vuelve al principio al agregar:');
+await page.click('#tabEnvios'); await page.waitForTimeout(600);
+await caso('se queda donde iba leyendo', async () => {
+  /* El toque se manda desde adentro y NO con page.click, a propósito:
+     Playwright desplaza el elemento a la vista antes de tocarlo, así que
+     movería la lista él mismo y la prueba mediría su propio movimiento en vez
+     del de la app. Una persona toca lo que ya está viendo. */
+  const r = await page.evaluate(async ()=>{
+    const c = document.querySelector('.rf-caja');
+    c.scrollTop = 200;
+    const antes = c.scrollTop;
+    /* el primer botón que de verdad se ve a esa altura */
+    const caja = c.getBoundingClientRect();
+    const b = [...c.querySelectorAll('[data-rfadd]')].find(x=>{
+      const r = x.getBoundingClientRect();
+      return r.top >= caja.top && r.bottom <= caja.bottom;
+    });
+    if(!b) return {antes, error:'ningún botón visible a esa altura'};
+    b.click();
+    await new Promise(r=>setTimeout(r,250));
+    const c2 = document.querySelector('.rf-caja');
+    return {antes, despues: c2 ? c2.scrollTop : -1};
+  });
+  if(r.error) return r.error;
+  if(r.antes < 50) return 'la lista no alcanza a desplazarse en esta prueba';
+  return Math.abs(r.despues - r.antes) < 20
+    || 'saltó de '+r.antes+' a '+r.despues+': hay que buscar de nuevo por dónde iba';
+});
+
+console.log('\nSacar un producto del reparto cuesta un toque:');
+/* Se arma el carro acá mismo: las pruebas de arriba lo dejan en un estado que
+   depende de cuál botón quedó visible, y una prueba que depende del estado que
+   le dejó otra falla por motivos que no son el suyo. */
+await page.evaluate(()=>{ repcCarritos.plaza = []; repcAgregar('plaza', 10, 5); repcPintarCajas(); });
+await page.waitForTimeout(300);
+await caso('cada línea tiene su X', async () =>
+  (await page.$$('[data-repcquitar]')).length > 0 || 'no hay X para sacar');
+await caso('tocarla lo saca, sin bajar la cantidad a mano', async () => {
+  const antes = await page.evaluate(()=>repcCarritos.plaza.length);
+  await page.click('[data-repcquitar="plaza-0"]');
+  await page.waitForTimeout(300);
+  return (await page.evaluate(()=>repcCarritos.plaza.length)) === antes - 1
+    || 'no lo sacó';
 });
 
 console.log('\nSin errores de JavaScript:');
