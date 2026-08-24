@@ -23,6 +23,10 @@ const BODEGA = [
   {id:900, sede:'central', producto:'Medialuna', rubro:'Bodega', stock_actual:7,  stock_min:2, stock_max:40, activo:'SÍ'},
   {id:901, sede:'central', producto:'Alfajor',   rubro:'Bodega', stock_actual:20, stock_min:2, stock_max:60, activo:'SÍ'},
   {id:902, sede:'central', producto:'Servilleta',rubro:'Bodega', stock_actual:0,  stock_min:5, stock_max:80, activo:'SÍ'},
+  /* EL CASO DE JHON (24 de agosto): un producto nuevo en bodega cuyo par en
+     el local YA baja de otro. Antes la pantalla no mostraba nada y se leía
+     como "no existe el mecanismo". */
+  {id:903, sede:'central', producto:'Media Luna', rubro:'Bodega', stock_actual:0, stock_min:2, stock_max:40, activo:'SÍ'},
 ];
 /* Sandwich Serrano va marcado URGENTE **estando sobre su mínimo**: es
    justamente el caso que la marca manual existe para cubrir, y el que se
@@ -395,6 +399,35 @@ await caso('el que YA tiene par trae su X para soltarlo', async () => {
   await page.fill('#enl-desde-q', 'medialuna');
   await page.waitForTimeout(350);
   return (await page.$$('[data-enlquitar]')).length > 0 || 'no hay forma de soltar el par';
+});
+
+console.log('\nUn producto nuevo de bodega cuyo par ya está tomado:');
+await caso('no deja la pantalla en blanco: muestra el candidato igual', async () => {
+  await page.fill('#enl-desde-q', 'media luna');
+  await page.waitForTimeout(350);
+  await page.click('[data-enldesde]');
+  await page.waitForTimeout(350);
+  return (await page.$$('[data-enlune2]')).length > 0
+    || 'no propone nada — es el vacío que hizo pensar que no existía la herramienta';
+});
+await caso('y dice de dónde baja hoy, en vez de esconderlo', async () => {
+  const t = await page.textContent('.enl-desde-cands');
+  return (t.includes('ya baja de') && t.includes('Medialuna'))
+    || 'no explica por qué está tomado: '+t.slice(0,120);
+});
+await caso('se ve distinto del que sí está libre', async () =>
+  (await page.$$('.enl-cand.tomado')).length > 0 || 'no se distingue del libre');
+
+await caso('"Media Luna" encuentra a "Medialuna": el espacio no separa', async () => {
+  const t = await page.textContent('.enl-desde-cands');
+  return t.includes('Medialuna') || 'no la encontró: '+t.slice(0,100);
+});
+/* Que el nombre pegado NO afloje el criterio: sigue exigiendo las mismas
+   letras. Si "Media Luna" empezara a proponer "Servilleta", el buscador
+   habría dejado de servir para elegir. */
+await caso('y no propone cualquier cosa por ablandar el criterio', async () => {
+  const t = await page.textContent('.enl-desde-cands');
+  return !t.includes('Servilleta') || 'propone productos sin relación';
 });
 
 console.log('\nSin errores de JavaScript:');

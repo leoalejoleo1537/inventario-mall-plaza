@@ -518,6 +518,11 @@
   .enl-cand:active{transform:scale(.98)}
   .enl-cand b{font-size:14px;font-weight:700;color:var(--text);flex:1;min-width:0}
   .enl-cand span{font-size:11.5px;color:var(--muted);flex:0 0 auto}
+  /* El que ya tiene origen: se ve, se puede tocar, pero se lee como "esto ya
+     está resuelto" y no como una opción más. Sin reborde — se distingue por
+     el peso del texto, no por una línea alrededor. */
+  .enl-cand.tomado{background:transparent}
+  .enl-cand.tomado b{font-weight:600;color:var(--muted)}
   .rf-llenar{margin-left:auto;border:none;background:none;font-family:inherit;cursor:pointer;
     font-size:11.5px;font-weight:800;color:var(--orange);letter-spacing:.3px;
     text-transform:uppercase;padding:3px 2px}
@@ -4949,6 +4954,18 @@ const ENL_RUIDO = new Set(['vitrina','congelador','de','del','la','el','y','con'
 const enlPalabras = t => normNombre(t).replace(/([a-z])([A-Z])/g,'$1 $2').split(/[^a-z0-9]+/)
   .filter(w => w.length > 2 && !ENL_RUIDO.has(w));
 
+/* EL NOMBRE PEGADO, SIN ESPACIOS NI ESTANTE. Sale del caso de Jhon del 24 de
+   agosto: creó "Media Luna" en bodega y no encontraba la "Medialuna" de las
+   sedes. Comparando por palabras no comparten NINGUNA —"media"+"luna" contra
+   "medialuna"— así que la puntuación daba cero y la pantalla salía vacía.
+
+   Dónde va el espacio es una decisión de quien tipeó, no del producto. Y
+   entre dos catálogos cargados por gente distinta esa decisión no se repite:
+   medialuna, cinnamon roll, cocacola, ice latte. Comparar también el nombre
+   pegado atrapa esa familia entera sin aflojar nada — sigue exigiendo que las
+   letras sean las mismas. */
+const enlPegado = t => normNombre(t).replace(/\s+(vitrina|congelador)$/,'').replace(/[^a-z0-9]/g,'');
+
 function enlCandidatosBodega(nombre){
   const q  = normNombre(nombre);
   const ws = enlPalabras(nombre);
@@ -4957,6 +4974,7 @@ function enlCandidatosBodega(nombre){
     .map(b=>{
       const nb = normNombre(b.producto);
       if(nb === q) return {b, punto: 100};
+      if(enlPegado(b.producto) === enlPegado(nombre)) return {b, punto: 90};
       const wb = enlPalabras(b.producto);
       const comunes = ws.filter(w => wb.includes(w)).length;
       if(!comunes) return {b, punto: 0};
@@ -5037,8 +5055,9 @@ function enlPintarDesde(){
                  ${abierto ? 'cerrar' : 'sin par · enlazar'}</button>`}
         </div>
         ${abierto ? `<div class="enl-desde-cands">${enlCandidatosLocal(b, sede).map(x=>
-            `<button type="button" class="enl-cand" data-enlune2="${sede}-${x.id}-${b.id}">
-               <b>${esc(x.producto)}</b><span>${esc(x.rubro||'')} · hay ${fmt(x.stock_actual)}</span></button>`
+            `<button type="button" class="enl-cand${x.origen?' tomado':''}" data-enlune2="${sede}-${x.p.id}-${b.id}">
+               <b>${esc(x.p.producto)}</b><span>${esc(x.p.rubro||'')} · hay ${fmt(x.p.stock_actual)}${
+                 x.origen ? ' · ya baja de "' + esc(enlOrigenNombre(x.p.id, sede)) + '"' : ''}</span></button>`
           ).join('') || '<div class="repc-vacia">Ningún producto de ese local se parece.</div>'}
           <input type="text" class="aj-buscar" placeholder="Buscar en ${esc(SEDES[sede].corto)}…"
             data-enlbusca2="${k}" value="${esc(ENL_DESDE_BUSCA)}">
@@ -5048,26 +5067,54 @@ function enlPintarDesde(){
     </div>`).join('');
 }
 
-/* Candidatos del LOCAL para un producto de bodega. Al revés que el otro:
-   propone por palabras y descarta los que ya tienen origen —esos no pueden
-   tener dos, y la base lo rechaza—. Lo que un producto de bodega SÍ puede es
-   ir a dos del local (vitrina y congelador), así que no se filtra por el lado
-   de bodega. */
+/* Candidatos del LOCAL para un producto de bodega. Propone por palabras y lo
+   que se guarda es el id (§0.7).
+
+   LOS QUE YA TIENEN ORIGEN TAMBIÉN SE MUESTRAN, y eso es el arreglo del
+   2026-08-24. Antes se escondían, con el argumento de que un producto del
+   local viene de un solo producto de bodega y la base rechaza el segundo.
+   El argumento es cierto y la conclusión estaba mal: **esconderlos convertía
+   una explicación en un vacío.**
+
+   El caso de Jhon lo dice entero. Creó "Media Luna" en bodega; la Medialuna
+   de Plaza ya bajaba de la "Medialuna" que existía. Como estaba escondida, la
+   pantalla no mostró NADA — ni candidato, ni motivo— y la lectura obvia fue
+   "no existe el mecanismo". El mecanismo estaba; le faltaba decir por qué no
+   ofrecía nada.
+
+   Ahora salen al final, en gris, diciendo de dónde bajan hoy. Tocarlos
+   propone MOVER el origen. Que la respuesta sea "ya lo tienes, quizá te
+   sobra un producto en bodega" es información — el vacío no lo era. */
 function enlCandidatosLocal(bodega, sede){
   const universo = SEDE_PROD[sede] || [];
-  const conOrigen = new Set(ENLACES.filter(e=>e.sede===sede).map(e=>e.producto_sede_id));
   const ws = enlPalabras(bodega.producto);
   return universo
-    .filter(p=>!conOrigen.has(p.id))
     .map(p=>{
-      if(normNombre(p.producto) === normNombre(bodega.producto)) return {p, punto:100};
-      const wp = enlPalabras(p.producto);
-      const comunes = ws.filter(w=>wp.includes(w)).length;
-      return {p, punto: comunes ? comunes*10 + Math.round((comunes/Math.max(ws.length,1))*5) : 0};
+      let punto = 0;
+      if(normNombre(p.producto) === normNombre(bodega.producto)) punto = 100;
+      else if(enlPegado(p.producto) === enlPegado(bodega.producto)) punto = 90;
+      else {
+        const wp = enlPalabras(p.producto);
+        const comunes = ws.filter(w=>wp.includes(w)).length;
+        punto = comunes ? comunes*10 + Math.round((comunes/Math.max(ws.length,1))*5) : 0;
+      }
+      return {p, punto, origen: bodegaDe(p.id, sede)};
     })
     .filter(x=>x.punto > 0)
-    .sort((a,b)=>b.punto - a.punto || a.p.producto.localeCompare(b.p.producto,'es'))
-    .slice(0,6).map(x=>x.p);
+    /* los libres primero: son el trabajo, los otros son la explicación */
+    .sort((a,b)=> (a.origen?1:0) - (b.origen?1:0)
+               || b.punto - a.punto
+               || a.p.producto.localeCompare(b.p.producto,'es'))
+    .slice(0,8);
+}
+
+/* El nombre del producto de bodega del que hoy baja uno del local, o null.
+   Se usa para explicar, no para bloquear. */
+function enlOrigenNombre(sedeId, sede){
+  const e = bodegaDe(sedeId, sede);          // devuelve la FILA del enlace
+  if(!e) return null;
+  const p = (DATA||[]).find(x=>x.id===e.producto_bodega_id);
+  return p ? p.producto : 'otro de bodega';
 }
 
 /* La salida a mano, del lado de bodega. Existe por la misma razón que la del
@@ -5082,18 +5129,23 @@ function enlPintarBusquedaLocal(bid, sede){
   const b = (DATA||[]).find(x=>x.id===bid); if(!b) return;
   const q = normNombre(ENL_DESDE_BUSCA);
   if(!q){ c.innerHTML=''; return; }
-  const conOrigen = new Set(ENLACES.filter(e=>e.sede===sede).map(e=>e.producto_sede_id));
+  /* Tampoco esconde los que ya tienen origen: los pone al final y dice de
+     dónde bajan. Un buscador que no encuentra lo que uno ve con los ojos es
+     la peor respuesta posible. */
   const r = (SEDE_PROD[sede]||[])
-    .filter(p=>!conOrigen.has(p.id) && normNombre(p.producto).includes(q))
+    .filter(p=>normNombre(p.producto).includes(q))
+    .map(p=>({p, origen: bodegaDe(p.id, sede)}))
     .sort((x,y)=>{
-      const ex = normNombre(x.producto).startsWith(q) ? 0 : 1;
-      const ey = normNombre(y.producto).startsWith(q) ? 0 : 1;
-      return ex - ey || x.producto.localeCompare(y.producto,'es');
+      const ex = normNombre(x.p.producto).startsWith(q) ? 0 : 1;
+      const ey = normNombre(y.p.producto).startsWith(q) ? 0 : 1;
+      return (x.origen?1:0) - (y.origen?1:0) || ex - ey
+          || x.p.producto.localeCompare(y.p.producto,'es');
     }).slice(0,10);
   c.innerHTML = r.length
-    ? r.map(x=>`<button type="button" class="enl-cand" data-enlune2="${sede}-${x.id}-${bid}">
-        <b>${esc(x.producto)}</b><span>${esc(x.rubro||'')} · hay ${fmt(x.stock_actual)}</span></button>`).join('')
-    : '<div class="repc-vacia">Nada libre con ese nombre en '+esc(SEDES[sede].corto)+'.</div>';
+    ? r.map(x=>`<button type="button" class="enl-cand${x.origen?' tomado':''}" data-enlune2="${sede}-${x.p.id}-${bid}">
+        <b>${esc(x.p.producto)}</b><span>${esc(x.p.rubro||'')} · hay ${fmt(x.p.stock_actual)}${
+          x.origen ? ' · ya baja de "' + esc(enlOrigenNombre(x.p.id, sede)) + '"' : ''}</span></button>`).join('')
+    : '<div class="repc-vacia">Nada con ese nombre en '+esc(SEDES[sede].corto)+'.</div>';
 }
 
 /* Quitar un enlace. Se pregunta porque deja a ese producto del local sin
@@ -5175,9 +5227,30 @@ async function enlUnir(sede, sid, bid){
   const p  = (SEDE_PROD[sede]||[]).find(x=>x.id===sid);
   const b  = (DATA||[]).find(x=>x.id===bid);
   if(!p || !b) return;
-  if(!await preguntar('Enlazar',
+
+  /* MOVER, no fallar. Si ese producto del local ya tiene origen, la base
+     rechaza el segundo —y hace bien: de una línea de reparto tiene que salir
+     UN solo producto de bodega—. Pero "no se puede" no es la respuesta útil:
+     casi siempre lo que se quiere es cambiar de dónde baja.
+     Se dice qué se va a soltar, con nombre, antes de soltarlo. */
+  const viejo = bodegaDe(sid, sede);
+  if(viejo && viejo.producto_bodega_id === bid){
+    avisar('Ya estaban enlazados\n\n"'+p.producto+'" ya baja de "'+b.producto+'".');
+    return;
+  }
+  if(viejo){
+    const nomV = enlOrigenNombre(sid, sede);
+    if(!await preguntar('Cambiar de dónde baja',
+        `Hoy "${p.producto}" de ${SEDES[sede].corto} baja de "${nomV}".\n\n`
+        + `Va a pasar a bajar de "${b.producto}". "${nomV}" deja de bajarle a `
+        + `este producto.`, 'Cambiarlo')) return;
+    const {error:eDel} = await sb.from('producto_enlace').delete().eq('id', viejo.id);
+    if(eDel){ avisar('No se pudo soltar el enlace anterior\n\n'+(eDel.message||'')); return; }
+    ENLACES = ENLACES.filter(x=>x.id !== viejo.id);
+  } else if(!await preguntar('Enlazar',
       `Al recibir "${p.producto}" en ${SEDES[sede].corto}, va a bajar `
       + `"${b.producto}" de bodega.`, 'Enlazar')) return;
+
   const {data,error} = await sb.from('producto_enlace')
     .insert({sede, producto_bodega_id:bid, producto_sede_id:sid}).select();
   if(error || !data || !data.length){
@@ -5200,6 +5273,20 @@ async function enlUnir(sede, sid, bid){
         + 'Se quita con "2026-08-bodega-arreglar-enlace.sql". Es un solo bloque '
         + 'y no toca ningún dato.'
       : 'No se pudo enlazar\n\n' + (m || 'La base no dejó escribir.'));
+
+    /* SI SE ESTABA MOVIENDO, DEVOLVER EL ANTERIOR. El borrado ya pasó, así
+       que sin esto el producto quedaría sin origen: dejaría de bajarle a
+       bodega y nadie lo notaría hasta un descuadre. Un arreglo a medias que
+       falla en silencio es peor que el problema (§0.5). */
+    if(viejo){
+      const {data:vv} = await sb.from('producto_enlace')
+        .insert({sede, producto_bodega_id:viejo.producto_bodega_id,
+                 producto_sede_id:sid}).select();
+      if(vv && vv.length) ENLACES.push(vv[0]);
+      else avisar('OJO\n\n"'+p.producto+'" quedó SIN origen: al recibirlo, '
+                + 'bodega no va a bajar. Vuelve a enlazarlo.');
+      enlPintarDesde(); enlPintarPendientes();
+    }
     return;
   }
   ENLACES.push(data[0]);
