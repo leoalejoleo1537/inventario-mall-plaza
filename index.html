@@ -483,6 +483,25 @@
   /* Chico y a un lado, no un botón grande: es un atajo, no la acción
      principal. La principal es elegir producto por producto. */
   /* ---- los que no tienen de dónde bajar ---- */
+  /* ---- un producto de bodega y su par en cada sede ---- */
+  .enl-desde-fila{background:var(--card);border-radius:12px;box-shadow:var(--sombra);
+    padding:11px 13px;margin-bottom:8px}
+  .enl-desde-nm b{display:block;font-size:14.5px;font-weight:700;color:var(--text)}
+  .enl-desde-nm span{font-size:11.5px;color:var(--muted)}
+  .enl-desde-sede{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:12.5px}
+  .enl-desde-sede .lbl{flex:0 0 auto;font-weight:800;color:var(--muted);
+    background:var(--bg);border-radius:999px;padding:3px 9px;font-size:11px}
+  .enl-desde-sede .par{flex:1;min-width:0;font-weight:700;color:var(--sec-tx);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .enl-desde-sede .quitar{flex:0 0 auto;border:none;background:none;color:var(--muted);
+    font-family:inherit;font-size:13px;font-weight:800;width:24px;height:24px;
+    border-radius:999px;cursor:pointer}
+  .enl-desde-sede .quitar:hover{background:var(--red-bg);color:var(--red-fg)}
+  .enl-desde-sede .poner{flex:1;border:none;font-family:inherit;cursor:pointer;
+    text-align:left;background:var(--amber-bg);color:var(--amber-fg);border-radius:8px;
+    padding:6px 10px;font-size:12px;font-weight:800}
+  .enl-desde-sede .poner.on{background:var(--navy);color:#fff}
+  .enl-desde-cands{padding:2px 0 4px}
   .enl-pend-fila{background:var(--card);border-radius:12px;box-shadow:var(--sombra);margin-bottom:8px;overflow:hidden}
   .enl-pend-fila.abierta{box-shadow:var(--sombra),0 0 0 2px var(--orange)}
   .enl-pend-cab{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;
@@ -2210,6 +2229,26 @@
        en el gemelo y está bien que la vitrina no lo tenga. De 19 pendientes
        en Plaza, 16 eran eso: la regla funcionando. Mostrarlos convertiría
        esta lista en ruido que nadie va a terminar nunca. -->
+  <!-- ---- DESDE BODEGA HACIA LAS SEDES ----
+       La otra dirección, y es la que Jhon fue a buscar y no encontró: "no
+       encontré la máquina que permitiera enlazar la leche notmilk con su par
+       en las sedes".
+
+       La sección de abajo va del LOCAL hacia bodega: parte de un producto que
+       le falta origen. Esta va al revés: parte de un producto de bodega y
+       muestra a quién le baja en cada sede. Es como uno lo piensa parado en
+       la bodega, con la caja en la mano.
+
+       Son la misma tabla vista por los dos lados. Hacían falta las dos. -->
+  <div class="enl-caja" style="margin-top:14px" id="enl-desde-caja">
+    <div class="enl-cab">UN PRODUCTO DE BODEGA · A QUIÉN LE BAJA</div>
+    <div class="enl-cuerpo">
+      <p class="rep-sub" style="margin:0 0 10px">Busca acá el producto de bodega y dile con cuál va en cada local.</p>
+      <input type="text" class="aj-buscar" id="enl-desde-q" placeholder="Buscar en bodega…" style="margin-top:0">
+      <div id="enl-desde" style="margin-top:10px"></div>
+    </div>
+  </div>
+
   <div class="enl-caja" style="margin-top:14px" id="enl-pend-caja">
     <div class="enl-cab">SIN ENLACE CON BODEGA <span class="rf-n" id="enl-pend-n">—</span></div>
     <div class="enl-cuerpo">
@@ -4855,7 +4894,7 @@ async function loadEnlaces(){
   if(!SEDE_PROD.plaza || !SEDE_PROD.angamos) await cargarCriticos();
   /* La lista de pendientes depende de estas dos lecturas; sin esto se quedaba
      en "—" hasta que alguien cambiara de pestaña y volviera. */
-  if(vistaActual === 'enlaces') enlPintarPendientes();
+  if(vistaActual === 'enlaces'){ enlPintarPendientes(); enlPintarDesde(); }
 }
 
 /* LA BÚSQUEDA VA DEL LOCAL HACIA BODEGA, y esa dirección es la que importa.
@@ -4949,6 +4988,127 @@ function enlYaVaA(bodegaId, sede){
     .map(e=>{ const p=(SEDE_PROD[sede]||[]).find(x=>x.id===e.producto_sede_id);
               return p ? p.producto : null; })
     .filter(Boolean);
+}
+
+/* ============ DESDE BODEGA HACIA LAS SEDES ============
+
+   La misma tabla `producto_enlace` vista por el otro lado. La sección de
+   pendientes parte de un producto del LOCAL al que le falta origen; esta
+   parte de un producto de BODEGA y muestra a quién le baja en cada sede.
+
+   Hacían falta las dos, y que faltara ésta era un hueco real: parado en la
+   bodega con la caja en la mano, uno piensa "esta leche, ¿a quién le baja?".
+   Jhon la fue a buscar y no estaba.                                        */
+let ENL_DESDE_Q = '';
+let enlDesdeAbierto = null;      // "<idBodega>-<sede>" que se está enlazando
+
+function enlPintarDesde(){
+  const c = $('enl-desde'); if(!c) return;
+  const q = normNombre(ENL_DESDE_Q);
+  if(!q){ c.innerHTML = '<div class="repc-vacia">Escribe para buscar un producto de bodega.</div>'; return; }
+
+  /* Los que EMPIEZAN con lo escrito, primero. Es la misma corrección que el
+     otro buscador: si no, escribir "al" trae ocho productos con "al" en
+     medio y el que uno busca queda fuera del tope. */
+  const bodega = (DATA||[]).filter(b=>normNombre(b.producto).includes(q))
+    .sort((a,b)=>{
+      const ea = normNombre(a.producto).startsWith(q) ? 0 : 1;
+      const eb = normNombre(b.producto).startsWith(q) ? 0 : 1;
+      return ea - eb || a.producto.localeCompare(b.producto,'es');
+    }).slice(0,8);
+
+  if(!bodega.length){ c.innerHTML = '<div class="repc-vacia">Nada con ese nombre en bodega.</div>'; return; }
+
+  c.innerHTML = bodega.map(b=>`<div class="enl-desde-fila">
+      <div class="enl-desde-nm"><b>${esc(b.producto)}</b>
+        <span>en bodega hay ${fmt(b.stock_actual)}</span></div>
+      ${SEDES_ENLACE.map(sede=>{
+        const e = ENLACES.find(x=>x.sede===sede && x.producto_bodega_id===b.id);
+        const p = e ? (SEDE_PROD[sede]||[]).find(x=>x.id===e.producto_sede_id) : null;
+        const k = b.id + '-' + sede;
+        const abierto = enlDesdeAbierto === k;
+        return `<div class="enl-desde-sede">
+          <span class="lbl">${esc(SEDES[sede].corto)}</span>
+          ${e
+            ? `<span class="par">${esc(p ? p.producto : 'enlazado')}</span>
+               <button type="button" class="quitar" data-enlquitar="${e.id}"
+                 aria-label="Quitar el enlace">✕</button>`
+            : `<button type="button" class="poner${abierto?' on':''}" data-enldesde="${k}">
+                 ${abierto ? 'cerrar' : 'sin par · enlazar'}</button>`}
+        </div>
+        ${abierto ? `<div class="enl-desde-cands">${enlCandidatosLocal(b, sede).map(x=>
+            `<button type="button" class="enl-cand" data-enlune2="${sede}-${x.id}-${b.id}">
+               <b>${esc(x.producto)}</b><span>${esc(x.rubro||'')} · hay ${fmt(x.stock_actual)}</span></button>`
+          ).join('') || '<div class="repc-vacia">Ningún producto de ese local se parece.</div>'}
+          <input type="text" class="aj-buscar" placeholder="Buscar en ${esc(SEDES[sede].corto)}…"
+            data-enlbusca2="${k}" value="${esc(ENL_DESDE_BUSCA)}">
+          <div id="enl-desde-busca-res"></div>
+        </div>` : ''}`;
+      }).join('')}
+    </div>`).join('');
+}
+
+/* Candidatos del LOCAL para un producto de bodega. Al revés que el otro:
+   propone por palabras y descarta los que ya tienen origen —esos no pueden
+   tener dos, y la base lo rechaza—. Lo que un producto de bodega SÍ puede es
+   ir a dos del local (vitrina y congelador), así que no se filtra por el lado
+   de bodega. */
+function enlCandidatosLocal(bodega, sede){
+  const universo = SEDE_PROD[sede] || [];
+  const conOrigen = new Set(ENLACES.filter(e=>e.sede===sede).map(e=>e.producto_sede_id));
+  const ws = enlPalabras(bodega.producto);
+  return universo
+    .filter(p=>!conOrigen.has(p.id))
+    .map(p=>{
+      if(normNombre(p.producto) === normNombre(bodega.producto)) return {p, punto:100};
+      const wp = enlPalabras(p.producto);
+      const comunes = ws.filter(w=>wp.includes(w)).length;
+      return {p, punto: comunes ? comunes*10 + Math.round((comunes/Math.max(ws.length,1))*5) : 0};
+    })
+    .filter(x=>x.punto > 0)
+    .sort((a,b)=>b.punto - a.punto || a.p.producto.localeCompare(b.p.producto,'es'))
+    .slice(0,6).map(x=>x.p);
+}
+
+/* La salida a mano, del lado de bodega. Existe por la misma razón que la del
+   otro lado (13 de agosto): el algoritmo propone por nombre, y cuando el
+   nombre no se parece —un tipeo, o dos catálogos que nombran distinto— la
+   persona quedaba sin forma de decir "es este". Pinta SOLO el recuadro de
+   resultados, nunca la lista entera: repintar mientras alguien escribe le
+   saca el campo de abajo del dedo. */
+let ENL_DESDE_BUSCA = '';
+function enlPintarBusquedaLocal(bid, sede){
+  const c = $('enl-desde-busca-res'); if(!c) return;
+  const b = (DATA||[]).find(x=>x.id===bid); if(!b) return;
+  const q = normNombre(ENL_DESDE_BUSCA);
+  if(!q){ c.innerHTML=''; return; }
+  const conOrigen = new Set(ENLACES.filter(e=>e.sede===sede).map(e=>e.producto_sede_id));
+  const r = (SEDE_PROD[sede]||[])
+    .filter(p=>!conOrigen.has(p.id) && normNombre(p.producto).includes(q))
+    .sort((x,y)=>{
+      const ex = normNombre(x.producto).startsWith(q) ? 0 : 1;
+      const ey = normNombre(y.producto).startsWith(q) ? 0 : 1;
+      return ex - ey || x.producto.localeCompare(y.producto,'es');
+    }).slice(0,10);
+  c.innerHTML = r.length
+    ? r.map(x=>`<button type="button" class="enl-cand" data-enlune2="${sede}-${x.id}-${bid}">
+        <b>${esc(x.producto)}</b><span>${esc(x.rubro||'')} · hay ${fmt(x.stock_actual)}</span></button>`).join('')
+    : '<div class="repc-vacia">Nada libre con ese nombre en '+esc(SEDES[sede].corto)+'.</div>';
+}
+
+/* Quitar un enlace. Se pregunta porque deja a ese producto del local sin
+   origen: al recibirlo, bodega deja de bajar. */
+async function enlQuitar(id){
+  const e = ENLACES.find(x=>x.id === id); if(!e) return;
+  const p = (SEDE_PROD[e.sede]||[]).find(x=>x.id===e.producto_sede_id);
+  if(!await preguntar('Quitar el enlace',
+      (p ? '"'+p.producto+'" de '+SEDES[e.sede].corto : 'Ese producto')
+      + ' va a dejar de bajarle a bodega cuando lo reciban.', 'Quitar')) return;
+  const {error} = await sb.from('producto_enlace').delete().eq('id', id);
+  if(error){ avisar('No se pudo quitar\n\n'+(error.message||'')); return; }
+  ENLACES = ENLACES.filter(x=>x.id !== id);
+  aviso('Enlace quitado');
+  enlPintarDesde(); enlPintarPendientes();
 }
 
 function enlPintarPendientes(){
@@ -5046,6 +5206,7 @@ async function enlUnir(sede, sid, bid){
   enlPendAbierto = null; ENL_BUSCA = '';
   aviso('✓ ' + p.producto + ' baja de ' + b.producto);
   enlPintarPendientes();
+  enlPintarDesde();
 }
 
 $('view-enlaces').addEventListener('click', e=>{
@@ -5060,9 +5221,28 @@ $('view-enlaces').addEventListener('click', e=>{
   const u = e.target.closest('[data-enlune]');
   if(u){ const [sede, sid, bid] = u.dataset.enlune.split('-');
          enlUnir(sede, +sid, +bid); return; }
+  /* El mismo enlace, elegido desde el lado de bodega. Los argumentos van en
+     otro orden porque acá se parte del producto de bodega — se escribe la
+     misma fila. */
+  const u2 = e.target.closest('[data-enlune2]');
+  if(u2){ const [sede, sid, bid] = u2.dataset.enlune2.split('-');
+          enlDesdeAbierto = null;
+          enlUnir(sede, +sid, +bid).then(enlPintarDesde); return; }
+  const d = e.target.closest('[data-enldesde]');
+  if(d){ const k = d.dataset.enldesde;
+         enlDesdeAbierto = (enlDesdeAbierto === k) ? null : k;
+         ENL_DESDE_BUSCA = '';
+         enlPintarDesde(); return; }
+  const qz = e.target.closest('[data-enlquitar]');
+  if(qz){ enlQuitar(+qz.dataset.enlquitar); return; }
 });
 
 $('view-enlaces').addEventListener('input', e=>{
+  if(e.target.id === 'enl-desde-q'){ ENL_DESDE_Q = e.target.value; enlPintarDesde(); return; }
+  const b2 = e.target.closest('[data-enlbusca2]');
+  if(b2){ ENL_DESDE_BUSCA = b2.value;
+          const [bid, sede] = b2.dataset.enlbusca2.split('-');
+          enlPintarBusquedaLocal(+bid, sede); return; }
   const b = e.target.closest('[data-enlbusca]');
   if(b){ ENL_BUSCA = b.value;
          const [sede, sid] = b.dataset.enlbusca.split('-');
@@ -9874,7 +10054,7 @@ function pickTab(tab){
   $('view-repcentral').style.display = esEnvios ? 'block':'none';
   $('view-aplaza').style.display     = (tab==='aplaza') ? 'block':'none';
   if(tab==='aplaza') apAbrir();
-  if(tab==='enlaces') enlPintarPendientes();
+  if(tab==='enlaces'){ enlPintarPendientes(); enlPintarDesde(); }
   $('view-hist').style.display = tab==='hist'?'block':'none';
   $('view-recetas').style.display = tab==='recetas'?'block':'none';
   $('view-mermas').style.display = tab==='mermas'?'block':'none';

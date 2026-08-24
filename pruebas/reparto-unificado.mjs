@@ -43,6 +43,11 @@ const PLAZA = [
 ];
 const ANGAMOS = [
   {id:20, sede:'angamos', producto:'Medialuna', rubro:'Vitrina', stock_actual:0, stock_min:5, stock_max:10, activo:'SÍ'},
+  /* Comparte la palabra "Alfajor" con el de bodega: se propone solo. */
+  {id:21, sede:'angamos', producto:'Alfajor Manjar', rubro:'Vitrina', stock_actual:3, stock_min:2, stock_max:8, activo:'SÍ'},
+  /* NO comparte ninguna palabra con "Servilleta". Es el caso que obliga a
+     buscar a mano — el mismo hueco que tenía la otra dirección. */
+  {id:22, sede:'angamos', producto:'Papel de mesa', rubro:'Bolsas', stock_actual:1, stock_min:5, stock_max:30, activo:'SÍ'},
 ];
 const ENLACES = [
   {sede:'plaza', producto_bodega_id:900, producto_sede_id:10},
@@ -348,6 +353,48 @@ await caso('tocarla lo saca, sin bajar la cantidad a mano', async () => {
   await page.waitForTimeout(300);
   return (await page.evaluate(()=>repcCarritos.plaza.length)) === antes - 1
     || 'no lo sacó';
+});
+
+console.log('\nDesde BODEGA hacia las sedes (la otra dirección):');
+await page.click('#tabEnlaces'); await page.waitForTimeout(700);
+await caso('la sección está', async () =>
+  await page.isVisible('#enl-desde-caja') || 'no aparece');
+await caso('busca en el catálogo de bodega', async () => {
+  await page.fill('#enl-desde-q', 'medialuna');
+  await page.waitForTimeout(350);
+  return (await page.textContent('#enl-desde')).includes('Medialuna') || 'no la encontró';
+});
+await caso('muestra su par en cada sede', async () => {
+  const t = await page.textContent('#enl-desde');
+  return (t.includes('Plaza') && t.includes('Angamos')) || 'no lista las dos sedes';
+});
+/* Medialuna tiene par en las dos; el Alfajor solo en Plaza. Se busca ese para
+   ver el lado que FALTA — que es la razón de existir de esta sección. */
+await caso('y dice cuál sede no tiene par', async () => {
+  await page.fill('#enl-desde-q', 'alfajor');
+  await page.waitForTimeout(350);
+  return (await page.textContent('#enl-desde')).includes('sin par') || 'no marca las que faltan';
+});
+await caso('al tocar "sin par" propone candidatos de esa sede', async () => {
+  await page.click('[data-enldesde]');
+  await page.waitForTimeout(350);
+  return (await page.$$('[data-enlune2]')).length > 0 || 'no propone nada';
+});
+await caso('y si no propone nada, se puede buscar a mano', async () => {
+  await page.fill('#enl-desde-q', 'servilleta');
+  await page.waitForTimeout(350);
+  await page.click('[data-enldesde]');            // el lado que le falta: Angamos
+  await page.waitForTimeout(350);
+  if(!await page.isVisible('[data-enlbusca2]')) return 'no hay buscador de salida';
+  await page.fill('[data-enlbusca2]', 'papel');
+  await page.waitForTimeout(350);
+  return (await page.$$('#enl-desde-busca-res [data-enlune2]')).length > 0
+    || 'buscando a mano tampoco encuentra nada';
+});
+await caso('el que YA tiene par trae su X para soltarlo', async () => {
+  await page.fill('#enl-desde-q', 'medialuna');
+  await page.waitForTimeout(350);
+  return (await page.$$('[data-enlquitar]')).length > 0 || 'no hay forma de soltar el par';
 });
 
 console.log('\nSin errores de JavaScript:');
