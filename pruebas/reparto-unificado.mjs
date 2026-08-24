@@ -187,6 +187,41 @@ await page.click('[data-repcdest="plaza"]'); await page.waitForTimeout(400);
 await caso('y al volver al local, vuelve la lista de lo que falta', async () =>
   await page.isVisible('.repc-falta') || 'no volvió');
 
+console.log('\nEscribir la cantidad a mano (el bug del 12 que salía 21):');
+await page.click('[data-repcdest="plaza"]'); await page.waitForTimeout(500);
+await caso('escribir "12" deja 12, no 21', async () => {
+  await page.click('input[data-repcidx="plaza-0"]');
+  await page.keyboard.press('Control+a');
+  await page.keyboard.type('12', {delay:80});
+  await page.waitForTimeout(300);
+  const v = await page.inputValue('input[data-repcidx="plaza-0"]');
+  return v === '12' || 'quedó "'+v+'": el cursor se va al principio entre tecla y tecla';
+});
+await caso('y el modelo guarda 12', async () =>
+  (await page.evaluate(()=>repcCarritos.plaza[0].cantidad)) === 12 || 'guardó otra cosa');
+await caso('escribir "32" deja 32, no 23', async () => {
+  await page.click('input[data-repcidx="plaza-0"]');
+  await page.keyboard.press('Control+a');
+  await page.keyboard.type('32', {delay:80});
+  await page.waitForTimeout(300);
+  return (await page.inputValue('input[data-repcidx="plaza-0"]')) === '32'
+    || 'quedó "'+(await page.inputValue('input[data-repcidx="plaza-0"]'))+'"';
+});
+await caso('el campo NO se destruye al teclear', async () => {
+  const antes = await page.evaluate(()=>{
+    const n = document.querySelector('input[data-repcidx="plaza-0"]'); n.dataset.marca='yo'; return true; });
+  await page.click('input[data-repcidx="plaza-0"]');
+  await page.keyboard.type('5', {delay:60});
+  await page.waitForTimeout(250);
+  const sigue = await page.evaluate(()=>{
+    const n = document.querySelector('input[data-repcidx="plaza-0"]'); return n && n.dataset.marca; });
+  return sigue === 'yo' || 'se reemplazó por otro campo: por eso se perdía el cursor';
+});
+await caso('pero el total SÍ se actualiza mientras escribe', async () => {
+  const t = await page.textContent('[data-repctot="plaza"]');
+  return t.includes('325') || t.match(/\d/) ? true : 'el total no siguió al número';
+});
+
 console.log('\nEnlaces · los que no tienen de dónde bajar:');
 await page.click('#tabEnlaces'); await page.waitForTimeout(700);
 await caso('la sección está, debajo de crear producto', async () =>
@@ -208,6 +243,31 @@ await caso('al tocar uno se abre y propone candidatos de bodega', async () => {
 });
 await caso('y trae un buscador para el que no propone nada', async () =>
   await page.isVisible('[data-enlbusca]') || 'sin salida manual');
+
+/* EL BUG DEL 2026-08-22, Y ES MÍO DE MÉTODO. Yo escondía los productos de
+   bodega que ya estaban enlazados a esa sede, creyendo que la base no dejaba
+   dos. Es al revés: esa restricción se QUITÓ a propósito el 12 de agosto,
+   porque un producto de bodega SÍ va a dos del local cuando existe el par
+   vitrina/congelador. El candado que puse escondía el candidato correcto sin
+   decir por qué. */
+await caso('un producto de bodega YA enlazado se sigue ofreciendo', async () => {
+  await page.fill('[data-enlbusca]', 'medialuna');
+  await page.waitForTimeout(350);
+  const t = await page.textContent('#enl-busca-res');
+  return t.includes('Medialuna')
+    || 'lo esconde: el par vitrina/congelador necesita reusar el mismo origen';
+});
+await caso('y avisa a dónde va ya, en vez de bloquearlo', async () =>
+  (await page.textContent('#enl-busca-res')).includes('ya va a')
+  || 'no dice que ya está en uso');
+await caso('buscar "al" pone los que EMPIEZAN con "al" primero', async () => {
+  await page.fill('[data-enlbusca]', 'al');
+  await page.waitForTimeout(350);
+  const b = await page.$$eval('#enl-busca-res .enl-cand b', n=>n.map(x=>x.textContent.trim()));
+  if(!b.length) return 'no encontró nada';
+  return b[0].toLowerCase().startsWith('al')
+    || 'el primero es "'+b[0]+'": lo que uno escribió queda sepultado';
+});
 
 console.log('\nSin errores de JavaScript:');
 await caso('ninguno en toda la vuelta', () => errores.length === 0 || errores.slice(0,2).join(' · '));

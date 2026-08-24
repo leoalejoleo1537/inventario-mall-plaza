@@ -4023,7 +4023,7 @@ function repcPintarCajas(){
                <button type="button" class="${prov?'on':''}" data-repcorigen="${sede}-${i}"
                  data-a="proveedor">De proveedor</button>
              </div>
-             ${detalle ? `<div class="pie${prov?' prov':(queda<=0?' poco':'')}">${esc(detalle)}</div>` : ''}
+             <div class="pie${prov?' prov':(queda<=0?' poco':'')}" data-repcpie="${sede}-${i}">${esc(detalle)}</div>
            </div>`;
       const cf = p ? CFG[estado(p)] : CFG.sindato;
       const falta = p ? repcFalta(p) : 0;
@@ -4066,7 +4066,7 @@ function repcPintarCajas(){
         </div>
         ${filas}
         <div class="repc-tot"><span class="lbl">${car.length} producto(s)</span>
-          <b>${fmt(total)} unidades</b></div>
+          <b data-repctot="${sede}">${fmt(total)} unidades</b></div>
         ${enCamino}
         <div class="mbtns" style="margin-top:10px">
           <button class="btn btn-gris" data-repccopiar="${sede}" ${car.length?'':'disabled'}>Copiar</button>
@@ -4267,8 +4267,60 @@ $('view-repcentral').addEventListener('input', e=>{
   const idx = e.target.closest('[data-repcidx]');
   if(idx){ const [s,i]=idx.dataset.repcidx.split('-');
            repcCarritos[s][+i].cantidad = +idx.value || 0;
-           repintarSinPerderElFoco(repcPintarCajas); }
+           repcRefrescarFila(s, +i); }
 });
+
+/* ---------------- ESCRIBIR SIN QUE EL CURSOR SE VAYA AL PRINCIPIO ----------
+
+   Jhon, 2026-08-22: "cuando voy a poner doce, en realidad se pone veintiuno".
+   Escribía 1, el cursor saltaba al principio, y el 2 entraba delante: 21.
+
+   Mi arreglo anterior fue el equivocado. Repintaba la fila y después le
+   devolvía el foco al campo — pero en un campo de número el navegador NO deja
+   poner el cursor a mano (lanza error), así que quedaba al principio. El campo
+   volvía, el cursor no.
+
+   La forma correcta es la que ya usaba el carro del local desde siempre: **no
+   repintar la fila**. Se toca el modelo y se retocan a mano las tres cosas que
+   dependen del número —el pie del origen, el botón de restar y el total—, sin
+   destruir el campo. Si el campo nunca se destruye, no hay foco que recuperar
+   ni cursor que se mueva.
+
+   La lección, que ya cuesta dos vueltas: cuando alguien está escribiendo
+   adentro de algo, **eso no se repinta**. Ni siquiera con cuidado. */
+function repcRefrescarFila(sede, i){
+  const c = repcCarritos[sede] && repcCarritos[sede][i];
+  if(!c) return;
+  const caja = $('repc-cajas');
+
+  // 1 · el botón de la izquierda: papelera con 1 o menos, menos con más
+  const uno = (+c.cantidad||0) <= 1;
+  const bl = caja.querySelector(`[data-repcleft="${sede}-${i}"]`);
+  if(bl){
+    bl.classList.toggle('is-trash', uno);
+    bl.setAttribute('aria-label', uno ? 'Quitar' : 'Restar');
+    if(uno){ if(!bl.querySelector('svg')) bl.innerHTML = TRASH_SVG; }
+    else if(bl.textContent.trim() !== '−') bl.textContent = '−';
+  }
+
+  // 2 · el pie del interruptor de origen: cuánto le queda a bodega
+  const b = repcBodega(c.sedeId, sede);
+  const pie = caja.querySelector(`[data-repcpie="${sede}-${i}"]`);
+  if(pie && b){
+    const libre = b.hay - repcComprometido(b.id, c);
+    const queda = Math.max(0, libre - (+c.cantidad||0));
+    const prov  = c.origen === 'proveedor';
+    pie.textContent = prov ? 'bodega no baja'
+      : fmt(libre) + ' → ' + fmt(queda)
+        + ((+c.cantidad||0) > libre ? ' · pide más de lo que hay' : '');
+    pie.className = 'pie' + (prov ? ' prov' : (queda<=0 ? ' poco' : ''));
+  }
+
+  // 3 · el total de abajo
+  const car = repcCarritos[sede];
+  const tot = caja.querySelector(`[data-repctot="${sede}"]`);
+  if(tot) tot.textContent = fmt(car.reduce((n,x)=>n+(+x.cantidad||0),0)) + ' unidades';
+}
 
 
 
@@ -4371,7 +4423,7 @@ function apPintarCarrito(){
       </div>
       <button type="button" class="repc-bod${queda<=0?' poco':''}" data-apnada="1">
         <span class="ico" aria-hidden="true">📦</span>
-        <span class="tx">Sale de Angamos · ${fmt(hay)} → ${fmt(queda)}`
+        <span class="tx" data-appie="${i}">Sale de Angamos · ${fmt(hay)} → ${fmt(queda)}`
         + ((+x.cantidad||0) > hay ? ' · pide más de lo que hay' : '') + `</span></button>
     </div>`;
   }).join('');
@@ -4454,8 +4506,23 @@ async function apEnviar(){
 $('view-aplaza').addEventListener('input', e=>{
   if(e.target.id === 'ap-q'){ apPintarResultados(); return; }
   const idx = e.target.closest('[data-apidx]');
-  if(idx){ apCarrito[+idx.dataset.apidx].cantidad = +idx.value || 0;
-           repintarSinPerderElFoco(apPintarCarrito); }
+  if(idx){
+    const i = +idx.dataset.apidx;
+    apCarrito[i].cantidad = +idx.value || 0;
+    /* Igual que en bodega: se retoca, no se repinta. Ver repcRefrescarFila. */
+    const x = apCarrito[i];
+    const p = DATA.find(d=>d.id===x.id);
+    const hay = p ? +p.stock_actual||0 : 0;
+    const queda = Math.max(0, hay - (+x.cantidad||0));
+    const pie = $('ap-carrito').querySelector(`[data-appie="${i}"]`);
+    if(pie) pie.textContent = 'Sale de Angamos · ' + fmt(hay) + ' → ' + fmt(queda)
+      + ((+x.cantidad||0) > hay ? ' · pide más de lo que hay' : '');
+    const uno = (+x.cantidad||0) <= 1;
+    const bl = $('ap-carrito').querySelector(`[data-apleft="${i}"]`);
+    if(bl){ bl.classList.toggle('is-trash', uno);
+            if(uno){ if(!bl.querySelector('svg')) bl.innerHTML = TRASH_SVG; }
+            else if(bl.textContent.trim() !== '−') bl.textContent = '−'; }
+  }
 });
 
 $('view-aplaza').addEventListener('click', e=>{
@@ -4730,22 +4797,61 @@ function enlPendientes(){
 }
 
 /* Candidatos en bodega para un producto del local. Propone por nombre y,
-   igual que siempre, lo que se guarda es el id (§0.7). */
+   igual que siempre, lo que se guarda es el id (§0.7).
+
+   COMPARA POR PALABRAS, NO POR LA FRASE ENTERA, y ahí está el arreglo del
+   2026-08-22. La versión anterior pedía que el nombre calzara casi completo, y
+   con eso "Alfajor Brownie vitrina" (Plaza) no encontraba a "Alfajor Brownie
+   Manjar" (bodega) aunque comparten las dos palabras que importan. Jhon lo
+   dijo así: "es muy estricto".
+
+   Los dos catálogos los cargó gente distinta en momentos distintos, así que
+   la coincidencia exacta es la excepción y no la regla. Se puntúa por cuántas
+   palabras comparten; las de mueble (vitrina, congelador) no cuentan, porque
+   describen dónde está el producto y no qué es. */
+const ENL_RUIDO = new Set(['vitrina','congelador','de','del','la','el','y','con','para','x','un','una']);
+const enlPalabras = t => normNombre(t).replace(/([a-z])([A-Z])/g,'$1 $2').split(/[^a-z0-9]+/)
+  .filter(w => w.length > 2 && !ENL_RUIDO.has(w));
+
 function enlCandidatosBodega(nombre){
-  const base = normNombre(baseNombre(nombre));
-  const q = normNombre(nombre);
-  /* Un producto de bodega que YA está enlazado a esa sede no se ofrece: la
-     base no deja dos orígenes para el mismo producto del local, y ofrecerlo
-     sería prometer algo que va a fallar al guardar. */
+  const q  = normNombre(nombre);
+  const ws = enlPalabras(nombre);
+  if(!ws.length) return [];
   return (DATA||[])
     .map(b=>{
-      const nb = normNombre(b.producto), bb = normNombre(baseNombre(b.producto));
-      const punto = nb === q ? 3 : bb === base ? 2 : (nb.includes(base) || base.includes(nb)) ? 1 : 0;
-      return {b, punto};
+      const nb = normNombre(b.producto);
+      if(nb === q) return {b, punto: 100};
+      const wb = enlPalabras(b.producto);
+      const comunes = ws.filter(w => wb.includes(w)).length;
+      if(!comunes) return {b, punto: 0};
+      /* Cuántas de las palabras del producto del local aparecen en el de
+         bodega. Compartir las 2 de 2 vale más que 2 de 5. */
+      return {b, punto: comunes * 10 + Math.round((comunes / ws.length) * 5)};
     })
     .filter(x=>x.punto > 0)
     .sort((a,b)=>b.punto - a.punto || a.b.producto.localeCompare(b.b.producto,'es'))
-    .map(x=>x.b).slice(0, 8);
+    .slice(0, 8)
+    .map(x=>x.b);
+}
+
+/* A qué OTROS productos de esa sede ya está enlazado un producto de bodega.
+   Se muestra, NO se bloquea — y esa distinción es el bug del 2026-08-22.
+
+   Yo había filtrado los "ya tomados" creyendo que la base no dejaba dos, y es
+   al revés: la restricción `producto_enlace_uno_por_sede` se QUITÓ a propósito
+   el 12 de agosto, justamente porque un producto de bodega SÍ va a dos del
+   local cuando existe el par vitrina/congelador. O sea que puse en la app un
+   candado que el proyecto había decidido sacar, y eso escondió el candidato
+   correcto sin decir por qué. Es la regla 0.1.7 incumplida por mí.
+
+   Lo único que la base sí exige es al revés: un producto DEL LOCAL viene de un
+   solo producto de bodega. Eso ya lo garantiza la lista de pendientes, que
+   solo muestra los que no tienen ninguno. */
+function enlYaVaA(bodegaId, sede){
+  return ENLACES.filter(e=>e.sede===sede && e.producto_bodega_id===bodegaId)
+    .map(e=>{ const p=(SEDE_PROD[sede]||[]).find(x=>x.id===e.producto_sede_id);
+              return p ? p.producto : null; })
+    .filter(Boolean);
 }
 
 function enlPintarPendientes(){
@@ -4758,9 +4864,7 @@ function enlPintarPendientes(){
   }
   caja.innerHTML = lista.map(({sede, p})=>{
     const abierto = enlPendAbierto === sede + '-' + p.id;
-    const cands = abierto ? enlCandidatosBodega(p.producto) : [];
-    const tomados = new Set(ENLACES.filter(e=>e.sede===sede).map(e=>e.producto_bodega_id));
-    const libres = cands.filter(b=>!tomados.has(b.id));
+    const libres = abierto ? enlCandidatosBodega(p.producto) : [];
     return `<div class="enl-pend-fila${abierto?' abierta':''}">
       <button type="button" class="enl-pend-cab" data-enlpend="${sede}-${p.id}">
         <div class="nm"><b>${esc(p.producto)}</b>
@@ -4769,8 +4873,12 @@ function enlPintarPendientes(){
       </button>
       ${abierto ? `<div class="enl-pend-cuerpo">
         ${libres.length
-          ? libres.map(b=>`<button type="button" class="enl-cand" data-enlune="${sede}-${p.id}-${b.id}">
-              <b>${esc(b.producto)}</b><span>en bodega hay ${fmt(b.stock_actual)}</span></button>`).join('')
+          ? libres.map(b=>{
+              const otros = enlYaVaA(b.id, sede);
+              return `<button type="button" class="enl-cand" data-enlune="${sede}-${p.id}-${b.id}">
+                <b>${esc(b.producto)}</b><span>en bodega hay ${fmt(b.stock_actual)}${
+                  otros.length ? ' · ya va a ' + esc(otros.join(', ')) : ''}</span></button>`;
+            }).join('')
           : '<div class="repc-vacia">Ningún producto de bodega se parece. Créalo arriba.</div>'}
         <input type="text" class="aj-buscar" placeholder="Buscar otro en bodega…"
           data-enlbusca="${sede}-${p.id}" value="${esc(ENL_BUSCA)}">
@@ -4785,11 +4893,24 @@ function enlPintarBusqueda(sede, sid){
   const c = $('enl-busca-res'); if(!c) return;
   const q = normNombre(ENL_BUSCA);
   if(!q){ c.innerHTML=''; return; }
-  const tomados = new Set(ENLACES.filter(e=>e.sede===sede).map(e=>e.producto_bodega_id));
-  const r = (DATA||[]).filter(b=>normNombre(b.producto).includes(q) && !tomados.has(b.id)).slice(0,10);
+  /* Los que EMPIEZAN con lo escrito van primero. Buscar "al" traía ocho
+     productos que tenían "al" en medio de otra palabra —"cocacola normAL",
+     "regALo", "sALseros"— y el Alfajor no aparecía porque lo cortaba el
+     tope de diez. Un buscador que esconde justo lo que uno escribió es peor
+     que no tener buscador. */
+  const r = (DATA||[]).filter(b=>normNombre(b.producto).includes(q))
+    .sort((a,b)=>{
+      const ea = normNombre(a.producto).startsWith(q) ? 0 : 1;
+      const eb = normNombre(b.producto).startsWith(q) ? 0 : 1;
+      return ea - eb || a.producto.localeCompare(b.producto,'es');
+    }).slice(0,10);
   c.innerHTML = r.length
-    ? r.map(b=>`<button type="button" class="enl-cand" data-enlune="${sede}-${sid}-${b.id}">
-        <b>${esc(b.producto)}</b><span>en bodega hay ${fmt(b.stock_actual)}</span></button>`).join('')
+    ? r.map(b=>{
+        const otros = enlYaVaA(b.id, sede);
+        return `<button type="button" class="enl-cand" data-enlune="${sede}-${sid}-${b.id}">
+          <b>${esc(b.producto)}</b><span>en bodega hay ${fmt(b.stock_actual)}${
+            otros.length ? ' · ya va a ' + esc(otros.join(', ')) : ''}</span></button>`;
+      }).join('')
     : '<div class="repc-vacia">Nada con ese nombre en bodega.</div>';
 }
 
