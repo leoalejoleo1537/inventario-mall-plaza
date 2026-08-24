@@ -276,6 +276,35 @@ await caso('buscar "al" pone los que EMPIEZAN con "al" primero', async () => {
     || 'el primero es "'+b[0]+'": lo que uno escribió queda sepultado';
 });
 
+console.log('\nCada producto ocupa UNA fila, no tres:');
+await page.evaluate(()=>{ repcCarritos.plaza = []; repcAgregar('plaza', 10, 5); repcPintarCajas(); });
+await page.waitForTimeout(300);
+await caso('nombre, origen, contador y X van en el mismo renglón', async () => {
+  const r = await page.evaluate(()=>{
+    const f = document.querySelector('.cart-row');
+    const y = el => el ? Math.round(el.getBoundingClientRect().top) : -1;
+    return {nm:y(f.querySelector('.cn')), dual:y(f.querySelector('.dual')),
+            qty:y(f.querySelector('.qty')), x:y(f.querySelector('.cart-x')),
+            alto:Math.round(f.getBoundingClientRect().height)};
+  });
+  /* Si alguno se fue a otro piso, su borde superior queda bastante más abajo.
+     Se mide, no se mira: "se ve bien" no es una comprobación. */
+  const tops = [r.nm, r.dual, r.qty, r.x];
+  const salto = Math.max(...tops) - Math.min(...tops);
+  return salto < 24 || 'hay '+salto+' px de diferencia entre elementos: se partió en varios pisos';
+});
+await caso('y la fila no pasa de dos renglones de alto', async () => {
+  const h = await page.evaluate(()=>Math.round(document.querySelector('.cart-row').getBoundingClientRect().height));
+  return h <= 70 || 'la fila mide '+h+' px: con quince productos eso es un pasillo';
+});
+await caso('el detalle de bodega no envuelve', async () => {
+  const r = await page.evaluate(()=>{
+    const c = document.querySelector('.cart-row .cns');
+    return {alto:Math.round(c.getBoundingClientRect().height)};
+  });
+  return r.alto < 22 || 'la línea de detalle ocupa '+r.alto+' px: está envolviendo';
+});
+
 console.log('\nLa lista no vuelve al principio al agregar:');
 await page.click('#tabEnvios'); await page.waitForTimeout(600);
 await caso('se queda donde iba leyendo', async () => {

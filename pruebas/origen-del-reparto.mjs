@@ -125,31 +125,31 @@ await caso('las dos nacen "de bodega"', async () => {
 /* Es un interruptor de DOS posiciones, no una píldora que alterna: la
    posición encendida es la respuesta, y se entiende sin leerla. */
 await caso('cada línea trae las dos posiciones', async () => {
-  const n = await page.$$eval('.repc-orig .dual button', b=>b.length);
+  const n = await page.$$eval('#repc-cajas .dual button', b=>b.length);
   return n === 4 || 'hay '+n+' botones para 2 líneas';
 });
 await caso('nacen con "De bodega" encendida', async () => {
-  const c = await page.getAttribute('.repc-orig .dual button[data-a="bodega"]','class');
+  const c = await page.getAttribute('.dual button[data-a="bodega"]','class');
   return c.includes('on') || 'no está encendida';
 });
 await caso('tocar "De proveedor" la cambia', async () => {
-  await page.click('.repc-orig .dual button[data-a="proveedor"]');
+  await page.click('.dual button[data-a="proveedor"]');
   await page.waitForTimeout(300);
   return (await page.evaluate(()=>repcCarritos.plaza[0].origen)) === 'proveedor'
     || 'quedó en '+(await page.evaluate(()=>repcCarritos.plaza[0].origen));
 });
 await caso('y se enciende ese lado', async () => {
-  const c = await page.getAttribute('.repc-orig .dual button[data-a="proveedor"]','class');
+  const c = await page.getAttribute('.dual button[data-a="proveedor"]','class');
   return c.includes('on') || 'quedó apagada';
 });
 await caso('volver a tocar el mismo lado no la alterna', async () => {
-  await page.click('.repc-orig .dual button[data-a="proveedor"]');
+  await page.click('.dual button[data-a="proveedor"]');
   await page.waitForTimeout(250);
   return (await page.evaluate(()=>repcCarritos.plaza[0].origen)) === 'proveedor'
     || 'se dio vuelta sola: con dos posiciones eso confunde';
 });
 await caso('sin emojis', async () => {
-  const t = await page.textContent('.repc-orig');
+  const t = await page.textContent('.cart-row');
   return !/[\u{1F300}-\u{1FAFF}]/u.test(t) || 'trae emoji: '+t.slice(0,40);
 });
 

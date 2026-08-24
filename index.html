@@ -535,26 +535,21 @@
   .rf-mas:active{transform:scale(.9)}
   .rf-mas.ya{background:var(--green-fg)}
   .repc-fvacio{color:var(--muted);font-size:13.5px;padding:10px 2px}
-  /* ---- DE DÓNDE SALE: dos posiciones, la encendida es la respuesta ----
-     Va debajo del contador y cruza la fila entera, porque es una decisión
-     sobre la línea completa. Sin emojis: le restan seriedad a una pantalla
-     con la que se decide plata. */
-  .repc-orig{grid-column:1 / -1;margin-top:2px}
-  .repc-orig .dual{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--gray-bg);
-    border-radius:10px;padding:3px}
-  .repc-orig .dual button{border:none;font-family:inherit;cursor:pointer;border-radius:8px;
-    padding:8px 6px;font-size:12.5px;font-weight:700;color:var(--gray-fg);background:transparent;
-    transition:background .18s,color .18s,box-shadow .18s}
-  .repc-orig .dual button:active{transform:scale(.97)}
-  .repc-orig .dual button.on{background:var(--card);color:var(--sec-tx);box-shadow:var(--sombra)}
-  /* La de proveedor encendida va en ámbar: es la que deja a bodega sin bajar,
-     y tiene que notarse de un vistazo cuáles líneas están en esa posición. */
-  .repc-orig .dual button[data-a="proveedor"].on{background:var(--amber-bg);color:var(--amber-fg)}
-  .repc-orig .pie{font-size:11.5px;font-weight:700;color:var(--sec-filo);padding:5px 4px 0}
-  .repc-orig .pie.poco{color:var(--amber-fg)}
-  .repc-orig .pie.prov{color:var(--amber-fg)}
-  .repc-orig-falta{grid-column:1 / -1;margin-top:4px;font-size:12px;font-weight:700;
-    color:var(--red-fg);background:var(--red-bg);border-radius:9px;padding:7px 10px}
+  /* ---- DE DÓNDE SALE: dos posiciones, chiquito, en la misma fila ----
+     La posición encendida ES la respuesta, así que no hace falta leerla.
+     Nombres cortos —Bodega / Prov.— porque comparte renglón con el contador
+     y la X; el nombre largo va en el `title` para quien pase el cursor. */
+  .dual{display:inline-flex;flex:0 0 auto;background:var(--gray-bg);border-radius:8px;padding:2px;gap:2px}
+  .dual button{border:none;font-family:inherit;cursor:pointer;border-radius:6px;
+    padding:5px 6px;font-size:10px;font-weight:800;color:var(--gray-fg);background:transparent;
+    letter-spacing:0;transition:background .18s,color .18s,box-shadow .18s}
+  .dual button:active{transform:scale(.94)}
+  .dual button.on{background:var(--card);color:var(--sec-tx);box-shadow:var(--sombra)}
+  /* La de proveedor encendida en ámbar: es la que deja a bodega sin bajar y
+     tiene que notarse cuáles líneas están así, de un vistazo y sin leer. */
+  .dual button[data-a="proveedor"].on{background:var(--amber-bg);color:var(--amber-fg)}
+  .cart-nolace{flex:0 0 auto;font-size:11px;font-weight:800;color:var(--red-fg);
+    background:var(--red-bg);border-radius:999px;padding:4px 9px}
   .repc-bod{display:block;font-size:11.5px;font-weight:700;margin-top:2px;color:var(--sec-bg)}
   .repc-bod.poco{color:var(--amber-fg)}
   .repc-bod.nada{color:var(--red-fg)}
@@ -1001,25 +996,47 @@
   .rep-hay{font-size:13px;font-weight:800;border-radius:999px;padding:3px 10px;
            font-variant-numeric:tabular-nums;white-space:nowrap}
   .cart-title{font-weight:800;font-size:14px;margin:16px 0 8px}
-  .cart-row{display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px 8px 12px;margin-bottom:6px}
+  /* UNA FILA, NO TRES PISOS. Con quince productos en el reparto, tres pisos
+     por línea convierten la pantalla en un pasillo. Se envuelve solo cuando
+     de verdad no cabe, y ahí son dos — nunca tres. */
+  .cart-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:var(--card);
+    border:1px solid var(--border);border-radius:10px;padding:7px 9px;margin-bottom:6px}
   /* El interruptor de origen cruza las dos columnas: es una decisión sobre la
      línea entera, no un detalle del nombre. */
   /* La X de sacar del reparto. Gris y chica: existe siempre pero no compite
      con el contador, que es lo que se toca todo el rato. */
-  .cart-x{grid-column:2;grid-row:1;justify-self:end;align-self:start;border:none;background:none;
-    color:var(--muted);font-family:inherit;font-size:15px;font-weight:800;line-height:1;
-    width:26px;height:26px;border-radius:999px;cursor:pointer;transition:background .15s,color .15s}
+  /* La X: gris y chica. Existe siempre pero no compite con el contador, que
+     es lo que se toca todo el rato. */
+  .cart-x{flex:0 0 auto;border:none;background:none;color:var(--muted);font-family:inherit;
+    font-size:15px;font-weight:800;line-height:1;width:26px;height:26px;border-radius:999px;
+    cursor:pointer;transition:background .15s,color .15s}
   .cart-x:hover{background:var(--red-bg);color:var(--red-fg)}
   .cart-x:active{transform:scale(.88)}
-  /* Con la X arriba, el contador baja a su propio renglón. */
-  .cart-row{grid-template-rows:auto auto}
-  .cart-row .cn{grid-column:1;grid-row:1}
-  .cart-row .qty{grid-column:1 / -1;grid-row:2;justify-self:end}
-  .cart-row .repc-orig, .cart-row .repc-orig-falta{grid-column:1 / -1}
-  .cart-row .cn{min-width:0}
-  .cart-row .cnn{font-size:14px;font-weight:600}
-  .cart-row .cns{font-size:12px;color:var(--muted);margin-top:2px;
-                 display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  /* El nombre se come lo que sobre y se corta con puntos suspensivos: es lo
+     único elástico de la fila, todo lo demás mide lo que mide. */
+  /* El nombre se come lo que sobre. Basis chico a propósito: es el único
+     elástico de la fila, y lo que tiene que ceder para que los cuatro
+     elementos entren en UN renglón. */
+  .cart-row .cn{flex:1 1 70px;min-width:0}
+  .cart-row .cnn{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* El detalle de bodega vive en la línea del nombre, no en un renglón
+     propio: es información de apoyo. */
+  .cart-row .pie{font-weight:700;color:var(--sec-filo)}
+  .cart-row .pie.poco,.cart-row .pie.prov{color:var(--amber-fg)}
+  /* El contador del carro va más compacto que el de la ficha: comparte
+     renglón con el nombre, el interruptor y la X. Sigue siendo cómodo para el
+     pulgar —34 px de alto— pero deja de empujar la fila a un segundo piso. */
+  .cart-row .qty{flex:0 0 auto}
+  .cart-row .qty .qbtn{width:25px;height:30px;font-size:15px}
+  .cart-row .qty input{width:34px;height:30px;font-size:13px;padding:0}
+  /* NO envuelve, y esa es la diferencia entre una fila y tres. El detalle es
+     información de apoyo: si no cabe entero, se corta con puntos suspensivos
+     en vez de empujar la fila a otro piso. Lo que importa —cuánto hay allá—
+     va primero, así que es lo último que se pierde. */
+  .cart-row .cns{font-size:11.5px;color:var(--muted);margin-top:1px;
+                 display:flex;align-items:center;gap:6px;flex-wrap:nowrap;
+                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cart-row .cns > *{flex:0 0 auto}
   .cart-row .cns b{font-variant-numeric:tabular-nums}
   /* "llenar N": la cantidad que falta para el máximo, a un toque */
   .cart-llenar{border:1px solid var(--orange);color:var(--orange);background:transparent;
@@ -4030,47 +4047,54 @@ function repcPintarCajas(){
 
          Sin enlace no es una tercera posición: es que falta configurar algo.
          Se dice aparte, en rojo, y se arregla en Bodega -> Enlaces. */
+      /* ---- UNA SOLA FILA (2026-08-22) ----
+         Jhon: "ponme dos niveles máximo y si puedes solo uno mejor… optimiza
+         el espacio". Tenía razón: eran tres pisos por producto —nombre y X,
+         contador, y dos botones enormes—, así que un reparto de quince
+         productos se volvía una pantalla interminable de recorrer.
+
+         Ahora todo va en una línea: nombre (con el detalle en chico debajo),
+         el interruptor de origen, el contador y la X. El detalle de bodega
+         —"bodega 7 → 0"— se mudó a la línea de abajo del nombre en vez de
+         tener su propio piso: es información de apoyo, no un renglón.
+
+         En pantallas muy angostas la fila se parte en dos y el interruptor
+         baja completo. Dos pisos es el techo, nunca tres. */
       const prov = c.origen === 'proveedor';
       const detalle = prov
-        ? 'bodega no baja'
-        : !b ? '' : fmt(libre) + ' → ' + fmt(queda)
-                    + ((+c.cantidad||0) > libre ? ' · pide más de lo que hay' : '');
-      const bod = !b && !prov
-        ? '<div class="repc-orig-falta">Sin enlace con bodega · no va a bajar de ningún lado</div>'
-        : `<div class="repc-orig">
-             <div class="dual">
-               <button type="button" class="${prov?'':'on'}" data-repcorigen="${sede}-${i}"
-                 data-a="bodega">De bodega</button>
-               <button type="button" class="${prov?'on':''}" data-repcorigen="${sede}-${i}"
-                 data-a="proveedor">De proveedor</button>
-             </div>
-             <div class="pie${prov?' prov':(queda<=0?' poco':'')}" data-repcpie="${sede}-${i}">${esc(detalle)}</div>
-           </div>`;
+        ? 'bod. no baja'
+        : !b ? '' : 'bod. ' + fmt(libre) + '→' + fmt(queda)
+                    + ((+c.cantidad||0) > libre ? ' · pide más' : '');
       const cf = p ? CFG[estado(p)] : CFG.sindato;
       const falta = p ? repcFalta(p) : 0;
       const llenar = (falta>0 && +c.cantidad!==falta)
         ? `<button type="button" class="cart-llenar" data-repcllenar="${sede}-${i}" data-cant="${falta}">llenar ${fmt(falta)}</button>` : '';
       const esUno = (+c.cantidad||0) <= 1;
-      /* El botón de origen va FUERA de la columna del nombre y ocupa su
-         propio renglón, a todo el ancho. Metido al lado del contador se
-         aplastaba en el teléfono hasta partir el texto en seis líneas — y un
-         botón ilegible no es un botón. */
-      /* LA X PARA SACARLO, SIEMPRE VISIBLE. Antes había que bajar la cantidad
-         a cero a mano para quitar una línea, y con 20 unidades eso son veinte
-         toques. Agregar cuesta un toque; sacar tiene que costar lo mismo.
-         Va arriba a la derecha, separada del contador: quitar no es "restar
-         mucho", es otra cosa, y ponerlas juntas invita a errar el dedo. */
+      /* Sin enlace no es una posición del interruptor: es que falta
+         configurar algo, y se dice en la línea de abajo, en rojo. */
+      const dual = (!b && !prov)
+        ? '<span class="cart-nolace">sin enlace</span>'
+        : `<span class="dual">
+             <button type="button" class="${prov?'':'on'}" data-repcorigen="${sede}-${i}"
+               data-a="bodega" title="Sale de bodega">Bodega</button>
+             <button type="button" class="${prov?'on':''}" data-repcorigen="${sede}-${i}"
+               data-a="proveedor" title="Lo trae el proveedor">Prov.</button>
+           </span>`;
       return `<div class="cart-row">
-        <div class="cn"><div class="cnn">${esc(c.producto)}</div>
-          <div class="cns">allá hay <b style="color:${cf.fg}">${p?fmt(p.stock_actual):'—'}</b>${llenar}</div></div>
-        <button type="button" class="cart-x" data-repcquitar="${sede}-${i}"
-          aria-label="Sacar ${esc(c.producto)} del reparto">✕</button>
+        <div class="cn">
+          <div class="cnn">${esc(c.producto)}</div>
+          <div class="cns">hay <b style="color:${cf.fg}">${p?fmt(p.stock_actual):'—'}</b>${
+            detalle ? `<span class="pie${prov?' prov':(queda<=0?' poco':'')}" data-repcpie="${sede}-${i}">${esc(detalle)}</span>` : ''
+          }${llenar}</div>
+        </div>
+        ${dual}
         <div class="qty">
           <button type="button" class="qbtn qleft ${esUno?'is-trash':''}" data-repcleft="${sede}-${i}" aria-label="${esUno?'Quitar':'Restar'}">${esUno?TRASH_SVG:'−'}</button>
           <input type="number" step="0.5" min="0" value="${c.cantidad}" data-repcidx="${sede}-${i}" aria-label="Cantidad de ${esc(c.producto)}">
           <button type="button" class="qbtn qplus" data-repcinc="${sede}-${i}" aria-label="Sumar">+</button>
         </div>
-        ${bod}
+        <button type="button" class="cart-x" data-repcquitar="${sede}-${i}"
+          aria-label="Sacar ${esc(c.producto)} del reparto">✕</button>
       </div>`;
     }).join('') : '<div class="repc-vacia">Nada todavía. Busca arriba o toca «llenar todo».</div>';
 
@@ -4351,9 +4375,9 @@ function repcRefrescarFila(sede, i){
     const libre = b.hay - repcComprometido(b.id, c);
     const queda = Math.max(0, libre - (+c.cantidad||0));
     const prov  = c.origen === 'proveedor';
-    pie.textContent = prov ? 'bodega no baja'
-      : fmt(libre) + ' → ' + fmt(queda)
-        + ((+c.cantidad||0) > libre ? ' · pide más de lo que hay' : '');
+    pie.textContent = prov ? 'bod. no baja'
+      : 'bod. ' + fmt(libre) + '→' + fmt(queda)
+        + ((+c.cantidad||0) > libre ? ' · pide más' : '');
     pie.className = 'pie' + (prov ? ' prov' : (queda<=0 ? ' poco' : ''));
   }
 
