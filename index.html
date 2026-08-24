@@ -447,6 +447,47 @@
      "de proveedor" va en ámbar y no en gris — no es un dato que falta, es
      una decisión que alguien tomó, y tiene que distinguirse de un enlace
      que no existe. */
+  /* ---- el selector de destino ---- */
+  .repc-dlbl{font-size:11.5px;font-weight:800;letter-spacing:.5px;color:var(--muted);margin:2px 0 7px}
+  .repc-dest{display:flex;gap:7px;overflow-x:auto;padding-bottom:5px;margin-bottom:4px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .repc-dest::-webkit-scrollbar{display:none}
+  .repc-dest button{flex:0 0 auto;border:none;font-family:inherit;border-radius:999px;
+    padding:9px 14px;font-size:13.5px;font-weight:700;background:var(--card);color:var(--text);
+    box-shadow:var(--sombra);transition:transform .12s ease,background .18s,color .18s}
+  .repc-dest button:active{transform:scale(.95)}
+  .repc-dest button.on{background:var(--navy);color:#fff}
+  /* Las franquicias se ven distintas porque SON distintas: allá no hay
+     Llamita, nadie confirma, y sale con una hoja impresa. */
+  .repc-dest button.franq{background:var(--gray-bg);color:var(--gray-fg)}
+  .repc-dest button.franq.on{background:var(--sec-filo);color:#fff}
+  .repc-dsep{flex:0 0 auto;width:1px;background:var(--border);margin:5px 3px}
+
+  /* ---- lo que le falta a la sede ---- */
+  .repc-falta{margin-bottom:12px}
+  .rf-cab{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:800;
+    letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+  .rf-n{background:var(--gray-bg);color:var(--gray-fg);border-radius:999px;padding:2px 8px;font-size:11.5px}
+  .rf-urg{background:var(--gray-bg);border-radius:12px;padding:4px 8px 2px;margin-bottom:8px}
+  .rf-lbl{font-size:10.5px;font-weight:800;letter-spacing:.5px;color:var(--orange);padding:5px 2px 3px}
+  .rf-fila{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px solid var(--border)}
+  .rf-fila:last-child{border-bottom:none}
+  .rf-nm{flex:1;min-width:0}
+  .rf-nm b{display:block;font-size:14.5px;font-weight:700;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rf-sec{font-size:11.5px;color:var(--muted)}
+  /* Toda la información de decisión en una línea que se puede leer sin
+     recorrer con el dedo: cuánto hay allá, su mínimo, su máximo y bodega. */
+  .rf-datos{display:flex;flex-wrap:wrap;gap:4px 9px;font-size:11.5px;color:var(--muted);margin-top:2px}
+  .rf-bod{font-weight:700;color:var(--sec-filo)}
+  .rf-bod.poco{color:var(--amber-fg)}
+  .rf-bod.nada{color:var(--red-fg)}
+  .rf-mas{flex:0 0 auto;width:32px;height:32px;border-radius:999px;border:none;cursor:pointer;
+    background:var(--orange);color:#fff;font-size:18px;font-weight:800;line-height:1;
+    font-family:inherit;transition:transform .12s ease,background .15s}
+  .rf-mas:active{transform:scale(.9)}
+  .rf-mas.ya{background:var(--green-fg)}
+  .repc-fvacio{color:var(--muted);font-size:13.5px;padding:10px 2px}
   .repc-bod[data-repcorigen]{display:inline-block;cursor:pointer;border:none;font-family:inherit;
     text-align:left;background:var(--gray-bg);color:var(--gray-fg);border-radius:999px;
     padding:2px 9px;margin-top:3px;transition:transform .12s ease}
@@ -1873,10 +1914,18 @@
 
   <div id="repc-salida">
 
-  <!-- El buscador, en su propio recuadro. Un producto se manda tocando la sede
-       a la que va: nada de elegir destino primero y perder de vista la otra. -->
-  <div class="enl-caja">
-    <div class="enl-cab">QUÉ MANDAR</div>
+  <!-- ---- A DÓNDE VA ----
+       Un solo selector para los siete destinos: los dos locales con Llamita y
+       las cinco franquicias. Antes eran tres bloques separados, cada uno con
+       su buscador y su carro, y Adriana tenía que recorrer la pantalla entera
+       para ver en cuál estaba trabajando. Los carros NO se pierden al cambiar
+       de destino: viven en paralelo y solo se vacían al enviar. -->
+  <p class="repc-dlbl">A DÓNDE VA</p>
+  <div class="repc-dest" id="repc-dest"></div>
+
+  <!-- El buscador. Con un destino elegido, cada resultado tiene UN botón. -->
+  <div class="enl-caja" id="repc-buscar">
+    <div class="enl-cab">BUSCAR PARA AGREGAR</div>
     <div class="enl-cuerpo">
       <div class="controls busca" style="margin:0 0 8px">
         <input type="text" id="repc-q" placeholder="Buscar producto…">
@@ -1897,8 +1946,12 @@
   <div class="enl-caja" id="repc-franq" style="margin-top:14px">
     <div class="enl-cab">FRANQUICIAS</div>
     <div class="enl-cuerpo">
-      <p class="rep-sub" style="margin:0 0 10px">Cafés que no tienen Llamita. Se les manda con una hoja impresa.</p>
-      <div class="field" style="margin-top:0">
+      <p class="rep-sub" style="margin:0 0 10px" id="fr-quien">Cafés que no tienen Llamita. Se les manda con una hoja impresa.</p>
+      <!-- El destino ya se eligió arriba. Este <select> se queda porque es de
+           donde frCrear() y la hoja sacan el nombre, pero deja de verse: dos
+           sitios para elegir lo mismo es como se termina mandando a la
+           franquicia equivocada. -->
+      <div class="field" style="display:none">
         <label>A qué franquicia</label>
         <select id="fr-sede"></select>
       </div>
@@ -3562,6 +3615,58 @@ $('mermas-list').addEventListener('click', async e=>{
    la otra sede desaparecía de la pantalla: Adriana armaba a ciegas la mitad
    del trabajo. Ahora las dos están a la vista y un producto se manda tocando
    la sede a la que va. */
+/* ---- A DÓNDE VA ----
+   'plaza' | 'angamos' | 'fr:<nombre>'. Empieza en Plaza porque es la sede de
+   más flujo y la que Adriana arma primero casi todos los días. */
+let repcDest = 'plaza';
+const repcEsLocal = () => repcDest === 'plaza' || repcDest === 'angamos';
+
+function repcPintarDest(){
+  const bot = (val, txt, franq) =>
+    `<button type="button" class="${franq?'franq ':''}${repcDest===val?'on':''}"
+      data-repcdest="${esc(val)}">${esc(txt)}</button>`;
+  $('repc-dest').innerHTML =
+    SEDES_ENLACE.map(s=>bot(s, SEDES[s].label)).join('')
+    + '<span class="repc-dsep"></span>'
+    /* El nombre corto de la franquicia es lo que va entre paréntesis: "Urbano
+       Café" y no "Mall EU Antofagasta (Urbano Café)". El largo no cabe en una
+       píldora y además es el nombre del mall, no el del café. */
+    + FRANQUICIAS.map(f=>{
+        const m = f.match(/\(([^)]+)\)/);
+        return bot('fr:'+f, m ? m[1] : f, true);
+      }).join('');
+}
+
+function repcElegirDest(val){
+  if(repcDest === val) return;
+  repcDest = val;
+  if(!repcEsLocal()){
+    const sel = $('fr-sede');
+    if(sel){ sel.value = val.slice(3); }
+    const q = $('fr-quien');
+    if(q) q.textContent = val.slice(3) + ' · no tiene Llamita, va con hoja impresa.';
+    /* Cambiar de franquicia con un carro a medias mandaría lo de una al
+       destino de la otra. Se vacía y se avisa, en vez de arrastrarlo. */
+    if(frCarrito.length){ frCarrito = []; aviso('Se vació la lista: cambiaste de franquicia'); }
+  }
+  $('repc-q').value = ''; $('repc-results').innerHTML = '';
+  const fq = $('fr-q'); if(fq){ fq.value=''; $('fr-results').innerHTML=''; }
+  repcPintarTodo();
+}
+
+/* Un solo sitio que decide qué se ve. Antes cada trozo se mostraba u ocultaba
+   por su cuenta y era fácil dejar dos cosas abiertas a la vez. */
+function repcPintarTodo(){
+  repcPintarDest();
+  const local = repcEsLocal();
+  $('repc-buscar').style.display = local ? '' : 'none';
+  $('repc-cajas').style.display  = local ? '' : 'none';
+  $('repc-franq').style.display  = local ? 'none' : '';
+  $('fr-abiertos').style.display = local ? 'none' : '';
+  if(local){ repcPintarCajas(); repcPintarResultados(); }
+  else { frPintarCarrito(); frPintarAbiertos(); }
+}
+
 let repcCarritos = {plaza:[], angamos:[]};
 let repcAbiertos = {plaza:[], angamos:[]};
 
@@ -3589,7 +3694,7 @@ function repcPintarResultados(){
      suele existir en las dos, y mostrarlo dos veces confundiría. */
   const vistos = new Map();
   const escondidos = [];
-  for(const s of SEDES_ENLACE)
+  for(const s of [repcDest].filter(x=>SEDES_ENLACE.includes(x)))
     for(const p of (SEDE_PROD[s]||[]))
       if(normNombre(p.producto).includes(q)){
         /* El de vitrina no se ofrece si existe su congelador: lo que sale
@@ -3606,13 +3711,15 @@ function repcPintarResultados(){
   const nota = escondidos.length
     ? `<div class="tl-pista">Entra al congelador: ${esc([...new Set(escondidos)].join(' · '))}</div>` : '';
   $('repc-results').innerHTML = nota + filas.map(f=>{
-    const botones = SEDES_ENLACE.map(s=>{
-      const p = f.en[s];
-      if(!p) return `<button type="button" disabled title="No existe en ${esc(SEDES[s].corto)}">${esc(SEDES[s].corto)}</button>`;
-      const ya = repcCarritos[s].some(c=>c.sedeId===p.id);
-      return `<button type="button" class="${ya?'on':''}" data-repcir="${s}" data-sid="${p.id}">
-        ${ya?'✓ ':'+ '}${esc(SEDES[s].corto)}</button>`;
-    }).join('');
+    /* UN solo botón: el del destino elegido arriba. Antes había uno por sede
+       y había que acordarse de cuál se estaba armando. */
+    const sd = repcDest;
+    const pd = f.en[sd];
+    const botones = !pd
+      ? `<button type="button" disabled title="No existe en ${esc(SEDES[sd].corto)}">no está allá</button>`
+      : (()=>{ const ya = repcCarritos[sd].some(c=>c.sedeId===pd.id);
+               return `<button type="button" class="${ya?'on':''}" data-repcir="${sd}" data-sid="${pd.id}">
+                 ${ya?'✓ agregado':'+ agregar'}</button>`; })();
     /* El estado en cada local, en el propio renglón: sin esto hay que
        acordarse de cuánto tenía cada uno mientras se decide. */
     const donde = SEDES_ENLACE.filter(s=>f.en[s]).map(s=>{
@@ -3660,12 +3767,82 @@ function repcProponer(sede){
     : 'No hay nada que proponer: o bodega está en 0, o ya está todo en el envío.');
 }
 
+/* ============ LO QUE LE FALTA A LA SEDE ============
+
+   Jhon, 2026-08-22: "¿cómo sabe Adriana cuáles productos necesita la sede con
+   la menor cantidad de clics y de movimientos dentro de Llamita?".
+
+   Antes esta lista existía pero escondida detrás de "ver lista", y solo se
+   leía. Ahora está abierta, arriba del carro, y cada renglón se agrega con un
+   toque. Es lo primero que Adriana se pregunta, así que es lo primero que ve.
+
+   DOS COSAS QUE NO SON DECORACIÓN:
+
+   1. **Lo URGENTE va arriba del todo y en su propio bloque.** Lo marca a mano
+      la gente del local justamente para que ella lo vea primero; sepultado en
+      el puesto 30 de una lista de 100, esa marca no sirve de nada. Y sube
+      aunque el semáforo no lo dé por crítico — ese es el caso que la marca
+      manual existe para cubrir.
+
+   2. **Cada renglón trae todo lo que hace falta para decidir**: cuánto hay
+      allá, cuál es su mínimo, y **cuánto tiene bodega**. Ese último dato es el
+      que evitaba el viaje de ida y vuelta: sin él hay que salir a mirar el
+      inventario de bodega para saber si se puede prometer lo que falta.  */
+function repcFaltaHTML(sede){
+  const lista = CRITICOS[sede];
+  if(lista === null)
+    return '<div class="repc-falta"><div class="repc-fvacio">No se pudo leer esta sede.</div></div>';
+  if(lista === undefined)
+    return '<div class="repc-falta"><div class="repc-fvacio">Mirando qué falta…</div></div>';
+  if(!lista.length)
+    return '<div class="repc-falta"><div class="repc-fvacio">No le falta nada. Todo sobre el mínimo.</div></div>';
+
+  const porFalta = (a,b) =>
+    faltaPara(b)-faltaPara(a)
+    || (+a.stock_actual||0)-(+b.stock_actual||0)
+    || a.producto.localeCompare(b.producto,'es');
+  const todos    = lista.slice().sort(porFalta);
+  const urgentes = todos.filter(urgenteDe);
+  const resto    = todos.filter(p=>!urgenteDe(p));
+
+  const fila = p => {
+    const ya = repcCarritos[sede].some(c=>c.sedeId===p.id);
+    const b  = repcBodega(p.id, sede);
+    const cf = CFG[estado(p)];
+    /* Cuánto tiene bodega para ese producto. Tres estados y no dos: "no lo
+       tiene enlazado" no es lo mismo que "tiene 0" — el primero es un hueco
+       de configuración y el segundo es que se acabó. */
+    const bod = !b
+      ? '<span class="rf-bod nada">bodega: sin enlace</span>'
+      : `<span class="rf-bod${b.hay<=0?' nada':(b.hay<3?' poco':'')}">bodega: ${fmt(b.hay)}</span>`;
+    return `<div class="rf-fila">
+      <div class="rf-nm">
+        <b>${esc(p.producto)}</b>
+        <span class="rf-sec">${esc(p.rubro||'Sin sección')}</span>
+        <div class="rf-datos">
+          <span style="color:${cf.fg};font-weight:800">allá hay ${fmt(p.stock_actual)}</span>
+          ${p.stock_min!=null?`<span>mín ${fmt(p.stock_min)}</span>`:''}
+          ${maxOk(p)?`<span>máx ${fmt(p.stock_max)}</span>`:''}
+          ${bod}
+        </div>
+      </div>
+      <button type="button" class="rf-mas${ya?' ya':''}" data-rfadd="${sede}-${p.id}"
+        aria-label="${ya?'Quitar del reparto':'Agregar al reparto'}">${ya?'✓':'+'}</button>
+    </div>`;
+  };
+
+  return `<div class="repc-falta">
+    <div class="rf-cab">LE FALTA A ${esc(SEDES[sede].corto.toUpperCase())}
+      <span class="rf-n">${todos.length}</span></div>
+    ${urgentes.length ? `<div class="rf-urg"><div class="rf-lbl">URGENTE · lo marcó el local</div>
+      ${urgentes.map(fila).join('')}</div>` : ''}
+    ${resto.map(fila).join('')}
+  </div>`;
+}
+
 function repcPintarCajas(){
-  $('repc-cajas').innerHTML = SEDES_ENLACE.map(sede=>{
+  $('repc-cajas').innerHTML = [repcDest].filter(x=>SEDES_ENLACE.includes(x)).map(sede=>{
     const car = repcCarritos[sede];
-    const lista = CRITICOS[sede];
-    const nCrit = lista==null ? '—' : lista.filter(p=>estado(p)==='critico').length;
-    const nUrg  = lista==null ? 0   : lista.filter(urgenteDe).length;
     const total = car.reduce((n,c)=>n+(+c.cantidad||0),0);
 
     const filas = car.length ? car.map((c,i)=>{
@@ -3721,13 +3898,15 @@ function repcPintarCajas(){
 
     return `<div class="enl-caja">
       <div class="enl-cab">${esc(SEDES[sede].label.toUpperCase())}</div>
-      <div class="repc-cab2">
-        <span><span class="cn2">${nCrit}</span> en crítico</span>
-        ${nUrg?`<span class="pill pill-urg" style="font-size:10px;padding:2px 8px">${nUrg} urgente${nUrg===1?'':'s'}</span>`:''}
-        <button type="button" class="lupa" data-repccrit="${sede}">ver lista</button>
-      </div>
+      <!-- La franja de conteos y el "ver lista" se fueron el 2026-08-22: el
+           panel de abajo dice el mismo número y muestra la lista entera, con
+           lo urgente aparte. Dos sitios diciendo lo mismo con cifras que no
+           calzaban (3 en crítico / 4 le falta) es ruido, no información. -->
       <div class="enl-cuerpo">
-        <button type="button" class="btn btn-outline btn-block" data-repcprop="${sede}" style="margin-bottom:10px">Proponer según el crítico</button>
+        ${repcFaltaHTML(sede)}
+        <button type="button" class="btn btn-outline btn-block" data-repcprop="${sede}" style="margin:2px 0 12px">Llenar todo lo que falta</button>
+        <div class="rf-cab" style="margin-top:2px">LO QUE VA
+          <span class="rf-n">${car.length}</span></div>
         ${filas}
         <div class="repc-tot"><span class="lbl">${car.length} producto(s)</span>
           <b>${fmt(total)} unidades</b></div>
@@ -3759,10 +3938,15 @@ async function repcCargarAbiertos(){
 
 function repcAbrir(){
   $('repc-q').value=''; $('repc-results').innerHTML='';
-  repcPintarCajas(); repcCargarAbiertos();
+  repcCargarAbiertos();
   /* Las franquicias comparten pantalla con los envíos a los locales, pero no
-     comparten nada más: otras tablas, otro flujo y ninguna app del otro lado. */
-  frPintarSelector(); frPintarCarrito(); frCargarAbiertos();
+     comparten nada más: otras tablas, otro flujo y ninguna app del otro lado.
+     El <select> de franquicia sigue existiendo y se mantiene al día porque es
+     el que leen frCrear() y la hoja impresa; lo que cambió es que ya no se
+     toca a mano — lo mueve el selector de arriba. */
+  frPintarSelector(); frCargarAbiertos();
+  /* Un solo sitio decide qué se ve, y pinta lo que corresponda al destino. */
+  repcPintarTodo();
 }
 
 /* Salida y entrada en la misma pestaña: son el mismo trabajo al revés. Abre
@@ -3850,6 +4034,23 @@ async function repcEnviar(sede){
 }
 
 $('view-repcentral').addEventListener('click', async e=>{
+  const dst = e.target.closest('[data-repcdest]');
+  if(dst){ repcElegirDest(dst.dataset.repcdest); return; }
+  /* El + de "le falta a". Agrega con lo que falta para el máximo, que es la
+     decisión que Adriana toma decenas de veces al día. */
+  const rf = e.target.closest('[data-rfadd]');
+  if(rf){
+    const [sede, id] = rf.dataset.rfadd.split('-');
+    const sid = +id;
+    const i = repcCarritos[sede].findIndex(c=>c.sedeId===sid);
+    if(i>=0) repcCarritos[sede].splice(i,1);
+    else {
+      const p = (SEDE_PROD[sede]||[]).find(x=>x.id===sid);
+      repcAgregar(sede, sid, p ? Math.max(1, Math.round(repcFalta(p) || faltaPara(p) || 1)) : 1);
+    }
+    repcPintarCajas(); repcPintarResultados();
+    return;
+  }
   const cr = e.target.closest('[data-repccrit]');
   if(cr){ abrirCriticos(cr.dataset.repccrit); return; }
   const pr = e.target.closest('[data-repcprop]');

@@ -98,40 +98,24 @@ await page.waitForTimeout(600);
 await page.click('#tabEnvios').catch(()=>{});
 await page.waitForTimeout(600);
 
-console.log('\nLa lista de lo que falta se puede TOCAR, no solo leer:');
-await caso('se abre desde "ver lista"', async () => {
-  await page.click('[data-repccrit="plaza"]');
-  await page.waitForTimeout(350);
-  return await page.isVisible('.overlay-prop') || 'no se abrió';
+/* Desde el 2026-08-22 la lista de lo que falta vive ABIERTA dentro de la
+   pantalla, no detrás de un "ver lista". Que esté completa y ordenada se
+   comprueba en pruebas/reparto-unificado.mjs; acá solo se usa para armar el
+   carro, que es lo que esta prueba necesita. */
+console.log('\nSe arma el reparto desde la lista de lo que falta:');
+await caso('la lista está a la vista', async () =>
+  await page.isVisible('.repc-falta') || 'no se ve el panel de lo que falta');
+await caso('agregar la medialuna', async () => {
+  await page.click('[data-rfadd="plaza-10"]'); await page.waitForTimeout(300);
+  return (await page.evaluate(()=>repcCarritos.plaza.length)) === 1 || 'no la agregó';
 });
-await caso('trae los que están bajo el mínimo', async () => {
-  const t = await page.textContent('.cs-lista');
-  return (t.includes('Medialuna') && t.includes('Alfajor')) || 'falta alguno: '+t.slice(0,80);
+await caso('con lo que le falta para el máximo', async () =>
+  (await page.evaluate(()=>repcCarritos.plaza[0].cantidad)) === 11
+  || 'propuso '+(await page.evaluate(()=>repcCarritos.plaza[0].cantidad)));
+await caso('y el alfajor', async () => {
+  await page.click('[data-rfadd="plaza-11"]'); await page.waitForTimeout(300);
+  return (await page.evaluate(()=>repcCarritos.plaza.length)) === 2 || 'no lo agregó';
 });
-await caso('y NO trae los que están bien', async () =>
-  !(await page.textContent('.cs-lista')).includes('Cachito') || 'metió un producto que no falta');
-await caso('cada renglón trae su +', async () =>
-  (await page.$$('[data-cs-add]')).length >= 2 || 'no hay botones para agregar');
-
-await caso('tocar el + lo agrega al reparto', async () => {
-  await page.click('[data-cs-add="10"]');       // Medialuna
-  await page.waitForTimeout(250);
-  const n = await page.evaluate(()=>repcCarritos.plaza.length);
-  return n === 1 || 'el carro tiene '+n;
-});
-await caso('con la cantidad que le falta para el máximo', async () => {
-  const c = await page.evaluate(()=>repcCarritos.plaza[0]);
-  return c.cantidad === 11 || 'propuso '+c.cantidad+', esperaba 11 (12 de máximo menos 1 que hay)';
-});
-await caso('y el + queda marcado', async () =>
-  (await page.getAttribute('[data-cs-add="10"]','class')).includes('ya') || 'no se marcó');
-await caso('tocarlo otra vez lo quita', async () => {
-  await page.click('[data-cs-add="10"]'); await page.waitForTimeout(250);
-  return (await page.evaluate(()=>repcCarritos.plaza.length)) === 0 || 'no lo quitó';
-});
-await page.click('[data-cs-add="10"]'); await page.waitForTimeout(200);
-await page.click('[data-cs-add="11"]'); await page.waitForTimeout(200);
-await page.click('.overlay-prop [data-a="cerrar"]'); await page.waitForTimeout(300);
 
 console.log('\nEl origen de cada línea:');
 await caso('las dos nacen "de bodega"', async () => {

@@ -116,9 +116,22 @@ await page.click('.tab[data-tab="envios"]');
 await page.waitForTimeout(600);
 
 console.log('\nEl bloque de franquicias está en Bodega → Enviar:');
-await caso('se ve, junto a los envíos a los locales', async () =>
-  await page.isVisible('#repc-franq') || 'no aparece');
-await caso('con las cinco franquicias en el selector', async () => {
+/* Desde el 2026-08-22 hay UN selector de destino arriba, con los dos locales
+   y las cinco franquicias. El bloque de franquicias aparece al elegir una: no
+   está siempre a la vista como antes. */
+await caso('las cinco franquicias están en el selector de destino', async () => {
+  const n = await page.$$eval('.repc-dest button.franq', b => b.map(x => x.textContent.trim()));
+  return (n.length === 5 && n.some(x => x.includes('Andrómeda')) && n.some(x => x.includes('Premium')))
+    || 'salieron: ' + n.join(' | ');
+});
+await caso('al elegir una, aparece su bloque', async () => {
+  await page.click('.repc-dest button.franq');
+  await page.waitForTimeout(400);
+  return await page.isVisible('#repc-franq') || 'no apareció';
+});
+await caso('y desaparece lo de los locales', async () =>
+  !(await page.isVisible('#repc-cajas')) || 'siguen a la vista los dos locales');
+await caso('el <select> de adentro queda con las cinco', async () => {
   const n = await page.$$eval('#fr-sede option', o => o.map(x => x.textContent));
   return n.length === 5 && n.some(x => x.includes('Portada')) && n.some(x => x.includes('Easton'))
     || 'salieron: ' + n.join(' | ');
