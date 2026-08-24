@@ -464,9 +464,28 @@
   .repc-dsep{flex:0 0 auto;width:1px;background:var(--border);margin:5px 3px}
 
   /* ---- lo que le falta a la sede ---- */
+  /* LA LISTA VA CONTENIDA, NO DESPLEGADA (Jhon, 2026-08-22): "es mucho más
+     cómodo ver una lista contenida en un recuadro con función de deslizar que
+     ver toda una lista completa en la pantalla". Con 85 productos bajo el
+     mínimo, desplegarla entera empuja el carro y los botones tan abajo que
+     dejan de existir.
+     El alto va en `vh` —proporción de pantalla, no píxeles fijos— así que se
+     ve igual de bien en el teléfono que en el computador. */
   .repc-falta{margin-bottom:12px}
+  .rf-caja{max-height:52vh;min-height:180px;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    background:var(--bg);border-radius:12px;padding:2px 10px}
+  /* Una barra fina y discreta: que se note que hay más abajo, sin gritar. */
+  .rf-caja::-webkit-scrollbar{width:7px}
+  .rf-caja::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+  .rf-caja::-webkit-scrollbar-track{background:transparent}
   .rf-cab{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:800;
     letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+  /* Chico y a un lado, no un botón grande: es un atajo, no la acción
+     principal. La principal es elegir producto por producto. */
+  .rf-llenar{margin-left:auto;border:none;background:none;font-family:inherit;cursor:pointer;
+    font-size:11.5px;font-weight:800;color:var(--orange);letter-spacing:.3px;
+    text-transform:uppercase;padding:3px 2px}
+  .rf-llenar:active{opacity:.6}
   .rf-n{background:var(--gray-bg);color:var(--gray-fg);border-radius:999px;padding:2px 8px;font-size:11.5px}
   .rf-urg{background:var(--gray-bg);border-radius:12px;padding:4px 8px 2px;margin-bottom:8px}
   .rf-lbl{font-size:10.5px;font-weight:800;letter-spacing:.5px;color:var(--orange);padding:5px 2px 3px}
@@ -488,20 +507,37 @@
   .rf-mas:active{transform:scale(.9)}
   .rf-mas.ya{background:var(--green-fg)}
   .repc-fvacio{color:var(--muted);font-size:13.5px;padding:10px 2px}
-  .repc-bod[data-repcorigen]{display:inline-block;cursor:pointer;border:none;font-family:inherit;
-    text-align:left;background:var(--gray-bg);color:var(--gray-fg);border-radius:999px;
-    padding:2px 9px;margin-top:3px;transition:transform .12s ease}
-  .repc-bod[data-repcorigen]:active{transform:scale(.96)}
-  .repc-bod.prov{background:var(--amber-bg);color:var(--amber-fg);font-weight:800}
-  .repc-bod.poco[data-repcorigen]{background:var(--amber-bg);color:var(--amber-fg)}
+  /* EL ORIGEN ES UN BOTÓN, Y TIENE QUE PARECERLO. Jhon, 2026-08-22: "está
+     demasiado discreta… más parece un aviso que un botón editable. Adriana
+     tiene que reconocerlo fácilmente".
+     Lo que lo convierte en botón a la vista: ocupa su renglón, lleva el
+     símbolo de cambiar (⇄) adelante, tiene relieve de tarjeta y el texto
+     dice la acción, no solo el estado. */
+  .repc-bod[data-repcorigen]{display:flex;align-items:center;gap:7px;width:100%;
+    cursor:pointer;border:none;font-family:inherit;text-align:left;
+    background:var(--card);color:var(--sec-tx);box-shadow:var(--sombra);
+    border-radius:10px;padding:7px 11px;margin-top:7px;font-size:12.5px;font-weight:700;
+    transition:transform .12s ease,background .18s}
+  .repc-bod[data-repcorigen]:active{transform:scale(.97)}
+  .repc-bod[data-repcorigen] .ico{flex:0 0 auto;width:20px;height:20px;border-radius:6px;
+    display:flex;align-items:center;justify-content:center;font-size:12px;
+    background:var(--sec-bg);color:var(--sec-tx)}
+  .repc-bod[data-repcorigen] .tx{flex:1;min-width:0}
+  .repc-bod[data-repcorigen] .cambiar{flex:0 0 auto;font-size:11px;font-weight:800;
+    color:var(--orange);text-transform:uppercase;letter-spacing:.3px}
+  .repc-bod.prov[data-repcorigen]{background:var(--amber-bg);color:var(--amber-fg)}
+  .repc-bod.prov[data-repcorigen] .ico{background:rgba(156,98,9,.16);color:var(--amber-fg)}
+  .repc-bod.poco[data-repcorigen]{color:var(--amber-fg)}
   .repc-bod{display:block;font-size:11.5px;font-weight:700;margin-top:2px;color:var(--sec-bg)}
   .repc-bod.poco{color:var(--amber-fg)}
   .repc-bod.nada{color:var(--red-fg)}
 
   /* Las dos sedes a la vista al mismo tiempo. Nada detrás de un botón: Adriana
      tiene que ver de un vistazo qué le está mandando a cada una. */
-  .repc-cajas{display:grid;gap:12px;grid-template-columns:1fr;margin-top:12px}
-  @media (min-width:760px){ .repc-cajas{grid-template-columns:1fr 1fr} }
+  /* Una sola caja, siempre: desde que hay selector de destino se ve una sede
+     por vez. Las dos columnas eran de cuando se veían Plaza y Angamos a la
+     vez; con una sola dejaban media pantalla vacía a la derecha. */
+  .repc-cajas{margin-top:12px}
   /* a qué sede mandar: dos botones en cada resultado del buscador */
   .repc-ir{display:flex;gap:6px;flex-shrink:0}
   .repc-ir button{border:1.5px solid var(--border);background:var(--card);color:var(--text);
@@ -938,7 +974,10 @@
   .rep-hay{font-size:13px;font-weight:800;border-radius:999px;padding:3px 10px;
            font-variant-numeric:tabular-nums;white-space:nowrap}
   .cart-title{font-weight:800;font-size:14px;margin:16px 0 8px}
-  .cart-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px 8px 12px;margin-bottom:6px}
+  .cart-row{display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px 8px 12px;margin-bottom:6px}
+  /* El botón de origen cruza las dos columnas: es una decisión sobre la
+     línea entera, no un detalle del nombre. */
+  .cart-row .repc-bod[data-repcorigen]{grid-column:1 / -1;margin-top:0}
   .cart-row .cn{min-width:0}
   .cart-row .cnn{font-size:14px;font-weight:600}
   .cart-row .cns{font-size:12px;color:var(--muted);margin-top:2px;
@@ -3834,9 +3873,11 @@ function repcFaltaHTML(sede){
   return `<div class="repc-falta">
     <div class="rf-cab">LE FALTA A ${esc(SEDES[sede].corto.toUpperCase())}
       <span class="rf-n">${todos.length}</span></div>
-    ${urgentes.length ? `<div class="rf-urg"><div class="rf-lbl">URGENTE · lo marcó el local</div>
-      ${urgentes.map(fila).join('')}</div>` : ''}
-    ${resto.map(fila).join('')}
+    <div class="rf-caja">
+      ${urgentes.length ? `<div class="rf-urg"><div class="rf-lbl">URGENTE · lo marcó el local</div>
+        ${urgentes.map(fila).join('')}</div>` : ''}
+      ${resto.map(fila).join('')}
+    </div>
   </div>`;
 }
 
@@ -3868,27 +3909,39 @@ function repcPintarCajas(){
          esto no toca una sola línea de SQL: una línea de proveedor viaja
          sin ese número y bodega ni se entera. */
       const prov = c.origen === 'proveedor';
+      /* El texto dice el estado ARRIBA y la acción a la derecha ("cambiar"),
+         para que se lea qué es y qué pasa si se toca sin explicar nada. */
       const bod = prov
-        ? `<button type="button" class="repc-bod prov" data-repcorigen="${sede}-${i}">de proveedor · bodega no baja</button>`
+        ? `<button type="button" class="repc-bod prov" data-repcorigen="${sede}-${i}">
+             <span class="ico" aria-hidden="true">🚚</span>
+             <span class="tx">Lo trae el proveedor · bodega no baja</span>
+             <span class="cambiar">cambiar</span></button>`
         : !b ? '<span class="repc-bod nada">sin enlace · bodega no baja</span>'
-        : `<button type="button" class="repc-bod${queda<=0?' poco':''}" data-repcorigen="${sede}-${i}">`
-          + `de bodega · ${fmt(libre)} → ${fmt(queda)}`
-          + ((+c.cantidad||0) > libre ? ' · pide más de lo que hay' : '') + '</button>';
+        : `<button type="button" class="repc-bod${queda<=0?' poco':''}" data-repcorigen="${sede}-${i}">
+             <span class="ico" aria-hidden="true">📦</span>
+             <span class="tx">Sale de bodega · ${fmt(libre)} → ${fmt(queda)}`
+          + ((+c.cantidad||0) > libre ? ' · pide más de lo que hay' : '')
+          + `</span><span class="cambiar">cambiar</span></button>`;
       const cf = p ? CFG[estado(p)] : CFG.sindato;
       const falta = p ? repcFalta(p) : 0;
       const llenar = (falta>0 && +c.cantidad!==falta)
         ? `<button type="button" class="cart-llenar" data-repcllenar="${sede}-${i}" data-cant="${falta}">llenar ${fmt(falta)}</button>` : '';
       const esUno = (+c.cantidad||0) <= 1;
+      /* El botón de origen va FUERA de la columna del nombre y ocupa su
+         propio renglón, a todo el ancho. Metido al lado del contador se
+         aplastaba en el teléfono hasta partir el texto en seis líneas — y un
+         botón ilegible no es un botón. */
       return `<div class="cart-row">
         <div class="cn"><div class="cnn">${esc(c.producto)}</div>
-          <div class="cns">allá hay <b style="color:${cf.fg}">${p?fmt(p.stock_actual):'—'}</b>${llenar}</div>${bod}</div>
+          <div class="cns">allá hay <b style="color:${cf.fg}">${p?fmt(p.stock_actual):'—'}</b>${llenar}</div></div>
         <div class="qty">
           <button type="button" class="qbtn qleft ${esUno?'is-trash':''}" data-repcleft="${sede}-${i}" aria-label="${esUno?'Quitar':'Restar'}">${esUno?TRASH_SVG:'−'}</button>
           <input type="number" step="0.5" min="0" value="${c.cantidad}" data-repcidx="${sede}-${i}" aria-label="Cantidad de ${esc(c.producto)}">
           <button type="button" class="qbtn qplus" data-repcinc="${sede}-${i}" aria-label="Sumar">+</button>
         </div>
+        ${bod}
       </div>`;
-    }).join('') : '<div class="repc-vacia">Nada todavía. Busca arriba o toca Proponer.</div>';
+    }).join('') : '<div class="repc-vacia">Nada todavía. Busca arriba o toca «llenar todo».</div>';
 
     const abiertos = repcAbiertos[sede] || [];
     const enCamino = abiertos.length ? `<div class="repc-tot" style="border-top:none;padding-top:4px">
@@ -3904,9 +3957,10 @@ function repcPintarCajas(){
            calzaban (3 en crítico / 4 le falta) es ruido, no información. -->
       <div class="enl-cuerpo">
         ${repcFaltaHTML(sede)}
-        <button type="button" class="btn btn-outline btn-block" data-repcprop="${sede}" style="margin:2px 0 12px">Llenar todo lo que falta</button>
-        <div class="rf-cab" style="margin-top:2px">LO QUE VA
-          <span class="rf-n">${car.length}</span></div>
+        <div class="rf-cab" style="margin-top:12px">LO QUE VA
+          <span class="rf-n">${car.length}</span>
+          <button type="button" class="rf-llenar" data-repcprop="${sede}">llenar todo</button>
+        </div>
         ${filas}
         <div class="repc-tot"><span class="lbl">${car.length} producto(s)</span>
           <b>${fmt(total)} unidades</b></div>

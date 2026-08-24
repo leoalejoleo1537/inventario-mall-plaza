@@ -134,7 +134,11 @@ await caso('se puede marcar una como "de proveedor"', async () => {
   return c === 'proveedor' || 'quedó en '+c;
 });
 await caso('y se ve distinto en pantalla', async () =>
-  (await page.textContent('#repc-cajas')).includes('de proveedor') || 'se ve igual que la de bodega');
+  (await page.textContent('#repc-cajas')).includes('Lo trae el proveedor')
+  || 'se ve igual que la de bodega');
+await caso('el botón invita a tocarlo', async () =>
+  (await page.textContent('#repc-cajas')).toLowerCase().includes('cambiar')
+  || 'no dice que se puede cambiar: parece un aviso y no un botón');
 
 console.log('\nAL ENVIAR — esto es lo que evita el error de las medialunas:');
 await page.evaluate(()=>{window.__escrito=[];});
