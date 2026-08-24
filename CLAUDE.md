@@ -743,6 +743,62 @@ comprobar que todo lo que puede fallar signifique "puede todo".
 
 ---
 
+## 0.66 REGLA DURA — todo producto tiene un ORIGEN, y hay que preguntarlo
+
+> Jhon, 2026-08-22, razonando el modelo — **no viéndolo fallar**. Es la primera
+> vez en este proyecto que un fallo silencioso se atrapa antes de que muerda.
+
+**El principio:** Llamita es un sistema con **inicio y fin**. Un producto entra,
+viaja, se vende. Y lo más importante para cualquier cosa que se construya
+después: **todo lo que SUMA en una sede tiene que RESTAR en algún lado — o en
+ninguno, pero a propósito.**
+
+### Los tres orígenes, y qué hace cada uno
+
+| Origen | Qué pasa al recibirlo en la sede |
+|---|---|
+| **Bodega** | bodega **baja**, la sede sube. Es un traslado |
+| **Otra sede** (Angamos → Plaza) | Angamos **merma** (stock y Fudo), Plaza suma. **Bodega no se toca** |
+| **Proveedor** | **nada baja en ningún lado.** Solo sube en la sede |
+
+El caso que lo destapó: las **medialunas**. Existen en bodega y en Angamos,
+pero al local las trae un repartidor. Adriana igual arma esa línea desde
+Bodega —porque es ella quien organiza el envío—, y Llamita daba por hecho que
+todo lo que sale de esa pantalla sale de bodega.
+
+**Por qué no se veía:** bodega recién se está contando. Dentro de un mes, con
+el conteo cuadrado, **bodega diría 0 medialunas donde hay 7**.
+
+### LA REGLA
+
+> **Toda construcción futura que mueva stock tiene que preguntar de dónde sale
+> ese producto.** No asumirlo por la pantalla desde la que se armó.
+
+Un producto que aparece en bodega **no prueba** que venga de bodega. Esa
+inferencia —"se armó en la pantalla de bodega, entonces sale de bodega"— es
+justamente el error.
+
+### Cómo quedó, y por qué costó tan poco
+
+**Cero cambios en la base.** `reparto_recibir()` descuenta de bodega **solo si
+la línea trae `producto_bodega_id`** (`sql/2026-08-central-reparto-descuenta.sql`).
+El motor ya hacía la pregunta correcta desde el principio: **nunca faltó
+lógica, faltaba una forma de decirle que no.**
+
+Una línea de proveedor viaja con ese campo en `null` y bodega ni se entera.
+En la pantalla es una píldora que se toca: `de bodega · 12 → 9` (gris) /
+`de proveedor · bodega no baja` (ámbar).
+
+**Y una distinción que importa:** "de proveedor" es una **decisión** y no
+pregunta nada; "sin enlace" es un **hueco de configuración** y sí avisa al
+enviar. Antes eran lo mismo —las dos dejaban a bodega sin descontar— y
+mezclarlas convertía el aviso en ruido que Adriana iba a aprender a saltarse.
+
+Prueba: `pruebas/origen-del-reparto.mjs`, 15 casos, con el caso de las
+medialunas de punta a punta.
+
+---
+
 ## 0.7 REGLA DURA — la bodega es `central`, y `bodega` es la vieja
 
 > Decisión de Jhon del 2026-08-10, después del incidente de §0.6: en vez de

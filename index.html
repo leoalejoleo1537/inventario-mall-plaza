@@ -351,7 +351,14 @@
   .csede-urg{display:inline-block;margin-top:5px;font-size:10.5px;padding:2px 8px}
   /* la lista que se abre al tocar una tarjeta */
   .cs-lista{max-height:56vh;overflow-y:auto;overscroll-behavior:contain;margin:2px -4px 0}
-  .cs-fila{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  /* El + de cada renglón de la lista de críticos. Verde relleno cuando ya
+     está en el reparto: se ve de un vistazo qué falta por agregar sin leer. */
+  .cs-mas{flex:0 0 auto;width:30px;height:30px;border-radius:999px;border:none;cursor:pointer;
+    background:var(--orange);color:#fff;font-size:17px;font-weight:800;line-height:1;
+    font-family:inherit;transition:transform .12s ease,background .15s}
+  .cs-mas:active{transform:scale(.9)}
+  .cs-mas.ya{background:var(--green-fg)}
+  .cs-fila{display:flex;align-items:center;justify-content:space-between;gap:10px;
            padding:9px 6px;border-bottom:1px solid var(--border)}
   .cs-fila:last-child{border-bottom:none}
   .cs-nm{font-size:14.5px;font-weight:600;min-width:0}
@@ -436,6 +443,16 @@
   .repc-critico button{border:none;background:var(--gray-bg);color:var(--text);font:inherit;
                        font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer}
   /* lo que bodega tiene de ese producto, y en qué queda al enviarlo */
+  /* La píldora de origen es un BOTÓN: se toca para cambiar de dónde sale.
+     "de proveedor" va en ámbar y no en gris — no es un dato que falta, es
+     una decisión que alguien tomó, y tiene que distinguirse de un enlace
+     que no existe. */
+  .repc-bod[data-repcorigen]{display:inline-block;cursor:pointer;border:none;font-family:inherit;
+    text-align:left;background:var(--gray-bg);color:var(--gray-fg);border-radius:999px;
+    padding:2px 9px;margin-top:3px;transition:transform .12s ease}
+  .repc-bod[data-repcorigen]:active{transform:scale(.96)}
+  .repc-bod.prov{background:var(--amber-bg);color:var(--amber-fg);font-weight:800}
+  .repc-bod.poco[data-repcorigen]{background:var(--amber-bg);color:var(--amber-fg)}
   .repc-bod{display:block;font-size:11.5px;font-weight:700;margin-top:2px;color:var(--sec-bg)}
   .repc-bod.poco{color:var(--amber-fg)}
   .repc-bod.nada{color:var(--red-fg)}
@@ -3205,13 +3222,34 @@ function abrirCriticos(sede){
 
   const hayTxt = p => 'hay ' + fmt(p.stock_actual)
     + (p.stock_min!=null ? ' · mín ' + fmt(p.stock_min) : '');
+  /* ---- LA LISTA SE TOCA, NO SOLO SE LEE (2026-08-22) ----
+     Jhon lo planteó como una pregunta y la pregunta es la buena: "¿cómo sabe
+     Adriana cuáles productos necesita la sede con la menor cantidad de clics
+     y de movimientos dentro de Llamita?".
+
+     Ella ya abría esta lista para mirar; lo que faltaba era poder actuar sin
+     salir de acá. Antes tenía que leerla, acordarse de los nombres, cerrarla,
+     y buscarlos uno por uno en el buscador de arriba. Ahora cada renglón trae
+     su + y entra al reparto con la cantidad que le falta para llegar al
+     máximo — que es la decisión que ella toma decenas de veces al día.
+
+     Solo en Bodega: es la única sede donde existe un carro al que agregar. */
+  const armable = SEDE === 'central' && SEDES_ENLACE.includes(sede);
+  const enCarro = id => armable && repcCarritos[sede].some(c=>c.sedeId===id);
+  /* Cuánto proponer: lo que falta para el MÁXIMO si está bien puesto, y si no
+     lo que falta para el mínimo. Nunca menos de 1: agregar un producto con 0
+     no significa nada. */
+  const cuanto = p => Math.max(1, Math.round(repcFalta(p) || faltaPara(p) || 1));
   const fila = p => `<div class="cs-fila">
       <span class="cs-nm">${esc(p.producto)}
         <span class="cs-sec">${esc(p.rubro||'Sin sección')}</span></span>
       <span class="cs-hay">${esc(hayTxt(p))}</span>
+      ${armable ? `<button type="button" class="cs-mas${enCarro(p.id)?' ya':''}"
+        data-cs-add="${p.id}" aria-label="${enCarro(p.id)?'Quitar del reparto':'Agregar al reparto'}"
+        >${enCarro(p.id)?'✓':'+'}</button>` : ''}
     </div>`;
 
-  const cuerpo = lista===null
+  const cuerpoHTML = () => lista===null
     ? '<div class="cs-error">No se pudo leer esta sede</div>'
     : !todos.length
       ? '<div class="cs-vacio">Nada en crítico</div>'
@@ -3219,6 +3257,7 @@ function abrirCriticos(sede){
           ? `<div class="cs-grupo cs-grupo-urg"><div class="cs-lbl">URGENTE</div>${urgentes.map(fila).join('')}</div>`
           : '')
         + criticos.map(fila).join('');
+  const cuerpo = cuerpoHTML();
 
   const ov=document.createElement('div');
   ov.className='overlay overlay-blur overlay-prop open';
@@ -3236,6 +3275,22 @@ function abrirCriticos(sede){
   const cerrar = ()=>{ caja.classList.add('cerrando'); setTimeout(()=>ov.remove(),160); };
   ov.addEventListener('click', async e=>{
     if(e.target===ov){ cerrar(); return; }
+    const mas = e.target.closest('[data-cs-add]');
+    if(mas){
+      const id = +mas.dataset.csAdd;
+      const i = repcCarritos[sede].findIndex(c=>c.sedeId===id);
+      if(i>=0){ repcCarritos[sede].splice(i,1); }
+      else {
+        const p = (SEDE_PROD[sede]||[]).find(x=>x.id===id);
+        repcAgregar(sede, id, p ? cuanto(p) : 1);
+      }
+      /* Se repinta SOLO la lista de adentro, no el modal entero: rehacerlo
+         perdería el punto donde ella iba leyendo, y esta lista puede tener
+         cien renglones. Es la misma lección del buscador de Ajustes. */
+      ov.querySelector('.cs-lista').innerHTML = cuerpoHTML();
+      repcPintarCajas(); repcPintarResultados();
+      return;
+    }
     const b=e.target.closest('[data-a]'); if(!b) return;
     if(b.dataset.a==='cerrar'){ cerrar(); return; }
     /* El resumen que se pega en WhatsApp respeta el mismo orden de la pantalla
@@ -3618,9 +3673,30 @@ function repcPintarCajas(){
       const b = repcBodega(c.sedeId, sede);
       const libre = b ? b.hay - repcComprometido(b.id, c) : 0;
       const queda = b ? Math.max(0, libre - (+c.cantidad||0)) : null;
-      const bod = !b ? '<span class="repc-bod nada">bodega no baja</span>'
-        : `<span class="repc-bod${queda<=0?' poco':''}">bodega: ${fmt(libre)} → ${fmt(queda)}`
-          + ((+c.cantidad||0) > libre ? ' · pide más de lo que hay' : '') + '</span>';
+      /* ---- DE DÓNDE SALE ESTE PRODUCTO ----
+         Jhon, 2026-08-22, y es un fallo que todavía no se notaba: hay
+         productos que llegan al local directo del PROVEEDOR y nunca pasan
+         por bodega. Las medialunas son el ejemplo. Adriana igual arma esa
+         línea desde acá —porque es ella quien organiza el envío—, y hasta
+         hoy Llamita daba por hecho que todo lo que sale de esta pantalla
+         sale de bodega. Al confirmarlo en el local, iba a descontar de
+         bodega unas medialunas que nunca estuvieron ahí.
+
+         Hoy no se ve porque bodega recién se está contando. Dentro de un
+         mes, con el conteo cuadrado, bodega diría 0 donde hay 7.
+
+         Lo bueno: el motor ya hace la pregunta correcta. `reparto_recibir`
+         descuenta de bodega SOLO si la línea trae `producto_bodega_id`.
+         Nunca faltó lógica — faltaba una forma de decirle que no. Por eso
+         esto no toca una sola línea de SQL: una línea de proveedor viaja
+         sin ese número y bodega ni se entera. */
+      const prov = c.origen === 'proveedor';
+      const bod = prov
+        ? `<button type="button" class="repc-bod prov" data-repcorigen="${sede}-${i}">de proveedor · bodega no baja</button>`
+        : !b ? '<span class="repc-bod nada">sin enlace · bodega no baja</span>'
+        : `<button type="button" class="repc-bod${queda<=0?' poco':''}" data-repcorigen="${sede}-${i}">`
+          + `de bodega · ${fmt(libre)} → ${fmt(queda)}`
+          + ((+c.cantidad||0) > libre ? ' · pide más de lo que hay' : '') + '</button>';
       const cf = p ? CFG[estado(p)] : CFG.sindato;
       const falta = p ? repcFalta(p) : 0;
       const llenar = (falta>0 && +c.cantidad!==falta)
@@ -3725,15 +3801,22 @@ function repcAgregar(sede, sedeId, cant){
   sedeId = p.id;
   if(repcCarritos[sede].some(c=>c.sedeId===sedeId)) return false;
   const b = repcBodega(p.id, sede);
+  /* `origen` nace en 'bodega' porque es lo normal, y porque el que sale de
+     bodega es el caso que descuenta: si alguna vez se nos olvida marcarlo, el
+     error es de más y se ve contando, no de menos y en silencio. */
   repcCarritos[sede].push({sedeId:p.id, bodegaId:b?b.id:null, producto:p.producto,
-                           rubro:p.rubro, cantidad: cant || 1});
+                           rubro:p.rubro, cantidad: cant || 1, origen:'bodega'});
   return true;
 }
 
 async function repcEnviar(sede){
   const items = repcCarritos[sede].filter(c=>c.cantidad>0);
   if(!items.length) return;
-  const sinEnlace = items.filter(c=>!c.bodegaId).length;
+  /* "De proveedor" es una DECISIÓN y no se pregunta; "sin enlace" es un
+     hueco de configuración y sí se avisa. Antes eran la misma cosa —las dos
+     dejaban a bodega sin descontar— y mezclarlas convertía el aviso en ruido
+     que Adriana iba a aprender a saltarse. */
+  const sinEnlace = items.filter(c=>!c.bodegaId && c.origen!=='proveedor').length;
   if(sinEnlace && !await preguntar('Enviar igual',
       sinEnlace+' producto(s) no están enlazados a bodega. El local los va a recibir y sumar, pero el stock de bodega no va a bajar por ellos.','Enviar')) return;
   const btn = $('repc-cajas').querySelector(`[data-repcenviar="${sede}"]`);
@@ -3744,8 +3827,12 @@ async function repcEnviar(sede){
     if(error || !data || !data[0]) throw error || new Error('sin reparto');
     const rid = data[0].id;
     const {error:e2} = await conReintento(()=>sb.from('reparto_items').insert(
+      /* ACÁ ESTÁ EL ARREGLO ENTERO: una línea de proveedor viaja sin
+         `producto_bodega_id`, así que `reparto_recibir` no descuenta nada
+         de bodega. Cero cambios en la base. */
       items.map(c=>({reparto_id:rid, producto_id:c.sedeId, producto:c.producto,
-                     cantidad_pedida:+c.cantidad, producto_bodega_id:c.bodegaId}))));
+                     cantidad_pedida:+c.cantidad,
+                     producto_bodega_id: c.origen==='proveedor' ? null : c.bodegaId}))));
     if(e2){ await sb.from('repartos').delete().eq('id',rid); throw e2; }
     avisar('✓ Enviado a '+SEDES[sede].corto+' · '+items.length+' producto(s)');
     repcCarritos[sede]=[]; repcPintarResultados(); repcCargarAbiertos();
@@ -3773,6 +3860,20 @@ $('view-repcentral').addEventListener('click', async e=>{
     const i = repcCarritos[s].findIndex(c=>c.sedeId===sid);
     if(i>=0) repcCarritos[s].splice(i,1); else repcAgregar(s, sid);
     repcPintarCajas(); repcPintarResultados(); return;
+  }
+  /* Cambiar el origen de una línea. Va sin preguntar: es un toque que se
+     hace decenas de veces al armar y la consecuencia queda escrita en la
+     propia píldora, que cambia de color y de texto. */
+  const or_ = e.target.closest('[data-repcorigen]');
+  if(or_){
+    const [s,i] = or_.dataset.repcorigen.split('-');
+    const c = repcCarritos[s][+i]; if(!c) return;
+    c.origen = c.origen === 'proveedor' ? 'bodega' : 'proveedor';
+    repcPintarCajas();
+    aviso(c.origen === 'proveedor'
+      ? c.producto + ' · lo trae el proveedor, bodega no baja'
+      : c.producto + ' · sale de bodega');
+    return;
   }
   const ll = e.target.closest('[data-repcllenar]');
   if(ll){ const [s,i]=ll.dataset.repcllenar.split('-'); repcCarritos[s][+i].cantidad=+ll.dataset.cant; repcPintarCajas(); return; }
