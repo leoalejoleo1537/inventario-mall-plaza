@@ -1558,6 +1558,13 @@
   .rep-estado.nol{background:var(--red-bg);color:var(--red-fg)}
   .rep-deshacer{font-size:12px;color:var(--muted);background:none;border:none;padding:2px;
                 text-decoration:underline;cursor:pointer;align-self:flex-start;font-family:inherit}
+  /* "Descontar de bodega": ámbar y no naranja. No es la acción normal de esta
+     pantalla —es una corrección— así que tiene que verse distinta del resto
+     sin gritar como una alarma. */
+  .rep-bodega{width:100%;border:none;font-family:inherit;cursor:pointer;border-radius:11px;
+    background:var(--amber-bg);color:var(--amber-fg);font-size:13.5px;font-weight:800;
+    padding:11px;margin-top:6px;transition:transform .12s ease,background .15s}
+  .rep-bodega:active{transform:scale(.98)}
   .rep-add{font-size:13.5px;font-weight:700;color:var(--orange);background:none;border:none;
            padding:6px 2px;cursor:pointer;font-family:inherit;text-align:left}
   .suma-rec{display:flex;align-items:center;justify-content:space-between;background:var(--gray-bg);
@@ -4814,12 +4821,37 @@ $('ent-guardar').addEventListener('click', async ()=>{
    ya revisó al revés, y cambiarla sería mover algo que él ya dio por bueno. */
 const SEDES_ENLACE = ['plaza','angamos'];
 let ENLACES = [];          // filas de producto_enlace
+/* Los productos de BODEGA que esos enlaces señalan, para cuando se está
+   parado en un local y `DATA` solo tiene los de esa sede. */
+let BODEGA_PROD = {};
 
 async function loadEnlaces(){
-  if(SEDE!=='central') return;
-  const {data,error} = await sb.from('producto_enlace').select('*').limit(1000);
+  /* En el LOCAL también, desde el 2026-08-22, y solo los suyos: el botón
+     "Descontar de bodega" de cada lista los necesita para saber de qué
+     producto de bodega bajar. Antes esto se cortaba en seco fuera de bodega,
+     y por eso el botón no aparecía nunca donde de verdad hace falta — las
+     listas que Adriana armó desde el local viven en la sede que RECIBE, no
+     en central. */
+  let q = sb.from('producto_enlace').select('*').limit(1000);
+  if(SEDE !== 'central') q = q.eq('sede', SEDE);
+  const {data,error} = await q;
   if(error){ console.error('enlaces', error); ENLACES=[]; }
   else ENLACES = data||[];
+  if(SEDE!=='central'){
+    /* En el local, `DATA` trae SOLO los productos de esta sede — bodega no
+       está. Sin esto la vista previa del botón no podía decir "Alfajor: 20
+       → 5" porque no tenía de dónde sacar el 20, y daba cero productos por
+       descontar aunque el enlace existiera. Se piden los de bodega que esos
+       enlaces señalan, y nada más. */
+    const ids = [...new Set(ENLACES.map(e=>e.producto_bodega_id))].filter(Boolean);
+    if(ids.length){
+      const r = await sb.from('productos').select('id,producto,stock_actual')
+        .in('id', ids).limit(1000);
+      BODEGA_PROD = {};
+      for(const b of (r.data||[])) BODEGA_PROD[b.id] = b;
+    }
+    return;
+  }
   if(!SEDE_PROD.plaza || !SEDE_PROD.angamos) await cargarCriticos();
   /* La lista de pendientes depende de estas dos lecturas; sin esto se quedaba
      en "—" hasta que alguien cambiara de pestaña y volviera. */
@@ -5560,6 +5592,142 @@ function deslizarSeccion(sec){
   const limpiar = ()=>{ body.style.overflow=''; };
   anim.onfinish = limpiar; anim.oncancel = limpiar;
 }
+/* ============ DESCONTAR DE BODEGA, DESDE LA LISTA ============
+
+   Idea de Jhon (2026-08-22), y es mejor que la mía. El problema: Adriana
+   armó varios repartos desde la pantalla de la SEDE en vez de desde Bodega
+   -> Enviar, creyendo que igual se iba a descontar de bodega. No se
+   descontó — el local sumó de verdad y bodega nunca se enteró.
+
+   Yo había empezado un script retroactivo que corrigiera todo el historial
+   de una. Su solución es un BOTÓN en cada lista: se ve de qué lista se
+   trata, se mira la vista previa, se aprieta. Una por una y a la vista, en
+   vez de una corrida a ciegas sobre meses de historial. Y además sirve para
+   siempre, no solo para el lío de hoy: el día que alguien vuelva a armar un
+   reparto desde el local, el botón está ahí.
+
+   POR QUÉ PASA, para que se entienda el aviso: `repartos.origen` dice
+   "Bodega" en toda fila nueva por defecto, la haya armado quien la haya
+   armado. Ese campo no prueba nada. Lo único que decide si bodega baja es
+   que la LÍNEA traiga `producto_bodega_id`, y eso solo lo pone la pantalla
+   de Bodega.
+
+   El botón NO aparece si no hay nada que descontar, que es el caso normal.
+   Una lista bien armada desde Bodega no lo muestra nunca. */
+
+/* Qué líneas de este reparto podrían bajarle a bodega y todavía no lo
+   hicieron. Se decide con lo que la app ya tiene cargado: `ENLACES` (que en
+   bodega está lleno) y las propias líneas. */
+function lineasPorDescontar(r){
+  if(!r || !Array.isArray(r.items)) return [];
+  return r.items.filter(i =>
+    i.estado === 'recibido' &&
+    (+i.cantidad_recibida||0) > 0 &&
+    !i.producto_bodega_id &&
+    !i.producto_origen_id &&
+    !i.bodega_ok);          // se marca al volver de la base, para no repintar de más
+}
+
+function botonBodegaHTML(r){
+  /* VA DONDE ESTÁN LAS LISTAS, que es el local. Yo lo había puesto solo en
+     Bodega razonando que el jefe de turno no debía mover stock de otra sede
+     — y estaba inventando un candado, otra vez. Dos cosas lo desmienten: la
+     doctrina de §0.65 (el único candado es la puerta de Ajustes) y un hecho
+     más simple, que la prueba destapó: **en Bodega estas listas ni siquiera
+     se cargan**, porque un reparto vive en la sede que RECIBE. El botón ahí
+     no aparecía nunca.
+
+     Y lo que hace no decide nada: corrige un descuento que tenía que haber
+     ocurrido al confirmar. Lleva vista previa y no descuenta dos veces.
+
+     LA CUENTA USA LA MISMA COMPROBACIÓN QUE LA VISTA PREVIA, incluidos los
+     enlaces. Si contara solo las líneas, el botón diría "3 líneas" y al
+     abrirlo aparecerían 0 porque ninguna tiene enlace — una vista previa y
+     su botón que no usan el mismo filtro es cómo se miente por omisión
+     (§0.6). */
+  const n = preverDescuentoBodega(r).van.length;
+  if(!n) return '';
+  return `<button type="button" class="rep-bodega" data-descbodega="${r.id}">
+      Descontar de bodega · ${n} línea${n===1?'':'s'}
+    </button>`;
+}
+
+/* La vista previa arma el par línea -> producto de bodega con la libreta de
+   enlaces. Las que no tienen enlace se muestran aparte: no se pueden
+   descontar porque no se sabe de qué producto bajar, y decirlo es más útil
+   que esconderlas. */
+function preverDescuentoBodega(r){
+  const van = [], sinEnlace = [];
+  for(const i of lineasPorDescontar(r)){
+    const e = ENLACES.find(x => x.sede === r.sede && x.producto_sede_id === i.producto_id);
+    /* En Bodega el producto está en DATA; en el local, en BODEGA_PROD. */
+    const b = e ? ((DATA||[]).find(d => d.id === e.producto_bodega_id)
+                   || BODEGA_PROD[e.producto_bodega_id]) : null;
+    if(!b){ sinEnlace.push(i); continue; }
+    van.push({item:i, bodega:b, cantidad:+i.cantidad_recibida||0});
+  }
+  /* Si el mismo producto de bodega aparece en dos líneas, hay que sumarlas
+     para saber si alcanza. Mostrar "queda en 3" dos veces sería mentir. */
+  const porBodega = new Map();
+  for(const v of van){
+    const a = porBodega.get(v.bodega.id) || {bodega:v.bodega, pide:0};
+    a.pide += v.cantidad;
+    porBodega.set(v.bodega.id, a);
+  }
+  return {van, sinEnlace, grupos:[...porBodega.values()]};
+}
+
+async function descontarDeBodega(repartoId){
+  const r = REPARTOS.find(x => x.id === repartoId);
+  if(!r) return;
+  const {van, sinEnlace, grupos} = preverDescuentoBodega(r);
+  if(!van.length){
+    avisar('No hay nada que descontar\n\n'
+      + (sinEnlace.length
+         ? sinEnlace.length + ' producto(s) de esta lista no tienen enlace con bodega, '
+           + 'así que no se sabe de cuál bajar. Se arregla en la pestaña Enlaces.'
+         : 'Esta lista ya le bajó a bodega, o se armó desde Bodega y bajó al confirmarse.'));
+    return;
+  }
+
+  const linea = g => {
+    const hay = +g.bodega.stock_actual||0;
+    const queda = Math.max(0, hay - g.pide);
+    const falta = g.pide > hay ? '  ⚠ faltan ' + fmt(g.pide - hay) : '';
+    return g.bodega.producto + ': ' + fmt(hay) + ' → ' + fmt(queda) + falta;
+  };
+  const detalle = grupos.map(linea).join('\n')
+    + (sinEnlace.length
+       ? '\n\nSin enlace, no se tocan: ' + sinEnlace.map(i=>i.producto).join(', ')
+       : '');
+
+  if(!await preguntar('Bajar de bodega ' + fmt(van.reduce((n,v)=>n+v.cantidad,0)) + ' unidades',
+      detalle + '\n\nSi apretas dos veces no baja dos veces.', 'Descontar')) return;
+
+  trabajando('Descontando de bodega…');
+  const {data, error} = await sb.rpc('reparto_descontar_bodega',
+    {p_reparto_id: repartoId, p_quien: NOMBRE || null});
+  listo();
+
+  if(error){
+    avisar(/reparto_descontar_bodega/.test(error.message||'')
+      ? 'Falta correr un script\n\nEste botón necesita "2026-08-descontar-de-bodega-por-lista.sql". '
+        + 'Es un bloque y no toca ningún dato al instalarse.'
+      : 'No se pudo descontar\n\n' + (error.message || 'Revisa la señal.'));
+    return;
+  }
+
+  const d = data || {};
+  /* Se marcan las líneas para que el botón se vaya en el momento, sin tener
+     que releer todo el reparto. La base ya no las va a volver a tocar. */
+  van.forEach(v => { v.item.bodega_ok = true; });
+  await loadData();          // el stock de bodega cambió
+  renderRepartos();
+
+  aviso('✓ Bodega bajó ' + fmt(d.unidades||0) + ' unidades'
+    + ((+d.falto||0) > 0 ? ' · faltaron ' + fmt(d.falto) + ', quedó anotado' : ''), 6000);
+}
+
 /* ---------------- resumen de sándwiches para WhatsApp ----------------
    Copia al portapapeles una línea por fecha, con su cantidad:
      Croasan 5
@@ -5581,7 +5749,68 @@ function marcaUrgencia(iso){
   const dias = Math.round((new Date(iso+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
   return dias <= 0 ? ' '+URGE : '';
 }
-function resumenSeccion(sec){
+/* ---- EL FORMATO NUEVO, pedido por Jhon el 2026-08-22 ----
+
+   El de antes gastaba DOS renglones por cada fecha:
+
+       Croasan 5
+       Fv. 27/07/26
+       Croasan 4
+       Fv. 28/07/26
+
+   Con nueve productos y tres fechas cada uno, eso son más de cincuenta
+   líneas en WhatsApp — hay que hacer scroll para leer una sola cosa. Jhon:
+   "es demasiado complejo para tomar decisiones rápidas en Wapp".
+
+   El nuevo pone UN renglón por producto y las fechas en fila:
+
+       - Croissant JQ: **1** (24/08) · **4** (25/08) · **7** (26/08)
+
+   Los mismos datos en una quinta parte del espacio, y —lo que importa— con
+   el producto como unidad de lectura en vez de la fecha. Quien lee quiere
+   saber "cuánto croissant hay", no "qué vence el 25".
+
+   Se ordena por fecha, la más próxima primero: lo que hay que sacar hoy va
+   al principio de su línea.
+
+   ⚠️ SE MANTIENE la marca de lo vencido y lo que vence hoy. No estaba en el
+   formato que mandó Jhon, pero esconderla sería quitarle a este mensaje su
+   parte más delicada — es la sección de la que sale que se bote comida o se
+   venda comida vencida (§0.3). Va pegada a la fecha, no al nombre, porque
+   con varias fechas por línea hay que saber CUÁL es la urgente. */
+function resumenSeccionNuevo(sec){
+  const items = DATA.filter(p=>(p.rubro||'Sin sección')===sec)
+    .sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}));
+  const hoy = fmtDiaMes(hoyISO());
+  const lineas = [];
+  items.forEach(p=>{
+    const nom = nombreResumen(p.producto);
+    const ls = lotesDe(p.id).filter(l=>l.vencimiento && (+l.cantidad||0) > 0)
+      .sort((a,b)=>String(a.vencimiento).localeCompare(String(b.vencimiento)));
+    if(ls.length){
+      lineas.push('- ' + nom + ': ' + ls.map(l=>
+        '**' + fmt(+l.cantidad||0) + '** (' + fmtDiaMes(l.vencimiento) + marcaUrgencia(l.vencimiento) + ')'
+      ).join(' · '));
+    } else if(hasVenc && p.vencimiento && (+p.stock_actual||0) > 0){
+      lineas.push('- ' + nom + ': **' + fmt(p.stock_actual) + '** ('
+        + fmtDiaMes(p.vencimiento) + marcaUrgencia(p.vencimiento) + ')');
+    } else if((+p.stock_actual||0) > 0){
+      /* S/F = sin fecha. Hay unidades y nadie les puso día; igual tienen que
+         verse, porque son las que se van a vender igual. */
+      lineas.push('- ' + nom + ': **' + fmt(p.stock_actual) + '** (S/F)');
+    }
+  });
+  if(!lineas.length) return '**Stock / Vencimientos ' + hoy + '**\n\nNo hay nada con stock en ' + sec + '.';
+  return '**Stock / Vencimientos ' + hoy + '**\n\n' + lineas.join('\n');
+}
+
+/* 24/08 — día y mes, sin año. En un mensaje que se lee hoy, el año es ruido. */
+const fmtDiaMes = iso => { const [,m,d] = String(iso).split('-'); return `${d}/${m}`; };
+
+/* ---- el formato de siempre, por si se apaga el nuevo ----
+   Apagar el interruptor devuelve EXACTAMENTE esto, que es lo que había
+   antes: no deja un hueco (§2.2). */
+function resumenSeccionViejo(sec){
   const items=DATA.filter(p=>(p.rubro||'Sin sección')===sec)
     .sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}));
   const lineas=[];
@@ -5598,6 +5827,12 @@ function resumenSeccion(sec){
     }
   });
   return lineas.join('\n');
+}
+
+/* Un solo sitio decide cuál se copia. El interruptor vive en Ajustes ->
+   Interruptores y es por sede, porque cada local manda su propio mensaje. */
+function resumenSeccion(sec){
+  return ajVal('resumen_nuevo', SEDE, true) ? resumenSeccionNuevo(sec) : resumenSeccionViejo(sec);
 }
 /* el portapapeles del navegador falla en algunos WebView de iOS: si no está,
    se cae al método antiguo con un campo de texto temporal */
@@ -6545,6 +6780,7 @@ function renderRepartos(){
       ${abierta?`<div class="sec-body">
         ${r.items.length?r.items.map(repItemHTML).join(''):'<div class="empty">Este reparto quedó vacío.</div>'}
         <button type="button" class="rep-add" data-agregar="${r.id}">+ Llegó algo que no estaba en la lista</button>
+        ${botonBodegaHTML(r)}
         <button type="button" class="btn btn-orange btn-block" data-cerrar="${r.id}" style="margin-top:4px">Cerrar reparto</button>
       </div>`:''}
     </div>`;
@@ -6573,6 +6809,7 @@ function renderRepartos(){
             <span>${esc(nombreResumen(i.producto))}</span>
             <b>${i.estado==='recibido'?fmt(i.cantidad_recibida):'no llegó'}</b>
           </div>`).join('')}
+        ${botonBodegaHTML(r)}
         <button type="button" class="rep-add" data-copiarrep="${r.id}">Copiar resumen</button>
       </div>`:''}
     </div>`;
@@ -6732,6 +6969,12 @@ async function llamarReparto(fn, args, exito){
   return true;
 }
 $('body-cerrados').addEventListener('click', e=>{
+  /* El botón de descontar vive en las dos partes —las listas por confirmar y
+     las cerradas— así que su toque tiene que llegar en las dos. La primera
+     versión solo lo escuchaba arriba, y en las cerradas el botón se pintaba
+     y no hacía nada: un botón muerto que parece vivo, otra vez. */
+  const db = e.target.closest('[data-descbodega]');
+  if(db){ descontarDeBodega(+db.dataset.descbodega); return; }
   const cop = e.target.closest('[data-copiarrep]'); if(!cop) return;
   const r = REPARTOS.find(x=>x.id===+cop.dataset.copiarrep); if(!r) return;
   copiarTexto(resumenReparto(r)).then(ok=>aviso(ok?'✓ Resumen copiado':'No se pudo copiar'));
@@ -6781,6 +7024,8 @@ $('repartos-abiertos').addEventListener('click', async e=>{
   }
   const agr = e.target.closest('[data-agregar]');
   if(agr){ agregarAlReparto(+agr.dataset.agregar); return; }
+  const db = e.target.closest('[data-descbodega]');
+  if(db){ descontarDeBodega(+db.dataset.descbodega); return; }
 });
 
 /* Buscador emergente: se escribe y van saliendo los productos que coinciden.
@@ -8899,6 +9144,9 @@ const INTERRUPTORES = [
   { clave:'tareas_turno', porSede:['plaza','angamos','central'], defecto:false,
     tit:'Lista de tareas del turno',
     sub:'El botón de tareas en la barra de arriba.' },
+  { clave:'resumen_nuevo', porSede:['plaza','angamos'], defecto:true,
+    tit:'Resumen de sándwiches · formato corto',
+    sub:'Un renglón por producto con sus fechas en fila. Apagado, vuelve el de dos líneas por fecha.' },
   { clave:'modo_enlazar', porSede:[''], defecto:false,
     tit:'Recetas · el modo Enlazar',
     sub:'Servía para ponerse al día con los enlaces que faltaban. Se enciende si entra una sede nueva.' },
@@ -9615,6 +9863,10 @@ function pickTab(tab){
                                 la MISMA pantalla del local, con bodega de
                                 destino, en vez de una copia parecida.
        · "Enviar a locales"  -> armar los envíos que salen. */
+  /* Los enlaces del local se piden al entrar a Reparto: son lo que decide si
+     una lista puede descontarle a bodega. En Bodega ya se piden por otros
+     caminos (Enlaces y Enviar). */
+  if(tab==='reparto' && SEDE!=='central' && !ENLACES.length) loadEnlaces().then(renderRepartos);
   const esRecepcion = (tab==='recepcion');
   const esEnvios    = (tab==='envios');
   const repLocal    = (tab==='reparto' && SEDE!=='central');
