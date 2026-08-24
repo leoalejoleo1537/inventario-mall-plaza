@@ -187,6 +187,28 @@ await page.click('[data-repcdest="plaza"]'); await page.waitForTimeout(400);
 await caso('y al volver al local, vuelve la lista de lo que falta', async () =>
   await page.isVisible('.repc-falta') || 'no volvió');
 
+console.log('\nEnlaces · los que no tienen de dónde bajar:');
+await page.click('#tabEnlaces'); await page.waitForTimeout(700);
+await caso('la sección está, debajo de crear producto', async () =>
+  await page.isVisible('#enl-pend-caja') || 'no aparece');
+await caso('lista SOLO los que de verdad faltan', async () => {
+  const t = await page.textContent('#enl-pend');
+  /* Servilleta (id 14) tiene enlace, así que no va. Cachito (12) tampoco,
+     porque no tiene enlace pero SÍ existe... en realidad no tiene gemelo, así
+     que sí debe salir. Lo que importa: los que ya tienen enlace no salen. */
+  return !t.includes('Medialuna') || 'muestra uno que ya está enlazado';
+});
+await caso('dice cuántos son', async () =>
+  (await page.textContent('#enl-pend-n')).trim() !== '—' || 'no cuenta');
+await caso('al tocar uno se abre y propone candidatos de bodega', async () => {
+  const b = await page.$('[data-enlpend]');
+  if(!b) return 'no hay ninguno pendiente para probar';
+  await b.click(); await page.waitForTimeout(350);
+  return await page.isVisible('.enl-pend-cuerpo') || 'no se abrió';
+});
+await caso('y trae un buscador para el que no propone nada', async () =>
+  await page.isVisible('[data-enlbusca]') || 'sin salida manual');
+
 console.log('\nSin errores de JavaScript:');
 await caso('ninguno en toda la vuelta', () => errores.length === 0 || errores.slice(0,2).join(' · '));
 

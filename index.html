@@ -482,6 +482,23 @@
     letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
   /* Chico y a un lado, no un botón grande: es un atajo, no la acción
      principal. La principal es elegir producto por producto. */
+  /* ---- los que no tienen de dónde bajar ---- */
+  .enl-pend-fila{background:var(--card);border-radius:12px;box-shadow:var(--sombra);margin-bottom:8px;overflow:hidden}
+  .enl-pend-fila.abierta{box-shadow:var(--sombra),0 0 0 2px var(--orange)}
+  .enl-pend-cab{display:flex;align-items:center;gap:10px;width:100%;border:none;background:none;
+    font-family:inherit;text-align:left;padding:11px 13px;cursor:pointer}
+  .enl-pend-cab .nm{flex:1;min-width:0}
+  .enl-pend-cab .nm b{display:block;font-size:14.5px;font-weight:700;color:var(--text);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .enl-pend-cab .nm span{font-size:12px;color:var(--muted)}
+  .enl-pend-cab .fl{color:var(--orange);font-weight:800;font-size:16px;flex:0 0 auto}
+  .enl-pend-cuerpo{padding:0 13px 12px;border-top:1px solid var(--border)}
+  .enl-cand{display:flex;align-items:baseline;gap:8px;width:100%;border:none;font-family:inherit;
+    text-align:left;background:var(--bg);border-radius:10px;padding:9px 11px;margin-top:8px;
+    cursor:pointer;transition:transform .12s ease,background .15s}
+  .enl-cand:active{transform:scale(.98)}
+  .enl-cand b{font-size:14px;font-weight:700;color:var(--text);flex:1;min-width:0}
+  .enl-cand span{font-size:11.5px;color:var(--muted);flex:0 0 auto}
   .rf-llenar{margin-left:auto;border:none;background:none;font-family:inherit;cursor:pointer;
     font-size:11.5px;font-weight:800;color:var(--orange);letter-spacing:.3px;
     text-transform:uppercase;padding:3px 2px}
@@ -518,27 +535,26 @@
   .rf-mas:active{transform:scale(.9)}
   .rf-mas.ya{background:var(--green-fg)}
   .repc-fvacio{color:var(--muted);font-size:13.5px;padding:10px 2px}
-  /* EL ORIGEN ES UN BOTÓN, Y TIENE QUE PARECERLO. Jhon, 2026-08-22: "está
-     demasiado discreta… más parece un aviso que un botón editable. Adriana
-     tiene que reconocerlo fácilmente".
-     Lo que lo convierte en botón a la vista: ocupa su renglón, lleva el
-     símbolo de cambiar (⇄) adelante, tiene relieve de tarjeta y el texto
-     dice la acción, no solo el estado. */
-  .repc-bod[data-repcorigen]{display:flex;align-items:center;gap:7px;width:100%;
-    cursor:pointer;border:none;font-family:inherit;text-align:left;
-    background:var(--card);color:var(--sec-tx);box-shadow:var(--sombra);
-    border-radius:10px;padding:7px 11px;margin-top:7px;font-size:12.5px;font-weight:700;
-    transition:transform .12s ease,background .18s}
-  .repc-bod[data-repcorigen]:active{transform:scale(.97)}
-  .repc-bod[data-repcorigen] .ico{flex:0 0 auto;width:20px;height:20px;border-radius:6px;
-    display:flex;align-items:center;justify-content:center;font-size:12px;
-    background:var(--sec-bg);color:var(--sec-tx)}
-  .repc-bod[data-repcorigen] .tx{flex:1;min-width:0}
-  .repc-bod[data-repcorigen] .cambiar{flex:0 0 auto;font-size:11px;font-weight:800;
-    color:var(--orange);text-transform:uppercase;letter-spacing:.3px}
-  .repc-bod.prov[data-repcorigen]{background:var(--amber-bg);color:var(--amber-fg)}
-  .repc-bod.prov[data-repcorigen] .ico{background:rgba(156,98,9,.16);color:var(--amber-fg)}
-  .repc-bod.poco[data-repcorigen]{color:var(--amber-fg)}
+  /* ---- DE DÓNDE SALE: dos posiciones, la encendida es la respuesta ----
+     Va debajo del contador y cruza la fila entera, porque es una decisión
+     sobre la línea completa. Sin emojis: le restan seriedad a una pantalla
+     con la que se decide plata. */
+  .repc-orig{grid-column:1 / -1;margin-top:2px}
+  .repc-orig .dual{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--gray-bg);
+    border-radius:10px;padding:3px}
+  .repc-orig .dual button{border:none;font-family:inherit;cursor:pointer;border-radius:8px;
+    padding:8px 6px;font-size:12.5px;font-weight:700;color:var(--gray-fg);background:transparent;
+    transition:background .18s,color .18s,box-shadow .18s}
+  .repc-orig .dual button:active{transform:scale(.97)}
+  .repc-orig .dual button.on{background:var(--card);color:var(--sec-tx);box-shadow:var(--sombra)}
+  /* La de proveedor encendida va en ámbar: es la que deja a bodega sin bajar,
+     y tiene que notarse de un vistazo cuáles líneas están en esa posición. */
+  .repc-orig .dual button[data-a="proveedor"].on{background:var(--amber-bg);color:var(--amber-fg)}
+  .repc-orig .pie{font-size:11.5px;font-weight:700;color:var(--sec-filo);padding:5px 4px 0}
+  .repc-orig .pie.poco{color:var(--amber-fg)}
+  .repc-orig .pie.prov{color:var(--amber-fg)}
+  .repc-orig-falta{grid-column:1 / -1;margin-top:4px;font-size:12px;font-weight:700;
+    color:var(--red-fg);background:var(--red-bg);border-radius:9px;padding:7px 10px}
   .repc-bod{display:block;font-size:11.5px;font-weight:700;margin-top:2px;color:var(--sec-bg)}
   .repc-bod.poco{color:var(--amber-fg)}
   .repc-bod.nada{color:var(--red-fg)}
@@ -986,9 +1002,9 @@
            font-variant-numeric:tabular-nums;white-space:nowrap}
   .cart-title{font-weight:800;font-size:14px;margin:16px 0 8px}
   .cart-row{display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 10px 8px 12px;margin-bottom:6px}
-  /* El botón de origen cruza las dos columnas: es una decisión sobre la
+  /* El interruptor de origen cruza las dos columnas: es una decisión sobre la
      línea entera, no un detalle del nombre. */
-  .cart-row .repc-bod[data-repcorigen]{grid-column:1 / -1;margin-top:0}
+  .cart-row .repc-orig, .cart-row .repc-orig-falta{grid-column:1 / -1}
   .cart-row .cn{min-width:0}
   .cart-row .cnn{font-size:14px;font-weight:600}
   .cart-row .cns{font-size:12px;color:var(--muted);margin-top:2px;
@@ -2145,6 +2161,25 @@
         <div class="enl-resumen" id="enl-resumen"></div>
         <button type="button" class="btn btn-orange btn-block" id="enl-crear" style="margin-top:12px" disabled>Crear y enlazar</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ---- LOS QUE TODAVÍA NO TIENEN DE DÓNDE BAJAR ----
+       Un producto del local sin enlace se recibe y se suma igual, pero bodega
+       no baja por él: bodega termina diciendo que tiene lo que ya mandó.
+       Acá se arreglan, sin SQL.
+
+       LO QUE NO SE MUESTRA, Y ES LA MITAD DEL VALOR: los de VITRINA que ya
+       tienen su gemelo en el Congelador. Esos no necesitan enlace — todo lo
+       que sale de bodega entra al congelador (§0.7), así que el enlace vive
+       en el gemelo y está bien que la vitrina no lo tenga. De 19 pendientes
+       en Plaza, 16 eran eso: la regla funcionando. Mostrarlos convertiría
+       esta lista en ruido que nadie va a terminar nunca. -->
+  <div class="enl-caja" style="margin-top:14px" id="enl-pend-caja">
+    <div class="enl-cab">SIN ENLACE CON BODEGA <span class="rf-n" id="enl-pend-n">—</span></div>
+    <div class="enl-cuerpo">
+      <p class="rep-sub" style="margin:0 0 10px">Productos del local que al recibirse no le bajan nada a bodega.</p>
+      <div id="enl-pend"></div>
     </div>
   </div>
 
@@ -3962,20 +3997,34 @@ function repcPintarCajas(){
          Nunca faltó lógica — faltaba una forma de decirle que no. Por eso
          esto no toca una sola línea de SQL: una línea de proveedor viaja
          sin ese número y bodega ni se entera. */
+      /* ---- DE DÓNDE SALE: UN INTERRUPTOR DE DOS POSICIONES ----
+         Jhon, 2026-08-22: "necesito que sea un botón con dos secciones
+         claras… o es A o es B, punto", y sin emojis, que le restan seriedad.
+
+         Antes era una sola píldora que cambiaba de texto al tocarla, y eso
+         obliga a leerla para saber qué dice. Dos mitades, una encendida, se
+         entienden sin leer — la posición ES la respuesta. Es el mismo gesto
+         que el selector de destino de arriba, así que no hay nada nuevo que
+         aprender.
+
+         Sin enlace no es una tercera posición: es que falta configurar algo.
+         Se dice aparte, en rojo, y se arregla en Bodega -> Enlaces. */
       const prov = c.origen === 'proveedor';
-      /* El texto dice el estado ARRIBA y la acción a la derecha ("cambiar"),
-         para que se lea qué es y qué pasa si se toca sin explicar nada. */
-      const bod = prov
-        ? `<button type="button" class="repc-bod prov" data-repcorigen="${sede}-${i}">
-             <span class="ico" aria-hidden="true">🚚</span>
-             <span class="tx">Lo trae el proveedor · bodega no baja</span>
-             <span class="cambiar">cambiar</span></button>`
-        : !b ? '<span class="repc-bod nada">sin enlace · bodega no baja</span>'
-        : `<button type="button" class="repc-bod${queda<=0?' poco':''}" data-repcorigen="${sede}-${i}">
-             <span class="ico" aria-hidden="true">📦</span>
-             <span class="tx">Sale de bodega · ${fmt(libre)} → ${fmt(queda)}`
-          + ((+c.cantidad||0) > libre ? ' · pide más de lo que hay' : '')
-          + `</span><span class="cambiar">cambiar</span></button>`;
+      const detalle = prov
+        ? 'bodega no baja'
+        : !b ? '' : fmt(libre) + ' → ' + fmt(queda)
+                    + ((+c.cantidad||0) > libre ? ' · pide más de lo que hay' : '');
+      const bod = !b && !prov
+        ? '<div class="repc-orig-falta">Sin enlace con bodega · no va a bajar de ningún lado</div>'
+        : `<div class="repc-orig">
+             <div class="dual">
+               <button type="button" class="${prov?'':'on'}" data-repcorigen="${sede}-${i}"
+                 data-a="bodega">De bodega</button>
+               <button type="button" class="${prov?'on':''}" data-repcorigen="${sede}-${i}"
+                 data-a="proveedor">De proveedor</button>
+             </div>
+             ${detalle ? `<div class="pie${prov?' prov':(queda<=0?' poco':'')}">${esc(detalle)}</div>` : ''}
+           </div>`;
       const cf = p ? CFG[estado(p)] : CFG.sindato;
       const falta = p ? repcFalta(p) : 0;
       const llenar = (falta>0 && +c.cantidad!==falta)
@@ -4177,9 +4226,14 @@ $('view-repcentral').addEventListener('click', async e=>{
   if(or_){
     const [s,i] = or_.dataset.repcorigen.split('-');
     const c = repcCarritos[s][+i]; if(!c) return;
-    c.origen = c.origen === 'proveedor' ? 'bodega' : 'proveedor';
+    /* Se FIJA la posición, no se alterna. Tocar "De bodega" estando en bodega
+       no hace nada, y eso está bien: con un interruptor de dos posiciones uno
+       toca el lado al que quiere ir, no "el otro". */
+    const nueva = or_.dataset.a;
+    if(c.origen === nueva) return;
+    c.origen = nueva;
     repcPintarCajas();
-    aviso(c.origen === 'proveedor'
+    aviso(nueva === 'proveedor'
       ? c.producto + ' · lo trae el proveedor, bodega no baja'
       : c.producto + ' · sale de bodega');
     return;
@@ -4635,6 +4689,9 @@ async function loadEnlaces(){
   if(error){ console.error('enlaces', error); ENLACES=[]; }
   else ENLACES = data||[];
   if(!SEDE_PROD.plaza || !SEDE_PROD.angamos) await cargarCriticos();
+  /* La lista de pendientes depende de estas dos lecturas; sin esto se quedaba
+     en "—" hasta que alguien cambiara de pestaña y volviera. */
+  if(vistaActual === 'enlaces') enlPintarPendientes();
 }
 
 /* LA BÚSQUEDA VA DEL LOCAL HACIA BODEGA, y esa dirección es la que importa.
@@ -4643,6 +4700,138 @@ async function loadEnlaces(){
    productos descontar. `unique(sede, producto_sede_id)` hace que esta búsqueda
    devuelva uno solo, siempre. */
 const bodegaDe = (sid, sede) => ENLACES.find(e=>e.sede===sede && e.producto_sede_id===sid);
+
+/* ============ LOS QUE NO TIENEN DE DÓNDE BAJAR ============
+
+   Vive al final de la pantalla de Enlaces, debajo de crear un producto,
+   porque es el trabajo de después: primero existe el producto, después se
+   dice de dónde sale.
+
+   LA LISTA SE DEPURA ANTES DE MOSTRARLA, y eso es lo que la hace útil. Un
+   producto de VITRINA que ya tiene su gemelo en el Congelador no necesita
+   enlace: todo lo que sale de bodega entra al congelador (§0.7), así que el
+   enlace vive allá. Sin este filtro la lista de Plaza mostraba 19 pendientes
+   cuando el trabajo real eran 3 — y una lista que nunca llega a cero se deja
+   de mirar, que es exactamente lo que le pasó a la versión anterior de esta
+   pantalla. */
+let enlPendAbierto = null;   // id del producto del local que se está enlazando
+
+function enlPendientes(){
+  const out = [];
+  for(const sede of SEDES_ENLACE){
+    const universo = SEDE_PROD[sede] || [];
+    for(const p of universo){
+      if(bodegaDe(p.id, sede)) continue;
+      if(tieneCongeladorHermano(p, universo)) continue;   // su gemelo lo cubre
+      out.push({sede, p});
+    }
+  }
+  return out.sort((a,b)=> a.sede.localeCompare(b.sede) || a.p.producto.localeCompare(b.p.producto,'es'));
+}
+
+/* Candidatos en bodega para un producto del local. Propone por nombre y,
+   igual que siempre, lo que se guarda es el id (§0.7). */
+function enlCandidatosBodega(nombre){
+  const base = normNombre(baseNombre(nombre));
+  const q = normNombre(nombre);
+  /* Un producto de bodega que YA está enlazado a esa sede no se ofrece: la
+     base no deja dos orígenes para el mismo producto del local, y ofrecerlo
+     sería prometer algo que va a fallar al guardar. */
+  return (DATA||[])
+    .map(b=>{
+      const nb = normNombre(b.producto), bb = normNombre(baseNombre(b.producto));
+      const punto = nb === q ? 3 : bb === base ? 2 : (nb.includes(base) || base.includes(nb)) ? 1 : 0;
+      return {b, punto};
+    })
+    .filter(x=>x.punto > 0)
+    .sort((a,b)=>b.punto - a.punto || a.b.producto.localeCompare(b.b.producto,'es'))
+    .map(x=>x.b).slice(0, 8);
+}
+
+function enlPintarPendientes(){
+  const caja = $('enl-pend'); if(!caja) return;
+  const lista = enlPendientes();
+  $('enl-pend-n').textContent = lista.length;
+  if(!lista.length){
+    caja.innerHTML = '<div class="repc-vacia">Todo enlazado. Cada producto sabe de dónde baja.</div>';
+    return;
+  }
+  caja.innerHTML = lista.map(({sede, p})=>{
+    const abierto = enlPendAbierto === sede + '-' + p.id;
+    const cands = abierto ? enlCandidatosBodega(p.producto) : [];
+    const tomados = new Set(ENLACES.filter(e=>e.sede===sede).map(e=>e.producto_bodega_id));
+    const libres = cands.filter(b=>!tomados.has(b.id));
+    return `<div class="enl-pend-fila${abierto?' abierta':''}">
+      <button type="button" class="enl-pend-cab" data-enlpend="${sede}-${p.id}">
+        <div class="nm"><b>${esc(p.producto)}</b>
+          <span>${esc(SEDES[sede].corto)} · ${esc(p.rubro||'sin sección')}</span></div>
+        <span class="fl">${abierto?'▾':'›'}</span>
+      </button>
+      ${abierto ? `<div class="enl-pend-cuerpo">
+        ${libres.length
+          ? libres.map(b=>`<button type="button" class="enl-cand" data-enlune="${sede}-${p.id}-${b.id}">
+              <b>${esc(b.producto)}</b><span>en bodega hay ${fmt(b.stock_actual)}</span></button>`).join('')
+          : '<div class="repc-vacia">Ningún producto de bodega se parece. Créalo arriba.</div>'}
+        <input type="text" class="aj-buscar" placeholder="Buscar otro en bodega…"
+          data-enlbusca="${sede}-${p.id}" value="${esc(ENL_BUSCA)}">
+        <div id="enl-busca-res"></div>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+let ENL_BUSCA = '';
+function enlPintarBusqueda(sede, sid){
+  const c = $('enl-busca-res'); if(!c) return;
+  const q = normNombre(ENL_BUSCA);
+  if(!q){ c.innerHTML=''; return; }
+  const tomados = new Set(ENLACES.filter(e=>e.sede===sede).map(e=>e.producto_bodega_id));
+  const r = (DATA||[]).filter(b=>normNombre(b.producto).includes(q) && !tomados.has(b.id)).slice(0,10);
+  c.innerHTML = r.length
+    ? r.map(b=>`<button type="button" class="enl-cand" data-enlune="${sede}-${sid}-${b.id}">
+        <b>${esc(b.producto)}</b><span>en bodega hay ${fmt(b.stock_actual)}</span></button>`).join('')
+    : '<div class="repc-vacia">Nada con ese nombre en bodega.</div>';
+}
+
+async function enlUnir(sede, sid, bid){
+  const p  = (SEDE_PROD[sede]||[]).find(x=>x.id===sid);
+  const b  = (DATA||[]).find(x=>x.id===bid);
+  if(!p || !b) return;
+  if(!await preguntar('Enlazar',
+      `Al recibir "${p.producto}" en ${SEDES[sede].corto}, va a bajar `
+      + `"${b.producto}" de bodega.`, 'Enlazar')) return;
+  const {data,error} = await sb.from('producto_enlace')
+    .insert({sede, producto_bodega_id:bid, producto_sede_id:sid}).select();
+  if(error || !data || !data.length){
+    avisar('No se pudo enlazar\n\n' + (error?.message || 'La base no dejó escribir.'));
+    return;
+  }
+  ENLACES.push(data[0]);
+  enlPendAbierto = null; ENL_BUSCA = '';
+  aviso('✓ ' + p.producto + ' baja de ' + b.producto);
+  enlPintarPendientes();
+}
+
+$('view-enlaces').addEventListener('click', e=>{
+  const c = e.target.closest('[data-enlpend]');
+  if(c){
+    const k = c.dataset.enlpend;
+    enlPendAbierto = (enlPendAbierto === k) ? null : k;
+    ENL_BUSCA = '';
+    enlPintarPendientes();
+    return;
+  }
+  const u = e.target.closest('[data-enlune]');
+  if(u){ const [sede, sid, bid] = u.dataset.enlune.split('-');
+         enlUnir(sede, +sid, +bid); return; }
+});
+
+$('view-enlaces').addEventListener('input', e=>{
+  const b = e.target.closest('[data-enlbusca]');
+  if(b){ ENL_BUSCA = b.value;
+         const [sede, sid] = b.dataset.enlbusca.split('-');
+         enlPintarBusqueda(sede, +sid); }
+});
 
 /* el nombre sin el estante, para reconocer los pares vitrina/congelador */
 const sinEstante = s => normNombre(s).replace(/\s+(vitrina|congelador)$/,'');
@@ -9229,6 +9418,7 @@ function pickTab(tab){
   $('view-repcentral').style.display = esEnvios ? 'block':'none';
   $('view-aplaza').style.display     = (tab==='aplaza') ? 'block':'none';
   if(tab==='aplaza') apAbrir();
+  if(tab==='enlaces') enlPintarPendientes();
   $('view-hist').style.display = tab==='hist'?'block':'none';
   $('view-recetas').style.display = tab==='recetas'?'block':'none';
   $('view-mermas').style.display = tab==='mermas'?'block':'none';
