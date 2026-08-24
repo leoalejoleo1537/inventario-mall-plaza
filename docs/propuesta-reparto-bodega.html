@@ -1,0 +1,238 @@
+<!doctype html><html lang="es"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reparto de Bodega · propuesta</title>
+<style>
+:root{
+  --navy:#0F1E31; --orange:#DC4405; --orange-dark:#B93A04;
+  --bg:#E9EEF5; --card:#FDFEFF; --border:#D6DFEB;
+  --text:#121E2C; --muted:#61707F;
+  --red-bg:#FCE9E6; --red-fg:#C0392B;
+  --green-bg:#E4F1E5; --green-fg:#2E7D32;
+  --amber-bg:#FDF0DE; --amber-fg:#9C6209;
+  --gray-bg:#E1E8F1; --gray-fg:#54677D;
+  --sec-bg:#D0DDEC; --sec-tx:#1F3A5C; --sec-filo:#41628C;
+  --sombra:0 2px 4px rgba(20,40,70,.04), 0 12px 26px -18px rgba(20,40,70,.34);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 22px;font-size:14.5px}
+.nota{background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:var(--sombra);
+  margin:0 0 22px;font-size:14px;line-height:1.6}
+.nota b{color:var(--text)}
+h2.paso{font-size:12px;letter-spacing:.6px;color:var(--muted);font-weight:800;
+  text-transform:uppercase;margin:30px 0 10px}
+/* ---- el teléfono ---- */
+.tel{width:390px;max-width:100%;margin:0 auto;background:var(--bg);border-radius:26px;
+  box-shadow:0 8px 40px -12px rgba(20,40,70,.4);overflow:hidden;border:1px solid var(--border)}
+.topbar{background:var(--card);padding:12px 14px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border)}
+.topbar .t{flex:1;min-width:0}
+.topbar .t b{display:block;font-size:16.5px;font-weight:800}
+.topbar .t span{font-size:12.5px;color:var(--muted)}
+.sync{background:var(--orange);color:#fff;border:none;border-radius:999px;padding:9px 15px;
+  font-weight:800;font-size:13px;font-family:inherit}
+.tabs{display:flex;gap:2px;background:var(--card);padding:0 8px;border-bottom:1px solid var(--border);
+  overflow-x:auto}
+.tab{padding:11px 12px;font-size:13.5px;font-weight:700;color:var(--muted);white-space:nowrap;
+  border-bottom:2.5px solid transparent}
+.tab.on{color:var(--text);border-bottom-color:var(--orange)}
+.cuerpo{padding:14px}
+/* ---- el selector de destino ---- */
+.dest-lbl{font-size:11.5px;font-weight:800;letter-spacing:.5px;color:var(--muted);margin:0 0 7px}
+.dest{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px;margin:0 0 6px}
+.dest button{flex:0 0 auto;border:none;font-family:inherit;border-radius:999px;padding:9px 14px;
+  font-size:13.5px;font-weight:700;background:var(--card);color:var(--text);box-shadow:var(--sombra)}
+.dest button.on{background:var(--navy);color:#fff}
+.dest button.franq{background:var(--gray-bg);color:var(--gray-fg)}
+.dest button.franq.on{background:var(--sec-filo);color:#fff}
+.dest-sep{flex:0 0 auto;width:1px;background:var(--border);margin:4px 3px}
+/* ---- caja ---- */
+.caja{background:var(--card);border-radius:16px;box-shadow:var(--sombra);margin:12px 0;overflow:hidden}
+.caja-cab{background:var(--sec-bg);color:var(--sec-tx);padding:9px 14px;font-size:11.5px;
+  font-weight:800;letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center;
+  box-shadow:inset 4px 0 0 var(--sec-filo)}
+.caja-cab .n{background:rgba(255,255,255,.55);border-radius:999px;padding:2px 9px;font-size:12px}
+.caja-cuerpo{padding:12px 14px}
+/* ---- fila de "falta allá" ---- */
+.falta{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.falta:last-child{border-bottom:none}
+.falta .nm{flex:1;min-width:0}
+.falta .nm b{display:block;font-size:14.5px;font-weight:700}
+.falta .nm span{font-size:12px;color:var(--muted)}
+.hay{font-size:12px;font-weight:800;border-radius:999px;padding:3px 9px;
+  background:var(--red-bg);color:var(--red-fg);flex:0 0 auto}
+.hay.ok{background:var(--amber-bg);color:var(--amber-fg)}
+.mas{flex:0 0 auto;width:32px;height:32px;border-radius:999px;border:none;background:var(--orange);
+  color:#fff;font-size:18px;font-weight:800;font-family:inherit;line-height:1}
+.mas.ya{background:var(--green-fg)}
+/* ---- fila del carro ---- */
+.cart{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--border)}
+.cart:last-of-type{border-bottom:none}
+.cart .nm{flex:1;min-width:0}
+.cart .nm b{display:block;font-size:14.5px;font-weight:700}
+.cart .nm .sub2{font-size:12px;color:var(--muted)}
+.orig{display:inline-block;margin-top:4px;border:none;font-family:inherit;font-size:11.5px;
+  font-weight:700;border-radius:999px;padding:3px 9px;background:var(--gray-bg);color:var(--gray-fg)}
+.orig.prov{background:var(--amber-bg);color:var(--amber-fg);font-weight:800}
+.qty{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+.qty button{width:30px;height:30px;border-radius:9px;border:1px solid var(--border);background:var(--card);
+  font-size:16px;font-weight:800;font-family:inherit;color:var(--text)}
+.qty input{width:48px;height:30px;border:1px solid var(--border);border-radius:9px;text-align:center;
+  font-size:15px;font-family:inherit;font-weight:700;color:var(--text)}
+.tot{display:flex;justify-content:space-between;padding-top:10px;margin-top:6px;
+  border-top:1px solid var(--border);font-size:13px}
+.tot b{font-size:15px}
+.btns{display:flex;gap:8px;margin-top:11px}
+.btn{flex:1;border:none;border-radius:12px;padding:12px;font-weight:800;font-size:14.5px;font-family:inherit}
+.btn-o{background:var(--orange);color:#fff}
+.btn-g{background:var(--gray-bg);color:var(--gray-fg)}
+.aviso{background:var(--amber-bg);color:var(--amber-fg);border-radius:11px;padding:10px 12px;
+  font-size:12.5px;font-weight:700;margin-top:10px;line-height:1.5}
+.vacio{color:var(--muted);font-size:13.5px;padding:8px 0}
+/* ---- explicación ---- */
+.por{max-width:640px;margin:14px auto 0;font-size:14px;line-height:1.65;color:var(--muted)}
+.por b{color:var(--text)}
+.por ul{padding-left:18px;margin:8px 0}
+.grid{display:grid;gap:26px;grid-template-columns:1fr}
+@media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
+</style>
+<div class="wrap">
+<h1>Reparto de Bodega — cómo quedaría</h1>
+<p class="sub">Propuesta para aprobar antes de construir. Tres cambios: un solo destino, el origen de cada línea, y la lista de lo que falta arriba de todo.</p>
+
+<div class="nota">
+<b>Lo que hay hoy:</b> tres bloques separados —Mall Plaza, Parque Angamos y Franquicias— cada uno con su buscador y su carro. Adriana arma a ciegas: ve lo que está en crítico solo si abre "ver lista", y no tiene forma de decir que un producto lo trae el proveedor.<br><br>
+<b>Lo que cambia:</b> un solo bloque con un selector de destino arriba; debajo, primero <b>lo que falta allá</b> (para no tener que adivinar) y después <b>lo que va</b>. Cada línea dice de dónde sale.
+</div>
+
+<div class="grid">
+
+<div>
+<h2 class="paso">1 · Un local con Llamita</h2>
+<div class="tel">
+  <div class="topbar"><div class="t"><b>Bodega</b><span>Enviar</span></div>
+    <button class="sync">⟳ Actualizar</button></div>
+  <div class="tabs"><div class="tab">Inventario</div><div class="tab">Recibir</div>
+    <div class="tab on">Enviar</div><div class="tab">Mermas</div><div class="tab">Enlaces</div></div>
+  <div class="cuerpo">
+    <p class="dest-lbl">A DÓNDE VA</p>
+    <div class="dest">
+      <button class="on">Mall Plaza</button>
+      <button>Parque Angamos</button>
+      <span class="dest-sep"></span>
+      <button class="franq">Urbano Café</button>
+      <button class="franq">Andrómeda</button>
+      <button class="franq">Café Group</button>
+    </div>
+
+    <div class="caja">
+      <div class="caja-cab">LE FALTA A MALL PLAZA <span class="n">14</span></div>
+      <div class="caja-cuerpo">
+        <div class="falta"><div class="nm"><b>Medialuna</b><span>Vitrina de dulces · mín 6</span></div>
+          <span class="hay">hay 1</span><button class="mas ya">✓</button></div>
+        <div class="falta"><div class="nm"><b>Alfajor artesanal</b><span>Congelador · mín 4</span></div>
+          <span class="hay">hay 0</span><button class="mas ya">✓</button></div>
+        <div class="falta"><div class="nm"><b>Sandwich Serrano</b><span>Sándwiches · mín 8</span></div>
+          <span class="hay">hay 3</span><button class="mas">+</button></div>
+        <div class="falta"><div class="nm"><b>Brownie Congelador</b><span>Congelador · mín 10</span></div>
+          <span class="hay ok">hay 7</span><button class="mas">+</button></div>
+        <div class="falta"><div class="nm"><b>Bolsa kraft M</b><span>Mueble de bolsas · mín 30</span></div>
+          <span class="hay ok">hay 22</span><button class="mas">+</button></div>
+        <div class="vacio">…y 9 más. Se desliza.</div>
+      </div>
+    </div>
+
+    <div class="caja">
+      <div class="caja-cab">LO QUE VA <span class="n">2</span></div>
+      <div class="caja-cuerpo">
+        <div class="cart"><div class="nm"><b>Medialuna</b>
+            <div class="sub2">allá hay 1 · llenar 11</div>
+            <button class="orig prov">de proveedor · bodega no baja</button></div>
+          <div class="qty"><button>−</button><input value="11"><button>+</button></div></div>
+        <div class="cart"><div class="nm"><b>Alfajor artesanal</b>
+            <div class="sub2">allá hay 0 · llenar 10</div>
+            <button class="orig">de bodega · 20 → 10</button></div>
+          <div class="qty"><button>−</button><input value="10"><button>+</button></div></div>
+        <div class="tot"><span>2 productos</span><b>21 unidades</b></div>
+        <div class="btns"><button class="btn btn-g">Copiar</button><button class="btn btn-o">Enviar</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="por">
+<b>Lo que resuelve.</b>
+<ul>
+<li><b>La lista de lo que falta va arriba y abierta</b>, no detrás de un "ver lista". Es la pregunta que Adriana se hace primero, así que es lo primero que ve.</li>
+<li><b>Un toque agrega</b>, con la cantidad que falta para el máximo ya puesta. El ✓ verde marca lo que ya está en el carro sin tener que mirar abajo.</li>
+<li><b>La píldora de origen se toca</b> y cambia entre <span class="orig" style="padding:1px 7px">de bodega</span> y <span class="orig prov" style="padding:1px 7px">de proveedor</span>. Ámbar porque es una decisión, no un dato que falta.</li>
+</ul>
+</div>
+</div>
+
+<div>
+<h2 class="paso">2 · Una franquicia (sin Llamita)</h2>
+<div class="tel">
+  <div class="topbar"><div class="t"><b>Bodega</b><span>Enviar</span></div>
+    <button class="sync">⟳ Actualizar</button></div>
+  <div class="tabs"><div class="tab">Inventario</div><div class="tab">Recibir</div>
+    <div class="tab on">Enviar</div><div class="tab">Mermas</div><div class="tab">Enlaces</div></div>
+  <div class="cuerpo">
+    <p class="dest-lbl">A DÓNDE VA</p>
+    <div class="dest">
+      <button>Mall Plaza</button>
+      <button>Parque Angamos</button>
+      <span class="dest-sep"></span>
+      <button class="franq on">Urbano Café</button>
+      <button class="franq">Andrómeda</button>
+      <button class="franq">Café Group</button>
+    </div>
+
+    <div class="caja">
+      <div class="caja-cab">BUSCAR EN BODEGA</div>
+      <div class="caja-cuerpo">
+        <div class="falta"><div class="nm"><b>Café en grano</b><span>Bodega · hay 8 kg</span></div>
+          <button class="mas">+</button></div>
+        <div class="vacio">Escribe para buscar.</div>
+      </div>
+    </div>
+
+    <div class="caja">
+      <div class="caja-cab">LO QUE VA A URBANO CAFÉ <span class="n">1</span></div>
+      <div class="caja-cuerpo">
+        <div class="cart"><div class="nm"><b>Café en grano</b>
+            <div class="sub2">bodega: 8 → 6</div>
+            <button class="orig">de bodega · siempre</button></div>
+          <div class="qty"><button>−</button><input value="2"><button>+</button></div></div>
+        <div class="tot"><span>1 producto</span><b>2 unidades</b></div>
+        <div class="aviso">Allá no hay Llamita: nadie confirma del otro lado.
+          Se prepara acá marcando línea por línea, y sale con una hoja impresa.</div>
+        <div class="btns"><button class="btn btn-g">Hoja</button><button class="btn btn-o">Crear la lista</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="por">
+<b>Por qué la franquicia se ve distinta, y a propósito.</b>
+<ul>
+<li><b>No hay "le falta a…"</b>: no tenemos su inventario. Solo buscador.</li>
+<li><b>No hay origen que elegir</b>: a una franquicia le vendemos de bodega, siempre. La píldora se ve pero no se toca.</li>
+<li><b>El botón dice otra cosa</b> —"Crear la lista", no "Enviar"— porque del otro lado nadie confirma, y el aviso ámbar lo explica sin párrafos.</li>
+</ul>
+<b>Lo que NO cambia:</b> lo que se escribe en la base es lo mismo de hoy, así que el jefe de turno recibe el reparto en su pestaña de siempre y no hay que tocar nada de ese lado.
+</div>
+</div>
+
+</div>
+
+<h2 class="paso">3 · Lo que falta decidir</h2>
+<div class="nota">
+<b>a · ¿El selector de destino recuerda dónde estaba?</b> Si Adriana arma Plaza, se cambia a Angamos y vuelve, ¿el carro de Plaza sigue ahí? <b>Propongo que sí</b>: los tres carros viven en paralelo y solo se vacían al enviar. Es lo que hace hoy con las dos sedes.<br><br>
+<b>b · ¿"Le falta a…" muestra todo o solo lo de abajo del mínimo?</b> <b>Propongo solo lo que está bajo el mínimo</b>, más lo marcado urgente — que es exactamente la lista de Crítico que ya existe. Mostrar los 240 productos convierte la ayuda en ruido.<br><br>
+<b>c · ¿Se puede marcar "de proveedor" antes de agregar?</b> <b>Propongo que no</b>: se agrega y después se toca la píldora. Un paso extra en el momento de agregar haría más lento el caso normal, que es el 90%.
+</div>
+
+</div>
+</html>
