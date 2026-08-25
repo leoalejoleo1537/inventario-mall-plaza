@@ -2135,6 +2135,11 @@
 
   <!-- Las listas ya creadas, para que bodega las prepare -->
   <div id="fr-abiertos"></div>
+  <!-- Adrián pide la planilla; el resto son botones. Va acá abajo y en gris
+       porque se usa una vez al mes, no todos los días. -->
+  <div style="display:flex;justify-content:flex-end;margin-top:14px">
+    <button class="btn btn-gris btn-sm" id="btnFranqExcel">Excel para Adrián</button>
+  </div>
 
     </div><!-- /repc-salida -->
 
@@ -6473,32 +6478,57 @@ $('overlay-admin').addEventListener('click', e=>{
 
 /* El historial responde la pregunta que evita la mitad de los empujes de
    más: ¿alguien ya lo hizo hace un rato? */
+/* ES DE UNA PERSONA, no del reloj. Jhon, 2026-08-25: "esta área es más para
+   trazabilidad, ver qué usuarios empujaron a Fudo de forma manual". El reloj
+   corre solo cada tanto y llenaba la lista de líneas que nadie decidió — y
+   una lista que es casi toda ruido se deja de leer, que es lo mismo que no
+   tenerla.
+
+   Dos días alcanzan: la pregunta que contesta es "¿alguien ya lo hizo hace un
+   rato?", y esa pregunta no mira más atrás que ayer. */
+const empujeAutomatico = q => /sistema/i.test(String(q||''));
+
 async function cargarHistorialFudo(){
   const cont = $('adm-hist');
+  const desde = new Date(Date.now() - 2*86400000).toISOString();
   const {data,error} = await sb.from('fudo_stock_push')
-    .select('*').eq('sede',SEDE).order('created_at',{ascending:false}).limit(200);
+    .select('*').eq('sede',SEDE).gte('created_at',desde)
+    .order('created_at',{ascending:false}).limit(200);
   if(error || !data){ cont.innerHTML='<div class="empty">No se pudo leer el historial.</div>';
                       $('adm-ultimo').textContent='—'; return; }
   // se agrupa por lote: cada envío es una línea, no 58
   const lotes = new Map();
   data.forEach(r=>{
     const k = r.lote || r.created_at;
-    if(!lotes.has(k)) lotes.set(k, {quien:r.quien, cuando:r.created_at, n:0, vuelta:/^deshacer/.test(r.detalle||'')});
+    if(!lotes.has(k)) lotes.set(k, {quien:r.quien, cuando:r.created_at, n:0,
+                                    vuelta:/^deshacer/.test(r.detalle||''),
+                                    auto:empujeAutomatico(r.quien)});
     lotes.get(k).n++;
   });
-  const filas = [...lotes.values()].sort((a,b)=>b.cuando.localeCompare(a.cuando));
+  const todos = [...lotes.values()].sort((a,b)=>b.cuando.localeCompare(a.cuando));
+  const filas = todos.filter(l=>!l.auto);
   cont.innerHTML = filas.length
     ? filas.slice(0,12).map(l=>`<div class="adm-hist-fila${l.vuelta?' vuelta':''}">
         <span><span class="qn">${esc((l.quien||'').split('@')[0])}</span> · ${l.n} producto${l.n===1?'':'s'}</span>
         <span class="cd">${fmtFechaHora(l.cuando)}</span></div>`).join('')
-    : '<div class="empty">Todavía no se ha actualizado Fudo.</div>';
+    : '<div class="empty">Nadie actualizó Fudo a mano en los últimos dos días.</div>';
   const u = filas[0];
   $('adm-ultimo').innerHTML = u
     ? `Última vez: <b>${fmtFechaHora(u.cuando)}</b> · ${esc((u.quien||'').split('@')[0])} · ${u.n} productos`
-    : 'Nunca se ha actualizado desde acá.';
-  $('adm-desc-deshacer').textContent = u && !u.vuelta
-    ? `Devuelve ${u.n} productos a como estaban`
-    : 'No hay ningún empuje reciente que deshacer';
+    : 'Nadie lo ha actualizado a mano en los últimos dos días.';
+
+  /* EL DESHACER SE DESCRIBE CON EL EMPUJE DE VERDAD, no con el filtrado.
+     Quién decide qué se deshace es `fudo_ultimo_empuje`, en el servidor, y
+     ese NO sabe de este filtro: devuelve el último lote, sea de quien sea.
+     Si acá se describiera el último empuje MANUAL mientras el servidor va a
+     deshacer el automático, el botón diría una cosa y haría otra — y eso es
+     peor que no tener botón. Se nombra el automático cuando es el último. */
+  const real = todos[0];
+  $('adm-desc-deshacer').textContent = !real || real.vuelta
+    ? 'No hay ningún empuje reciente que deshacer'
+    : real.auto
+      ? `Devuelve ${real.n} productos · el último lo hizo el reloj, no una persona`
+      : `Devuelve ${real.n} productos a como estaban`;
 }
 
 /* ---- la pantalla de revisión: acá TODAVÍA no pasó nada ---- */
@@ -8214,6 +8244,78 @@ async function frLinea(itemId, cant, hay){
   metrics(); render();
   await frCargarAbiertos();
 }
+
+/* LA PLANILLA DE ADRIÁN. Él pide cuatro columnas —fecha, producto, cantidad,
+   franquicia— y esas cuatro van primero y en ese orden, para que le sirva
+   pegándola donde ya la pega.
+
+   Las de después son las que este sistema sabe y su planilla no, y cada una
+   contesta una pregunta que si no hay que ir a preguntar por WhatsApp:
+
+     PEDIDA vs ENVIADA   qué faltó. Es la diferencia entre lo que la
+                         franquicia pidió y lo que de verdad salió, que es
+                         justo lo que se discute a fin de mes
+     ESTADO              si no salió, que se vea en la fila y no por la
+                         resta de dos números
+     QUIÉN PREPARÓ       trazabilidad, igual que el resto del sistema
+     N° DE ENVÍO         dos envíos el mismo día a la misma franquicia son
+                         dos cosas distintas; sin esto se suman sin querer
+
+   CANTIDAD es la ENVIADA, no la pedida: la planilla es el registro de lo
+   que salió de bodega, no de lo que se pidió. Una línea que no salió va con
+   cantidad 0 y su estado dicho — no se esconde, porque desaparecer una
+   línea que la franquicia sí pidió es como se arma una discusión. */
+async function frExcel(){
+  const btn = $('btnFranqExcel');
+  btn.disabled = true; btn.textContent = 'Armando…';
+  try{
+    const desde = new Date(Date.now() - 90*86400000).toISOString();
+    const {data:envios, error} = await sb.from('envios_franquicia').select('*')
+      .gte('created_at', desde).order('created_at',{ascending:false}).limit(500);
+    if(error) throw error;
+    if(!envios || !envios.length){ avisar('No hay envíos a franquicias que descargar.'); return; }
+
+    const items = [];
+    /* De a 100 envíos por consulta: la lista de ids viaja DENTRO de la
+       dirección, y con 500 se pasa de largo y falla de golpe. Es el mismo
+       problema del `.in()` con 232 ids que está anotado en el bloque D. */
+    for(let i=0; i<envios.length; i+=100){
+      const ids = envios.slice(i, i+100).map(e=>e.id);
+      const r = await sb.from('envios_franquicia_items').select('*')
+        .in('envio_id', ids).order('id').limit(5000);
+      if(r.error) throw r.error;
+      items.push(...(r.data||[]));
+    }
+
+    const porId = new Map(envios.map(e=>[e.id, e]));
+    const rows = items.map(i=>{
+      const e = porId.get(i.envio_id) || {};
+      const salio = i.estado === 'listo';
+      return {
+        'FECHA': fmtFecha(String(e.created_at||'').slice(0,10)),
+        'PRODUCTO': i.producto,
+        'CANTIDAD': salio ? (+i.cantidad_enviada||0) : 0,
+        'FRANQUICIA': e.franquicia || '',
+        'PEDIDA': +i.cantidad_pedida||0,
+        'ESTADO': salio ? 'Salió' : i.estado === 'pendiente' ? 'Por preparar' : 'No había',
+        'QUIÉN PREPARÓ': e.despachado_por || e.creado_por || '',
+        'N° DE ENVÍO': i.envio_id,
+      };
+    });
+    if(!rows.length){ avisar('No hay líneas que descargar.'); return; }
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{wch:11},{wch:34},{wch:10},{wch:20},{wch:9},{wch:13},{wch:18},{wch:11}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Franquicias');
+    XLSX.writeFile(wb, `franquicias-${hoyISO()}.xlsx`);
+  }catch(err){
+    avisar('No se pudo armar la planilla\n\n' + (err.message || 'Revisa tu señal e inténtalo de nuevo.'));
+  }finally{
+    if(btn.isConnected){ btn.disabled = false; btn.textContent = 'Excel para Adrián'; }
+  }
+}
+$('btnFranqExcel').addEventListener('click', frExcel);
 
 async function frCerrar(id){
   const e = frAbiertos.find(x=>x.id===id); if(!e) return;

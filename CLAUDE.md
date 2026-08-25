@@ -26,6 +26,7 @@
 | **0.5** | La falla de las 15 horas · cómo tocar el motor | tocar el motor o cualquier función SQL |
 | **0.6** | **El día que Angamos quedó en cero** · saca la foto antes | **siempre, antes de escribir en una sede** |
 | **0.7** | **La bodega es `central`; `bodega` es la vieja** · y las 3 reglas de esta etapa | **siempre, mientras se trabaje en bodega** |
+| **0.8** | **Antes de poner un candado, seis preguntas** | **antes de hacer algo obligatorio** |
 | 1 | Qué es esto y para quién | contexto general |
 | 2 | Estética · paleta y formas | tocar la pantalla |
 | 2.0 | Que sea bella, no solo que funcione | tocar la pantalla |
@@ -988,6 +989,73 @@ veces.
 producto que ya salió físicamente. Se resuelve **sin tocar el stock**: al armar
 un reparto, junto al "hay 12" va "· 5 comprometidos". El número no miente
 porque nada se movió.
+
+---
+
+## 0.8 REGLA DURA — antes de poner un candado, seis preguntas
+
+> Pedida por Jhon el 2026-08-25, el día que un candado mío le impidió crear un
+> producto que necesitaba: *"he pensado en lo común que es este problema,
+> implemento un cambio importante y este a veces me limita o crea otros
+> problemas"*. Él trajo una lista de quince preguntas; esto es esa lista
+> refinada contra los golpes que este proyecto ya se dio.
+
+### La pregunta que manda, y de la que salen las demás
+
+> **¿Esta regla describe lo que pasa CASI SIEMPRE, o lo que tiene que pasar
+> SIN EXCEPCIÓN?**
+
+Si es lo primero, va como **valor por defecto**. Si es lo segundo, va como
+**candado**. Confundirlas es el error, y en este proyecto tiene nombres
+propios:
+
+| La regla | Qué era | Qué se hizo |
+|---|---|---|
+| "Todo producto nace en bodega" | **casi siempre** | se puso como candado → bloqueó el gemelo de vitrina, y encima creaba un duplicado sin sección |
+| "Todo lo que sale de bodega entra al congelador" | **casi siempre** | se sugiere y se marca primero, no se obliga (§0.7) |
+| "Quien empuja a Fudo necesita permiso" | **una preferencia** | se puso como candado → rompió el reparto (§0.65) |
+| "El stock nunca queda negativo" | **sin excepción** | candado, y con `CHECK` en la tabla (§0.2) |
+| "Un perecedero entra solo por fechas" | **sin excepción** | candado, en la base (§0.4) |
+| "El reparto no descuenta dos veces" | **sin excepción** | candado |
+
+**El patrón, y es la regla práctica que resume todo:** los candados legítimos
+de este proyecto **protegen la integridad de los datos**. Ninguno protege una
+preferencia sobre cómo se trabaja. Cuando un candado protege una forma de
+trabajar, tarde o temprano aparece la persona que necesita trabajar distinto —
+y el candado se lo impide sin que nadie lo haya decidido.
+
+### Las seis preguntas
+
+1. **¿Casi siempre o sin excepción?** Casi siempre → valor por defecto, no
+   candado.
+2. **¿Protege los datos o una forma de trabajar?** Solo lo primero justifica
+   un candado.
+3. **Nombra una excepción legítima.** Si no aparece ninguna en dos minutos,
+   es que no se buscó — este sistema tiene demasiadas piezas como para que de
+   verdad no exista.
+4. **Si la regla se cumple *casi*: ¿avisa, o hace algo raro en silencio?**
+   No es "¿qué pasa si falla?". Es qué pasa con el 5% que no encaja. El
+   candado de bodega **no daba error**: creaba el duplicado y decía "listo".
+   Un candado que se equivoca gritando cuesta una vuelta; uno que se equivoca
+   callado cuesta un mes hasta que alguien nota el descuadre (§0.5).
+5. **¿Lo decidí para ESTE caso, o lo heredé de otro que se le parecía?**
+   `puede_fudo` nació bien, para un empuje masivo de jefatura. Cada camino
+   nuevo lo copió *"igual que el resto"* sin que nadie decidiera que
+   correspondía, y terminó impidiendo que llegara el pan. **Lo que importa no
+   es qué toca una acción, sino si decide algo.**
+6. **¿Se puede apagar y volver a como estaba?** Es §2.2. Es la red que hace
+   que equivocarse en las cinco anteriores no sea fatal.
+
+### La pregunta que hay que BORRAR de la lista
+
+*"¿Tengo evidencia de que esta regla necesita ser obligatoria?"* Suena
+rigurosa y es trampa: **casi siempre hay evidencia a favor** —un caso real
+donde el candado habría ayudado— y esa evidencia no dice **nada** sobre los
+casos que va a romper. Había evidencia para "todo nace en bodega": evita
+duplicados. Era cierta. Y aun así estaba mal.
+
+La versión útil es la pregunta 3, y funciona porque obliga a **encontrar** la
+excepción en vez de preguntarse si existe.
 
 ---
 
