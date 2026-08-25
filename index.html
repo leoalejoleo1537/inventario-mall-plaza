@@ -628,16 +628,14 @@
   .enl-dest{border:1.5px solid var(--border);border-radius:12px;padding:12px 13px;background:var(--card);
             cursor:pointer;user-select:none}
   .enl-dest.on{border-color:var(--orange);background:#FFF8F5}
-  .enl-dest.fijo{border-style:dashed;cursor:default;background:var(--gray-bg)}
   .enl-dest .top{display:flex;align-items:center;gap:9px}
   .enl-dest .cbox{width:20px;height:20px;border-radius:6px;border:1.8px solid var(--border);
                   display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;flex-shrink:0}
   .enl-dest.on .cbox{background:var(--orange);border-color:var(--orange);color:#fff}
-  .enl-dest.fijo .cbox{background:var(--gray-fg);border-color:var(--gray-fg);color:#fff}
   .enl-dest .nm{font-size:14.5px;font-weight:700;flex:1}
   .enl-dest .sub2{font-size:11.5px;color:var(--muted);font-weight:600}
   .enl-dest .sec{margin-top:10px;display:none}
-  .enl-dest.on .sec,.enl-dest.fijo .sec{display:block}
+  .enl-dest.on .sec{display:block}
   .enl-dest .sec label{display:block;font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:4px}
   .enl-dest .sec select{width:100%;height:38px;padding:0 10px;border:1px solid var(--border);
                         border-radius:9px;font-size:14px;background:var(--card);color:var(--text);font-family:inherit}
@@ -2191,15 +2189,21 @@
           <label>Nombre</label>
           <input type="text" id="enl-n-nombre" maxlength="60" autocomplete="off" placeholder="Ej: Torta de naranja">
         </div>
-        <div class="field">
-          <label>Sección en Bodega</label>
-          <select id="enl-n-rubro"></select>
-        </div>
-        <div style="display:flex;gap:10px">
-          <div class="field" style="flex:1"><label>Mínimo en Bodega</label>
-            <input type="number" step="0.5" min="0" id="enl-n-min"></div>
-          <div class="field" style="flex:1"><label>Máximo en Bodega</label>
-            <input type="number" step="0.5" min="0" id="enl-n-max"></div>
+        <!-- Estos tres son de BODEGA. Si el producto no se crea allá, no
+             aplican: preguntar la "Sección en Bodega" de algo que no va a
+             existir en bodega es una pregunta que la gente contesta por
+             contestar. Se esconden solos. -->
+        <div id="enl-n-bodega-campos">
+          <div class="field">
+            <label>Sección en Bodega</label>
+            <select id="enl-n-rubro"></select>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div class="field" style="flex:1"><label>Mínimo en Bodega</label>
+              <input type="number" step="0.5" min="0" id="enl-n-min"></div>
+            <div class="field" style="flex:1"><label>Máximo en Bodega</label>
+              <input type="number" step="0.5" min="0" id="enl-n-max"></div>
+          </div>
         </div>
         <label class="chkrow"><input type="checkbox" id="enl-n-perec"><span>Producto perecedero</span></label>
         <!-- Nace APAGADO a propósito: la mayoría de lo que entra a bodega
@@ -5383,7 +5387,14 @@ function prepararNuevo(){
   $('enl-n-fudo').checked=false; $('enl-n-precio').value='';
   $('enl-n-precio-caja').style.display='none';
   $('enl-n-cat-caja').style.display='none'; CATS_FUDO=null;
-  enlDest = {plaza:false, angamos:false};
+  /* Bodega arranca MARCADA porque casi todo lo que se crea nace ahí — pero
+     se puede apagar. Antes era un cartel que decía "siempre" y no se podía
+     tocar, y eso rompió el caso real del 24 de agosto: el gemelo de vitrina
+     de un producto que en bodega YA existe. Crearlo otra vez en bodega
+     habría sido meter un duplicado justo en la sede que estamos tratando de
+     mantener limpia. La regla no era falsa —casi siempre nace en bodega—; el
+     error fue convertir "casi siempre" en "siempre". */
+  enlDest = {central:true, plaza:false, angamos:false};
   /* La sección arranca SIN elegir. Si se dejara la primera de la lista, una
      torta terminaría creada en "Aseo" por no tocar el desplegable — y un
      producto en la sección equivocada no lo encuentra nadie. */
@@ -5393,9 +5404,8 @@ function prepararNuevo(){
      "Vitrina de tortas". Copiar la de bodega inventaría secciones que allá no
      existen, y un producto en una sección inventada no aparece en la lista. */
   $('enl-destinos').innerHTML = `
-    <div class="enl-dest fijo">
-      <div class="top"><span class="cbox">✓</span><span class="nm">Bodega</span>
-        <span class="sub2">siempre</span></div>
+    <div class="enl-dest on" data-enldest="central">
+      <div class="top"><span class="cbox">✓</span><span class="nm">Bodega</span></div>
     </div>` + SEDES_ENLACE.map(s=>`
     <div class="enl-dest" data-enldest="${s}">
       <div class="top"><span class="cbox">✓</span><span class="nm">${esc(SEDES[s].label)}</span></div>
@@ -5419,27 +5429,38 @@ $('enl-n-rubro').addEventListener('change', ()=>{
 });
 
 function pintarResumenNuevo(){
+  const enBodega = !!enlDest.central;
   const on = SEDES_ENLACE.filter(s=>enlDest[s]);
-  const nombres = ['Bodega', ...on.map(s=>SEDES[s].corto)];
+  const nombres = [...(enBodega ? ['Bodega'] : []), ...on.map(s=>SEDES[s].corto)];
   /* "A, B y C" — dos "y" seguidos se leen como una lista mal escrita */
   const lista = nombres.length>2
     ? nombres.slice(0,-1).join(', ')+' y '+nombres[nombres.length-1]
     : nombres.join(' y ');
+
+  /* Los campos de bodega solo aplican si el producto va a existir allá. */
+  $('enl-n-bodega-campos').style.display = enBodega ? '' : 'none';
+
   /* Falta algo por elegir: se dice cuál. Un botón apagado sin motivo deja a la
      persona tocándolo sin entender por qué no pasa nada. */
   const sinSeccion = on.filter(s=>!($('enl-destinos').querySelector(`[data-enlrubro="${s}"]`)||{}).value);
   const enFudo = $('enl-n-fudo').checked;
   const falta = !$('enl-n-nombre').value.trim() ? 'Falta el nombre'
-              : !$('enl-n-rubro').value        ? 'Falta la sección en Bodega'
+              : !nombres.length                ? 'Elige dónde crearlo'
+              : enBodega && !$('enl-n-rubro').value ? 'Falta la sección en Bodega'
               : sinSeccion.length              ? 'Falta la sección en '+sinSeccion.map(s=>SEDES[s].corto).join(' y ')
               : enFudo && !(+$('enl-n-precio').value > 0) ? 'Falta el precio de venta'
               : enFudo && !on.length           ? 'Para venderlo en Fudo, elige al menos un local'
               : enFudo && !$('enl-n-cat').value ? 'Falta el apartado en Fudo'
               : null;
+
+  /* Lo que dice el resumen tiene que ser lo que de verdad va a pasar, y el
+     enlace es la parte que se puede malentender: sin bodega no hay de dónde
+     bajar, así que se dice con esas palabras en vez de callarlo. */
+  const enFudoTxt = enFudo ? ' · y en Fudo, con su receta' : '';
   $('enl-resumen').textContent = falta ? falta
-    : on.length ? 'Se crea en '+lista+' · quedan enlazados'
-                  + (enFudo ? ' · y en Fudo, con su receta' : '')
-                : 'Se crea solo en Bodega · sin enlace';
+    : !on.length      ? 'Se crea solo en Bodega · sin enlace'
+    : !enBodega       ? 'Se crea solo en '+lista+' · bodega no baja por él'+enFudoTxt
+                      : 'Se crea en '+lista+' · quedan enlazados'+enFudoTxt;
   $('enl-resumen').style.color = falta ? 'var(--muted)' : '';
   $('enl-crear').disabled = !!falta;
 }
@@ -5528,9 +5549,16 @@ async function buscarParecidos(){
 $('enl-crear').addEventListener('click', async ()=>{
   const btn=$('enl-crear'), nombre=$('enl-n-nombre').value.trim();
   if(!nombre) return;
-  const destinos = SEDES_ENLACE.filter(s=>enlDest[s]).map(s=>({
-    sede: s,
-    rubro: ($('enl-destinos').querySelector(`[data-enlrubro="${s}"]`)||{}).value || null }));
+  /* Bodega viaja DENTRO de la lista de destinos, no como un parámetro aparte.
+     Así la firma de la función no cambia — y no cambiarla es lo que evita que
+     queden dos versiones conviviendo en la base, que es la falla que dejó al
+     sistema 15 horas sin descontar (§0.5). */
+  const destinos = [
+    ...(enlDest.central ? [{sede:'central', rubro:$('enl-n-rubro').value || null}] : []),
+    ...SEDES_ENLACE.filter(s=>enlDest[s]).map(s=>({
+      sede: s,
+      rubro: ($('enl-destinos').querySelector(`[data-enlrubro="${s}"]`)||{}).value || null }))];
+  if(!destinos.length){ avisar('Elige dónde crearlo'); return; }
   btn.disabled=true; btn.textContent='Creando…';
   const {data,error} = await sb.rpc('crear_producto_enlazado',{
     p_nombre: nombre,
