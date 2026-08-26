@@ -72,7 +72,7 @@ async function montar({conFuncion}){
       /* Simula el estado real: la función existe o no, según el caso. */
       rpc:(nombre, args)=>{
         if(nombre === 'fotos_por_dia'){
-          if(!conFuncion) return Promise.resolve({data:null, error:{message:'function public.fotos_por_dia(text) does not exist'}});
+          if(conFuncion === 'no-existe') return Promise.resolve({data:null, error:{message:'function public.fotos_por_dia(text) does not exist'}});
           const sede = args.p_sede;
           const porFecha = {};
           (T.historial.filter(h=>h.sede===sede)||[]).forEach(h=>{
@@ -84,6 +84,11 @@ async function montar({conFuncion}){
             tipo: porFecha[f].man>0 && porFecha[f].aut>0 ? 'contada a mano + automática'
                 : porFecha[f].man>0 ? 'contada a mano' : 'automática',
             a_mano:porFecha[f].man, automatica:porFecha[f].aut}));
+          /* LA VERSIÓN VIEJA que vive en producción: 3 columnas, sin
+             `a_mano` ni `automatica`. Es el caso real del 2026-08-26. */
+          if(conFuncion === 'vieja')
+            return Promise.resolve({error:null,
+              data: filas.map(({fecha, cuantos, tipo})=>({fecha, cuantos, tipo}))});
           return Promise.resolve({data:filas, error:null});
         }
         return Promise.resolve({data:[], error:null});
@@ -126,7 +131,7 @@ const abrirRespaldos = async (sede) => {
 };
 
 console.log('\nCON la función fotos_por_dia instalada (el camino de siempre):');
-await montar({conFuncion:true});
+await montar({conFuncion:'nueva'});
 await caso('Plaza, con fotos automáticas de verdad: la red dice "puesta"', async () => {
   await abrirRespaldos('plaza');
   const t = await page.textContent('.aj-red');
@@ -139,7 +144,7 @@ await caso('Angamos, sin ninguna foto: lo dice, no inventa una red', async () =>
 });
 
 console.log('\nSIN la función instalada (el camino de respaldo — acá estaba el bug):');
-await montar({conFuncion:false});
+await montar({conFuncion:'no-existe'});
 await caso('Plaza, con fotos automáticas de verdad: YA NO dice "nunca corrió"', async () => {
   await abrirRespaldos('plaza');
   const t = await page.textContent('.aj-red');
@@ -158,6 +163,29 @@ await caso('y cada día deja de decir "sin foto automática" cuando sí la hay',
   await abrirRespaldos('plaza');
   const t = await page.textContent('#aj-pane');
   return !t.includes('sin foto automática') || 'los días siguen mintiendo';
+});
+
+console.log('\nCON LA VERSIÓN VIEJA DE LA FUNCIÓN (el caso real del 26 de agosto):');
+/* Devuelve (fecha, cuantos, tipo) y nada más. `d.automatica` llega undefined,
+   y antes ese undefined se volvía 0 y la pantalla AFIRMABA "nunca corrió"
+   teniendo fotos guardadas. No sé ≠ no hay. */
+await montar({conFuncion:'vieja'});
+await caso('NO afirma que la red nunca corrió', async () => {
+  await abrirRespaldos('plaza');
+  const t = await page.textContent('.aj-red');
+  return !t.includes('nunca corrió') || 'sigue acusando en falso: "'+t+'"';
+});
+await caso('dice que no se puede saber, y cómo arreglarlo', async () => {
+  const t = await page.textContent('.aj-red');
+  return (t.includes('No se puede saber') && t.includes('dias-con-foto'))
+    || 'no explica qué hacer: "'+t+'"';
+});
+await caso('y en ámbar, no en rojo: falta un dato, no está roto', async () =>
+  (await page.getAttribute('.aj-red','class')).includes('aviso')
+  || 'sigue pintado como error');
+await caso('los días tampoco dicen "sin foto automática"', async () => {
+  const t = await page.textContent('#aj-pane');
+  return !t.includes('sin foto automática') || 'los días siguen acusando en falso';
 });
 
 console.log('\nSin errores de JavaScript:');

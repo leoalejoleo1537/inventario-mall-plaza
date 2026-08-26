@@ -43,6 +43,20 @@
 -- aparecía solo como "contada a mano", y la automática quedaba escondida.
 -- O sea que mirando la lista **no se podía saber si la red está puesta**,
 -- que es lo único que de verdad importa saber de un respaldo.
+-- ⚠️ EL `drop` NO ES ADORNO, y sin él este archivo falla (2026-08-26).
+-- Postgres NO deja que `create or replace` cambie las columnas que una
+-- función devuelve: contesta "cannot change return type of existing
+-- function". En producción vivía la primera versión, de 3 columnas
+-- (fecha, cuantos, tipo); esta devuelve 5, con `a_mano` y `automatica`.
+--
+-- Y el daño de la versión vieja no era que faltaran columnas: era que la
+-- app leía `automatica` como `undefined`, lo trataba como 0, y afirmaba
+-- "la foto automática nunca corrió en esta sede" teniendo fotos guardadas.
+-- Un aviso falso dicho con seguridad (§0.5).
+--
+-- Se borra por firma exacta, como manda §0.5 — una por cada versión posible.
+drop function if exists public.fotos_por_dia(text);
+
 create or replace function public.fotos_por_dia(p_sede text)
 returns table(fecha date, cuantos bigint, tipo text, a_mano bigint, automatica bigint)
 language sql

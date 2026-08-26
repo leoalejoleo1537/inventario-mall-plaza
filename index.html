@@ -1314,6 +1314,9 @@
   .aj-red span{display:block;font-size:13px;margin-top:3px;opacity:.9;line-height:1.45}
   .aj-red.bien{background:var(--green-bg);color:var(--green-fg)}
   .aj-red.mal{background:var(--red-bg);color:var(--red-fg)}
+  /* "No se puede saber" no es rojo: rojo significa "esto está mal", y acá lo
+     que pasa es que falta información. Ámbar, que es el color de aviso. */
+  .aj-red.aviso{background:var(--amber-bg);color:var(--amber-fg)}
   .aj-filtros{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 
   /* ---- la barra de la competencia ----
@@ -8786,6 +8789,10 @@ async function ajAgregarPersona(){
      · no toca los que nacieron después de la foto                      */
 let AJ_SEDE  = null;     // a qué sede se le va a devolver el tiempo
 let AJ_DIAS  = null;     // días con foto, o null mientras carga
+/* ¿La base nos está diciendo cuántas fotos automáticas hay? Con la versión
+   vieja de `fotos_por_dia` no lo dice, y entonces no se puede afirmar nada
+   sobre la red. */
+let AJ_SABE_AUTO = true;
 let AJ_DIA   = null;     // el día elegido
 let AJ_PREVIA = null;    // qué cambiaría, calculado contra el estado de hoy
 let AJ_REST  = [];       // restauraciones hechas
@@ -8821,8 +8828,22 @@ async function ajCargarDias(){
   if(sede !== AJ_SEDE) return;               // cambiaron de sede mientras cargaba
 
   if(!rpc.error && Array.isArray(rpc.data)){
+    /* NO SÉ ≠ NO HAY, y confundirlos fue la causa real del aviso falso del
+       2026-08-25. En producción vivía una versión VIEJA de `fotos_por_dia`
+       que devolvía solo (fecha, cuantos, tipo) — sin `automatica`. Al leerla,
+       `d.automatica` daba `undefined`, y como el semáforo hace `(+d.auto||0)`,
+       ese `undefined` se volvía 0 y la pantalla afirmaba "la foto automática
+       NUNCA corrió en esta sede" teniendo fotos guardadas de verdad.
+
+       El error no fue el número: fue tratar "la función no me lo dice" igual
+       que "no hay ninguna". Ahora se distingue — si la columna no viene,
+       `auto` queda en null y el semáforo no acusa nada (§0.5: más vale no
+       decir nada que decir algo falso con seguridad). */
+    const trae = rpc.data.length === 0 || 'automatica' in rpc.data[0];
     AJ_DIAS = rpc.data.map(d=>({fecha:d.fecha, tipo:d.tipo, cuantos:d.cuantos,
-                                aMano:d.a_mano, auto:d.automatica}));
+                                aMano: trae ? d.a_mano     : null,
+                                auto:  trae ? d.automatica : null}));
+    AJ_SABE_AUTO = trae;
   } else {
     /* SIN LA FUNCIÓN `fotos_por_dia`, ESTE CAMINO TENÍA UN DEFECTO REAL
        (encontrado el 2026-08-25): contaba SOLO si el día tenía foto manual
@@ -8846,6 +8867,7 @@ async function ajCargarDias(){
                                           : 'automática';
       return {fecha:f, tipo, aMano:d.aMano, auto:d.auto};
     });
+    AJ_SABE_AUTO = true;          // acá se cuentan las filas a mano: sí se sabe
   }
   if(ajActual === 'respaldos') pintarAjustes();
 }
@@ -8927,7 +8949,10 @@ function ajRespaldosHTML(){
     const diasSinAuto = ultimaAuto
       ? Math.round((new Date(hoyISO()+'T12:00') - new Date(ultimaAuto+'T12:00'))/86400000)
       : null;
-    const red = ultimaAuto === null
+    const red = !AJ_SABE_AUTO
+      ? {n:'aviso', t:'No se puede saber si la red está puesta',
+         d:'La base tiene una versión vieja de "fotos_por_dia" que no cuenta las fotos automáticas. Se actualiza corriendo "2026-08-dias-con-foto.sql".'}
+      : ultimaAuto === null
       ? {n:'mal', t:'La foto automática nunca corrió en esta sede',
          d:'La red no está puesta. Se instala corriendo "2026-08-respaldo-automatico-de-verdad.sql".'}
       : diasSinAuto >= 3
@@ -8944,7 +8969,7 @@ function ajRespaldosHTML(){
       <div style="margin-top:12px">${AJ_DIAS.map(d=>`
         <button type="button" class="aj-dia${d.fecha===AJ_DIA?' on':''}" data-ajdia="${d.fecha}">
           <span class="nm"><b>${fmtFecha(d.fecha)}</b><span>${esc(d.tipo)}${
-            (+d.auto||0) ? '' : ' · sin foto automática'}</span></span>
+            (!AJ_SABE_AUTO || (+d.auto||0)) ? '' : ' · sin foto automática'}</span></span>
           <span class="flecha">›</span>
         </button>`).join('')}</div></div>`;
   }
