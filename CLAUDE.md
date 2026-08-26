@@ -31,6 +31,7 @@
 | 2 | Estética · paleta y formas | tocar la pantalla |
 | 2.0 | Que sea bella, no solo que funcione | tocar la pantalla |
 | 2.1 | Texto mínimo — nada de párrafos explicativos | escribir cualquier texto de la app |
+| **2.3** | **La impresora: USB, ESC/POS, y por qué hace falta un puente** | construir Llamita Lama |
 | 3 | Arquitectura · dónde vive cada pieza | desplegar algo |
 | 3.5 | **Los 3 límites del editor de Supabase** | escribir un `.sql` para Jhon |
 | 3.6 | Jhon no tiene el repo en su computador | entregarle instrucciones |
@@ -1183,6 +1184,66 @@ inventario, no volver al estado anterior.
 
 ---
 
+## 2.3 LA IMPRESORA — lo medido, para cuando se construya Llamita Lama
+
+> Datos del 2026-08-26, sacados de la propia pantalla de configuración de
+> Fudo y del cable de verdad. **No son suposiciones: es lo que se ve.**
+> Esta sección existe para que el chat que construya el área de ventas no
+> vuelva a averiguar lo que ya se sabe.
+
+### El hallazgo que decide la arquitectura
+
+**La impresora está conectada al computador por USB.** Jhon lo comprobó
+mirando los cables: hay dos, corriente y PC. No hay cable de red.
+
+**Consecuencia dura: el navegador NO le puede hablar directo.** Una página web
+no puede abrir un puerto USB. Entonces hace falta un programa chico corriendo
+en ese computador que reciba por red local e imprima.
+
+**Y eso no es un rodeo nuestro: es exactamente lo que hace Fudo.** Su pantalla
+de configuración pide instalar DOS cosas antes de imprimir:
+
+| | |
+|---|---|
+| Una **extensión de Chrome** | *"permite que el navegador pueda encontrar impresoras conectadas"* |
+| Una **aplicación de Windows** | *"permite que Fudo acceda a las impresoras conectadas"* |
+
+Esto **corrige** lo que decía §7, que daba por hecho que Fudo no instala nada
+en el computador del local. Sí instala. Lo que corre 100% en el navegador es
+la parte de vender; imprimir necesita el puente.
+
+### Lo que ya está resuelto y no hay que volver a hacer
+
+- **La impresora está instalada y funcionando.** No hay que configurarla, ni
+  averiguar su IP, ni el truco del FEED al encender.
+- **Habla ESC/POS**, que es el estándar que el propio Fudo exige. Nuestro
+  código le hablaría el mismo idioma.
+- Modelo: **Xprinter XP-N160II**, térmica de 80 mm.
+
+### Marcas que Fudo desaconseja, y por qué importa
+
+**DINON** y **OCOM** — por *"problemas de compatibilidad, cortes erróneos y
+fallas en la impresión de comandas"*. Vale anotarlo porque el día que haya que
+comprar una impresora para otro local, esa lista es experiencia ajena gratis.
+Las recomendadas: EPSON TM-T20 II/III, EPSON TM-T88, Bixolon SRP 350,
+3nStar RPT0008.
+
+### Y una que ahorra un problema legal, para Chile
+
+Para **boletas con código PDF417** —el formato chileno— Fudo solo lista
+**EPSON TM-T20 II/III** y **3nStar RPT0008**. No toda térmica sirve para eso.
+Igual §7 ya dice que la boleta sale por Mercado Pago y esa línea no se cruza,
+así que hoy no aplica; se anota por si algún día cambia.
+
+### El orden de trabajo cuando se construya
+
+**El puente de impresión va PRIMERO y AISLADO**, sin tocar la app ni la base.
+Es la lección de §0.5 aplicada antes de escribir: si falla, que falle solo, y
+que se sepa en dos días en vez de en dos meses. Es una pieza chica —recibe
+texto por red local e imprime— y no tiene por qué saber nada de inventario.
+
+---
+
 ## 3. Arquitectura (cómo está montado)
 
 | Pieza | Dónde vive | Cómo se despliega |
@@ -1877,17 +1938,21 @@ Evaluación inicial vs. lo que Jhon confirmó después:
 - Modelo real: **Xprinter XP-N160II**, habla **ESC/POS** (estándar de la industria,
   no propietario) y tiene **puerto ethernet además de USB** — mejor que USB porque
   evita drivers de Windows.
-- **Fudo no tiene ningún programa instalado en el computador del local.** Corre
-  100% en el navegador. La pestaña de Fudo abierta todo el día **ES** el mecanismo
-  que mantiene la conexión con la nube y manda a imprimir — confirmado por Jhon
-  ("si la cierro, deja de imprimir"). Esto valida el plan: nuestra futura interfaz
-  de Caja, abierta en ese mismo navegador, cumpliría el mismo rol sin instalar nada.
-  Sí es una regla operativa nueva a enseñar: esa pestaña no se cierra.
+- ~~**Fudo no tiene ningún programa instalado en el computador del local.**~~
+  **ESTO ESTABA MAL, corregido el 2026-08-26 → ver §2.3.** La propia pantalla
+  de configuración de Fudo pide instalar **una extensión de Chrome y una
+  aplicación de Windows** para poder imprimir. Se deja tachado y no borrado
+  porque el error de método es la parte útil: lo di por hecho desde *"si
+  cierro la pestaña deja de imprimir"*, que es cierto **y no prueba** que no
+  haya nada instalado. Un síntoma compatible con dos explicaciones no elige
+  entre ellas. La respuesta estaba en la pantalla que usa la gente, no en
+  razonar sobre el síntoma — igual que con el borrado del catálogo (§8).
+  Lo que sí se sostiene: esa pestaña abierta hace falta y no se cierra.
 - **Antes de prometer nada de POS**, el primer paso técnico es un **prototipo
-  aislado de impresión** (1-2 días): imprimir una comanda de prueba en esa Xprinter
-  desde Supabase, sin tocar la app existente. Si falla, se sabe en 2 días y no en 2
-  meses. Necesita: confirmar Windows en ese equipo, y si el cable de red llega hasta
-  la impresora (si no, hay que sacarle la IP con el truco de FEED al encender).
+  aislado de impresión**: imprimir una comanda de prueba en esa Xprinter, sin
+  tocar la app existente. Si falla, se sabe en dos días y no en dos meses.
+  **Ya no hace falta averiguar la conexión: es USB, y la impresora ya está
+  instalada y funcionando** (§2.3). Lo que hay que construir es el puente.
 
 ### Arquitectura si se avanza (la lección de "un cerebro, varias caras")
 
