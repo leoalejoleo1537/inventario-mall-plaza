@@ -8824,15 +8824,28 @@ async function ajCargarDias(){
     AJ_DIAS = rpc.data.map(d=>({fecha:d.fecha, tipo:d.tipo, cuantos:d.cuantos,
                                 aMano:d.a_mano, auto:d.automatica}));
   } else {
+    /* SIN LA FUNCIÓN `fotos_por_dia`, ESTE CAMINO TENÍA UN DEFECTO REAL
+       (encontrado el 2026-08-25): contaba SOLO si el día tenía foto manual
+       o automática, pero nunca guardaba CUÁNTAS. El aviso de arriba mira
+       `d.auto`, y acá nunca se llenaba — así que el aviso decía "nunca
+       corrió" aunque `historial_auto` ya estuviera guardando fotos de
+       verdad. No era una falsa alarma del negocio: era este camino de
+       respaldo el que mentía. Ahora cuenta de verdad, igual que la función. */
     const [man, aut] = await Promise.all([
       sb.from('historial').select('fecha').eq('sede',sede).order('fecha',{ascending:false}).limit(1000),
       sb.from('historial_auto').select('fecha').eq('sede',sede).order('fecha',{ascending:false}).limit(1000),
     ]);
     if(sede !== AJ_SEDE) return;
     const dias = {};
-    (man.data||[]).forEach(f=>{ dias[f.fecha] = 'contada a mano'; });
-    (aut.data||[]).forEach(f=>{ if(!dias[f.fecha]) dias[f.fecha] = 'automática'; });
-    AJ_DIAS = Object.keys(dias).sort().reverse().slice(0,60).map(f=>({fecha:f, tipo:dias[f]}));
+    (man.data||[]).forEach(f=>{ (dias[f.fecha] ||= {aMano:0, auto:0}).aMano++; });
+    (aut.data||[]).forEach(f=>{ (dias[f.fecha] ||= {aMano:0, auto:0}).auto++; });
+    AJ_DIAS = Object.keys(dias).sort().reverse().slice(0,60).map(f=>{
+      const d = dias[f];
+      const tipo = d.aMano>0 && d.auto>0 ? 'contada a mano + automática'
+                 : d.aMano>0             ? 'contada a mano'
+                                          : 'automática';
+      return {fecha:f, tipo, aMano:d.aMano, auto:d.auto};
+    });
   }
   if(ajActual === 'respaldos') pintarAjustes();
 }
