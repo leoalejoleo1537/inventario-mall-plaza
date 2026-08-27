@@ -43,6 +43,11 @@
     --green-bg:#E4F1E5; --green-fg:#2E7D32;
     --amber-bg:#FDF0DE; --amber-fg:#9C6209;
     --gray-bg:#E1E8F1; --gray-fg:#54677D;
+    /* AZUL · la mesa que ya pidió la cuenta. Es el tercer estado del área de
+       ventas, y hace falta uno propio: verde es "libre" y rojo es "ocupada",
+       pero "ya se imprimió la precuenta, están pagando" no es ninguna de las
+       dos. El azul sale del mismo pizarra de las secciones, aclarado. */
+    --azul-bg:#E8F0FB; --azul-fg:#2C5AA0;
     /* la sección: cápsula clara y un filo de color. Ya no es un bloque
        relleno — ver el comentario de .sec-head. */
     --sec-bg:#D0DDEC; --sec-tx:#1F3A5C; --sec-line:rgba(31,58,92,.22);
@@ -624,6 +629,94 @@
        border-radius:9px;font-size:14px;background:var(--card);color:var(--text);font-family:inherit}
   .enl-manual-lista{max-height:220px;overflow-y:auto;margin-top:7px}
   .enl-manual-lista .enl-cand{margin-bottom:5px}
+
+  /* ---------- LLAMITA LAMA · el área de ventas ---------- */
+  /* En computador: mesas a la izquierda, panel a la derecha. En teléfono:
+     las mesas ocupan todo y el panel va abajo. El corte es 719px, el mismo
+     que ya usa Ajustes — y con `align-items:stretch` en columna, que es la
+     lección del 21 de agosto: en columna manda el eje transversal, y sin
+     eso el panel se ancha lo que pida su contenido y corre la pantalla. */
+  .lama{display:block}
+  @media (min-width:720px){
+    .lama{display:flex;gap:16px;align-items:flex-start}
+    .lama-plano{flex:1;min-width:0}
+    .lama-panel{width:380px;flex:0 0 auto;margin-top:0}
+  }
+  .lama-salones{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}
+  .lama-salones button{border:1px solid var(--border);background:var(--card);font:inherit;
+    font-size:13px;font-weight:700;color:var(--muted);padding:7px 15px;border-radius:999px;
+    cursor:pointer;white-space:nowrap}
+  .lama-salones button.on{background:var(--sec-bg);border-color:var(--sec-bg);color:#fff}
+
+  .lama-mesas{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  @media (min-width:720px){ .lama-mesas{grid-template-columns:repeat(5,1fr)} }
+  .lama-mesa{aspect-ratio:1;border:none;border-radius:12px;cursor:pointer;font:inherit;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    transition:transform .12s ease, background .18s ease}
+  .lama-mesa:active{transform:scale(.95)}
+  .lama-mesa .n{font-size:22px;font-weight:800;line-height:1}
+  .lama-mesa .q{font-size:10px;font-weight:700;opacity:.85;line-height:1.15;text-align:center;
+    padding:0 4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lama-mesa.libre{background:var(--green-bg);color:var(--green-fg)}
+  .lama-mesa.ocupada{background:var(--red-bg);color:var(--red-fg)}
+  .lama-mesa.cobrando{background:var(--azul-bg);color:var(--azul-fg)}
+  .lama-mesa.sel{outline:2.5px solid var(--orange);outline-offset:2px}
+
+  .lama-leyenda{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+  .lama-leyenda span{display:flex;align-items:center;gap:6px;font-weight:600}
+  .lama-leyenda i{width:12px;height:12px;border-radius:4px;display:block}
+  .lama-leyenda i.lib{background:var(--green-bg);border:1px solid var(--green-fg)}
+  .lama-leyenda i.ocu{background:var(--red-bg);border:1px solid var(--red-fg)}
+  .lama-leyenda i.cob{background:var(--azul-bg);border:1px solid var(--azul-fg)}
+
+  .lama-panel{margin-top:14px}
+  .lama-caja{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .lama-cab{background:var(--red-fg);color:#fff;padding:11px 14px;display:flex;align-items:center;gap:8px}
+  .lama-cab.libre{background:var(--sec-bg)}
+  .lama-cab.cobrando{background:var(--azul-fg)}
+  .lama-cab b{flex:1;font-size:16px}
+  .lama-cab button{border:none;background:rgba(255,255,255,.16);color:#fff;font:inherit;
+    font-size:14px;font-weight:700;padding:6px 11px;border-radius:8px;cursor:pointer}
+  .lama-cab button:active{transform:scale(.94)}
+  .lama-cuerpo{padding:13px 14px}
+  .lama-vacio{padding:38px 18px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.55}
+
+  .lama-frec{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .lama-frec button{border:1px solid var(--border);background:var(--card);font:inherit;
+    font-size:12.5px;font-weight:600;padding:7px 11px;border-radius:999px;cursor:pointer;color:var(--text)}
+  .lama-frec button:active{transform:scale(.95)}
+
+  /* UNA LÍNEA = UN RENGLÓN. Es la regla que salió del área de reparto:
+     "optimiza el espacio, no me metas tres niveles". */
+  .lama-linea{display:flex;align-items:center;gap:9px;padding:9px 0;border-top:1px solid var(--border)}
+  .lama-linea .nm{flex:1;min-width:0}
+  .lama-linea .nm b{display:block;font-size:14px;font-weight:700;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .lama-linea .nm span{display:block;font-size:11.5px;color:var(--muted);margin-top:1px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+  .lama-linea .cant{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+  .lama-linea .cant button{width:26px;height:26px;border:1px solid var(--border);
+    background:var(--card);border-radius:8px;font:inherit;font-weight:800;cursor:pointer;color:var(--text)}
+  .lama-linea .cant b{min-width:18px;text-align:center;font-size:14px}
+  .lama-linea .precio{font-size:13.5px;font-weight:700;flex:0 0 auto;min-width:52px;text-align:right}
+  .lama-linea .x{border:none;background:none;color:var(--muted);font-size:16px;cursor:pointer;
+    padding:2px 4px;flex:0 0 auto}
+  /* Lo que todavía no salió a la cocina va en ámbar: es lo que el botón
+     Confirmar va a mandar, y verlo evita mandar de más o de menos. */
+  .lama-linea.nueva{background:var(--amber-bg);margin:0 -14px;padding:9px 14px}
+
+  .lama-total{display:flex;align-items:center;justify-content:space-between;padding:12px 0 4px;
+    border-top:2px solid var(--border);margin-top:6px;font-size:17px;font-weight:800}
+  .lama-acc{display:flex;gap:8px;margin-top:12px}
+  .lama-acc .btn{flex:1}
+  .lama-papel{background:var(--card);border:1px dashed var(--muted);border-radius:10px;padding:16px;
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.7;
+    white-space:pre-wrap;margin-top:12px}
+
+  @media (prefers-reduced-motion: reduce){
+    .lama-mesa{transition:none}
+    .lama-mesa:active,.lama-frec button:active,.lama-cab button:active{transform:none}
+  }
 
   .enl-dest{border:1.5px solid var(--border);border-radius:12px;padding:12px 13px;background:var(--card);
             cursor:pointer;user-select:none}
@@ -1715,6 +1808,14 @@
          producto al revés. Por eso el nombre dice a dónde va. -->
     <button class="tab" data-tab="aplaza" id="tabAPlaza" style="display:none">A Mall Plaza</button>
     <button class="tab" data-tab="enlaces" id="tabEnlaces" style="display:none">Enlaces</button>
+    <!-- LLAMITA LAMA · el área de ventas, en construcción.
+         Nace escondida y solo la ve quien tenga `puede_lama` en app_permisos
+         —hoy una sola cuenta—. Jhon: "si algo falla aquí, podríamos perder o
+         entorpecer todo un día de ventas, necesito trabajar tranquilo".
+         Ojo con qué es esto y qué no: es un seguro contra el resbalón, NO
+         seguridad (§6.1). Quien abra las herramientas del navegador ve el
+         código igual. Para que el equipo no la vea ni la pida, alcanza. -->
+    <button class="tab" data-tab="lama" id="tabLama" style="display:none">Mesas</button>
   </div>
 </div>
 
@@ -2293,6 +2394,32 @@
   <div id="mermas-list"><div class="empty">Cargando…</div></div>
 </div>
 
+<!-- ================= LLAMITA LAMA · el área de ventas =================
+     EN CONSTRUCCIÓN. Solo la ve quien tenga `puede_lama` (§ la pestaña).
+
+     La forma copia a Fudo a propósito: el equipo ya sabe usar esa pantalla,
+     y parecerse hace que la curva de aprendizaje sea casi cero. Es la misma
+     razón por la que el reparto desde bodega escribe lo mismo que el reparto
+     del local, para que el jefe de turno lo reciba igual que siempre.
+
+     Lo que NO copia, y es lo que Jhon pidió sacar: al abrir una mesa, Fudo
+     pregunta personas, cliente, garzón y un comentario de mesa. Ninguna se
+     mira después. Acá abrir una mesa es UN toque. -->
+<div class="wrap" id="view-lama" style="display:none">
+  <div class="lama">
+    <div class="lama-plano">
+      <div class="lama-salones" id="lama-salones"></div>
+      <div class="lama-mesas" id="lama-mesas"><div class="empty">Cargando…</div></div>
+      <div class="lama-leyenda">
+        <span><i class="lib"></i> libre</span>
+        <span><i class="ocu"></i> ocupada</span>
+        <span><i class="cob"></i> cobrando</span>
+      </div>
+    </div>
+    <div class="lama-panel" id="lama-panel"></div>
+  </div>
+</div>
+
 <!-- ================= RECETAS ================= -->
 <div class="wrap" id="view-recetas" style="display:none">
 
@@ -2494,7 +2621,7 @@ const SEDES = {
   central: { label:'Bodega',           corto:'Bodega',     excel:'bodega'  },
 };
 /* el título de la barra dice en qué estás, como en Fudo */
-const TITULOS = {inv:'Inventario', reparto:'Reparto', recepcion:'Lo que llega a bodega', envios:'Enviar a los locales', aplaza:'Enviar a Mall Plaza', hist:'Historial', recetas:'Recetas', mermas:'Mermas', enlaces:'Enlaces', ajustes:'Ajustes'};
+const TITULOS = {inv:'Inventario', reparto:'Reparto', recepcion:'Lo que llega a bodega', envios:'Enviar a los locales', aplaza:'Enviar a Mall Plaza', hist:'Historial', recetas:'Recetas', mermas:'Mermas', enlaces:'Enlaces', lama:'Mesas', ajustes:'Ajustes'};
 let SEDE = null;
 let channel = null;
 
@@ -2721,7 +2848,7 @@ function puedeEnFudo(clave){
 }
 
 function permisosDeLaSede(fila, sede){
-  if(!fila) return { puede_fudo:false, puede_editar:false, puede_ajustes:false, sede:null, fudo_bloqueos:[] };
+  if(!fila) return { puede_fudo:false, puede_editar:false, puede_ajustes:false, puede_lama:false, sede:null, fudo_bloqueos:[] };
   const suya = fila.sede || null;
   const aqui = !suya || suya === sede;
   return {
@@ -2738,6 +2865,11 @@ function permisosDeLaSede(fila, sede){
        zona de administración que se abre sola por no haber corrido un
        script sería la peor forma de estrenarla. */
     puede_ajustes: !!fila.puede_ajustes && aqui,
+    /* LLAMITA LAMA, el área de ventas en construcción. NO se acota por sede:
+       es "esta persona está trabajando en Lama", no "en este local hay
+       mesas". Mientras la columna no exista viene undefined y queda en
+       false para todos — que es justo lo que se quiere. */
+    puede_lama: !!fila.puede_lama,
     /* Los bloqueos NO se acotan por sede: apagar algo es una decisión sobre
        la persona, no sobre dónde está parada. Si la columna todavía no
        existe, viene undefined y queda en lista vacía = todo permitido. */
@@ -2745,7 +2877,7 @@ function permisosDeLaSede(fila, sede){
   };
 }
 
-let PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null, fudo_bloqueos:[] };
+let PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, puede_lama:false, correo:null, sede:null, fudo_bloqueos:[] };
 /* UNA LECTURA QUE FALLA NO PUEDE QUITARLE EL PERMISO A NADIE.
 
    Este era el bug que reportó Jhon: "habilito el Modo edición para otra
@@ -2765,7 +2897,7 @@ async function cargarPermisos(){
     const {data:{session}} = await sb.auth.getSession();
     const correo = session?.user?.email?.toLowerCase() || null;
     if(!correo){
-      PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, correo:null, sede:null, fudo_bloqueos:[] };
+      PERMISOS = { puede_fudo:false, puede_editar:false, puede_ajustes:false, puede_lama:false, correo:null, sede:null, fudo_bloqueos:[] };
     } else {
       const {data,error} = await sb.from('app_permisos').select('*').eq('correo',correo).maybeSingle();
       if(error){
@@ -2806,6 +2938,16 @@ function aplicarPermisos(){
      puede actuar sobre ella; al resto solo le quita la confianza en el
      sistema, que es lo único que este proyecto no puede perder. */
   $('motorAviso').classList.toggle('solo-admin', !admin);
+
+  /* LLAMITA LAMA. La pestaña solo existe para quien la está construyendo, y
+     solo en los locales: bodega no vende. Se decide acá y no en pickSede
+     porque el permiso puede llegar DESPUÉS de elegir la sede — cargarPermisos
+     corre al final de pickSede—, y si se decidiera allá la pestaña no
+     aparecería hasta cambiar de sede. */
+  const tl = $('tabLama');
+  if(tl) tl.style.display = (PERMISOS.puede_lama && SEDE && SEDE !== 'central') ? '' : 'none';
+  if(!PERMISOS.puede_lama && vistaActual === 'lama') pickTab('inv');
+
   // si le quitaron el permiso con la pantalla abierta, se sale de ella
   if(!PERMISOS.puede_ajustes && vistaActual === 'ajustes') pickTab('inv');
   if(!PERMISOS.puede_editar) setModoEdicion(false);
@@ -3214,6 +3356,11 @@ function pickSede(s){
      mover, y ofrecerlo en las dos sedes invita a mandar producto de vuelta
      sin motivo. Si algún día hace falta, es agregar una sede acá. */
   $('tabAPlaza').style.display    = s==='angamos' ? '' : 'none';
+  /* Lama nace escondida en CADA cambio de sede. La vuelve a encender
+     aplicarPermisos(), que corre al final de este mismo pickSede. Así, si el
+     permiso no llega o la lectura falla, lo que queda es escondida — que es
+     el lado seguro del error. */
+  $('tabLama').style.display      = 'none';
   document.querySelector('.tab[data-tab="reparto"]').style.display = s==='central' ? 'none' : '';
   MERMAS=[]; ENLACES=[]; SEDE_PROD={};
   repcCarritos={plaza:[],angamos:[]}; repcAbiertos={plaza:[],angamos:[]};
@@ -3222,7 +3369,7 @@ function pickSede(s){
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab==='inv'));
   moverCarril();
   $('view-aplaza').style.display='none';
-  $('view-inv').style.display='block'; $('view-ajustes').style.display='none'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none'; $('view-enlaces').style.display='none'; $('view-repcentral').style.display='none';
+  $('view-inv').style.display='block'; $('view-ajustes').style.display='none'; $('view-reparto').style.display='none'; $('view-hist').style.display='none'; $('view-recetas').style.display='none'; $('view-mermas').style.display='none'; $('view-enlaces').style.display='none'; $('view-repcentral').style.display='none'; $('view-lama').style.display='none';
   vistaActual='inv';
   barraPestanas(true);   // si se cambió de sede estando en Ajustes, estaba escondida
   listEl.innerHTML='';
@@ -4888,6 +5035,363 @@ let ENLACES = [];          // filas de producto_enlace
 /* Los productos de BODEGA que esos enlaces señalan, para cuando se está
    parado en un local y `DATA` solo tiene los de esa sede. */
 let BODEGA_PROD = {};
+
+
+/* ==================================================================
+   LLAMITA LAMA · el área de ventas
+   ==================================================================
+   EN CONSTRUCCIÓN. Solo la ve quien tenga `puede_lama`.
+
+   LO QUE ESTA PANTALLA NO HACE, Y ES A PROPÓSITO:
+
+   · NO descuenta stock. Ni al confirmar ni al cerrar. Es lo que hace que
+     probar sea seguro — se puede abrir y cerrar mesas veinte veces sin
+     descuadrar el inventario. Se enciende después, con interruptor.
+   · NO imprime. La comanda se muestra en pantalla tal como saldría. La
+     impresora está por USB y necesita un puente aparte (§2.3), que va
+     aislado: si falla, que falle solo.
+
+   Las reglas duras viven en la BASE, no acá: una mesa no puede tener dos
+   cuentas abiertas, confirmar dos veces no manda de nuevo lo que ya salió,
+   y no se puede mover a una mesa ocupada. Esta pantalla las respeta y
+   traduce los errores; no las implementa.                             */
+
+let LAMA_MESAS   = [];      // el plano de la sede
+let LAMA_CUENTAS = [];      // las cuentas vivas, por mesa_id
+let LAMA_ITEMS   = [];      // los items de la cuenta abierta
+let LAMA_SALON   = null;    // el salón elegido
+let LAMA_SEL     = null;    // id de la mesa abierta en el panel
+let LAMA_PAPEL   = null;    // el texto de la última comanda o precuenta
+let LAMA_CARTA   = [];      // el catálogo vendible de esta sede
+let LAMA_Q       = '';      // lo escrito en el buscador
+
+const lamaCuentaDe = mesaId => LAMA_CUENTAS.find(c => c.mesa_id === mesaId) || null;
+const lamaMesaDe   = id     => LAMA_MESAS.find(m => m.id === id) || null;
+const plata = n => '$' + Math.round(+n || 0).toLocaleString('es-CL');
+
+/* La carta sale de `fudo_productos`, el espejo del catálogo de Fudo que se
+   sincroniza con el botón ⟳. No hay que cargar nada: nombre, precio y
+   categoría ya están ahí desde julio. */
+async function lamaCargar(){
+  if(!SEDE || SEDE === 'central') return;
+  const [mm, cc, pp] = await Promise.all([
+    sb.from('mesas').select('*').eq('sede', SEDE).eq('activa', true)
+      .order('salon').order('orden').limit(500),
+    sb.from('cuentas').select('*').eq('sede', SEDE).neq('estado', 'cerrada').limit(500),
+    sb.from('fudo_productos').select('fudo_product_id,nombre,precio')
+      .eq('sede', SEDE).eq('activo', true).order('nombre').limit(1000),
+  ]);
+  LAMA_MESAS   = mm.data || [];
+  LAMA_CUENTAS = cc.data || [];
+  LAMA_CARTA   = (pp.data || []).filter(p => p.nombre && +p.precio > 0);
+  if(!LAMA_SALON) LAMA_SALON = (LAMA_MESAS[0] || {}).salon || 'Salón';
+  await lamaCargarItems();
+  lamaPintar();
+}
+
+async function lamaCargarItems(){
+  const c = LAMA_SEL ? lamaCuentaDe(LAMA_SEL) : null;
+  if(!c){ LAMA_ITEMS = []; return; }
+  const r = await sb.from('cuenta_items').select('*').eq('cuenta_id', c.id).order('id').limit(500);
+  LAMA_ITEMS = r.data || [];
+}
+
+function lamaPintar(){ lamaPintarPlano(); lamaPintarPanel(); }
+
+function lamaPintarPlano(){
+  const cont = $('lama-mesas'); if(!cont) return;
+  const salones = [...new Set(LAMA_MESAS.map(m => m.salon))];
+  /* La franja de salones solo aparece si hay más de uno. Hoy solo existe
+     "Salón" — Terraza y POPUP están en Fudo pero no se usan — y un selector
+     de una sola opción es ruido. */
+  $('lama-salones').innerHTML = salones.length > 1
+    ? salones.map(s => `<button type="button" data-lamasalon="${esc(s)}"${
+        s === LAMA_SALON ? ' class="on"' : ''}>${esc(s)}</button>`).join('')
+    : '';
+
+  const mesas = LAMA_MESAS.filter(m => m.salon === LAMA_SALON);
+  if(!mesas.length){
+    cont.innerHTML = '<div class="empty">Esta sede todavía no tiene mesas.</div>';
+    return;
+  }
+  cont.innerHTML = mesas.map(m => {
+    const c = lamaCuentaDe(m.id);
+    const est = !c ? 'libre' : c.estado === 'precuenta' ? 'cobrando' : 'ocupada';
+    const qn  = c && c.abierta_por ? String(c.abierta_por).split('@')[0] : '';
+    return `<button type="button" class="lama-mesa ${est}${LAMA_SEL===m.id?' sel':''}" data-lamamesa="${m.id}">
+      <span class="n">${m.numero}</span>${qn ? `<span class="q">${esc(qn)}</span>` : ''}
+    </button>`;
+  }).join('');
+}
+
+function lamaPintarPanel(){
+  const cont = $('lama-panel'); if(!cont) return;
+  const m = LAMA_SEL ? lamaMesaDe(LAMA_SEL) : null;
+  if(!m){
+    cont.innerHTML = `<div class="lama-caja"><div class="lama-vacio">
+      Toca una mesa para abrirla.<br>Verde está libre, roja tiene gente.</div></div>`;
+    return;
+  }
+  const c = lamaCuentaDe(m.id);
+  const total  = LAMA_ITEMS.reduce((s,i) => s + (+i.cantidad||0) * (+i.precio||0), 0);
+  const nuevos = LAMA_ITEMS.filter(i => i.estado === 'nuevo');
+  const clase  = !c ? 'libre' : c.estado === 'precuenta' ? 'cobrando' : '';
+
+  cont.innerHTML = `<div class="lama-caja">
+    <div class="lama-cab ${clase}">
+      <b>Mesa ${m.numero}</b>
+      ${c ? `<button type="button" data-lamaacc="mover" title="Mover la mesa o sus productos">✎</button>
+             <button type="button" data-lamaacc="precuenta" title="Imprimir la precuenta">✓</button>` : ''}
+      <button type="button" data-lamaacc="cerrar-panel" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="lama-cuerpo">
+      <input type="text" class="aj-buscar" id="lama-q" placeholder="Buscar producto…"
+             autocomplete="off" value="${esc(LAMA_Q)}">
+      <div class="lama-frec" id="lama-frec"></div>
+
+      ${LAMA_ITEMS.length ? LAMA_ITEMS.map(i => `
+        <div class="lama-linea${i.estado==='nuevo'?' nueva':''}">
+          <div class="nm">
+            <b>${esc(i.nombre)}</b>
+            <span data-lamacom="${i.id}">${i.comentario ? esc(i.comentario) : '+ comentario'}</span>
+          </div>
+          <div class="cant">
+            <button type="button" data-lamamenos="${i.id}">−</button>
+            <b>${fmt(i.cantidad)}</b>
+            <button type="button" data-lamamas="${i.id}">+</button>
+          </div>
+          <span class="precio">${plata((+i.cantidad||0)*(+i.precio||0))}</span>
+          <button type="button" class="x" data-lamaquitar="${i.id}" aria-label="Quitar">✕</button>
+        </div>`).join('')
+        : `<div style="padding:18px 0;color:var(--muted);font-size:14px;text-align:center">
+             Todavía no hay nada. Busca un producto arriba.</div>`}
+
+      ${LAMA_ITEMS.length ? `<div class="lama-total"><span>Total</span><span>${plata(total)}</span></div>` : ''}
+
+      ${nuevos.length ? `<div class="lama-acc">
+          <button type="button" class="btn btn-gris"   data-lamaacc="cancelar">Cancelar</button>
+          <button type="button" class="btn btn-orange" data-lamaacc="confirmar">Confirmar</button>
+        </div>`
+      : c && LAMA_ITEMS.length ? `<div class="lama-acc">
+          <button type="button" class="btn btn-navy" data-lamaacc="cobrar">Cerrar mesa ${m.numero}</button>
+        </div>` : ''}
+
+      ${LAMA_PAPEL ? `<div class="lama-papel">${esc(LAMA_PAPEL)}</div>` : ''}
+    </div>
+  </div>`;
+  lamaPintarFrec();
+}
+
+/* Los frecuentes se pintan en su PROPIO recuadro, no repintando el panel
+   entero: repintar mientras alguien escribe le saca el campo de abajo del
+   dedo, y esa lección ya costó tres veces en el área de reparto. */
+function lamaPintarFrec(){
+  const caja = $('lama-frec'); if(!caja) return;
+  const q = normNombre(LAMA_Q.trim());
+  const lista = (q ? LAMA_CARTA.filter(p => normNombre(p.nombre).includes(q))
+                   : LAMA_CARTA).slice(0, 10);
+  caja.innerHTML = lista.length
+    ? lista.map(p => `<button type="button" data-lamaadd="${esc(p.fudo_product_id)}">${esc(p.nombre)}</button>`).join('')
+    : `<span style="color:var(--muted);font-size:13px">Nada con ese nombre.</span>`;
+}
+
+/* Todas las acciones pasan por acá: llaman a la base, y si algo se niega
+   muestran el motivo tal como lo escribió la función. Los mensajes están
+   redactados para el mesón, así que no hay que traducirlos. */
+async function lamaLlamar(fn, args){
+  const {data, error} = await sb.rpc(fn, args);
+  if(error){ avisar(error.message || 'No se pudo. Revisa tu señal e inténtalo de nuevo.'); return null; }
+  return data;
+}
+
+async function lamaAbrir(mesaId){
+  LAMA_SEL = mesaId; LAMA_PAPEL = null; LAMA_Q = '';
+  const m = lamaMesaDe(mesaId);
+  if(!lamaCuentaDe(mesaId)){
+    const c = await lamaLlamar('mesa_abrir', {p_mesa_id: mesaId, p_quien: NOMBRE});
+    if(!c) { LAMA_SEL = null; lamaPintar(); return; }
+    LAMA_CUENTAS = LAMA_CUENTAS.filter(x => x.mesa_id !== mesaId).concat(c);
+  }
+  await lamaCargarItems();
+  lamaPintar();
+}
+
+async function lamaAgregar(fudoId){
+  const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
+  const p = LAMA_CARTA.find(x => String(x.fudo_product_id) === String(fudoId)); if(!p) return;
+  LAMA_PAPEL = null;
+  const it = await lamaLlamar('cuenta_agregar', {
+    p_cuenta_id: c.id, p_nombre: p.nombre, p_precio: +p.precio || 0,
+    p_cantidad: 1, p_comentario: null, p_fudo_id: String(p.fudo_product_id), p_quien: NOMBRE});
+  if(!it) return;
+  await lamaCargarItems();
+  lamaPintarPanel();
+}
+
+/* Subir y bajar cantidad se hace con un update directo y no con una función:
+   no hay nada que tenga que pasar junto con otra cosa. Bajar de 1 quita la
+   línea, que es lo que la gente espera del botón −. */
+async function lamaCantidad(itemId, delta){
+  const it = LAMA_ITEMS.find(x => x.id === itemId); if(!it) return;
+  const n = (+it.cantidad || 0) + delta;
+  if(n <= 0) return lamaQuitar(itemId);
+  const {error} = await sb.from('cuenta_items').update({cantidad: n}).eq('id', itemId);
+  if(error){ avisar('No se pudo cambiar la cantidad.\n\n' + (error.message||'')); return; }
+  await lamaLlamar('cuenta_recalcular', {p_cuenta_id: it.cuenta_id});
+  await lamaCargarItems();
+  lamaPintarPanel();
+}
+
+async function lamaQuitar(itemId){
+  const it = LAMA_ITEMS.find(x => x.id === itemId); if(!it) return;
+  /* Lo que YA salió a la cocina se pregunta antes de quitar: alguien lo está
+     preparando. Lo que todavía no salió se quita de una — es corregir el
+     pedido mientras se toma. */
+  if(it.estado === 'confirmado' &&
+     !await preguntar('Quitar "' + it.nombre + '"',
+        'Ya salió a la cocina. Avísale a quien lo esté preparando.', 'Quitar')) return;
+  const {error} = await sb.from('cuenta_items').delete().eq('id', itemId);
+  if(error){ avisar('No se pudo quitar.\n\n' + (error.message||'')); return; }
+  await lamaLlamar('cuenta_recalcular', {p_cuenta_id: it.cuenta_id});
+  await lamaCargarItems();
+  lamaPintarPanel();
+}
+
+async function lamaComentario(itemId){
+  const it = LAMA_ITEMS.find(x => x.id === itemId); if(!it) return;
+  const txt = await pedirTexto('Comentario para "' + it.nombre + '"', it.comentario || '');
+  if(txt === null) return;
+  const {error} = await sb.from('cuenta_items')
+    .update({comentario: txt.trim() || null}).eq('id', itemId);
+  if(error){ avisar('No se pudo guardar el comentario.\n\n' + (error.message||'')); return; }
+  await lamaCargarItems();
+  lamaPintarPanel();
+}
+
+/* EL PAPEL. Por ahora se muestra en pantalla; el día que exista el puente,
+   este mismo texto es lo que se le manda a la impresora. Por eso se arma acá
+   y no en el momento de imprimir: el formato se afina ahora, sin depender
+   del computador del local. */
+function lamaComandaTxt(mesa, comanda){
+  const hora = new Date(comanda.created_at || Date.now())
+    .toLocaleTimeString('es-CL', {hour:'2-digit', minute:'2-digit'});
+  const lineas = (comanda.contenido || []).map(i =>
+    `   ${fmt(i.cantidad)} x ${i.nombre}` + (i.comentario ? `\n       → ${i.comentario}` : ''));
+  return [
+    '      ' + SEDES[SEDE].label,
+    '   ─────────────────────',
+    `   MESA ${mesa.numero}          ${hora}`,
+    `   Comanda #${comanda.numero}`,
+    '   ─────────────────────',
+    ...lineas,
+    '   ─────────────────────',
+    '   ' + (comanda.quien || NOMBRE || ''),
+  ].join('\n');
+}
+
+async function lamaConfirmar(){
+  const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
+  const cm = await lamaLlamar('cuenta_confirmar', {p_cuenta_id: c.id, p_quien: NOMBRE});
+  if(!cm) return;
+  LAMA_PAPEL = lamaComandaTxt(lamaMesaDe(LAMA_SEL), cm);
+  await lamaCargarItems();
+  lamaPintar();
+  aviso('✓ Comanda #' + cm.numero);
+}
+
+/* Cancelar borra SOLO lo que todavía no salió. Lo confirmado no se toca:
+   ya hay alguien preparándolo. */
+async function lamaCancelar(){
+  const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
+  const nuevos = LAMA_ITEMS.filter(i => i.estado === 'nuevo');
+  if(!nuevos.length) return;
+  if(!await preguntar('Cancelar lo que falta mandar',
+      'Se quitan ' + nuevos.length + ' producto' + (nuevos.length===1?'':'s') +
+      ' que todavía no salieron a la cocina.', 'Quitarlos')) return;
+  const {error} = await sb.from('cuenta_items').delete().in('id', nuevos.map(i => i.id));
+  if(error){ avisar('No se pudo cancelar.\n\n' + (error.message||'')); return; }
+  await lamaLlamar('cuenta_recalcular', {p_cuenta_id: c.id});
+  await lamaCargarItems();
+  lamaPintar();
+}
+
+function lamaPrecuentaTxt(mesa, total){
+  return [
+    '      ' + SEDES[SEDE].label,
+    '   ─────────────────────────',
+    `   MESA ${mesa.numero} · precuenta`,
+    '   ─────────────────────────',
+    ...LAMA_ITEMS.map(i =>
+      `   ${fmt(i.cantidad)} x ${i.nombre}\n       ${plata((+i.cantidad||0)*(+i.precio||0))}`),
+    '   ─────────────────────────',
+    `   TOTAL          ${plata(total)}`,
+    '',
+    '   No es boleta.',
+  ].join('\n');
+}
+
+async function lamaPrecuenta(){
+  const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
+  const r = await lamaLlamar('cuenta_precuenta', {p_cuenta_id: c.id, p_quien: NOMBRE});
+  if(!r) return;
+  LAMA_CUENTAS = LAMA_CUENTAS.map(x => x.id === r.id ? r : x);
+  LAMA_PAPEL = lamaPrecuentaTxt(lamaMesaDe(LAMA_SEL), r.total);
+  lamaPintar();
+}
+
+async function lamaCerrar(){
+  const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
+  const m = lamaMesaDe(LAMA_SEL);
+  if(!await preguntar('Cerrar la mesa ' + m.numero,
+      'Se guarda la cuenta por ' + plata(c.total) + ' y la mesa queda libre.', 'Cerrar')) return;
+  const r = await lamaLlamar('cuenta_cerrar', {p_cuenta_id: c.id, p_quien: NOMBRE});
+  if(!r) return;
+  LAMA_CUENTAS = LAMA_CUENTAS.filter(x => x.id !== c.id);
+  LAMA_SEL = null; LAMA_PAPEL = null; LAMA_ITEMS = [];
+  lamaPintar();
+  aviso('✓ Mesa ' + m.numero + ' cerrada');
+}
+
+/* ---------- los toques ---------- */
+$('view-lama').addEventListener('click', async e => {
+  const sa = e.target.closest('[data-lamasalon]');
+  if(sa){ LAMA_SALON = sa.dataset.lamasalon; LAMA_SEL = null; LAMA_PAPEL = null; lamaPintar(); return; }
+
+  const me = e.target.closest('[data-lamamesa]');
+  if(me){ await lamaAbrir(+me.dataset.lamamesa); return; }
+
+  const ad = e.target.closest('[data-lamaadd]');
+  if(ad){ await lamaAgregar(ad.dataset.lamaadd); return; }
+
+  const ms = e.target.closest('[data-lamamas]');
+  if(ms){ await lamaCantidad(+ms.dataset.lamamas, 1); return; }
+
+  const mn = e.target.closest('[data-lamamenos]');
+  if(mn){ await lamaCantidad(+mn.dataset.lamamenos, -1); return; }
+
+  const qu = e.target.closest('[data-lamaquitar]');
+  if(qu){ await lamaQuitar(+qu.dataset.lamaquitar); return; }
+
+  const co = e.target.closest('[data-lamacom]');
+  if(co){ await lamaComentario(+co.dataset.lamacom); return; }
+
+  const ac = e.target.closest('[data-lamaacc]');
+  if(ac){
+    const a = ac.dataset.lamaacc;
+    if(a === 'confirmar')      await lamaConfirmar();
+    else if(a === 'cancelar')  await lamaCancelar();
+    else if(a === 'precuenta') await lamaPrecuenta();
+    else if(a === 'cobrar')    await lamaCerrar();
+    else if(a === 'mover')     avisar('Todavía no\n\nMover la mesa entera, o mover productos sueltos a otra mesa. Se construye en la etapa siguiente.');
+    else if(a === 'cerrar-panel'){ LAMA_SEL = null; LAMA_PAPEL = null; LAMA_Q = ''; lamaPintar(); }
+    return;
+  }
+});
+
+$('view-lama').addEventListener('input', e => {
+  if(e.target.id === 'lama-q'){ LAMA_Q = e.target.value; lamaPintarFrec(); }
+});
+
 
 async function loadEnlaces(){
   /* En el LOCAL también, desde el 2026-08-22, y solo los suyos: el botón
@@ -10316,6 +10820,7 @@ function pickTab(tab){
   $('view-reparto').style.display    = (repLocal || esRecepcion) ? 'block':'none';
   $('view-repcentral').style.display = esEnvios ? 'block':'none';
   $('view-aplaza').style.display     = (tab==='aplaza') ? 'block':'none';
+  $('view-lama').style.display       = (tab==='lama') ? 'block':'none';
   if(tab==='aplaza') apAbrir();
   if(tab==='enlaces'){ enlPintarPendientes(); enlPintarDesde(); }
   $('view-hist').style.display = tab==='hist'?'block':'none';
@@ -10342,6 +10847,10 @@ function pickTab(tab){
      funciona en el segundo intento es de los errores más difíciles de
      reportar, y es justo el que describió Jhon. */
   if(tab==='enlaces') loadEnlaces().then(prepararNuevo);
+  /* Lama se relee entera al entrar: entre una visita y otra pudo pasar de
+     todo —otro garzón abrió mesas, cerró otras— y esta pantalla es la más
+     dinámica de la app. Es barato: cuatro consultas chicas. */
+  if(tab==='lama') lamaCargar();
   if(tab==='ajustes'){
     $('aj-volver-txt').textContent = 'Volver a ' + (SEDE ? SEDES[SEDE].label : 'el inventario');
     pintarAjustes();
@@ -11498,6 +12007,14 @@ function subscribeRealtime(){
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'repartos'},()=>{ loadRepartos(); })
     .on('postgres_changes',{event:'*',schema:'public',table:'reparto_items'},()=>{ loadRepartos(); })
+    /* LLAMITA LAMA. Dos garzones sobre la misma mesa es lo normal, no una
+       rareza: si el segundo no ve lo que agregó el primero, pide lo mismo
+       otra vez. Solo se relee si la pantalla está abierta — el resto del
+       equipo no tiene por qué gastar consultas en mesas que no mira. */
+    .on('postgres_changes',{event:'*',schema:'public',table:'cuentas'},()=>{
+      if(vistaActual==='lama') lamaCargar(); })
+    .on('postgres_changes',{event:'*',schema:'public',table:'cuenta_items'},()=>{
+      if(vistaActual==='lama') lamaCargarItems().then(lamaPintarPanel); })
     .subscribe(status=>{
       if(status==='SUBSCRIBED'){
         $('liveText').textContent='en vivo'; $('live').classList.remove('off');
