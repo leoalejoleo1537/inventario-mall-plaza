@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Llamita Lama · el área de ventas</title>
+<style>
+  /* La paleta es la misma del index.html, copiada sin cambiar un valor.
+     Si algo acá se ve distinto a la app, es un error de esta maqueta. */
+  :root{
+    --navy:#0F1E31; --navy2:#16283F;
+    --orange:#DC4405; --orange-dark:#B93A04;
+    --bg:#F2F3F5; --card:#ffffff; --border:#E3E5E8;
+    --text:#1C2733; --muted:#6B7684;
+    --red-bg:#FDECEA; --red-fg:#C0392B;
+    --green-bg:#E6F4E6; --green-fg:#2E7D32;
+    --amber-bg:#FFF3E0; --amber-fg:#B26A00;
+    --gray-bg:#EDEEF0; --gray-fg:#5F6670;
+    --sec-bg:#2F4A6D; --sec-tx:#ffffff;
+    --azul-bg:#E8F0FB; --azul-fg:#2C5AA0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       -webkit-font-smoothing:antialiased}
+
+  /* ---------- envoltorio del documento (esto NO es la app) ---------- */
+  .doc{max-width:1100px;margin:0 auto;padding:22px 16px 80px}
+  .eyebrow{font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+           color:var(--sec-bg);margin:0 0 6px}
+  .doc h1{font-size:clamp(32px,6vw,48px);margin:0 0 8px;letter-spacing:-.5px}
+  .doc .lede{color:var(--muted);font-size:17px;margin:0 0 26px;max-width:34ch;line-height:1.5}
+  .nota{background:#fff;border:1px solid var(--border);border-left:3px solid var(--sec-bg);
+        border-radius:0 12px 12px 0;padding:13px 16px;margin:0 0 18px;font-size:14.5px;line-height:1.55}
+  .nota b{color:var(--sec-bg)}
+  .doc h2{font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+          color:var(--sec-bg);margin:44px 0 6px}
+  .doc .sub{font-size:24px;font-weight:800;margin:0 0 14px;letter-spacing:-.3px;line-height:1.25}
+  .doc p{line-height:1.65;max-width:68ch;font-size:15.5px}
+
+  .tesis{background:#fff;border-left:3px solid var(--sec-bg);border-radius:0 12px 12px 0;
+         padding:16px 20px;margin:16px 0 22px}
+  .tesis .grande{font-size:18px;font-weight:700;line-height:1.45;margin:0}
+  .tesis .hoy{color:var(--muted);font-size:14px;margin:10px 0 0}
+
+  table{border-collapse:collapse;width:100%;margin:14px 0 22px;font-size:14.5px;background:#fff;
+        border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  th{background:var(--sec-bg);color:#fff;text-align:left;padding:10px 13px;font-size:12.5px;
+     letter-spacing:.4px;text-transform:uppercase}
+  td{padding:10px 13px;border-top:1px solid var(--border);vertical-align:top;line-height:1.5}
+  td:first-child{font-weight:700;white-space:nowrap}
+
+  .pill{display:inline-block;font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:999px}
+  .pill.si{background:var(--green-bg);color:var(--green-fg)}
+  .pill.no{background:var(--red-bg);color:var(--red-fg)}
+  .pill.ojo{background:var(--amber-bg);color:var(--amber-fg)}
+
+  .dec{background:#fff;border:1px solid var(--border);border-radius:12px;padding:15px 18px;margin:0 0 11px}
+  .dec h3{margin:0 0 7px;font-size:16px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .dec p{margin:0;font-size:14.5px}
+  .dec .porque{color:var(--muted);font-size:13.5px;margin-top:8px;border-top:1px dashed var(--border);
+               padding-top:8px}
+
+  ol.etapas{list-style:none;padding:0;margin:14px 0 0;counter-reset:e}
+  .etapa{background:#fff;border:1px solid var(--border);border-radius:12px;padding:15px 18px 15px 60px;
+         margin:0 0 10px;position:relative}
+  .etapa .num{position:absolute;left:16px;top:15px;width:28px;height:28px;border-radius:9px;
+              background:var(--sec-bg);color:#fff;display:flex;align-items:center;justify-content:center;
+              font-weight:800;font-size:14px}
+  .etapa h3{margin:0 0 5px;font-size:16px}
+  .etapa p{margin:0;font-size:14.5px}
+  .etapa.riesgo{border-color:var(--amber-fg)}
+  .etapa.riesgo .num{background:var(--amber-fg)}
+  .etapa .marca{display:block;margin-top:9px;font-size:13px;color:var(--muted);font-weight:600}
+
+  .pedido{background:#fff;border:1px solid var(--border);border-radius:12px;padding:15px 18px;margin:0 0 10px}
+  .pedido h3{margin:0 0 6px;font-size:16px}
+  .pedido p{margin:0;font-size:14.5px}
+
+  /* selector teléfono / computador */
+  .tam{display:inline-flex;gap:6px;background:#fff;border:1px solid var(--border);
+       border-radius:999px;padding:4px;margin-bottom:16px}
+  .tam button{border:none;background:none;font:inherit;font-size:13.5px;font-weight:700;
+              color:var(--muted);padding:7px 16px;border-radius:999px;cursor:pointer}
+  .tam button.on{background:var(--sec-bg);color:#fff}
+
+  /* ---------- el marco: de acá para adentro es la app ---------- */
+  .marco{margin:0 auto;background:var(--bg);border:1px solid var(--border);border-radius:18px;
+         overflow:hidden;box-shadow:0 10px 34px rgba(15,30,49,.10);transition:max-width .25s ease}
+  .marco.tel{max-width:390px}
+  .marco.pc{max-width:1000px}
+
+  .topbar{background:var(--navy);color:#fff;padding:11px 15px;display:flex;align-items:center;gap:10px}
+  .topbar .tt{font-size:16px;font-weight:800;flex:1}
+  .topbar .sd{font-size:11.5px;opacity:.72;display:block;font-weight:600}
+  .ico{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.12);
+       display:flex;align-items:center;justify-content:center;font-size:15px}
+  .tabs{display:flex;background:var(--navy2);padding:0 8px;gap:2px;overflow-x:auto}
+  .tabs button{border:none;background:none;color:rgba(255,255,255,.62);font:inherit;font-size:13.5px;
+               font-weight:700;padding:11px 12px;cursor:pointer;white-space:nowrap;
+               border-bottom:2.5px solid transparent}
+  .tabs button.on{color:#fff;border-bottom-color:var(--orange)}
+  .wrap{padding:14px 16px 24px}
+
+  /* ---------- LLAMITA LAMA ---------- */
+  /* En computador: mesas a la izquierda, panel a la derecha.
+     En teléfono: las mesas ocupan todo y el panel se abre encima.
+     El corte es 719px, el mismo que ya usa Ajustes. */
+  .lama{display:block}
+  .marco.pc .lama{display:flex;gap:14px;align-items:flex-start}
+  .marco.pc .lama-plano{flex:1;min-width:0}
+  .marco.pc .lama-panel{width:390px;flex:0 0 auto}
+
+  .salones{display:flex;gap:6px;margin-bottom:12px}
+  .salones button{border:1px solid var(--border);background:#fff;font:inherit;font-size:13px;
+                  font-weight:700;color:var(--muted);padding:7px 15px;border-radius:999px;cursor:pointer}
+  .salones button.on{background:var(--sec-bg);border-color:var(--sec-bg);color:#fff}
+
+  .mesas{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .mesa{aspect-ratio:1;border:none;border-radius:12px;cursor:pointer;font:inherit;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+        transition:transform .12s ease, background .18s ease}
+  .mesa:active{transform:scale(.95)}
+  .mesa .n{font-size:22px;font-weight:800;line-height:1}
+  .mesa .q{font-size:10px;font-weight:700;opacity:.85;line-height:1.15;text-align:center;
+           padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .mesa.libre{background:var(--green-bg);color:var(--green-fg)}
+  .mesa.ocupada{background:var(--red-bg);color:var(--red-fg)}
+  .mesa.cobrando{background:var(--azul-bg);color:var(--azul-fg)}
+  .mesa.sel{outline:2.5px solid var(--orange);outline-offset:2px}
+
+  .leyenda{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+  .leyenda span{display:flex;align-items:center;gap:6px;font-weight:600}
+  .leyenda i{width:12px;height:12px;border-radius:4px;display:block}
+
+  /* el panel derecho */
+  .lama-panel{margin-top:14px}
+  .marco.pc .lama-panel{margin-top:0}
+  .panel{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .panel-cab{background:var(--red-fg);color:#fff;padding:11px 14px;display:flex;align-items:center;gap:8px}
+  .panel-cab.libre{background:var(--sec-bg)}
+  .panel-cab.cobrando{background:var(--azul-fg)}
+  .panel-cab b{flex:1;font-size:16px}
+  .panel-cab button{border:none;background:rgba(255,255,255,.16);color:#fff;font:inherit;font-size:13px;
+                    font-weight:700;padding:6px 11px;border-radius:8px;cursor:pointer}
+  .panel-cuerpo{padding:13px 14px}
+  .panel-vacio{padding:38px 18px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.55}
+
+  .buscar{width:100%;height:42px;padding:0 13px;border:1px solid var(--border);border-radius:10px;
+          font:inherit;font-size:14.5px;background:var(--bg)}
+  .frecuentes{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .frecuentes button{border:1px solid var(--border);background:#fff;font:inherit;font-size:12.5px;
+                     font-weight:600;padding:7px 11px;border-radius:999px;cursor:pointer;color:var(--text)}
+  .frecuentes button:active{transform:scale(.95)}
+
+  /* Una línea = UN renglón. Es la regla que salió del reparto:
+     "optimiza el espacio, no me metas tres niveles". */
+  .linea{display:flex;align-items:center;gap:9px;padding:9px 0;border-top:1px solid var(--border)}
+  .linea .nm{flex:1;min-width:0}
+  .linea .nm b{display:block;font-size:14px;font-weight:700;white-space:nowrap;
+               overflow:hidden;text-overflow:ellipsis}
+  .linea .nm span{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
+  .linea .cant{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+  .linea .cant button{width:26px;height:26px;border:1px solid var(--border);background:#fff;
+                      border-radius:8px;font:inherit;font-weight:800;cursor:pointer;color:var(--text)}
+  .linea .cant b{min-width:18px;text-align:center;font-size:14px}
+  .linea .precio{font-size:13.5px;font-weight:700;flex:0 0 auto;min-width:52px;text-align:right}
+  .linea .x{border:none;background:none;color:var(--muted);font-size:16px;cursor:pointer;
+            padding:2px 4px;flex:0 0 auto}
+  .linea.nueva{background:var(--amber-bg);margin:0 -14px;padding:9px 14px}
+
+  .total{display:flex;align-items:center;justify-content:space-between;padding:12px 0 4px;
+         border-top:2px solid var(--border);margin-top:6px;font-size:17px;font-weight:800}
+  .acciones{display:flex;gap:8px;margin-top:12px}
+  .btn{border:none;font:inherit;font-size:14.5px;font-weight:700;padding:11px 16px;border-radius:10px;
+       cursor:pointer;flex:1}
+  .btn-naranja{background:var(--orange);color:#fff}
+  .btn-gris{background:var(--gray-bg);color:var(--gray-fg)}
+  .btn-navy{background:var(--navy);color:#fff}
+  .btn:active{transform:scale(.97)}
+
+  .comanda{background:#fff;border:1px dashed var(--muted);border-radius:10px;padding:16px;
+           font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.7;
+           white-space:pre-wrap;margin-top:12px}
+
+  footer{margin-top:50px;padding-top:18px;border-top:1px solid var(--border);
+         color:var(--muted);font-size:13.5px}
+
+  @media (prefers-reduced-motion: reduce){
+    .marco,.mesa,.btn{transition:none}
+    .mesa:active,.btn:active,.frecuentes button:active{transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="doc">
+
+  <p class="eyebrow">Propuesta · 26 de agosto de 2026</p>
+  <h1>Llamita Lama</h1>
+  <p class="lede">El área de ventas. Mesas, comandas y cobro, dentro de la misma app.</p>
+
+  <div class="nota">
+    <b>Esto es una maqueta, no la app.</b> Los datos son inventados y los botones
+    solo mueven esta página — nada toca la base. Sirve para decidir la forma
+    antes de escribir código, que es la regla que ya funcionó con Enlaces y con
+    el tablero de bodega. La vez que se saltó, se perdió el trabajo entero.
+  </div>
+
+  <h2>El giro</h2>
+  <p class="sub">Hoy el inventario sabe qué se vendió. Con Lama, sabe cuándo se está vendiendo.</p>
+
+  <div class="tesis">
+    <p class="grande">Llamita Stock le lee las ventas a Fudo y le escribe el stock
+      de vuelta. Pero el momento de vender sigue siendo de Fudo — y esa es la
+      pieza que falta para que el sistema sea uno solo.</p>
+    <p class="hoy">Hoy: el garzón toma el pedido en Fudo, Fudo lo cierra, y quince
+      minutos después Llamita se entera y descuenta. Con Lama, el pedido nace acá.</p>
+  </div>
+
+  <p><strong>Se copia la forma de Fudo a propósito.</strong> El equipo ya sabe usar
+  esa pantalla: las mesas de colores, el panel que se abre al tocarlas, el buscador
+  de productos. Imitarla hace que la curva de aprendizaje sea casi cero — es la misma
+  razón por la que el reparto desde bodega escribe exactamente lo que escribía el
+  reparto del local, para que el jefe de turno lo reciba en su pestaña de siempre.</p>
+
+  <p><strong>Y se construye escondida.</strong> Esta área es más delicada que todo lo
+  anterior: es dinámica, intensiva, y si falla en pleno turno entorpece un día entero
+  de ventas. Nadie del equipo la ve hasta que esté curtida.</p>
+
+  <h2>La pantalla</h2>
+  <p class="sub">Tócala. Abre una mesa, agrega algo, confirma.</p>
+
+  <div class="tam">
+    <button data-tam="tel" class="on">Teléfono</button>
+    <button data-tam="pc">Computador</button>
+  </div>
+
+  <div class="marco tel" id="marco">
+    <div class="topbar">
+      <div class="ico">☰</div>
+      <div class="tt">Café Mall Plaza<span class="sd">Mesas</span></div>
+      <div class="ico">⟳</div>
+    </div>
+    <div class="tabs">
+      <button>🏠</button>
+      <button>Reparto</button>
+      <button>Recetas</button>
+      <button class="on">Mesas</button>
+    </div>
+    <div class="wrap">
+      <div class="lama">
+
+        <div class="lama-plano">
+          <div class="salones">
+            <button class="on">Salón</button>
+          </div>
+          <div class="mesas" id="mesas"></div>
+          <div class="leyenda">
+            <span><i style="background:#E6F4E6;border:1px solid #2E7D32"></i> libre</span>
+            <span><i style="background:#FDECEA;border:1px solid #C0392B"></i> ocupada</span>
+            <span><i style="background:#E8F0FB;border:1px solid #2C5AA0"></i> cobrando</span>
+          </div>
+        </div>
+
+        <div class="lama-panel" id="panel"></div>
+
+      </div>
+    </div>
+  </div>
+
+  <h2>Lo que se quitó</h2>
+  <p class="sub">Fudo pregunta cinco cosas al abrir una mesa. Ninguna se usa.</p>
+
+  <table>
+    <thead><tr><th>Fudo pregunta</th><th>En Lama</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td>Cuántas personas</td><td><span class="pill no">fuera</span></td>
+          <td>Nadie lo mira después. Es un campo que se contesta por contestar</td></tr>
+      <tr><td>Nombre del cliente</td><td><span class="pill no">fuera</span></td>
+          <td>En una cafetería la mesa es el identificador, no el nombre</td></tr>
+      <tr><td>Garzón</td><td><span class="pill si">automático</span></td>
+          <td>Ya se sabe quién está con la sesión iniciada. Preguntarlo es pedir dos veces lo mismo</td></tr>
+      <tr><td>Comentario de mesa</td><td><span class="pill no">fuera</span></td>
+          <td>El comentario que sí se usa es <b>por producto</b> — "sin azúcar", "para llevar"</td></tr>
+      <tr><td>Botón de teléfono</td><td><span class="pill no">fuera</span></td>
+          <td>Jhon: "no sirve para nada, nunca lo usamos"</td></tr>
+      <tr><td>Lupa de arriba</td><td><span class="pill no">fuera</span></td>
+          <td>Lo mismo. Con 12 mesas a la vista no hace falta buscarlas</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Abrir una mesa pasa a ser un toque.</strong> Se toca el cuadrado verde y
+  ya se puede agregar el primer producto. Eso solo se puede hacer porque las cinco
+  preguntas de arriba no estaban ahí por una razón — estaban ahí porque Fudo sirve
+  también para restaurantes, donde sí importan.</p>
+
+  <h2>Las decisiones</h2>
+  <p class="sub">Lo que ya está resuelto, y lo que todavía no.</p>
+
+  <div class="dec">
+    <h3>¿Dónde vive? <span class="pill si">cerrada</span></h3>
+    <p>Dentro de la misma app, como <strong>una pestaña más</strong>. Comparte
+      sesión, permisos, estética y tiempo real.</p>
+    <p class="porque">La otra opción era una página aparte. Se descartó para la
+      fase 1: separar antes de saber cuánto pesa Lama es adivinar. Se mide cuando
+      esté hecha y ahí se decide, con el número en la mano.</p>
+  </div>
+
+  <div class="dec">
+    <h3>¿Cómo se esconde? <span class="pill si">cerrada</span></h3>
+    <p>Con un permiso nuevo que <strong>nace apagado para todos</strong>. Solo una
+      cuenta nueva lo tiene encendido.</p>
+    <p class="porque">No se escribe el correo en el código — la doctrina del
+      proyecto lo prohíbe desde el día que un candado escrito a mano impidió que
+      llegara el pan. El permiso vive en la tabla, como todos los demás.
+      <b>Ojo: esto es un seguro contra el resbalón, no seguridad.</b> Alguien que
+      abra las herramientas del navegador vería el código.</p>
+  </div>
+
+  <div class="dec">
+    <h3>¿De dónde sale la carta? <span class="pill si">cerrada</span></h3>
+    <p>Del catálogo que <strong>ya está sincronizado desde Fudo</strong>, con
+      nombre, precio y categoría.</p>
+    <p class="porque">No hay que cargar productos en lote ni pasar una lista: el
+      espejo del catálogo existe desde julio y se actualiza con el botón ⟳.</p>
+  </div>
+
+  <div class="dec">
+    <h3>¿Descuenta el stock al cerrar la mesa? <span class="pill ojo">todavía no</span></h3>
+    <p>En esta fase <strong>no</strong>. Cerrar una mesa no toca el inventario.</p>
+    <p class="porque">Es lo que hace que probar sea seguro: se puede abrir y cerrar
+      mesas veinte veces sin descuadrar nada. Se enciende después, con interruptor,
+      y solo cuando las comandas sean confiables.</p>
+  </div>
+
+  <div class="dec">
+    <h3>¿Y la impresora? <span class="pill ojo">aparte</span></h3>
+    <p>En esta fase la comanda <strong>se muestra en pantalla</strong> tal como
+      saldría impresa.</p>
+    <p class="porque">La impresora está conectada por USB, así que el navegador no
+      le habla directo: hace falta un programa chico en ese computador, igual que
+      la aplicación de Windows que instala Fudo. Va aislado y no depende de nada de
+      esto — si falla, que falle solo.</p>
+  </div>
+
+  <div class="dec">
+    <h3>¿Una comanda o dos? <span class="pill si">cerrada</span></h3>
+    <p><strong>Una sola.</strong> Todo sale por la misma impresora del mesón.</p>
+    <p class="porque">Confirmado por Jhon. Si hubiera cocina y barra separadas
+      habría que partir la comanda por tipo de producto, y eso es trabajo real.
+      Que quede escrito: el día que otro local tenga dos impresoras, esa división
+      será una decisión nueva y no un supuesto heredado.</p>
+  </div>
+
+  <h2>El orden</h2>
+  <p class="sub">Cada etapa deja algo que se puede tocar.</p>
+
+  <ol class="etapas">
+    <li class="etapa"><div class="num">1</div>
+      <h3>La puerta y los cimientos</h3>
+      <p>El permiso nuevo, las cuatro tablas y las funciones. Las 12 mesas del Salón
+        sembradas.</p>
+      <span class="marca">SQL · lo corre Jhon, tres archivos</span></li>
+
+    <li class="etapa"><div class="num">2</div>
+      <h3>El plano de mesas</h3>
+      <p>La pestaña escondida, los 12 cuadrados con sus tres colores, y el paso de
+        computador a teléfono.</p>
+      <span class="marca">al terminar: se ve el salón entero y responde al dedo</span></li>
+
+    <li class="etapa"><div class="num">3</div>
+      <h3>El panel y la comanda</h3>
+      <p>Buscar el producto, la cantidad, el comentario, el total. Confirmar imprime
+        la comanda y la mesa se pone roja.</p>
+      <span class="marca">al terminar: se puede tomar un pedido de verdad</span></li>
+
+    <li class="etapa riesgo"><div class="num">4</div>
+      <h3>Mover mesa y mover productos</h3>
+      <p>Los dos botones que existen porque el garzón se equivoca: pasar la mesa
+        entera a otra libre, y mover productos sueltos de una mesa a otra.</p>
+      <span class="marca">la etapa delicada · toca cuentas ya abiertas, va con vista previa</span></li>
+
+    <li class="etapa"><div class="num">5</div>
+      <h3>Precuenta y cerrar</h3>
+      <p>La mesa se pone azul y sale el detalle para el cliente. Al cerrar vuelve a
+        verde.</p>
+      <span class="marca">al terminar: la vuelta completa funciona de punta a punta</span></li>
+
+    <li class="etapa"><div class="num">6</div>
+      <h3>Las pruebas</h3>
+      <p>Que la pestaña no aparezca sin permiso, que confirmar dos veces no duplique
+        la comanda, que no se pueda mover a una mesa ocupada.</p>
+      <span class="marca">y que el inventario siga idéntico después de una vuelta</span></li>
+  </ol>
+
+  <h2>Lo que necesito de ti</h2>
+  <p class="sub">Una sola cosa, y es la única que no puedo hacer yo.</p>
+
+  <div class="pedido">
+    <h3>1 · Crear la cuenta nueva</h3>
+    <p>En Supabase → Authentication → Add user, con su contraseña. Esa es la cuenta
+      que va a ver Llamita Lama. La tuya no sirve: hay dispositivos con tu sesión
+      abierta y Google guarda la contraseña.</p>
+  </div>
+
+  <div class="pedido">
+    <h3>2 · Mirar esta maqueta y decirme qué cambiar</h3>
+    <p>Sobre todo el panel derecho: si falta algo que se usa, o si sobra algo que
+      no. Es mucho más barato cambiarlo acá que después.</p>
+  </div>
+
+  <footer>
+    Llamita Lama · fase 1 · maqueta para revisar antes de construir
+  </footer>
+</div>
+
+<script>
+/* ------------------------------------------------------------------
+   La maqueta, viva. Nada de esto habla con la base: son datos en
+   memoria que se pierden al recargar. Existe para poder TOCAR la
+   pantalla antes de construirla, que es donde se descubren las cosas
+   que ninguna descripción escrita revela.
+   ------------------------------------------------------------------ */
+
+/* La carta sale del catálogo real de Fudo. Acá van unos pocos, con sus
+   precios de verdad, para que se vea cómo se siente. */
+const CARTA = [
+  {n:'Americano',          p:2500},
+  {n:'Café Latte',         p:3400},
+  {n:'Capuchino grande',   p:3900},
+  {n:'Chocolate caliente', p:3600},
+  {n:'Cortado',            p:2800},
+  {n:'Espresso doble',     p:2600},
+  {n:'Mocaccino',          p:3900},
+  {n:'Medialuna manjar',   p:2900},
+  {n:'Medialuna membrillo',p:2900},
+  {n:'Sandwich Serrano',   p:6900},
+  {n:'Torta amor',         p:4500},
+  {n:'Cheesecake maracuyá',p:4700},
+];
+
+/* 12 mesas. Empiezan casi todas libres, con dos ocupadas para que se
+   vean los colores sin tener que abrirlas. */
+const MESAS = Array.from({length:12}, (_,i)=>({
+  n:i+1, estado:'libre', items:[], comandas:0, quien:null
+}));
+MESAS[1] = {n:2, estado:'ocupada', quien:'Adriana', comandas:1,
+  items:[{n:'Medialuna membrillo', p:2900, c:1, com:'', nueva:false}]};
+MESAS[2] = {n:3, estado:'ocupada', quien:'Adriana', comandas:1,
+  items:[{n:'Café Latte', p:3400, c:2, com:'uno sin azúcar', nueva:false}]};
+
+let sel = null;          // la mesa abierta en el panel
+let comanda = null;      // el texto de la última comanda confirmada
+
+const $ = id => document.getElementById(id);
+const plata = n => '$' + n.toLocaleString('es-CL');
+
+/* ---------- el plano ---------- */
+function pintarMesas(){
+  $('mesas').innerHTML = MESAS.map(m => `
+    <button class="mesa ${m.estado}${sel===m.n?' sel':''}" data-mesa="${m.n}">
+      <span class="n">${m.n}</span>
+      ${m.quien ? `<span class="q">${m.quien}</span>` : ''}
+    </button>`).join('');
+}
+
+/* ---------- el panel ---------- */
+function pintarPanel(){
+  const c = $('panel');
+  if(sel === null){
+    c.innerHTML = `<div class="panel panel-vacio">
+      Toca una mesa para abrirla.<br>Verde está libre, roja tiene gente.</div>`;
+    return;
+  }
+  const m = MESAS[sel-1];
+  const total = m.items.reduce((s,i)=>s + i.p*i.c, 0);
+  const hayNuevos = m.items.some(i=>i.nueva);
+
+  /* El color de la cabecera sigue al de la mesa: si la pantalla dice una
+     cosa y el cuadrado otra, la gente le cree al cuadrado. */
+  const clase = m.estado === 'libre' ? 'libre' : m.estado === 'cobrando' ? 'cobrando' : '';
+
+  c.innerHTML = `<div class="panel">
+    <div class="panel-cab ${clase}">
+      <b>Mesa ${m.n}</b>
+      ${m.estado !== 'libre' ? `
+        <button data-acc="mover" title="Mover la mesa o sus productos">✎</button>
+        <button data-acc="precuenta" title="Imprimir la precuenta">✓</button>` : ''}
+      <button data-acc="cerrar-panel">✕</button>
+    </div>
+    <div class="panel-cuerpo">
+      <input class="buscar" id="q" placeholder="Buscar producto…" autocomplete="off">
+      <div class="frecuentes" id="frec"></div>
+
+      ${m.items.length ? m.items.map((it,i)=>`
+        <div class="linea${it.nueva?' nueva':''}">
+          <div class="nm">
+            <b>${it.n}</b>
+            ${it.com ? `<span>${it.com}</span>` : `<span data-com="${i}" style="cursor:pointer">+ comentario</span>`}
+          </div>
+          <div class="cant">
+            <button data-menos="${i}">−</button><b>${it.c}</b><button data-mas="${i}">+</button>
+          </div>
+          <span class="precio">${plata(it.p*it.c)}</span>
+          <button class="x" data-quitar="${i}">✕</button>
+        </div>`).join('')
+        : `<div style="padding:18px 0;color:var(--muted);font-size:14px;text-align:center">
+             Todavía no hay nada. Busca un producto arriba.</div>`}
+
+      ${m.items.length ? `<div class="total"><span>Total</span><span>${plata(total)}</span></div>` : ''}
+
+      ${hayNuevos ? `<div class="acciones">
+          <button class="btn btn-gris" data-acc="cancelar">Cancelar</button>
+          <button class="btn btn-naranja" data-acc="confirmar">Confirmar</button>
+        </div>` : m.items.length ? `<div class="acciones">
+          <button class="btn btn-navy" data-acc="cobrar">Cerrar mesa ${m.n}</button>
+        </div>` : ''}
+
+      ${comanda ? `<div class="comanda">${comanda}</div>` : ''}
+    </div>
+  </div>`;
+
+  pintarFrecuentes('');
+}
+
+/* Los frecuentes son los más vendidos de esa sede — salen de las ventas
+   que la base ya guarda, no de una lista escrita a mano. */
+function pintarFrecuentes(q){
+  const caja = $('frec'); if(!caja) return;
+  const norm = t => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const busca = norm(q.trim());
+  const lista = busca
+    ? CARTA.filter(p => norm(p.n).includes(busca)).slice(0,8)
+    : CARTA.slice(0,8);
+  caja.innerHTML = lista.length
+    ? lista.map(p=>`<button data-add="${p.n}">${p.n}</button>`).join('')
+    : `<span style="color:var(--muted);font-size:13px">Nada con ese nombre.</span>`;
+}
+
+/* ---------- las acciones ---------- */
+function agregar(nombre){
+  const m = MESAS[sel-1];
+  const p = CARTA.find(x=>x.n===nombre); if(!p) return;
+  /* Si ya está y todavía no se confirmó, sube la cantidad en vez de
+     abrir otra línea. Dos renglones iguales en una comanda confunden. */
+  const ya = m.items.find(i=>i.n===p.n && i.nueva);
+  if(ya) ya.c++;
+  else m.items.push({n:p.n, p:p.p, c:1, com:'', nueva:true});
+  comanda = null;
+  pintarPanel();
+}
+
+function confirmar(){
+  const m = MESAS[sel-1];
+  const nuevos = m.items.filter(i=>i.nueva);
+  if(!nuevos.length) return;
+
+  /* Solo toma los NUEVOS. Confirmar dos veces no vuelve a mandar lo que
+     ya salió — es el mismo candado que tiene el reparto. */
+  m.comandas++;
+  const hora = new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+  comanda =
+`      CAFÉ MALL PLAZA
+   ─────────────────────
+   MESA ${m.n}          ${hora}
+   Comanda #${m.comandas}
+   ─────────────────────
+${nuevos.map(i=>
+`   ${i.c} x ${i.n}${i.com ? `\n       → ${i.com}` : ''}`).join('\n')}
+   ─────────────────────
+   ${m.quien || 'Jhon'}`;
+
+  nuevos.forEach(i=>{ i.nueva = false; });
+  m.estado = 'ocupada';
+  m.quien = m.quien || 'Jhon';
+  pintarMesas(); pintarPanel();
+}
+
+function cancelar(){
+  const m = MESAS[sel-1];
+  m.items = m.items.filter(i=>!i.nueva);
+  if(!m.items.length && m.comandas === 0){ m.estado='libre'; m.quien=null; }
+  comanda = null;
+  pintarMesas(); pintarPanel();
+}
+
+function precuenta(){
+  const m = MESAS[sel-1];
+  if(m.estado === 'libre') return;
+  m.estado = 'cobrando';
+  const total = m.items.reduce((s,i)=>s + i.p*i.c, 0);
+  comanda =
+`      CAFÉ MALL DEL DESIERTO
+   ─────────────────────────
+   MESA ${m.n} · precuenta
+   ─────────────────────────
+${m.items.map(i=>
+`   ${i.c} x ${i.n}
+       ${plata(i.p*i.c)}`).join('\n')}
+   ─────────────────────────
+   TOTAL          ${plata(total)}
+
+   No es boleta.`;
+  pintarMesas(); pintarPanel();
+}
+
+function cobrar(){
+  const m = MESAS[sel-1];
+  m.estado='libre'; m.items=[]; m.comandas=0; m.quien=null;
+  comanda = null; sel = null;
+  pintarMesas(); pintarPanel();
+}
+
+/* ---------- los toques ---------- */
+document.addEventListener('click', e=>{
+  const t = e.target;
+
+  const tam = t.closest('[data-tam]');
+  if(tam){
+    document.querySelectorAll('[data-tam]').forEach(b=>b.classList.toggle('on', b===tam));
+    $('marco').className = 'marco ' + tam.dataset.tam;
+    return;
+  }
+
+  const mesa = t.closest('[data-mesa]');
+  if(mesa){ sel = +mesa.dataset.mesa; comanda = null; pintarMesas(); pintarPanel(); return; }
+
+  const add = t.closest('[data-add]');
+  if(add){ agregar(add.dataset.add); return; }
+
+  const mas = t.closest('[data-mas]');
+  if(mas){ MESAS[sel-1].items[+mas.dataset.mas].c++; pintarPanel(); return; }
+
+  const menos = t.closest('[data-menos]');
+  if(menos){
+    const it = MESAS[sel-1].items[+menos.dataset.menos];
+    if(it.c > 1) it.c--;
+    pintarPanel(); return;
+  }
+
+  const quitar = t.closest('[data-quitar]');
+  if(quitar){ MESAS[sel-1].items.splice(+quitar.dataset.quitar,1); pintarPanel(); return; }
+
+  const com = t.closest('[data-com]');
+  if(com){
+    const it = MESAS[sel-1].items[+com.dataset.com];
+    const txt = prompt('Comentario para "'+it.n+'"', it.com||'');
+    if(txt !== null){ it.com = txt.trim(); pintarPanel(); }
+    return;
+  }
+
+  const acc = t.closest('[data-acc]');
+  if(acc){
+    const a = acc.dataset.acc;
+    if(a==='confirmar')     confirmar();
+    else if(a==='cancelar') cancelar();
+    else if(a==='precuenta')precuenta();
+    else if(a==='cobrar')   cobrar();
+    else if(a==='mover')    alert('Mover la mesa entera, o mover productos sueltos a otra mesa.\n\nSe construye en la etapa 4 — es la delicada, porque toca cuentas ya abiertas.');
+    else if(a==='cerrar-panel'){ sel=null; comanda=null; pintarMesas(); pintarPanel(); }
+    return;
+  }
+});
+
+/* El buscador filtra sin repintar la lista entera: repintar mientras
+   alguien escribe le saca el campo de abajo del dedo. Esa lección costó
+   tres veces en el área de reparto. */
+document.addEventListener('input', e=>{
+  if(e.target.id === 'q') pintarFrecuentes(e.target.value);
+});
+
+pintarMesas();
+pintarPanel();
+</script>
+</body>
+</html>
