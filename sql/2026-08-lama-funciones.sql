@@ -2,10 +2,10 @@
 --  DÓNDE VA:  Supabase  ->  SQL Editor  ->  New query
 --  ES:        1 solo bloque (pégalo entero y aprieta Run)
 --  TARDA:     instantáneo
---  QUÉ HACE:  las siete funciones que mueven una mesa: abrir, agregar,
+--  QUÉ HACE:  las ocho funciones que mueven una mesa: abrir, agregar,
 --             confirmar, precuenta, cerrar, mover mesa y mover productos.
 --             NO tocan el inventario.
---  QUÉ VER:   la última consulta deja 7 filas, todas con "1 firma".
+--  QUÉ VER:   la última consulta deja 8 filas, todas con "1 firma".
 -- ================================================================
 --
 -- POR QUÉ ESTO VA EN LA BASE Y NO EN LA PANTALLA
@@ -24,6 +24,20 @@
 --    toma los `nuevo` — mismo candado que el reparto.
 -- 3. No se puede mover una mesa a otra que ya está ocupada.
 --
+-- CÓMO ESTÁ ESCRITO, y por qué importa
+--
+-- Los cuerpos van entre comillas de dólar ($$), igual que `mermar` y
+-- `reparto_recibir`. La primera versión los puso entre comillas simples para
+-- evitar el problema de §3.5, y salió al revés: el editor de Supabase se
+-- atragantó con las comillas dobladas de adentro y contestó
+-- "relation m does not exist" — un error que no se parece en nada a la causa.
+--
+-- La lección, y vale para cualquier función futura: **§3.5 dice que las
+-- comillas de dólar pueden confundir al editor, pero la evidencia de este
+-- proyecto es que las funciones plpgsql con $$ SÍ corren.** Lo que rompe es
+-- el SQL dinámico con $q$ anidado y los bloques muy largos. Un cuerpo de
+-- plpgsql normal va con $$, como los seis que ya funcionan.
+--
 -- ⚠️ EL STOCK NO SE TOCA. Ni al confirmar ni al cerrar. Es a propósito y es
 -- lo que hace que probar sea seguro: se puede abrir y cerrar mesas veinte
 -- veces sin descuadrar el inventario. Se enciende después, con interruptor.
@@ -40,32 +54,34 @@ create or replace function public.mesa_abrir(
 language plpgsql
 security definer
 set search_path = public
-as 'declare
+as $$
+declare
   m public.mesas;
   c public.cuentas;
 begin
   select * into m from public.mesas where id = p_mesa_id;
   if not found then
-    raise exception ''Esa mesa ya no existe.'';
+    raise exception 'Esa mesa ya no existe.';
   end if;
   if not m.activa then
-    raise exception ''La mesa % está apagada.'', m.numero;
+    raise exception 'La mesa % está apagada.', m.numero;
   end if;
 
   -- La cuenta viva, si la hay. Se bloquea para que dos teléfonos no creen
   -- dos al mismo tiempo.
   select * into c from public.cuentas
-   where mesa_id = p_mesa_id and estado <> ''cerrada''
+   where mesa_id = p_mesa_id and estado <> 'cerrada'
    for update;
   if found then
     return c;
   end if;
 
   insert into public.cuentas (sede, mesa_id, estado, abierta_por)
-  values (m.sede, m.id, ''abierta'', p_quien)
+  values (m.sede, m.id, 'abierta', p_quien)
   returning * into c;
   return c;
-end;';
+end;
+$$;
 
 
 -- ---------- 2) AGREGAR un producto ----------
@@ -85,31 +101,32 @@ create or replace function public.cuenta_agregar(
 language plpgsql
 security definer
 set search_path = public
-as 'declare
+as $$
+declare
   c  public.cuentas;
   it public.cuenta_items;
-  v_com text := nullif(btrim(coalesce(p_comentario, '''')), '''');
+  v_com text := nullif(btrim(coalesce(p_comentario, '')), '');
 begin
   if coalesce(p_cantidad, 0) <= 0 then
-    raise exception ''La cantidad tiene que ser mayor que cero.'';
+    raise exception 'La cantidad tiene que ser mayor que cero.';
   end if;
-  if btrim(coalesce(p_nombre, '''')) = '''' then
-    raise exception ''Falta el nombre del producto.'';
+  if btrim(coalesce(p_nombre, '')) = '' then
+    raise exception 'Falta el nombre del producto.';
   end if;
 
   select * into c from public.cuentas where id = p_cuenta_id for update;
   if not found then
-    raise exception ''Esa cuenta ya no existe.'';
+    raise exception 'Esa cuenta ya no existe.';
   end if;
-  if c.estado = ''cerrada'' then
-    raise exception ''La cuenta ya está cerrada. Abre la mesa de nuevo.'';
+  if c.estado = 'cerrada' then
+    raise exception 'La cuenta ya está cerrada. Abre la mesa de nuevo.';
   end if;
 
   select * into it from public.cuenta_items
    where cuenta_id = p_cuenta_id
-     and estado = ''nuevo''
+     and estado = 'nuevo'
      and nombre = btrim(p_nombre)
-     and coalesce(comentario, '''') = coalesce(v_com, '''')
+     and coalesce(comentario, '') = coalesce(v_com, '')
    order by id limit 1
    for update;
 
@@ -128,7 +145,8 @@ begin
 
   perform public.cuenta_recalcular(p_cuenta_id);
   return it;
-end;';
+end;
+$$;
 
 
 -- ---------- 3) el total, en un solo lugar ----------
@@ -139,14 +157,16 @@ returns numeric
 language plpgsql
 security definer
 set search_path = public
-as 'declare
+as $$
+declare
   v numeric;
 begin
   select coalesce(sum(cantidad * precio), 0) into v
     from public.cuenta_items where cuenta_id = p_cuenta_id;
   update public.cuentas set total = v where id = p_cuenta_id;
   return v;
-end;';
+end;
+$$;
 
 
 -- ---------- 4) CONFIRMAR: sale la comanda ----------
@@ -157,7 +177,8 @@ create or replace function public.cuenta_confirmar(
 language plpgsql
 security definer
 set search_path = public
-as 'declare
+as $$
+declare
   c   public.cuentas;
   cm  public.comandas;
   n   integer;
@@ -165,22 +186,22 @@ as 'declare
 begin
   select * into c from public.cuentas where id = p_cuenta_id for update;
   if not found then
-    raise exception ''Esa cuenta ya no existe.'';
+    raise exception 'Esa cuenta ya no existe.';
   end if;
-  if c.estado = ''cerrada'' then
-    raise exception ''La cuenta ya está cerrada.'';
+  if c.estado = 'cerrada' then
+    raise exception 'La cuenta ya está cerrada.';
   end if;
 
   -- SOLO LO NUEVO. Confirmar dos veces no vuelve a mandar lo que ya salió.
   select jsonb_agg(jsonb_build_object(
-           ''nombre'', nombre, ''cantidad'', cantidad,
-           ''precio'', precio, ''comentario'', comentario) order by id)
+           'nombre', nombre, 'cantidad', cantidad,
+           'precio', precio, 'comentario', comentario) order by id)
     into cont
     from public.cuenta_items
-   where cuenta_id = p_cuenta_id and estado = ''nuevo'';
+   where cuenta_id = p_cuenta_id and estado = 'nuevo';
 
   if cont is null then
-    raise exception ''No hay nada nuevo que mandar a la cocina.'';
+    raise exception 'No hay nada nuevo que mandar a la cocina.';
   end if;
 
   select coalesce(max(numero), 0) + 1 into n
@@ -191,12 +212,13 @@ begin
   returning * into cm;
 
   update public.cuenta_items
-     set estado = ''confirmado'', comanda_id = cm.id
-   where cuenta_id = p_cuenta_id and estado = ''nuevo'';
+     set estado = 'confirmado', comanda_id = cm.id
+   where cuenta_id = p_cuenta_id and estado = 'nuevo';
 
   perform public.cuenta_recalcular(p_cuenta_id);
   return cm;
-end;';
+end;
+$$;
 
 
 -- ---------- 5) PRECUENTA: la mesa se pone azul ----------
@@ -207,28 +229,30 @@ create or replace function public.cuenta_precuenta(
 language plpgsql
 security definer
 set search_path = public
-as 'declare
+as $$
+declare
   c public.cuentas;
 begin
   select * into c from public.cuentas where id = p_cuenta_id for update;
   if not found then
-    raise exception ''Esa cuenta ya no existe.'';
+    raise exception 'Esa cuenta ya no existe.';
   end if;
-  if c.estado = ''cerrada'' then
-    raise exception ''La cuenta ya está cerrada.'';
+  if c.estado = 'cerrada' then
+    raise exception 'La cuenta ya está cerrada.';
   end if;
   if exists (select 1 from public.cuenta_items
-              where cuenta_id = p_cuenta_id and estado = ''nuevo'') then
-    raise exception ''Hay productos que todavía no salieron a la cocina. Confirma primero.'';
+              where cuenta_id = p_cuenta_id and estado = 'nuevo') then
+    raise exception 'Hay productos que todavía no salieron a la cocina. Confirma primero.';
   end if;
 
   perform public.cuenta_recalcular(p_cuenta_id);
   update public.cuentas
-     set estado = ''precuenta'', precuenta_at = now()
+     set estado = 'precuenta', precuenta_at = now()
    where id = p_cuenta_id
    returning * into c;
   return c;
-end;';
+end;
+$$;
 
 
 -- ---------- 6) CERRAR: la mesa vuelve a verde ----------
@@ -240,26 +264,28 @@ create or replace function public.cuenta_cerrar(
 language plpgsql
 security definer
 set search_path = public
-as 'declare
+as $$
+declare
   c public.cuentas;
 begin
   select * into c from public.cuentas where id = p_cuenta_id for update;
   if not found then
-    raise exception ''Esa cuenta ya no existe.'';
+    raise exception 'Esa cuenta ya no existe.';
   end if;
   -- Idempotente: cerrar dos veces devuelve la fila, no falla. Dos toques
   -- seguidos en un teléfono lento es algo que pasa.
-  if c.estado = ''cerrada'' then
+  if c.estado = 'cerrada' then
     return c;
   end if;
 
   perform public.cuenta_recalcular(p_cuenta_id);
   update public.cuentas
-     set estado = ''cerrada'', cerrada_por = p_quien, cerrada_at = now()
+     set estado = 'cerrada', cerrada_por = p_quien, cerrada_at = now()
    where id = p_cuenta_id
    returning * into c;
   return c;
-end;';
+end;
+$$;
 
 
 -- ---------- 7) MOVER la mesa entera ----------
@@ -272,16 +298,17 @@ create or replace function public.cuenta_mover(
 language plpgsql
 security definer
 set search_path = public
-as 'declare
+as $$
+declare
   c public.cuentas;
   m public.mesas;
 begin
   select * into c from public.cuentas where id = p_cuenta_id for update;
   if not found then
-    raise exception ''Esa cuenta ya no existe.'';
+    raise exception 'Esa cuenta ya no existe.';
   end if;
-  if c.estado = ''cerrada'' then
-    raise exception ''La cuenta ya está cerrada: no se puede mover.'';
+  if c.estado = 'cerrada' then
+    raise exception 'La cuenta ya está cerrada: no se puede mover.';
   end if;
   if c.mesa_id = p_mesa_id then
     return c;
@@ -289,20 +316,21 @@ begin
 
   select * into m from public.mesas where id = p_mesa_id;
   if not found then
-    raise exception ''Esa mesa no existe.'';
+    raise exception 'Esa mesa no existe.';
   end if;
   if m.sede <> c.sede then
-    raise exception ''No se puede mover una cuenta a otra sede.'';
+    raise exception 'No se puede mover una cuenta a otra sede.';
   end if;
   if exists (select 1 from public.cuentas
-              where mesa_id = p_mesa_id and estado <> ''cerrada'') then
-    raise exception ''La mesa % ya está ocupada. Elige una libre.'', m.numero;
+              where mesa_id = p_mesa_id and estado <> 'cerrada') then
+    raise exception 'La mesa % ya está ocupada. Elige una libre.', m.numero;
   end if;
 
   update public.cuentas set mesa_id = p_mesa_id
    where id = p_cuenta_id returning * into c;
   return c;
-end;';
+end;
+$$;
 
 
 -- ---------- 8) MOVER productos de una mesa a otra ----------
@@ -316,22 +344,23 @@ create or replace function public.items_mover(
 language plpgsql
 security definer
 set search_path = public
-as 'declare
+as $$
+declare
   destino public.cuentas;
   origen  bigint[];
   n       integer;
   o       bigint;
 begin
   if p_items is null or array_length(p_items, 1) is null then
-    raise exception ''No elegiste ningún producto.'';
+    raise exception 'No elegiste ningún producto.';
   end if;
 
   select * into destino from public.cuentas where id = p_cuenta_id for update;
   if not found then
-    raise exception ''Esa mesa ya no tiene cuenta abierta.'';
+    raise exception 'Esa mesa ya no tiene cuenta abierta.';
   end if;
-  if destino.estado = ''cerrada'' then
-    raise exception ''La cuenta de destino ya está cerrada.'';
+  if destino.estado = 'cerrada' then
+    raise exception 'La cuenta de destino ya está cerrada.';
   end if;
 
   -- De qué cuentas salen, para poder recalcularles el total después.
@@ -351,7 +380,8 @@ begin
   end if;
 
   return n;
-end;';
+end;
+$$;
 
 
 -- ---------- quién puede llamarlas ----------
