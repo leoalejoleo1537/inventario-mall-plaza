@@ -2199,6 +2199,7 @@ del problema.
 
 | Qué fallaba | Cómo se resolvió | Dónde vive | Fecha |
 |---|---|---|---|
+| La pestaña Historial se cortaba el 25 y ya era 28: la tarea automática había vuelto a una versión vieja que solo escribía en `historial_auto` | Se reagendó con la instrucción completa, y el 26 y el 27 se rellenaron desde el respaldo de las 22:00. Los dos archivos que la pisaban llevan **⛔ NO CORRER** | `2026-08-la-foto-volvio-a-la-pantalla.sql` | 08-28 |
 | El historial ofrecía días viejos: se pedían **todas** las filas y Supabase cortaba en 1000 sin avisar | Función que agrupa por fecha en la base y devuelve una fila por día (con respaldo `order`+`limit`) | `2026-07-historial-dias.sql` | 07-27 |
 | Al vender, el teléfono mostraba el stock nuevo con las fechas viejas ("Champiñón 0" + "1 vence hoy") | `producto_lotes` agregada a la publicación `supabase_realtime` | `2026-07-fechas-en-vivo-y-limpieza.sql` | 07-27 |
 | Fechas fantasma: lotes en cantidad 0 que igual se mostraban y se copiaban al resumen | Se borran, con respaldo previo; y quedó la jerarquía stock/fechas de la regla 0.3.1 | mismo archivo | 07-27 |
@@ -2228,6 +2229,7 @@ del problema.
 
 | Riesgo | Qué lo cubre hoy | Dónde vive |
 |---|---|---|
+| **Volver a correr un `.sql` viejo y pisar una tarea buena** | Los dos archivos superados de la foto automática llevan **⛔ NO CORRER** en la primera línea. Un archivo del repo no dice qué está instalado (§0.1.2), pero sí puede decir que no se ejecute | `2026-08-central-historial-automatico.sql` y `2026-08-respaldo-automatico-de-verdad.sql` |
 | Instalar un motor suponiendo el estado de producción | Chequeo de salud: **bloque 0 da el resumen de 10 filas en una sola corrida**; los bloques 1-10 son el detalle | `2026-07-salud-del-sistema.sql` |
 | **Creer que un `.sql` se corrió cuando no** (3 incidentes: las 15 h, el cálculo viejo, `producto_lotes`) | Cuaderno `migraciones_aplicadas`. **Cada script nuevo se anota solo al final** — no depende de que alguien se acuerde. Sembrado solo con lo que el chequeo COMPROBÓ, no con lo que "debería" estar | `2026-07-registro-de-migraciones.sql` |
 | Perder datos sin punto de restauración | Respaldo de `productos`/`recetas`/`receta_items`/`producto_lotes`, probado restaurando. **Los archivos se guardan en Notion**, no en el repo (ver `respaldos/README.md`) | `2026-07-respaldo-para-guardar.sql` |
@@ -2701,6 +2703,41 @@ donde se edita el stock— y no en cada fila de la lista.
 ---
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-08-28** — **La foto automática corría perfecto y la pantalla igual
+  quedaba vacía.** Jhon: *"no se guardó el inventario desde el 25 y hoy ya es
+  28"*. Se arregló y no se perdió nada; lo que vale es cómo se llegó.
+  1. **La evidencia dio vuelta el diagnóstico en el primer dato.** Yo iba a
+     buscar una tarea caída. Pero el respaldo `historial_auto` **sí tenía el
+     26 y el 27**. Como la instrucción es UNA sola —borra el día, escribe en
+     `historial`, escribe en `historial_auto`— y Postgres deshace todo junto
+     si algo revienta, que el respaldo estuviera probaba que la parte de
+     `historial` **no había fallado: no se estaba ejecutando.** Un solo
+     resultado descartó dos de las tres causas posibles.
+  2. **La causa: volver a correr un archivo viejo del repo.** `cron.schedule`
+     con el mismo nombre pisa lo que había, así que un `.sql` anterior —de
+     cuando la foto solo escribía en `historial_auto`— reemplazó la tarea
+     buena. **Es §0.1.2 al revés:** ahí el peligro es *leer* el repo y creer
+     que es producción; acá fue *ejecutar* el repo y hacer que producción
+     retroceda. El repo no es el estado, y correrlo tampoco lo actualiza:
+     lo sobrescribe con una foto vieja.
+  3. **Se comprobó leyendo la instrucción instalada, no contando tareas.**
+     `command like '%into public.historial (%'` sobre `cron.job`. Contar
+     habría dicho "dos tareas, las dos activas" y habría sido cierto e
+     inútil — es exactamente la técnica de §0.2.1: mirar el cuerpo.
+  4. **Las dos redes salvaron el día, y esa es la moraleja.** El respaldo
+     guardaba nombre, sección, stock, mínimo, máximo y activo desde que se
+     escribió pensando en el 9 de agosto (§0.6). Por eso el 26 y el 27 se
+     devolvieron enteros en vez de perderse. **De lo que hay copia se
+     recupera; de lo que no, no** — otra vez.
+  5. **La prevención es de una línea y va donde puede doler.** Los dos
+     archivos superados llevan ahora **⛔ NO CORRER** en la primera línea, con
+     el nombre del bueno. No se borran: su texto explica por qué la foto
+     existe. Un archivo del repo no puede decir qué está instalado, pero sí
+     puede decir que no se ejecute.
+  6. **Queda una decisión de Jhon, sin tocar:** la tarea borra la foto del día
+     antes de escribirla, así que pisa la que el equipo guardó a mano después
+     de contar. Para restaurar da igual; para ellos no es la que contaron.
 
 - **2026-08-28** — **Nace Llamita Lama, y el archivo madre pasa a tener dos
   mitades.** El área de ventas —mesas y comandas— quedó con su etapa 1

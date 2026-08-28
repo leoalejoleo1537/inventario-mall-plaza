@@ -1,3 +1,20 @@
+-- ################################################################
+-- ⛔ NO CORRER ESTE ARCHIVO. QUEDÓ SUPERADO.
+--
+-- Agenda las tareas `foto-inventario-tarde` y `foto-inventario-noche`
+-- con una instrucción que SOLO escribe en `historial_auto`. Correrlo
+-- pisa la tarea buena, y la pestaña Historial deja de recibir fotos.
+--
+-- Eso pasó de verdad: el 2026-08-28 la pantalla se cortaba el día 25.
+-- La tarea corría perfecto todos los días y la pantalla igual quedaba
+-- vacía — la peor clase de falla que tiene este proyecto.
+--
+-- EL BUENO ES:  sql/2026-08-la-foto-volvio-a-la-pantalla.sql
+--
+-- Se deja el archivo y no se borra porque su texto explica por qué la
+-- foto automática existe. Lo que no hay que hacer es ejecutarlo.
+-- ################################################################
+
 -- ================================================================
 --  DÓNDE VA:  Supabase  ->  SQL Editor  ->  New query
 --  ES:        4 bloques. Correr UNO POR UNO.
