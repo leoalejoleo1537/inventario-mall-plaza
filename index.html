@@ -10495,29 +10495,63 @@ function pintarMetaElegidos(){
                          && +$('meta-objetivo').value > 0 && $('meta-hasta').value);
 }
 
+/* EL CATÁLOGO DE FUDO SE LEE ENTERO, POR PÁGINAS.
+
+   Antes se pedía con `.limit(1000)`, y entre las dos sedes hay ~1.280
+   productos: Supabase corta en 1000 y no avisa (§6, bloque A). Media carta
+   de Angamos no llegaba nunca al buscador, así que una meta armada desde
+   acá guardaba solo el id de Plaza.
+
+   Se pide por páginas hasta que una venga incompleta — así funciona con
+   dos sedes y con seis, sin que nadie tenga que acordarse del número. */
+let META_CARTA = null;
+async function metaCartaFudo(){
+  if(META_CARTA) return META_CARTA;
+  const filas = [], paso = 1000;
+  for(let desde = 0; ; desde += paso){
+    const {data,error} = await sb.from('fudo_productos')
+      .select('fudo_product_id,nombre,sede').order('id').range(desde, desde+paso-1);
+    if(error){ META_CARTA = null; return filas; }
+    filas.push(...(data||[]));
+    if(!data || data.length < paso) break;
+  }
+  META_CARTA = filas;
+  return filas;
+}
+
 async function metaBuscar(){
   const q = normNombre($('meta-q').value);
   const c = $('meta-res'); if(!c) return;
   if(q.length < 2){ c.innerHTML=''; return; }
   /* Se busca en el catálogo de Fudo de las DOS sedes y se junta por
      nombre: el mismo producto existe en las dos con id distinto, y la
-     meta tiene que contar los dos. */
-  const {data} = await sb.from('fudo_productos')
-    .select('fudo_product_id,nombre,sede').limit(1000);
+     meta tiene que contar los dos.
+
+     ⚠️ CADA ID VIAJA CON SU SEDE, y eso no es un adorno. Los ids de Fudo
+     solo son únicos DENTRO de una cuenta (`fudo_productos` tiene
+     `unique (sede, fudo_product_id)`). El 584 en Plaza es el agua con gas
+     y en Angamos es "Capuccino Pedidos Ya". Guardar el id sin la sede
+     hacía que la meta contara el producto equivocado en la otra sede. */
+  const carta = await metaCartaFudo();
   const vistos = new Map();
-  for(const f of (data||[])){
+  for(const f of carta){
     if(!normNombre(f.nombre).includes(q)) continue;
     const k = normNombre(f.nombre);
-    if(!vistos.has(k)) vistos.set(k, {nombre:f.nombre, ids:[]});
-    vistos.get(k).ids.push(f.fudo_product_id);
+    if(!vistos.has(k)) vistos.set(k, {nombre:f.nombre, pares:[], sedes:new Set()});
+    vistos.get(k).pares.push(f.sede + ':' + f.fudo_product_id);
+    vistos.get(k).sedes.add(f.sede);
   }
   const filas = [...vistos.values()].slice(0,10);
   c.innerHTML = filas.length ? filas.map(f=>{
-    const ids = f.ids.join(',');
+    const ids = f.pares.join(',');
     const puesto = META_SEL.some(x=>x.id===ids);
+    /* Decir en QUÉ sedes está, no cuántas filas hay. Un producto que
+       aparece en una sola sede es una meta que solo puede ganar una — y
+       eso hay que verlo antes de crearla, no después. */
+    const donde = [...f.sedes].map(s=>(SEDES[s]&&SEDES[s].label)||s).join(' y ');
     return `<div class="aj-prod${puesto?' puesto':''}">
       <div class="nm"><b>${esc(f.nombre)}</b><span>${puesto ? 'ya está en la meta'
-        : f.ids.length + (f.ids.length===1?' en la carta':' en la carta')}</span></div>
+        : 'en ' + esc(donde)}</span></div>
       ${puesto ? '<span class="mas" style="background:var(--green-fg);box-shadow:none">✓</span>'
         : `<button type="button" class="mas" aria-label="Agregar ${esc(f.nombre)}"
             data-metaadd="${esc(ids)}" data-nom="${esc(f.nombre)}">+</button>`}
@@ -10535,9 +10569,16 @@ async function metaCrear(){
     titulo, objetivo, premio:$('meta-premio').value.trim()||null,
     desde, hasta, creada_por:NOMBRE }).select().single();
   if(error){ avisar(error.message || 'No se pudo crear la meta.'); return; }
+  /* Cada par viaja como "sede:id" y se guarda separado. La sede no se
+     puede deducir después: el mismo id significa cosas distintas en cada
+     cuenta de Fudo. */
   const filas = [];
-  for(const p of META_SEL) for(const id of String(p.id).split(','))
-    filas.push({meta_id:data.id, fudo_product_id:id, nombre:p.nombre});
+  for(const p of META_SEL) for(const par of String(p.id).split(',')){
+    const corte = par.indexOf(':');
+    if(corte < 0) continue;
+    filas.push({meta_id:data.id, sede:par.slice(0,corte),
+                fudo_product_id:par.slice(corte+1), nombre:p.nombre});
+  }
   const {error:e2} = await sb.from('meta_productos').insert(filas);
   if(e2){ avisar('La meta se creó pero no se guardaron los productos: ' + e2.message); return; }
   META_SEL = [];

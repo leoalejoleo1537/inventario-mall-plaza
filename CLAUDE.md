@@ -2199,6 +2199,8 @@ del problema.
 
 | Qué fallaba | Cómo se resolvió | Dónde vive | Fecha |
 |---|---|---|---|
+| Una meta de venta contaba **otro producto** en la segunda sede: el id 584 es el agua en Plaza y "Capuccino Pedidos Ya" en Angamos | `meta_productos` gana columna `sede` y `meta_avance` une por **(id, sede)**. Además cuenta una vez por línea vendida, así una receta de 3 insumos ya no multiplica por 3 | `2026-08-metas-cuentan-por-sede.sql` | 08-28 |
+| El buscador de productos de una meta pedía el catálogo con `.limit(1000)` y entre las dos sedes hay ~1.280: media carta de Angamos no llegaba | Se lee por páginas hasta que una venga incompleta (`metaCartaFudo`) | `index.html` | 08-28 |
 | La pestaña Historial se cortaba el 25 y ya era 28: la tarea automática había vuelto a una versión vieja que solo escribía en `historial_auto` | Se reagendó con la instrucción completa, y el 26 y el 27 se rellenaron desde el respaldo de las 22:00. Los dos archivos que la pisaban llevan **⛔ NO CORRER** | `2026-08-la-foto-volvio-a-la-pantalla.sql` | 08-28 |
 | El historial ofrecía días viejos: se pedían **todas** las filas y Supabase cortaba en 1000 sin avisar | Función que agrupa por fecha en la base y devuelve una fila por día (con respaldo `order`+`limit`) | `2026-07-historial-dias.sql` | 07-27 |
 | Al vender, el teléfono mostraba el stock nuevo con las fechas viejas ("Champiñón 0" + "1 vence hoy") | `producto_lotes` agregada a la publicación `supabase_realtime` | `2026-07-fechas-en-vivo-y-limpieza.sql` | 07-27 |
@@ -2703,6 +2705,43 @@ donde se edita el stock— y no en cada fila de la lista.
 ---
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
+
+- **2026-08-28** — **Una meta contaba capuchinos creyendo que eran aguas.** Jhon:
+  *"el agua Bosqua de Angamos vendió más de 80 y en la meta me aparecen sólo
+  dos"*. Su hipótesis era que cerrar una meta borraba el conteo; no era eso, y
+  la respuesta real es peor y más útil.
+  1. **No contaba de menos: contaba OTRO PRODUCTO.** El id 584 es "Agua Bosqua
+     con gas" en Plaza y **"Capuccino Pedidos Ya"** en Angamos. Los ids de Fudo
+     solo son únicos dentro de una cuenta —`fudo_productos` lo dice en su propia
+     tabla, `unique (sede, fudo_product_id)`— y tanto `meta_productos` como
+     `meta_avance` los trataban como globales. Esos "2" eran capuchinos.
+  2. **Es §9.2 entrando por una puerta que nadie había cerrado.** Ese aviso
+     —*"los ids de Fudo son de otra cuenta"*— estaba escrito para las recetas.
+     Las metas nacieron después y repitieron el error, porque la regla vivía en
+     un párrafo y no en la forma de la tabla. Ahora la sede está en la clave:
+     **una regla escrita solo en prosa se vuelve a incumplir.**
+  3. **Tres huecos que se sumaban, y el tercero es un viejo conocido.** El
+     buscador pedía el catálogo con `.limit(1000)` y entre las dos sedes hay
+     ~1.280 productos: Supabase corta ahí **sin avisar** (bloque A de §6), así
+     que media carta de Angamos nunca llegó al buscador y la meta se guardó con
+     un solo id. Se lee por páginas hasta que una venga incompleta — sirve con
+     dos sedes y con seis.
+  4. **Y un cuarto que todavía no daba la cara.** `meta_avance` sumaba
+     `cantidad_vendida` sin agrupar por línea de venta, y un producto con receta
+     de 3 insumos deja 3 filas en `fudo_movimientos`: esa meta habría contado
+     **el triple**. El agua no tiene receta de varios insumos y por eso el error
+     estaba escondido detrás del otro. Arreglado con un `distinct on
+     (sede, fudo_item_id)`.
+  5. **La hipótesis de Jhon se descartó leyendo, no probando.** `meta_avance` no
+     guarda ningún contador: recalcula desde `fudo_movimientos` en cada llamada,
+     así que cerrar y reabrir no puede perder nada. Decirlo con el código
+     delante evitó que buscáramos un bug que no existía.
+  6. **Lo que abre, y es más grande que la meta.** Contar lo vendido resultó ser
+     una consulta agrupada sobre datos que ya teníamos desde julio — sin tocar
+     la API de Fudo (§0.7). Sirve para proyectar el reparto, para saber qué
+     ofertar en sobre-stock, y en Lama, para ordenar la carta por lo que de
+     verdad se vende. La única salvedad: solo alcanza hasta donde el motor
+     estuvo encendido en cada sede.
 
 - **2026-08-28** — **La foto automática corría perfecto y la pantalla igual
   quedaba vacía.** Jhon: *"no se guardó el inventario desde el 25 y hoy ya es
