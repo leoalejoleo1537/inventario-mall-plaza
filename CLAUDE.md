@@ -27,6 +27,7 @@
 | **0.6** | **El día que Angamos quedó en cero** · saca la foto antes | **siempre, antes de escribir en una sede** |
 | **0.7** | **La bodega es `central`; `bodega` es la vieja** · y las 3 reglas de esta etapa | **siempre, mientras se trabaje en bodega** |
 | **0.8** | **Antes de poner un candado, seis preguntas** | **antes de hacer algo obligatorio** |
+| **0.9** | **NO SE TOCA Llamita Stock mientras se construye Lama** | **siempre, en el chat de Lama** |
 | 1 | Qué es esto y para quién | contexto general |
 | 2 | Estética · paleta y formas | tocar la pantalla |
 | 2.0 | Que sea bella, no solo que funcione | tocar la pantalla |
@@ -50,6 +51,7 @@
 | 10 | Insumos a granel (té, café, naranja) | el trabajo de medición |
 | 10.1 | El doble descuento del conteo nocturno | mesas abiertas |
 | **11** | Bitácora — por qué algo está hecho así | entender una decisión vieja |
+| **12** | **LLAMITA LAMA — el hermano grande · dónde quedamos** | **empezar una sesión de Lama** |
 
 ---
 
@@ -1060,7 +1062,85 @@ excepción en vez de preguntarse si existe.
 
 ---
 
+## 0.9 REGLA DURA — LLAMITA STOCK NO SE TOCA mientras se construye LAMA
+
+> Jhon, 2026-08-27, al abrir el chat que construye el área de ventas:
+> *"lo más importante es que no se toque nada de Llamita Stock."*
+
+**El proyecto tiene ahora DOS mitades, y una está en producción.**
+
+| | |
+|---|---|
+| **Llamita Stock** | el inventario. **Lo usa el equipo todos los días.** Terminado y funcionando |
+| **Llamita Lama** | el área de ventas —mesas y comandas—. **En construcción, escondida** |
+
+### La regla, y no admite matices
+
+> **Mientras se construya Lama, no se toca NADA de Stock.** Ni una pantalla,
+> ni una función, ni una tabla, ni un `.sql` que ya corrió. Nada.
+
+Eso incluye lo que parece inofensivo: renombrar una variable, mover una
+función de sitio, "aprovechar y arreglar" algo que se ve mal al pasar.
+**Un cambio que no se pidió es un riesgo que nadie aceptó.**
+
+### Por qué es tan dura, y no es paranoia
+
+Es la lección de §0.6 llevada a su forma general. El 9 de agosto Angamos
+quedó en cero porque se escribió sobre una sede viva sin red. Acá el riesgo
+es el mismo con otra cara: **Stock está en producción y Lama no**. Si algo se
+rompe mientras se construye lo nuevo, el daño cae sobre gente que está
+trabajando, y encima nadie sabría cuál de los dos lo causó.
+
+Y hay una razón de método: **si Stock no se toca, cualquier cosa que falle
+en Stock NO puede ser culpa de este chat.** Eso es lo que hace que el trabajo
+sea diagnosticable. En el momento que Lama edite algo de Stock, esa certeza
+se pierde para siempre.
+
+### Lo que SÍ se puede tocar
+
+- `sql/2026-08-lama-*.sql` y cualquier `.sql` nuevo de Lama.
+- Las tablas de Lama: `mesas`, `cuentas`, `cuenta_items`, `comandas`.
+- En `index.html`, **solo** lo que está dentro de la vista `view-lama` y las
+  funciones que empiezan por `lama`.
+- `pruebas/lama-*.mjs`.
+- Esta sección del archivo madre, para anotar lo que se aprenda.
+
+### Los cuatro puntos donde Lama TOCA la app de Stock, y por qué no cuentan
+
+Estos ya están escritos y **no se vuelven a modificar**:
+
+| Dónde | Qué hace | Por qué es seguro |
+|---|---|---|
+| la pestaña `tabLama` | un botón más en la barra | nace `display:none` |
+| `TITULOS.lama` | el subtítulo | una entrada en un mapa |
+| `pickTab` / `pickSede` | muestra y esconde `view-lama` | una línea cada uno, junto a las demás |
+| `permisosDeLaSede` | lee `puede_lama` | un campo más, `false` si no existe |
+
+Si Lama necesitara **otro** enganche en Stock, eso **se pregunta primero**.
+No se agrega y se avisa después.
+
+### Las conexiones entre Stock y Lama van AL FINAL
+
+> Jhon: *"las conexiones no las vamos a hacer hasta que el proyecto esté
+> totalmente acabado."*
+
+Lo más tentador es lo primero que hay que NO hacer: **que cerrar una mesa
+descuente el inventario.** Es la razón de fondo del proyecto entero y aun así
+va al final, después de que las comandas sean confiables. Hoy Lama **no toca
+el stock**, y eso es lo que permite abrir y cerrar mesas veinte veces
+mientras se prueba, sin descuadrar nada.
+
+Lo mismo vale para: escribirle a Fudo desde Lama, leer recetas, y cualquier
+otra cosa que cruce las dos mitades.
+
+---
+
 ## 1. Qué es esto y para quién
+
+> **El proyecto tiene DOS mitades desde el 2026-08-27.** Esta sección describe
+> la primera, **Llamita Stock** — el inventario, terminado y en producción. La
+> segunda es **Llamita Lama**, el área de ventas, en construcción y escondida:
+> está en **§12**, y mientras se construya rige **§0.9** (Stock no se toca).
 
 Sistema de **inventario multi-sede** para una cadena de cafés ("Café del Desierto"),
 integrado con el POS **Fudo**. Lo usa el personal del café (no técnicos): jefas de
@@ -1354,7 +1434,9 @@ texto por red local e imprime— y no tiene por qué saber nada de inventario.
 
 ## 6. Estado actual y pendientes
 
-### 6.0 DÓNDE QUEDAMOS — al 2026-08-10
+### 6.0 DÓNDE QUEDAMOS EN STOCK — al 2026-08-10
+
+> ⚠️ **Esto es el estado de Llamita STOCK.** El de Llamita Lama está en §12.
 
 > **Se está construyendo la BODEGA (`central`).** El plan de fondo está en
 > `docs/plan-bodega.html`, pero **la etapa 3 de ese documento quedó al revés**:
@@ -2620,6 +2702,40 @@ donde se edita el stock— y no en cada fila de la lista.
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-08-28** — **Nace Llamita Lama, y el archivo madre pasa a tener dos
+  mitades.** El área de ventas —mesas y comandas— quedó con su etapa 1
+  completa: tres SQL corridos, cuatro tablas, ocho funciones y la pantalla
+  funcionando escondida. El detalle está en §12; acá van las decisiones de
+  método, que son las que se pierden si no se escriben.
+  1. **La regla más importante es una que prohíbe trabajar** (§0.9): mientras
+     se construya Lama, **no se toca nada de Stock**. Jhon lo pidió con esas
+     palabras y tiene una segunda razón además del riesgo: **si Stock no se
+     toca, nada que falle en Stock puede ser culpa del chat de Lama.** Eso es
+     lo que hace el trabajo diagnosticable.
+  2. **Las conexiones van al final**, y es lo contrario de lo tentador. Que
+     cerrar una mesa descuente el inventario es la razón de fondo del proyecto
+     entero, y aun así se deja para lo último: hoy Lama no toca el stock, y
+     por eso se pueden abrir y cerrar mesas veinte veces probando sin
+     descuadrar nada.
+  3. **`relation "m" does not exist`, y la primera hipótesis fue falsa.** Yo
+     acusé a las comillas de dólar y al separador del editor; convertirlas no
+     arregló nada, y simular un separador ingenuo contra las dos versiones no
+     reprodujo el error. La explicación que sí encaja: mis variables eran de
+     **una letra**, y si Postgres no la reconoce como variable, `m.sede` se
+     lee como *"columna sede de la TABLA m"* → 42P01. `mermar`, que funciona,
+     usa `pr`, `lo`, `mv`. Se renombraron todas a `v_*` **y** se partió en 9
+     bloques, para que un fallo futuro diga cuál. **La lección: descartar una
+     hipótesis con una prueba vale más que cambiar código a ver si pasa.**
+  4. **La puerta se abre con una columna, no con el correo escrito en el
+     código.** Es la doctrina de §0.65 punto 5, que salió del día que un
+     candado a mano impidió que llegara el pan. Y `puede_lama` nace apagada
+     para todos: una cuenta nueva, una fila que falta o una lectura que no
+     llegó significan todas lo mismo — no ve Lama.
+  5. **La maqueta antes del código, por tercera vez** (`docs/propuesta-lama.html`).
+     Jhon la aprobó antes de que se escribiera una línea de pantalla. Las tres
+     veces que se usó ahorró la iteración de estética; la vez que se saltó, se
+     perdió el trabajo entero.
+
 - **2026-08-21** — **Tres bugs del teléfono, y el del medio no se veía leyendo
   el CSS.**
   1. **Ajustes se salía de la pantalla en Productos y en Actividad.** Jhon:
@@ -3490,3 +3606,139 @@ donde se edita el stock— y no en cada fila de la lista.
 - **2026-07 (antes)** — Buscador con filtro en Recetas; encabezado reordenado (solo
   la barra de sync queda fija); bloqueo de zoom en iPhone; PWA instalable; se quitó
   la tarjeta "En rango"; campo `aplica` y motor v2 con `saleType`.
+
+---
+
+## 12. LLAMITA LAMA — el hermano grande, y dónde quedamos
+
+> **Esta sección es lo primero que tiene que leer el chat que construya Lama.**
+> §6.0 cuenta dónde quedó Stock; esta cuenta dónde quedó Lama. Se actualiza al
+> cerrar cada etapa, y se le borra lo que envejece — una sección de estado que
+> engaña cuesta más que no tenerla (lección del 2026-08-10).
+
+### Qué es, en una frase
+
+**Llamita Stock** sabe qué hay. **Llamita Lama** sabe qué se vende. Lama es el
+área de ventas —mesas, comandas y cobro— y es lo que hoy hace Fudo.
+
+**Las dos razones por las que existe**, y las dio Jhon:
+
+1. **Hay otra empresa interesada en comprar Llamita Stock**, y para venderlo
+   hace falta que el producto esté completo.
+2. Con Lama terminada, **Café del Desierto puede soltar Fudo del todo** — y
+   con Fudo desaparece la capa entera de emparejar dos sistemas: recetas que
+   no calzan por un nombre, combos que no capturan la elección, ventas que hay
+   que ir a leer. Eso ya estaba anticipado en §7.
+
+**Se copia la forma de Fudo a propósito.** El equipo ya sabe usar esa
+pantalla; imitarla hace que la curva de aprendizaje sea casi cero. Es el mismo
+criterio que hizo que el reparto desde bodega escribiera lo mismo que el
+reparto del local (§0.7).
+
+**Y se construye ESCONDIDA.** Jhon: *"si algo falla aquí, podríamos perder o
+entorpecer todo un día de ventas, necesito trabajar tranquilo"*, y también:
+*"Café del Desierto no puede saber que estoy trabajando en este proyecto
+nuevo"*. La puerta es `app_permisos.puede_lama`, que **nace apagada para
+todos** — hoy solo la tiene `leoalejoleo12@gmail.com`, una cuenta nueva creada
+para esto (la de Jhon no servía: hay dispositivos con su sesión abierta).
+
+⚠️ **Antes de tocar una línea, leer §0.9.** Stock no se toca. Es la regla que
+manda sobre todo lo de acá abajo.
+
+### ETAPA 1, TERMINADA — al 2026-08-28
+
+**Los tres SQL ya corrieron en producción**, comprobados por Jhon:
+
+| Archivo | Qué dejó |
+|---|---|
+| `sql/2026-08-lama-permiso.sql` | la columna `puede_lama` · una sola cuenta la tiene |
+| `sql/2026-08-lama-cimientos.sql` | las 4 tablas + realtime + las 12 mesas del Salón de Plaza |
+| `sql/2026-08-lama-funciones.sql` | 8 funciones, **una firma cada una** |
+
+**Las cuatro tablas, y la imagen que las explica:**
+
+```
+mesas ──< cuentas ──< cuenta_items >── comandas
+```
+
+Una **mesa** es un lugar del salón y existe siempre. Una **cuenta** es una
+visita a esa mesa: nace cuando llega alguien, muere cuando se paga. Los
+**items** son lo que se pidió. Una **comanda** es cada papel que sale a la
+cocina — una cuenta puede tener varias, porque la gente pide, come y vuelve a
+pedir.
+
+**El candado, y está en la base:** un índice único parcial
+(`cuentas_una_viva_por_mesa`) impide **dos cuentas abiertas en la misma mesa**.
+Es integridad de datos —dos cuentas vivas significa que alguien va a pagar la
+de otro— y por eso califica como candado según §0.8. Dos garzones tocando la
+misma mesa a la vez **va a pasar**, no es una rareza.
+
+**Las ocho funciones:** `mesa_abrir`, `cuenta_agregar`, `cuenta_recalcular`,
+`cuenta_confirmar`, `cuenta_precuenta`, `cuenta_cerrar`, `cuenta_mover`,
+`items_mover`. **Ninguna toca el stock**, y eso es lo que permite abrir y
+cerrar mesas veinte veces mientras se prueba.
+
+**La pantalla funciona**, en `index.html`, pestaña **Mesas**:
+el plano de 12 mesas con sus tres colores · abrir con un toque · la carta sale
+de `fudo_productos` (ya sincronizado, no hay que cargar nada) · agregar,
+cantidad y comentario por producto · Confirmar → la comanda **se muestra en
+pantalla** tal como saldría impresa · Precuenta → azul · Cerrar → vuelve a
+verde. En vivo sobre `cuentas` y `cuenta_items`, así dos teléfonos sobre la
+misma mesa se ven.
+
+**Los tres colores son `cuentas.estado`:** verde libre · rojo ocupada · azul
+precuenta impresa. El azul se agregó a la paleta (`--azul-bg`/`--azul-fg`)
+porque hacía falta un tercer estado propio: "ya se imprimió la precuenta,
+están pagando" no es libre ni ocupada.
+
+**Pruebas:** `pruebas/lama-mesas.mjs`, 19 casos. **La primera y la más
+importante: que la pestaña NO exista sin `puede_lama`**, probada en las dos
+direcciones. La batería entera, incluida `pantalla-sana.mjs`, en verde.
+
+**Plan y maqueta:** `docs/propuesta-lama.html` — aprobado por Jhon antes de
+escribir código, que es la regla de §0.7.
+
+### LO SIGUIENTE — etapa 4: mover mesa y mover productos
+
+Es el próximo trabajo, y existe porque **el garzón se equivoca**: anota en la
+mesa 3 lo que era de la 7, o el grupo se cambia de mesa a mitad de comida.
+
+| | |
+|---|---|
+| **Mover la mesa entera** a una libre | se niega si la destino está ocupada |
+| **Mover productos** de una mesa a otra | eligiendo cuáles |
+
+**Las dos funciones ya están en la base** (`cuenta_mover`, `items_mover`) y ya
+corrieron. **Falta solo la pantalla.** Hoy el botón `✎` de una mesa contesta
+"Todavía no" — ese es el punto exacto donde se retoma.
+
+Las dos con vista previa y confirmación **por nombre** —*"Mesa 3 pasa a Mesa
+7"*, no "¿Confirmar?"— que es el patrón de §6.2.
+
+**Los botones que Jhon dijo que no sirven no se construyen:** el del teléfono
+y la lupa de arriba de Fudo. Y las preguntas de Fudo —personas, cliente,
+garzón, comentario de mesa— **son ruido y quedaron fuera a propósito**: nadie
+las mira después. Una columna que nadie llena es una pregunta que la gente
+contesta por contestar.
+
+### DESPUÉS, en orden
+
+1. **Pulir precuenta y cerrar.** Funcionan; falta afinar cómo se ve el detalle
+   que se le muestra al cliente.
+2. **El puente de impresión** (§2.3). Va **aislado y de primero entre las
+   cosas grandes**: la impresora está por USB, así que el navegador no le
+   habla directo y hace falta un programa chico en ese computador — lo mismo
+   que hace Fudo con su extensión de Chrome y su aplicación de Windows. Es la
+   lección de §0.5 aplicada antes de escribir: si falla, que falle solo, y que
+   se sepa en dos días y no en dos meses. Necesita que Jhon vaya al local.
+3. **El cierre de caja:** arqueo, efectivo/débito, cuadratura del turno.
+4. **La barra de dos niveles** (Stock | Lama arriba, como los iconos de Fudo).
+   Es el destino correcto y **no se hace todavía**: tocaría la navegación que
+   el equipo usa todos los días para un beneficio que aún no existe. Se hace
+   el día que Lama se muestre, y es trabajo de un día porque `moverCarril()`
+   ya es genérico.
+5. **Separar en `/caja`** (§7), con el peso de Lama **medido**, no adivinado.
+6. **AL FINAL DE TODO: las conexiones.** Que cerrar una mesa descuente el
+   inventario. Es la razón de fondo del proyecto entero y aun así va última
+   (§0.9), con interruptor (§2.2), y solo cuando las comandas sean confiables.
+   **La boleta sigue saliendo por Mercado Pago** — esa línea no se cruza (§7).
