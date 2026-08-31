@@ -171,7 +171,30 @@ await caso('el cuadrito NO muestra quién abrió la mesa', async () =>
   !(await page.textContent('[data-lamamesa="101"]')).includes('adriana')
   || 'pinta el correo de quien la abrió, y eso es ruido');
 
-console.log('\nAbrir una mesa es MANUAL, siempre:');
+/* Los tres colores son SÓLIDOS y el número va en blanco, como en Fudo. Con
+   los tonos pálidos de la paleta el azul de "cobrando" no se despegaba del
+   fondo de la app: había que adivinar cuál mesa se estaba cobrando. */
+await caso('las mesas son sólidas, no un tono pálido del fondo', async () => {
+  const c = await page.evaluate(()=>{
+    const e = document.querySelector('[data-lamamesa="102"]');   // la que está cobrando
+    const s = getComputedStyle(e);
+    return {fondo:s.backgroundColor, texto:s.color};
+  });
+  return (c.fondo === 'rgb(44, 90, 160)' && c.texto === 'rgb(255, 255, 255)')
+    || 'quedó '+JSON.stringify(c);
+});
+/* El glosario de colores se sacó: tres cuadritos de colores no necesitan pie
+   de página, y ocupaba una franja de la pantalla en cada carga. */
+await caso('ya no hay glosario de colores', async () =>
+  !(await page.isVisible('.lama-leyenda')) || 'sigue el "libre / ocupada / cobrando"');
+/* Apilar el plano y la cuenta dentro de 900px dejaba media pantalla en blanco
+   con el panel apretado. Es lo único que view-lama le cambia a .wrap. */
+await caso('la pantalla ocupa todo el ancho', async () => {
+  const w = await page.evaluate(()=>getComputedStyle(document.getElementById('view-lama')).maxWidth);
+  return w === 'none' || 'sigue acotada a '+w;
+});
+
+console.log('\nAbrir una mesa es MANUAL, y se abre con el +:');
 /* Tocar el plano no puede crear nada. Antes tocar una mesa verde ya llamaba a
    mesa_abrir, así que un roce dejaba una cuenta abierta que después alguien
    tenía que ir a cerrar. Abrir y cerrar son actos de la persona. */
@@ -181,27 +204,58 @@ await caso('tocar una mesa libre NO la abre: solo la elige', async () => {
   const r = await page.evaluate(()=>window.__rpc.find(x=>x.nombre==='mesa_abrir'));
   return !r || 'la abrió de solo tocarla, y eso deja cuentas que nadie pidió';
 });
-await caso('el panel dice qué mesa es y ofrece abrirla', async () => {
+await caso('el panel dice qué mesa es y que está libre', async () => {
   const t = await page.textContent('.lama-caja');
-  return (t.includes('Mesa 5') && t.includes('Abrir mesa 5')) || 'no ofrece abrirla: '+t.slice(0,120);
+  return (t.includes('Mesa 5') && t.includes('Libre')) || 'no dice el estado: '+t.slice(0,120);
 });
-await caso('el botón Abrir mesa sí llama a mesa_abrir con su id', async () => {
+/* El botón de texto "Abrir mesa 5" se cambió por el + de abajo a la derecha:
+   el gesto es el mismo —agregar algo— tanto para abrir como para poner
+   productos, y no hace falta nombrarlo dos veces. */
+await caso('el + está abajo a la derecha', async () =>
+  await page.isVisible('.lama-fab') || 'no hay botón +');
+await caso('y llama a mesa_abrir con su id', async () => {
   await page.evaluate(()=>{ window.__rpc = []; });
-  await page.click('[data-lamaacc="abrir-mesa"]'); await page.waitForTimeout(500);
+  await page.click('[data-lamaacc="mas"]'); await page.waitForTimeout(500);
   const r = await page.evaluate(()=>window.__rpc.find(x=>x.nombre==='mesa_abrir'));
   return (r && r.args.p_mesa_id === 104) || 'llamó con '+JSON.stringify(r);
 });
 
-console.log('\nLa carta sale del catálogo de Fudo:');
+console.log('\nLa carta: EN LISTA, con el precio al lado:');
+await caso('el + de una mesa abierta abre la carta', async () => {
+  await page.click('[data-lamaacc="mas"]'); await page.waitForTimeout(400);
+  return await page.isVisible('.lama-carta') || 'no se abrió la carta';
+});
+/* Las píldoras de dos columnas cortaban los nombres ("Cannolis Pist…") y no
+   tenían dónde poner el precio: había que tocar a ciegas. */
+await caso('cada producto es UNA fila, no una píldora', async () => {
+  const n = await page.evaluate(()=>{
+    const filas = [...document.querySelectorAll('.lama-prod')];
+    if(filas.length < 2) return -1;
+    // dos filas seguidas tienen que estar una DEBAJO de la otra, no al lado
+    const a = filas[0].getBoundingClientRect(), b = filas[1].getBoundingClientRect();
+    return b.top >= a.bottom - 1 ? 1 : 0;
+  });
+  return n === 1 || (n === -1 ? 'hay menos de dos productos' : 'están en dos columnas');
+});
+await caso('y muestra el precio a la derecha del nombre', async () => {
+  const r = await page.evaluate(()=>{
+    const f = document.querySelector('.lama-prod');
+    if(!f) return null;
+    const nm = f.querySelector('.nm'), pr = f.querySelector('.pr');
+    if(!nm || !pr) return null;
+    return {precio:pr.textContent, aLaDerecha: pr.getBoundingClientRect().left > nm.getBoundingClientRect().left};
+  });
+  return (r && r.aLaDerecha && /\$/.test(r.precio)) || 'no está el precio a la derecha: '+JSON.stringify(r);
+});
 await caso('los productos con precio aparecen', async () =>
-  (await page.textContent('#lama-frec')).includes('Americano') || 'no está la carta');
+  (await page.textContent('.lama-carta-lista')).includes('Americano') || 'no está la carta');
 /* Un producto a $0 en una comanda es una venta que nadie cobra. */
 await caso('el que vale $0 NO aparece', async () =>
-  !(await page.textContent('#lama-frec')).includes('Producto interno')
+  !(await page.textContent('.lama-carta-lista')).includes('Producto interno')
   || 'ofrece un producto sin precio');
 await caso('el buscador filtra', async () => {
   await page.fill('#lama-q', 'latte'); await page.waitForTimeout(300);
-  const t = await page.textContent('#lama-frec');
+  const t = await page.textContent('.lama-carta-lista');
   return (t.includes('Café Latte') && !t.includes('Americano')) || 'filtró mal: '+t;
 });
 /* Repintar mientras alguien escribe le saca el campo de abajo del dedo. Esa
@@ -210,14 +264,6 @@ await caso('el buscador filtra', async () => {
 await caso('y el campo NO se destruye al teclear', async () =>
   (await page.evaluate(()=>document.activeElement && document.activeElement.id)) === 'lama-q'
   || 'el foco se perdió al filtrar');
-/* CUATRO, no diez. Sin escribir nada son "los de siempre", no un catálogo:
-   diez botones en orden alfabético llenaban media pantalla de productos que
-   nadie pide ("3 Masitas", "Adicional Marshmelows", "Affogato"…). */
-await caso('sin escribir nada ofrece 4 como mucho', async () => {
-  await page.fill('#lama-q', ''); await page.waitForTimeout(300);
-  const n = (await page.$$('#lama-frec [data-lamaadd]')).length;
-  return n <= 4 || 'ofrece '+n+' de una, y eso invade el panel';
-});
 
 console.log('\nAgregar y confirmar:');
 await caso('agregar llama a cuenta_agregar con nombre y precio', async () => {
@@ -227,6 +273,11 @@ await caso('agregar llama a cuenta_agregar con nombre y precio', async () => {
   return (r && r.args.p_nombre === 'Café Latte' && r.args.p_precio === 3400)
     || 'mandó '+JSON.stringify(r && r.args);
 });
+await caso('y se sale de la carta con Listo', async () => {
+  await page.click('[data-lamaacc="cerrar-carta"]'); await page.waitForTimeout(300);
+  return !(await page.isVisible('.lama-carta')) || 'la carta quedó abierta';
+});
+
 
 console.log('\nLa mesa que ya está ocupada:');
 await caso('al abrirla NO llama a mesa_abrir: ya tiene cuenta viva', async () => {
@@ -247,6 +298,27 @@ console.log('\nLa mesa cobrando:');
 await caso('se ve azul, no roja', async () =>
   (await page.getAttribute('[data-lamamesa="102"]','class')).includes('cobrando')
   || 'no distingue "cobrando" de "ocupada"');
+
+console.log('\nUna mesa SIN NADA se puede cerrar:');
+/* Es lo que faltaba y lo pidió Jhon el 31 de agosto: "abrir una mesa es más
+   fácil pero cerrarla no". El botón Cerrar solo existía si había productos,
+   así que una mesa abierta por error quedaba abierta para siempre — y eso
+   descuadra el arqueo antes de que el arqueo exista. */
+await caso('el botón Cerrar está aunque no haya productos', async () => {
+  await page.click('[data-lamamesa="105"]'); await page.waitForTimeout(300);
+  await page.click('[data-lamaacc="mas"]');  await page.waitForTimeout(500);  // abre la mesa 6
+  const t = await page.textContent('.lama-caja');
+  return t.includes('Cerrar mesa 6') || 'no ofrece cerrarla: '+t.slice(0,140);
+});
+/* Y se cierra de una, sin preguntar: no hay nada que perder, y preguntar
+   "se guarda la cuenta por $0" no protege de nada. */
+await caso('y se cierra de una, sin preguntar', async () => {
+  await page.evaluate(()=>{ window.__rpc = []; });
+  await page.click('[data-lamaacc="cobrar"]'); await page.waitForTimeout(600);
+  const r = await page.evaluate(()=>window.__rpc.find(x=>x.nombre==='cuenta_cerrar'));
+  const preguntando = await page.isVisible('#overlay-ask.open');
+  return (r && !preguntando) || (preguntando ? 'preguntó por una mesa vacía' : 'no llamó a cuenta_cerrar');
+});
 
 console.log('\nSin errores de JavaScript:');
 await caso('ninguno en toda la vuelta', () => errores.length === 0 || errores.slice(0,2).join(' · '));

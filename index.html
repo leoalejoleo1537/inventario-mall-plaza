@@ -631,100 +631,137 @@
   .enl-manual-lista .enl-cand{margin-bottom:5px}
 
   /* ---------- LLAMITA LAMA · el área de ventas ---------- */
-  /* En computador: mesas a la izquierda, panel a la derecha. En teléfono:
-     las mesas ocupan todo y el panel va abajo. El corte es 719px, el mismo
-     que ya usa Ajustes — y con `align-items:stretch` en columna, que es la
-     lección del 21 de agosto: en columna manda el eje transversal, y sin
-     eso el panel se ancha lo que pida su contenido y corre la pantalla. */
+  /* LA PANTALLA OCUPA TODO EL ANCHO. El resto de la app vive dentro de 900px
+     porque son listas que se leen; acá el plano y la cuenta compiten por el
+     espacio, y apilarlas al centro deja media pantalla en blanco con el panel
+     apretado. Es lo único que `view-lama` le cambia a `.wrap`. */
+  #view-lama{max-width:none;padding-left:18px;padding-right:18px}
+
+  /* EL PLANO Y EL PANEL.
+     · Sin mesa elegida: el plano solo, a todo lo ancho.
+     · Con mesa elegida en el TELÉFONO: un riel angosto de números a la
+       izquierda y la cuenta al lado — la disposición de Fudo en el celular.
+       Sin el riel habría que salir de la cuenta para mirar el salón.
+     · En computador: plano a la izquierda, cuenta a la derecha, siempre.
+     Grid y no flex: dos pistas no se pueden pisar (lección del 31 de agosto). */
   .lama{display:block}
-  /* El margen del teléfono va ACÁ, antes del @media. Estaba más abajo, y
-     como tiene la misma especificidad, el que va después gana: le devolvía
-     los 14px al panel dentro del computador. */
-  .lama-panel{margin-top:14px}
-  /* En computador, DOS COLUMNAS con grid y no con flex, y es a propósito:
-     una pista de ancho fijo y otra que toma lo que sobra no se pueden pisar
-     aunque el contenido pida más. Con flex, un hijo que no encoge por debajo
-     de su contenido empuja al de al lado POR ENCIMA — que es justo lo que se
-     vio en el computador el 31 de agosto. `minmax(0,1fr)` es la mitad que
-     hace falta: sin ese 0, la columna tampoco baja de su contenido. */
+  .lama.con-panel{display:grid;grid-template-columns:64px minmax(0,1fr);
+    gap:10px;align-items:start}
   @media (min-width:720px){
-    .lama{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
-    .lama-plano{min-width:0}
-    .lama-panel{min-width:0;margin-top:0}
+    .lama, .lama.con-panel{display:grid;grid-template-columns:minmax(0,1fr) 400px;
+      gap:18px;align-items:start}
   }
+  .lama-plano{min-width:0}
+  .lama-panel{min-width:0;margin-top:12px}
+  @media (min-width:720px){ .lama-panel{margin-top:0} }
+
   .lama-salones{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}
   .lama-salones button{border:1px solid var(--border);background:var(--card);font:inherit;
     font-size:13px;font-weight:700;color:var(--muted);padding:7px 15px;border-radius:999px;
     cursor:pointer;white-space:nowrap}
   .lama-salones button.on{background:var(--sec-bg);border-color:var(--sec-bg);color:#fff}
 
-  .lama-mesas{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-  @media (min-width:720px){ .lama-mesas{grid-template-columns:repeat(5,1fr)} }
+  /* LAS MESAS. Sólidas y con el número en blanco, como las de Fudo.
+     Antes iban en los tonos pálidos de la paleta (`--green-bg`) y el azul de
+     "cobrando" no se despegaba del fondo de la app: había que adivinar. Los
+     colores son los MISMOS de siempre —no se inventó ninguno—, solo que se usa
+     el tono fuerte de fondo en vez del suave. */
+  .lama-mesas{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  @media (min-width:560px){ .lama-mesas{grid-template-columns:repeat(5,1fr)} }
+  @media (min-width:1100px){ .lama-mesas{grid-template-columns:repeat(6,1fr)} }
+  /* El riel del teléfono: una sola columna angosta que hace scroll. */
+  .lama.con-panel .lama-mesas{grid-template-columns:1fr;gap:7px;
+    max-height:70vh;overflow-y:auto;padding-right:2px}
+  @media (min-width:720px){
+    .lama.con-panel .lama-mesas{grid-template-columns:repeat(5,1fr);gap:10px;
+      max-height:none;overflow:visible}
+  }
+  @media (min-width:1100px){ .lama.con-panel .lama-mesas{grid-template-columns:repeat(6,1fr)} }
+
   .lama-mesa{aspect-ratio:1;border:none;border-radius:12px;cursor:pointer;font:inherit;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-    transition:transform .12s ease, background .18s ease}
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    transition:transform .12s ease, box-shadow .18s ease, opacity .18s ease}
   .lama-mesa:active{transform:scale(.95)}
   .lama-mesa .n{font-size:22px;font-weight:800;line-height:1}
-  .lama-mesa.libre{background:var(--green-bg);color:var(--green-fg)}
-  .lama-mesa.ocupada{background:var(--red-bg);color:var(--red-fg)}
-  .lama-mesa.cobrando{background:var(--azul-bg);color:var(--azul-fg)}
-  .lama-mesa.sel{outline:2.5px solid var(--orange);outline-offset:2px}
-  /* MODO MOVER. Las que no sirven se apagan y no se pueden tocar; las que
-     sirven quedan con el naranja de acción por dentro. El plano ya existe:
-     elegir la mesa destino tocándola es más corto que leer una lista. */
-  .lama-mesa.apagada{opacity:.28}
-  .lama-mesa.viva{box-shadow:0 0 0 2px var(--orange) inset}
-  .lama-mesa.origen{box-shadow:0 0 0 2px var(--muted) inset}
+  .lama.con-panel .lama-mesa{aspect-ratio:auto;padding:11px 0;border-radius:10px}
+  .lama.con-panel .lama-mesa .n{font-size:17px}
+  @media (min-width:720px){
+    .lama.con-panel .lama-mesa{aspect-ratio:1;padding:0;border-radius:12px}
+    .lama.con-panel .lama-mesa .n{font-size:22px}
+  }
+  .lama-mesa.libre{background:var(--green-fg)}
+  .lama-mesa.ocupada{background:var(--red-fg)}
+  .lama-mesa.cobrando{background:var(--azul-fg)}
+  .lama-mesa.sel{box-shadow:0 0 0 3px var(--card), 0 0 0 6px var(--orange)}
+  /* MODO MOVER: lo que la base va a rechazar igual se apaga y no se puede tocar. */
+  .lama-mesa.apagada{opacity:.3}
+  .lama-mesa.viva{box-shadow:0 0 0 3px var(--card), 0 0 0 6px var(--orange)}
+  .lama-mesa.origen{opacity:.55}
 
-  .lama-leyenda{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
-  .lama-leyenda span{display:flex;align-items:center;gap:6px;font-weight:600}
-  .lama-leyenda i{width:12px;height:12px;border-radius:4px;display:block}
-  .lama-leyenda i.lib{background:var(--green-bg);border:1px solid var(--green-fg)}
-  .lama-leyenda i.ocu{background:var(--red-bg);border:1px solid var(--red-fg)}
-  .lama-leyenda i.cob{background:var(--azul-bg);border:1px solid var(--azul-fg)}
-
-  /* La banda del modo mover: dice de dónde sale y qué falta, con la salida
-     siempre a la vista. Va arriba del plano, no dentro del panel, porque lo
-     que hay que mirar ahora son las mesas. */
   .lama-banda{display:flex;align-items:center;gap:10px;background:var(--orange);color:#fff;
     border-radius:11px;padding:10px 13px;margin-bottom:11px;font-size:14px;font-weight:700}
   .lama-banda .t{flex:1;line-height:1.3}
-  .lama-banda button{border:none;background:rgba(255,255,255,.18);color:#fff;font:inherit;
+  .lama-banda button{border:none;background:rgba(255,255,255,.2);color:#fff;font:inherit;
     font-size:12.5px;font-weight:700;padding:6px 11px;border-radius:8px;cursor:pointer}
   .lama-banda button:active{transform:scale(.95)}
 
-  .lama-caja{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:visible}
-  /* `overflow:visible` y no hidden: el menú del lápiz cuelga de la cabecera
-     y con hidden quedaba cortado. El redondeo de la cabecera se mantiene
-     con su propio border-radius. */
-  .lama-cab{background:var(--red-fg);color:#fff;padding:11px 14px;display:flex;align-items:center;gap:8px;
-    border-radius:14px 14px 0 0;position:relative}
-  .lama-cab.libre{background:var(--sec-bg)}
+  /* EL PANEL DE LA CUENTA */
+  .lama-caja{background:var(--card);border:1px solid var(--border);border-radius:14px;
+    overflow:visible;position:relative}
+  .lama-cab{background:var(--red-fg);color:#fff;padding:12px 14px;display:flex;align-items:center;
+    gap:8px;border-radius:14px 14px 0 0;position:relative}
+  .lama-cab.libre{background:var(--green-fg)}
   .lama-cab.cobrando{background:var(--azul-fg)}
-  .lama-cab b{flex:1;font-size:16px}
-  .lama-cab button{border:none;background:rgba(255,255,255,.16);color:#fff;font:inherit;
-    font-size:14px;font-weight:700;padding:6px 11px;border-radius:8px;cursor:pointer}
+  .lama-cab .tit{flex:1;min-width:0}
+  .lama-cab .tit b{display:block;font-size:17px;line-height:1.15}
+  .lama-cab .tit span{display:block;font-size:11.5px;font-weight:700;opacity:.82;margin-top:1px}
+  .lama-cab button{border:none;background:rgba(255,255,255,.18);color:#fff;font:inherit;
+    font-size:14px;font-weight:700;padding:7px 11px;border-radius:9px;cursor:pointer;flex:0 0 auto}
   .lama-cab button:active{transform:scale(.94)}
   .lama-cab button[disabled]{opacity:.45;cursor:default}
+  .lama-cuerpo{padding:13px 14px}
+  .lama-vacio{padding:34px 18px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.55}
 
-  /* EL MENÚ DEL LÁPIZ. Chico y colgado del botón, como el de Fudo: el panel
-     entero no se reemplaza para elegir entre dos cosas. Se cierra tocando
-     fuera o con Escape. */
+  /* EL MENÚ DEL LÁPIZ — chico y colgado del botón, como el de Fudo. */
   .lama-menu{position:absolute;top:calc(100% - 4px);right:10px;z-index:12;background:var(--card);
     border:1px solid var(--border);border-radius:11px;box-shadow:0 8px 26px rgba(15,30,49,.22);
-    padding:5px;min-width:186px;overflow:hidden}
+    padding:5px;min-width:190px}
   .lama-menu button{display:block;width:100%;text-align:left;border:none;background:none;font:inherit;
     font-size:14.5px;font-weight:600;color:var(--text);padding:10px 12px;border-radius:8px;cursor:pointer}
   .lama-menu button:hover{background:var(--bg)}
-  .lama-menu button:active{transform:scale(.98)}
-  /* Apagada cuando no hay nada que mover, igual que Fudo la deja gris.
-     Un botón que no puede hacer nada tiene que verse así, no fallar al tocarlo. */
   .lama-menu button[disabled]{color:var(--muted);opacity:.5;cursor:default}
   .lama-menu button[disabled]:hover{background:none}
 
-  /* ELEGIR QUÉ PRODUCTOS SE MUEVEN. Es el patrón del taller de recetas
-     (.tl-cand): el tilde se enciende y la barra de confirmar solo aparece
-     cuando hay algo elegido — sin nada elegido no tiene qué decir. */
+  /* UNA LÍNEA = UN RENGLÓN (la regla que salió del área de reparto). */
+  .lama-linea{display:flex;align-items:center;gap:9px;padding:10px 0;border-top:1px solid var(--border)}
+  .lama-linea .nm{flex:1;min-width:0}
+  .lama-linea .nm b{display:block;font-size:14.5px;font-weight:700;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  /* EL COMENTARIO es lo que lee la cocina: ámbar cuando está escrito. */
+  .lama-linea .nm span{display:block;font-size:11.5px;color:var(--muted);margin-top:1px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;max-width:100%}
+  .lama-linea .nm span.con{color:var(--amber-fg);font-weight:700}
+  .lama-linea .cant{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+  .lama-linea .cant button{width:28px;height:28px;border:1px solid var(--border);
+    background:var(--card);border-radius:8px;font:inherit;font-weight:800;cursor:pointer;color:var(--text)}
+  .lama-linea .cant button:active{transform:scale(.9)}
+  .lama-linea .cant b{min-width:20px;text-align:center;font-size:14.5px;font-variant-numeric:tabular-nums}
+  .lama-linea .precio{font-size:13.5px;font-weight:700;flex:0 0 auto;min-width:60px;text-align:right;
+    font-variant-numeric:tabular-nums}
+  .lama-linea .x{border:none;background:none;color:var(--muted);font-size:16px;cursor:pointer;
+    padding:2px 4px;flex:0 0 auto}
+  .lama-linea.nueva{background:var(--amber-bg);margin:0 -14px;padding:10px 14px}
+
+  .lama-total{display:flex;align-items:center;justify-content:space-between;padding:12px 0 4px;
+    border-top:2px solid var(--border);margin-top:6px;font-size:18px;font-weight:800;
+    font-variant-numeric:tabular-nums}
+  .lama-acc{display:flex;gap:8px;margin-top:12px}
+  .lama-acc .btn{flex:1}
+  .lama-papel{background:var(--card);border:1px dashed var(--muted);border-radius:10px;padding:16px;
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.7;
+    white-space:pre-wrap;margin-top:12px}
+
+  /* ELEGIR QUÉ SE MUEVE — el patrón del taller de recetas (.tl-cand). */
   .lama-cand{width:100%;display:flex;align-items:center;gap:11px;background:var(--card);
     border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;margin-bottom:7px;
     cursor:pointer;text-align:left;font:inherit;color:inherit;
@@ -744,51 +781,70 @@
     gap:12px;background:var(--card);border-top:1px solid var(--border);padding:11px 0 2px;margin-top:4px}
   .lama-barra .tb{font-size:13px;font-weight:700;color:var(--muted)}
 
-  .lama-cuerpo{padding:13px 14px}
-  .lama-vacio{padding:38px 18px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.55}
+  /* EL BOTÓN + . Abre la mesa si está libre; agrega productos si ya está
+     abierta. Uno solo, abajo a la derecha, como el de Fudo: "acá se suma".
+     Reemplaza al botón de texto "Abrir mesa 5" — el gesto es el mismo en los
+     dos casos y no hace falta nombrarlo dos veces. */
+  .lama-fab{position:fixed;right:18px;bottom:20px;z-index:40;width:58px;height:58px;
+    border:none;border-radius:50%;background:var(--orange);color:#fff;font-size:32px;
+    font-weight:400;line-height:1;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;box-shadow:0 6px 20px rgba(220,68,5,.45);
+    transition:transform .14s ease}
+  .lama-fab:active{transform:scale(.9)}
+  .lama-fab:focus-visible{outline:3px solid var(--navy);outline-offset:3px}
 
-  .lama-frec{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-  .lama-frec button{border:1px solid var(--border);background:var(--card);font:inherit;
-    font-size:12.5px;font-weight:600;padding:7px 11px;border-radius:999px;cursor:pointer;color:var(--text)}
-  .lama-frec button:active{transform:scale(.95)}
-
-  /* UNA LÍNEA = UN RENGLÓN. Es la regla que salió del área de reparto:
-     "optimiza el espacio, no me metas tres niveles". */
-  .lama-linea{display:flex;align-items:center;gap:9px;padding:9px 0;border-top:1px solid var(--border)}
-  .lama-linea .nm{flex:1;min-width:0}
-  .lama-linea .nm b{display:block;font-size:14px;font-weight:700;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis}
-  /* EL COMENTARIO. Es lo que llega a la cocina —"sin azúcar", "sin tomate"—
-     así que tiene que verse y tocarse fácil. Vacío es una invitación gris;
-     escrito se pinta en ámbar, el mismo color que "esto todavía no sale",
-     para que a la hora de confirmar se vea que la línea lleva instrucción. */
-  .lama-linea .nm span{display:block;font-size:11.5px;color:var(--muted);margin-top:1px;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;
-    border:none;background:none;font:inherit;font-size:11.5px;padding:0;text-align:left;max-width:100%}
-  .lama-linea .nm span.con{color:var(--amber-fg);font-weight:700}
-  .lama-linea .cant{display:flex;align-items:center;gap:5px;flex:0 0 auto}
-  .lama-linea .cant button{width:26px;height:26px;border:1px solid var(--border);
-    background:var(--card);border-radius:8px;font:inherit;font-weight:800;cursor:pointer;color:var(--text)}
-  .lama-linea .cant b{min-width:18px;text-align:center;font-size:14px}
-  .lama-linea .precio{font-size:13.5px;font-weight:700;flex:0 0 auto;min-width:52px;text-align:right}
-  .lama-linea .x{border:none;background:none;color:var(--muted);font-size:16px;cursor:pointer;
-    padding:2px 4px;flex:0 0 auto}
-  /* Lo que todavía no salió a la cocina va en ámbar: es lo que el botón
-     Confirmar va a mandar, y verlo evita mandar de más o de menos. */
-  .lama-linea.nueva{background:var(--amber-bg);margin:0 -14px;padding:9px 14px}
-
-  .lama-total{display:flex;align-items:center;justify-content:space-between;padding:12px 0 4px;
-    border-top:2px solid var(--border);margin-top:6px;font-size:17px;font-weight:800}
-  .lama-acc{display:flex;gap:8px;margin-top:12px}
-  .lama-acc .btn{flex:1}
-  .lama-papel{background:var(--card);border:1px dashed var(--muted);border-radius:10px;padding:16px;
-    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.7;
-    white-space:pre-wrap;margin-top:12px}
+  /* EL BUSCADOR DE PRODUCTOS — a pantalla completa en el teléfono.
+     EN LISTA, NUNCA EN PÍLDORAS. Las píldoras de dos columnas cortaban los
+     nombres ("Cannolis Pist…", "Salsa de …") y no tenían dónde poner el
+     precio: había que tocar a ciegas. Una fila por producto, el nombre a la
+     izquierda y el PRECIO a la derecha, que es lo que se compara. */
+  .lama-carta{position:fixed;inset:0;z-index:60;background:var(--bg);
+    display:flex;flex-direction:column}
+  @media (min-width:720px){
+    .lama-carta{inset:auto;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      width:min(560px,92vw);height:min(720px,86vh);border-radius:16px;
+      box-shadow:0 24px 70px rgba(15,30,49,.34);overflow:hidden}
+    .lama-carta-fondo{position:fixed;inset:0;z-index:59;background:rgba(15,30,49,.42);
+      backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  }
+  .lama-carta-cab{background:var(--navy);padding:12px 14px;display:flex;align-items:center;gap:10px;
+    flex:0 0 auto}
+  .lama-carta-cab button{border:none;background:rgba(255,255,255,.14);color:#fff;font:inherit;
+    font-size:18px;font-weight:700;width:38px;height:38px;border-radius:10px;cursor:pointer;
+    flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+  .lama-carta-cab input{flex:1;min-width:0;height:38px;padding:0 13px;border:none;border-radius:10px;
+    font:inherit;font-size:15px;background:rgba(255,255,255,.14);color:#fff}
+  .lama-carta-cab input::placeholder{color:rgba(255,255,255,.6)}
+  .lama-carta-lista{flex:1;min-height:0;overflow-y:auto;padding:10px 12px 14px;
+    -webkit-overflow-scrolling:touch}
+  .lama-prod{width:100%;display:flex;align-items:center;gap:12px;background:var(--card);
+    border:1px solid var(--border);border-radius:11px;padding:12px 13px;margin-bottom:7px;
+    text-align:left;font:inherit;color:inherit;cursor:pointer;
+    transition:border-color .14s,background .14s,transform .1s}
+  .lama-prod:active{transform:scale(.99)}
+  .lama-prod .nm{flex:1;min-width:0;font-size:15px;font-weight:700;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lama-prod .pr{flex:0 0 auto;font-size:14.5px;font-weight:800;color:var(--text);
+    font-variant-numeric:tabular-nums}
+  .lama-prod .mas{flex:0 0 auto;width:32px;height:32px;border-radius:50%;background:var(--bg);
+    color:var(--orange);font-size:21px;font-weight:600;line-height:1;
+    display:flex;align-items:center;justify-content:center}
+  /* Ya agregado: la fila lleva cuántos van, para no tener que salir a contar. */
+  .lama-prod.puesto{border-color:var(--orange);background:#FFF7F3}
+  .lama-prod.puesto .mas{background:var(--orange);color:#fff;font-size:14px;font-weight:800}
+  .lama-carta-pie{flex:0 0 auto;padding:11px 14px calc(11px + env(safe-area-inset-bottom));
+    background:var(--card);border-top:1px solid var(--border);display:flex;gap:10px;align-items:center}
+  .lama-carta-pie .btn{flex:1}
+  .lama-carta-cuenta{background:rgba(255,255,255,.25);border-radius:999px;min-width:24px;height:24px;
+    display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;
+    margin-left:8px;padding:0 7px}
+  .lama-carta-nada{padding:40px 20px;text-align:center;color:var(--muted);font-size:14.5px}
 
   @media (prefers-reduced-motion: reduce){
-    .lama-mesa,.lama-cand{transition:none}
-    .lama-mesa:active,.lama-frec button:active,.lama-cab button:active,
-    .lama-cand:active,.lama-menu button:active,.lama-banda button:active{transform:none}
+    .lama-mesa,.lama-cand,.lama-prod,.lama-fab{transition:none}
+    .lama-mesa:active,.lama-cab button:active,.lama-cand:active,.lama-prod:active,
+    .lama-menu button:active,.lama-banda button:active,.lama-fab:active,
+    .lama-linea .cant button:active{transform:none}
   }
 
   .enl-dest{border:1.5px solid var(--border);border-radius:12px;padding:12px 13px;background:var(--card);
@@ -2484,14 +2540,14 @@
       <div class="lama-salones" id="lama-salones"></div>
       <div id="lama-banda"></div>
       <div class="lama-mesas" id="lama-mesas"><div class="empty">Cargando…</div></div>
-      <div class="lama-leyenda">
-        <span><i class="lib"></i> libre</span>
-        <span><i class="ocu"></i> ocupada</span>
-        <span><i class="cob"></i> cobrando</span>
-      </div>
     </div>
     <div class="lama-panel" id="lama-panel"></div>
   </div>
+  <!-- El + de abajo a la derecha: abre la mesa si esta libre, agrega
+       productos si ya esta abierta. Y la carta, que en el telefono se abre
+       a pantalla completa. Los dos los pinta el JS. -->
+  <div id="lama-fab"></div>
+  <div id="lama-carta"></div>
 </div>
 
 <!-- ================= RECETAS ================= -->
@@ -5138,18 +5194,18 @@ let LAMA_SEL     = null;    // id de la mesa abierta en el panel
 let LAMA_PAPEL   = null;    // el texto de la última comanda o precuenta
 let LAMA_CARTA   = [];      // el catálogo vendible de esta sede
 let LAMA_Q       = '';      // lo escrito en el buscador
-let LAMA_TOP     = [];      // los 4 más pedidos, para los botones de siempre
+let LAMA_TOP     = [];      // los nombres mas pedidos, para ordenar la carta
 let LAMA_TOP_SEDE = null;   // para cuál sede se contaron
 let LAMA_TOP_AT  = 0;       // cuándo, para no recontar en cada aviso en vivo
 let LAMA_MENU    = false;   // el menú chico del lápiz está abierto
 let LAMA_MODO    = null;    // null · 'mesa' · 'elegir' · 'items'
 let LAMA_ELEGIDOS = [];     // ids de los items marcados para mover
+let LAMA_CARTA_ABIERTA = false;  // el buscador de productos esta a la vista
 
-/* Cuántos productos se ofrecen de un toque, sin escribir nada. Cuatro, y no
-   más: son los de siempre, no un catálogo. Al buscar sí se muestran más,
-   porque ahí la lista es la respuesta a una pregunta y no ruido de fondo. */
-const LAMA_FREC_SIEMPRE = 4;
-const LAMA_FREC_BUSCANDO = 8;
+/* Cuantos productos se cuentan para ordenar la carta por lo mas pedido.
+   Ya no hay botones "frecuentes": la carta entera se abre con el +, en lista
+   y con precio, asi que lo que importa es el ORDEN, no cuantos caben. */
+const LAMA_TOP_CUANTOS = 8;
 
 const lamaCuentaDe = mesaId => LAMA_CUENTAS.find(c => c.mesa_id === mesaId) || null;
 const lamaMesaDe   = id     => LAMA_MESAS.find(m => m.id === id) || null;
@@ -5190,17 +5246,23 @@ async function lamaCargar(){
    mitades van al final (§0.9). Mientras no haya historial, los primeros de
    la carta — que es exactamente lo que había, así que nunca queda vacío. */
 async function lamaTop(){
-  LAMA_TOP = LAMA_CARTA.slice(0, LAMA_FREC_SIEMPRE);
   const {data, error} = await sb.from('cuenta_items')
     .select('nombre,cantidad,cuentas!inner(sede)')
     .eq('cuentas.sede', SEDE).order('id', {ascending:false}).limit(600);
-  if(error || !data || !data.length) return;   // sin historial: quedan los de la carta
+  if(error || !data || !data.length) return;   // sin historial: la carta queda como esta
   const cuantas = {};
   for(const it of data) cuantas[it.nombre] = (cuantas[it.nombre] || 0) + (+it.cantidad || 0);
-  const top = Object.keys(cuantas).sort((a,b) => cuantas[b] - cuantas[a])
-    .map(n => LAMA_CARTA.find(p => p.nombre === n)).filter(Boolean)
-    .slice(0, LAMA_FREC_SIEMPRE);
-  if(top.length) LAMA_TOP = top;
+  /* La carta se ORDENA por lo mas pedido, no se recorta: lo de siempre queda
+     arriba y el resto sigue estando, que es lo que hace que el buscador no
+     sea obligatorio para el 90% de los pedidos. El desempate es alfabetico
+     para que el orden no baile entre recargas. */
+  LAMA_TOP = Object.keys(cuantas).sort((a,b) => cuantas[b] - cuantas[a])
+    .slice(0, LAMA_TOP_CUANTOS);
+  LAMA_CARTA.sort((a,b) => {
+    const ia = LAMA_TOP.indexOf(a.nombre), ib = LAMA_TOP.indexOf(b.nombre);
+    if(ia !== ib) return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+    return a.nombre.localeCompare(b.nombre, 'es');
+  });
 }
 
 async function lamaCargarItems(){
@@ -5210,7 +5272,7 @@ async function lamaCargarItems(){
   LAMA_ITEMS = r.data || [];
 }
 
-function lamaPintar(){ lamaPintarPlano(); lamaPintarPanel(); }
+function lamaPintar(){ lamaPintarPlano(); lamaPintarPanel(); lamaPintarFab(); lamaPintarCarta(); }
 
 function lamaPintarPlano(){
   const cont = $('lama-mesas'); if(!cont) return;
@@ -5223,15 +5285,22 @@ function lamaPintarPlano(){
         s === LAMA_SALON ? ' class="on"' : ''}>${esc(s)}</button>`).join('')
     : '';
 
+  /* Con una mesa elegida, el plano se encoge a un riel en el teléfono y la
+     cuenta ocupa el resto. Sin eso habría que salir de la cuenta para mirar
+     el salón, que es justo lo que Fudo evita en el celular. */
+  const caja = cont.closest('.lama');
+  if(caja) caja.classList.toggle('con-panel', !!LAMA_SEL);
+
   const mesas = LAMA_MESAS.filter(m => m.salon === LAMA_SALON);
   if(!mesas.length){
     cont.innerHTML = '<div class="empty">Esta sede todavía no tiene mesas.</div>';
+    lamaPintarBanda();
     return;
   }
-  /* El nombre de quien abrió la mesa NO se pinta. Estaba, y era ruido: en el
-     cuadrito se leía "leoalejoleo12" debajo de cada número, que no ayuda a
-     decidir nada. El color ya dice lo único que importa de un vistazo —
-     libre, ocupada, cobrando— y quién la abrió sigue guardado en la fila. */
+
+  /* El cuadrito dice el NÚMERO y nada más. Llegó a mostrar debajo el correo
+     de quien abrió la mesa y era ruido: no ayuda a decidir y tapa lo único
+     que se lee de un vistazo, que es el color. */
   const moviendo = LAMA_MODO === 'mesa' || LAMA_MODO === 'items';
   cont.innerHTML = mesas.map(m => {
     const c = lamaCuentaDe(m.id);
@@ -5240,16 +5309,16 @@ function lamaPintarPlano(){
     let tocable = true;
     if(moviendo){
       /* Qué se puede tocar lo deciden las funciones de la base, no la
-         pantalla: `cuenta_mover` se niega si la destino está ocupada, y
-         `items_mover` necesita una cuenta viva a la que mandar. Acá solo se
-         apaga lo que igual se iba a negar, para no ofrecer un camino muerto. */
+         pantalla: `cuenta_mover` se niega si la destino está ocupada, e
+         `items_mover` necesita una cuenta viva. Acá solo se apaga lo que
+         igual se iba a negar, para no ofrecer un camino muerto. */
       if(m.id === LAMA_SEL){ extra = ' origen'; tocable = false; }
       else if(LAMA_MODO === 'mesa'  && est === 'libre'){ extra = ' viva'; }
       else if(LAMA_MODO === 'items' && est !== 'libre'){ extra = ' viva'; }
       else { extra = ' apagada'; tocable = false; }
     }
     return `<button type="button" class="lama-mesa ${est}${extra}" data-lamamesa="${m.id}"${
-      tocable ? '' : ' disabled'}>
+      tocable ? '' : ' disabled'} aria-label="Mesa ${m.numero}, ${est}">
       <span class="n">${m.numero}</span>
     </button>`;
   }).join('');
@@ -5270,41 +5339,50 @@ function lamaPintarBanda(){
     <button type="button" data-lamaacc="salir-mover">✕ Salir</button></div>`;
 }
 
+/* EL BOTÓN +. Uno solo, abajo a la derecha. Si la mesa está libre la abre; si
+   ya está abierta, abre la carta. Reemplaza al botón de texto "Abrir mesa 5":
+   el gesto es el mismo —agregar algo— y no hace falta nombrarlo dos veces.
+   No aparece en modo mover ni con la carta abierta: ahí no es lo que toca. */
+function lamaPintarFab(){
+  const caja = $('lama-fab'); if(!caja) return;
+  const m = LAMA_SEL ? lamaMesaDe(LAMA_SEL) : null;
+  if(!m || LAMA_MODO || LAMA_CARTA_ABIERTA){ caja.innerHTML = ''; return; }
+  const c = lamaCuentaDe(m.id);
+  caja.innerHTML = `<button type="button" class="lama-fab" data-lamaacc="mas"
+    aria-label="${c ? 'Agregar productos a la mesa ' + m.numero : 'Abrir la mesa ' + m.numero}"
+    title="${c ? 'Agregar productos' : 'Abrir la mesa ' + m.numero}">+</button>`;
+}
+
 function lamaPintarPanel(){
   const cont = $('lama-panel'); if(!cont) return;
   const m = LAMA_SEL ? lamaMesaDe(LAMA_SEL) : null;
   if(!m){
     cont.innerHTML = `<div class="lama-caja"><div class="lama-vacio">
-      Toca una mesa para abrirla.<br>Verde está libre, roja tiene gente.</div></div>`;
+      Toca una mesa para verla.</div></div>`;
     return;
   }
   const c = lamaCuentaDe(m.id);
-  const total  = LAMA_ITEMS.reduce((s,i) => s + (+i.cantidad||0) * (+i.precio||0), 0);
-  const nuevos = LAMA_ITEMS.filter(i => i.estado === 'nuevo');
-  const clase  = !c ? 'libre' : c.estado === 'precuenta' ? 'cobrando' : '';
 
-  /* LA MESA CERRADA NO SE ABRE SOLA. Antes, tocar una mesa verde ya creaba
-     la cuenta; ahora tocarla solo la elige, y abrirla es un botón aparte con
-     su nombre escrito. Abrir y cerrar una mesa son actos de la persona, en
-     todo momento — nunca un efecto de haber tocado el plano. */
+  /* LA MESA LIBRE. Tocarla no la abre: eso lo hace el + de abajo. Un roce en
+     el plano no puede crear una cuenta que después alguien tenga que cerrar. */
   if(!c){
     cont.innerHTML = `<div class="lama-caja">
       <div class="lama-cab libre">
-        <b>Mesa ${m.numero}</b>
+        <span class="tit"><b>Mesa ${m.numero}</b><span>Libre</span></span>
         <button type="button" data-lamaacc="cerrar-panel" aria-label="Cerrar">✕</button>
       </div>
-      <div class="lama-cuerpo">
-        <div class="lama-acc">
-          <button type="button" class="btn btn-orange" data-lamaacc="abrir-mesa">Abrir mesa ${m.numero}</button>
-        </div>
-      </div>
+      <div class="lama-vacio">Toca el + para abrirla.</div>
     </div>`;
     return;
   }
 
+  const total  = LAMA_ITEMS.reduce((s,i) => s + (+i.cantidad||0) * (+i.precio||0), 0);
+  const nuevos = LAMA_ITEMS.filter(i => i.estado === 'nuevo');
+  const clase  = c.estado === 'precuenta' ? 'cobrando' : '';
+  const estado = c.estado === 'precuenta' ? 'Cobrando' : 'Ocupada';
+
   /* ELEGIR QUÉ SE MUEVE. Reemplaza el cuerpo del panel y no la pantalla
-     entera, y la cabecera se queda igual para no perder de vista en qué
-     mesa se está. */
+     entera, y la cabecera se queda para no perder de vista en qué mesa se está. */
   if(LAMA_MODO === 'elegir'){
     const filas = LAMA_ITEMS.map(i => {
       const on = LAMA_ELEGIDOS.includes(i.id);
@@ -5321,7 +5399,7 @@ function lamaPintarPanel(){
     }).join('');
     cont.innerHTML = `<div class="lama-caja">
       <div class="lama-cab ${clase}">
-        <b>Mesa ${m.numero} · qué se mueve</b>
+        <span class="tit"><b>Mesa ${m.numero}</b><span>Qué se mueve</span></span>
         <button type="button" data-lamaacc="salir-mover">Volver</button>
       </div>
       <div class="lama-cuerpo">${filas}${
@@ -5333,12 +5411,27 @@ function lamaPintarPanel(){
     return;
   }
 
+  /* CERRAR LA MESA SIEMPRE SE PUEDE, y sobre todo cuando está vacía. Antes el
+     botón solo existía si había productos: una mesa abierta por error quedaba
+     abierta para siempre, y eso descuadra el arqueo antes de que exista. Con
+     productos ya comandados sí se pregunta; vacía se cierra de una, porque no
+     hay nada que perder. */
+  const accion = nuevos.length
+    ? `<div class="lama-acc">
+        <button type="button" class="btn btn-gris"   data-lamaacc="cancelar">Cancelar</button>
+        <button type="button" class="btn btn-orange" data-lamaacc="confirmar">Confirmar</button>
+       </div>`
+    : `<div class="lama-acc">
+        <button type="button" class="btn btn-navy" data-lamaacc="cobrar">Cerrar mesa ${m.numero}</button>
+       </div>`;
+
   cont.innerHTML = `<div class="lama-caja">
     <div class="lama-cab ${clase}">
-      <b>Mesa ${m.numero}</b>
+      <span class="tit"><b>Mesa ${m.numero}</b><span>${estado}</span></span>
       <button type="button" data-lamaacc="menu" title="Mover la mesa o sus productos"
               aria-haspopup="true" aria-expanded="${LAMA_MENU?'true':'false'}">✎</button>
-      <button type="button" data-lamaacc="precuenta" title="Imprimir la precuenta">✓</button>
+      <button type="button" data-lamaacc="precuenta" title="Imprimir la precuenta"${
+        LAMA_ITEMS.length ? '' : ' disabled'}>✓</button>
       <button type="button" data-lamaacc="cerrar-panel" aria-label="Cerrar">✕</button>
       ${LAMA_MENU ? `<div class="lama-menu" id="lama-menu" role="menu">
         <button type="button" role="menuitem" data-lamaacc="mover-mesa">Mover la mesa</button>
@@ -5347,10 +5440,6 @@ function lamaPintarPanel(){
       </div>` : ''}
     </div>
     <div class="lama-cuerpo">
-      <input type="text" class="aj-buscar" id="lama-q" placeholder="Buscar producto…"
-             autocomplete="off" value="${esc(LAMA_Q)}">
-      <div class="lama-frec" id="lama-frec"></div>
-
       ${LAMA_ITEMS.length ? LAMA_ITEMS.map(i => `
         <div class="lama-linea${i.estado==='nuevo'?' nueva':''}">
           <div class="nm">
@@ -5360,47 +5449,112 @@ function lamaPintarPanel(){
               >${i.comentario ? esc(i.comentario) : '+ comentario'}</span>
           </div>
           <div class="cant">
-            <button type="button" data-lamamenos="${i.id}">−</button>
+            <button type="button" data-lamamenos="${i.id}" aria-label="Uno menos">−</button>
             <b>${fmt(i.cantidad)}</b>
-            <button type="button" data-lamamas="${i.id}">+</button>
+            <button type="button" data-lamamas="${i.id}" aria-label="Uno más">+</button>
           </div>
           <span class="precio">${plata((+i.cantidad||0)*(+i.precio||0))}</span>
           <button type="button" class="x" data-lamaquitar="${i.id}" aria-label="Quitar">✕</button>
         </div>`).join('')
-        : `<div style="padding:18px 0;color:var(--muted);font-size:14px;text-align:center">
-             Todavía no hay nada. Busca un producto arriba.</div>`}
+        : `<div class="lama-vacio">Sin productos.<br>Toca el + para agregar.</div>`}
 
       ${LAMA_ITEMS.length ? `<div class="lama-total"><span>Total</span><span>${plata(total)}</span></div>` : ''}
-
-      ${nuevos.length ? `<div class="lama-acc">
-          <button type="button" class="btn btn-gris"   data-lamaacc="cancelar">Cancelar</button>
-          <button type="button" class="btn btn-orange" data-lamaacc="confirmar">Confirmar</button>
-        </div>`
-      : LAMA_ITEMS.length ? `<div class="lama-acc">
-          <button type="button" class="btn btn-navy" data-lamaacc="cobrar">Cerrar mesa ${m.numero}</button>
-        </div>` : ''}
-
+      ${accion}
       ${LAMA_PAPEL ? `<div class="lama-papel">${esc(LAMA_PAPEL)}</div>` : ''}
     </div>
   </div>`;
-  lamaPintarFrec();
 }
 
-/* Los frecuentes se pintan en su PROPIO recuadro, no repintando el panel
-   entero: repintar mientras alguien escribe le saca el campo de abajo del
-   dedo, y esa lección ya costó tres veces en el área de reparto. */
-function lamaPintarFrec(){
-  const caja = $('lama-frec'); if(!caja) return;
+/* ==================================================================
+   LA CARTA — el buscador de productos
+   ==================================================================
+   EN LISTA, NUNCA EN PÍLDORAS. Las píldoras de dos columnas cortaban los
+   nombres a la mitad ("Cannolis Pist…", "Salsa de …") y no tenían dónde
+   poner el precio: había que tocar a ciegas para saber cuánto vale. Una
+   fila por producto, el nombre a la izquierda y el PRECIO a la derecha,
+   que es lo que de verdad se compara.
+
+   En el teléfono ocupa la pantalla entera, como la de Fudo. El pie dice
+   "Listo" y no "Confirmar" a propósito: acá Confirmar ya significa otra
+   cosa —mandar a la cocina— y usar la misma palabra para dos gestos
+   distintos es la forma más barata de que alguien mande de más.        */
+
+function lamaPintarCarta(){
+  const caja = $('lama-carta'); if(!caja) return;
+  if(!LAMA_CARTA_ABIERTA){ caja.innerHTML = ''; return; }
+
   const q = normNombre(LAMA_Q.trim());
-  /* Sin escribir: los cuatro de siempre. Escribiendo: hasta ocho, porque ahí
-     la lista contesta una pregunta. Antes eran diez fijos en orden
-     alfabético y ocupaban media pantalla con productos que nadie pide. */
-  const lista = q
-    ? LAMA_CARTA.filter(p => normNombre(p.nombre).includes(q)).slice(0, LAMA_FREC_BUSCANDO)
-    : LAMA_TOP.slice(0, LAMA_FREC_SIEMPRE);
-  caja.innerHTML = lista.length
-    ? lista.map(p => `<button type="button" data-lamaadd="${esc(p.fudo_product_id)}">${esc(p.nombre)}</button>`).join('')
-    : `<span style="color:var(--muted);font-size:13px">Nada con ese nombre.</span>`;
+  const lista = (q ? LAMA_CARTA.filter(p => normNombre(p.nombre).includes(q)) : LAMA_CARTA)
+    .slice(0, 60);
+
+  /* Cuántos van de cada uno, para que la fila lo diga y no haya que salir a
+     contar a la cuenta. Se lee de los items de verdad, no de un contador
+     aparte: dos fuentes para el mismo número es como se producen los
+     descuadres. */
+  const puestos = {};
+  for(const i of LAMA_ITEMS) puestos[i.nombre] = (puestos[i.nombre] || 0) + (+i.cantidad || 0);
+
+  const filas = lista.map(p => {
+    const n = puestos[p.nombre] || 0;
+    return `<button type="button" class="lama-prod${n?' puesto':''}"
+              data-lamaadd="${esc(p.fudo_product_id)}">
+      <span class="nm">${esc(p.nombre)}</span>
+      <span class="pr">${plata(p.precio)}</span>
+      <span class="mas">${n ? n : '+'}</span>
+    </button>`;
+  }).join('');
+
+  const cuantos = LAMA_ITEMS.reduce((s,i) => s + (+i.cantidad||0), 0);
+  caja.innerHTML = `<div class="lama-carta-fondo" data-lamaacc="cerrar-carta"></div>
+    <div class="lama-carta" role="dialog" aria-modal="true" aria-label="Agregar productos">
+      <div class="lama-carta-cab">
+        <button type="button" data-lamaacc="cerrar-carta" aria-label="Volver">←</button>
+        <input type="text" id="lama-q" placeholder="Buscar producto…"
+               autocomplete="off" value="${esc(LAMA_Q)}">
+      </div>
+      <div class="lama-carta-lista" id="lama-carta-lista">${
+        filas || '<div class="lama-carta-nada">Nada con ese nombre.</div>'}</div>
+      <div class="lama-carta-pie">
+        <button type="button" class="btn btn-orange" data-lamaacc="cerrar-carta">Listo${
+          cuantos ? `<span class="lama-carta-cuenta">${cuantos}</span>` : ''}</button>
+      </div>
+    </div>`;
+}
+
+/* Solo se repinta la LISTA mientras alguien escribe. Repintar la carta entera
+   le saca el campo de abajo del dedo y pierde el foco — esa lección ya costó
+   tres veces en el área de reparto. */
+function lamaPintarCartaLista(){
+  const caja = $('lama-carta-lista'); if(!caja) return;
+  const q = normNombre(LAMA_Q.trim());
+  const lista = (q ? LAMA_CARTA.filter(p => normNombre(p.nombre).includes(q)) : LAMA_CARTA)
+    .slice(0, 60);
+  const puestos = {};
+  for(const i of LAMA_ITEMS) puestos[i.nombre] = (puestos[i.nombre] || 0) + (+i.cantidad || 0);
+  caja.innerHTML = lista.map(p => {
+    const n = puestos[p.nombre] || 0;
+    return `<button type="button" class="lama-prod${n?' puesto':''}"
+              data-lamaadd="${esc(p.fudo_product_id)}">
+      <span class="nm">${esc(p.nombre)}</span>
+      <span class="pr">${plata(p.precio)}</span>
+      <span class="mas">${n ? n : '+'}</span>
+    </button>`;
+  }).join('') || '<div class="lama-carta-nada">Nada con ese nombre.</div>';
+}
+
+function lamaCerrarCarta(){
+  LAMA_CARTA_ABIERTA = false; LAMA_Q = '';
+  lamaPintar();
+}
+
+/* El + de abajo: abre la mesa si está libre, y si ya está abierta muestra la
+   carta. Un solo botón para "agregar algo acá". */
+async function lamaMas(){
+  if(!LAMA_SEL) return;
+  if(!lamaCuentaDe(LAMA_SEL)){ await lamaAbrirMesa(); return; }
+  LAMA_CARTA_ABIERTA = true; LAMA_Q = '';
+  lamaPintar();
+  const inp = $('lama-q'); if(inp) setTimeout(()=>inp.focus(), 60);
 }
 
 /* Todas las acciones pasan por acá: llaman a la base, y si algo se niega
@@ -5418,7 +5572,7 @@ async function lamaLlamar(fn, args){
    y cerrar ya lo era. */
 async function lamaSeleccionar(mesaId){
   LAMA_SEL = mesaId; LAMA_PAPEL = null; LAMA_Q = '';
-  LAMA_MENU = false; LAMA_MODO = null; LAMA_ELEGIDOS = [];
+  LAMA_MENU = false; LAMA_MODO = null; LAMA_ELEGIDOS = []; LAMA_CARTA_ABIERTA = false;
   await lamaCargarItems();
   lamaPintar();
 }
@@ -5442,7 +5596,10 @@ async function lamaAgregar(fudoId){
     p_cantidad: 1, p_comentario: null, p_fudo_id: String(p.fudo_product_id), p_quien: NOMBRE});
   if(!it) return;
   await lamaCargarItems();
+  /* Se repinta el panel de atras Y la lista de la carta, para que la fila
+     muestre cuantos van sin tener que salir a mirar la cuenta. */
   lamaPintarPanel();
+  if(LAMA_CARTA_ABIERTA) lamaPintarCartaLista();
 }
 
 /* Subir y bajar cantidad se hace con un update directo y no con una función:
@@ -5577,7 +5734,11 @@ async function lamaPrecuenta(){
 async function lamaCerrar(){
   const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
   const m = lamaMesaDe(LAMA_SEL);
-  if(!await preguntar('Cerrar la mesa ' + m.numero,
+  /* Una mesa SIN NADA se cierra de una, sin preguntar. Se abre por error mas
+     seguido de lo que parece, y preguntar "se guarda la cuenta por /usr/bin/bash" no
+     protege de nada: no hay nada que perder. Con productos si se pregunta,
+     porque ahi si se esta cerrando una venta. */
+  if(LAMA_ITEMS.length && !await preguntar('Cerrar la mesa ' + m.numero,
       'Se guarda la cuenta por ' + plata(c.total) + ' y la mesa queda libre.', 'Cerrar')) return;
   const r = await lamaLlamar('cuenta_cerrar', {p_cuenta_id: c.id, p_quien: NOMBRE});
   if(!r) return;
@@ -5668,8 +5829,8 @@ $('view-lama').addEventListener('click', async e => {
   const me = e.target.closest('[data-lamamesa]');
   if(me){
     const id = +me.dataset.lamamesa;
-    /* En modo mover, tocar una mesa es elegir el destino. Fuera de él, solo
-       la elige — abrir es el botón que dice "Abrir mesa N". */
+    /* En modo mover, tocar una mesa es elegir el destino. Fuera de el, solo
+       la elige: abrir es el + de abajo a la derecha. */
     if(LAMA_MODO === 'mesa')       { await lamaMoverMesa(id);  return; }
     if(LAMA_MODO === 'items')      { await lamaMoverItems(id); return; }
     await lamaSeleccionar(id);
@@ -5701,7 +5862,8 @@ $('view-lama').addEventListener('click', async e => {
     else if(a === 'cancelar')      await lamaCancelar();
     else if(a === 'precuenta')     await lamaPrecuenta();
     else if(a === 'cobrar')        await lamaCerrar();
-    else if(a === 'abrir-mesa')    await lamaAbrirMesa();
+    else if(a === 'mas')           await lamaMas();
+    else if(a === 'cerrar-carta')  lamaCerrarCarta();
     else if(a === 'menu')        { LAMA_MENU = !LAMA_MENU; lamaPintarPanel(); }
     else if(a === 'mover-mesa')  { LAMA_MENU = false; LAMA_MODO = 'mesa';   lamaPintar(); }
     else if(a === 'mover-items') { LAMA_MENU = false; LAMA_MODO = 'elegir'; LAMA_ELEGIDOS = []; lamaPintar(); }
@@ -5710,6 +5872,7 @@ $('view-lama').addEventListener('click', async e => {
     else if(a === 'cerrar-panel'){
       LAMA_SEL = null; LAMA_PAPEL = null; LAMA_Q = '';
       LAMA_MENU = false; LAMA_MODO = null; LAMA_ELEGIDOS = [];
+      LAMA_CARTA_ABIERTA = false;
       lamaPintar();
     }
     return;
@@ -5725,12 +5888,13 @@ $('view-lama').addEventListener('click', async e => {
    trabada — y la banda naranja tapa el plano. */
 document.addEventListener('keydown', e => {
   if(e.key !== 'Escape' || vistaActual !== 'lama') return;
+  if(LAMA_CARTA_ABIERTA){ lamaCerrarCarta(); return; }
   if(LAMA_MENU){ LAMA_MENU = false; lamaPintarPanel(); return; }
   if(LAMA_MODO){ lamaSalirDeMover(); }
 });
 
 $('view-lama').addEventListener('input', e => {
-  if(e.target.id === 'lama-q'){ LAMA_Q = e.target.value; lamaPintarFrec(); }
+  if(e.target.id === 'lama-q'){ LAMA_Q = e.target.value; lamaPintarCartaLista(); }
 });
 
 

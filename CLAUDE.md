@@ -3892,6 +3892,47 @@ pregunta que la gente contesta por contestar.
 código — cuarta vez que se usa el atajo de §0.7, y esta vez además sirvió
 para que Jhon detectara mirándola qué faltaba corregir de la pantalla real.
 
+
+### LA LIMPIEZA DEL 31 DE AGOSTO — mirando la pantalla de verdad
+
+Jhon abrió la app desplegada, la comparó con Fudo lado a lado y mandó siete
+correcciones. Ninguna se habría visto leyendo el código; todas salieron de
+usar la pantalla. **Ese es el argumento entero de la regla de desplegar
+siempre**, y acá está la evidencia.
+
+| Lo que estaba mal | Cómo quedó |
+|---|---|
+| **La pantalla apilada al centro** dentro de 900 px, con media pantalla en blanco y el panel apretado | `#view-lama{max-width:none}`. Es lo **único** que Lama le cambia a `.wrap` |
+| **Los colores no contrastaban**: el azul de "cobrando" no se despegaba del fondo de la app | Las mesas van **sólidas con el número en blanco**, como las de Fudo. Mismos colores de la paleta: se usa el tono fuerte (`--green-fg`, `--red-fg`, `--azul-fg`) de fondo en vez del suave. **No se inventó ninguno** |
+| **El glosario "libre / ocupada / cobrando"** ocupaba una franja en cada carga | Fuera. Tres cuadritos de color no necesitan pie de página |
+| **La carta en píldoras de dos columnas**, con los nombres cortados (*"Cannolis Pist…"*) y sin precio | **Una fila por producto**, nombre a la izquierda y **precio a la derecha**, que es lo que se compara. En el teléfono ocupa la pantalla entera, como Fudo |
+| **No se podía cerrar una mesa vacía**: el botón solo existía con productos | **Cerrar está siempre.** Y una mesa sin nada se cierra **de una, sin preguntar** |
+| **"Abrir mesa 5"** como botón de texto | **Un `+` abajo a la derecha.** Abre la mesa si está libre, abre la carta si ya está abierta |
+| **El teléfono no replicaba a Fudo** | Con una mesa elegida, el plano se encoge a un **riel angosto de números** a la izquierda y la cuenta ocupa el resto |
+
+**La regla que sale de esto, y vale para toda pantalla nueva:**
+
+> **Cerrar tiene que ser tan fácil como abrir.** Un estado en el que es fácil
+> entrar y difícil salir se llena de basura sola. Una mesa abierta por error y
+> sin forma cómoda de cerrarla descuadra el arqueo **antes** de que el arqueo
+> exista.
+
+**Por qué "Listo" y no "Confirmar" en el pie de la carta:** acá *Confirmar* ya
+significa **mandar a la cocina**. Usar la misma palabra para dos gestos
+distintos es la forma más barata de que alguien mande de más.
+
+**Los cuatro de siempre se volvieron un ORDEN, no un recorte.** La carta
+completa se ordena por lo más pedido —contado de `cuenta_items`, que es de
+Lama— y lo de siempre queda arriba. Recortar a cuatro escondía el resto;
+ordenar deja el buscador como algo opcional para el 90% de los pedidos.
+
+**Pruebas:** `lama-mesas.mjs` pasó de 22 a **31 casos**, y las nuevas prueban
+lo que se ve, no lo que se escribió: que el azul de la mesa cobrando sea
+`rgb(44,90,160)` sobre blanco, que dos productos de la carta estén **uno
+debajo del otro** y no al lado, que el precio esté **a la derecha** del
+nombre, y que una mesa vacía se cierre **sin preguntar**. Comparado otra vez
+contra línea base: las 30 pruebas de Stock, idénticas.
+
 ### LO QUE FALTA PARA COMPLETAR EL ÁREA DE VENTAS
 
 Antes del arqueo, que necesita que las mesas estén firmes:
