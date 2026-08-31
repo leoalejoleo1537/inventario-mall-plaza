@@ -3692,6 +3692,31 @@ donde se edita el stock— y no en cada fila de la lista.
 > cerrar cada etapa, y se le borra lo que envejece — una sección de estado que
 > engaña cuesta más que no tenerla (lección del 2026-08-10).
 
+### REGLA — Lama se despliega SIEMPRE, apenas pasa las pruebas
+
+> Jhon, 2026-08-31: *"despliégalo, si no, no tengo cómo verificar… no me sirve
+> que me digas 'ya lo corregí' pero no tengo cómo comprobarlo."*
+
+**Todo cambio de Lama va a `master` y se publica.** No se queda en una rama
+esperando aprobación.
+
+**Por qué no contradice "nunca push a master sin confirmar" (§7):** esa regla
+protege a la gente que está trabajando. A Lama **no la ve nadie** —
+`app_permisos.puede_lama` nace apagada para todos y hoy solo la tiene una
+cuenta—, así que publicarla no expone nada. Y sin publicar, Jhon no tiene
+forma de mirarla: no tiene el repositorio ni usa terminal. **Un arreglo que él
+no puede ver es un arreglo que no está entregado.**
+
+**Lo que esta regla NO relaja:** el diff sigue sin poder salir de `view-lama`,
+las funciones `lama*` y `pruebas/lama-*` (§0.9). Justamente por eso un push de
+Lama nunca puede llevar un cambio de Stock adentro — y por eso se puede
+publicar sin pensarlo dos veces.
+
+**Antes de cada push, dos cosas, y no son opcionales:** que las pruebas de
+Lama estén en verde, y **comparar la batería contra una línea base** sacada de
+`origin/master` con `git worktree`. Decir "no toqué Stock" es una intención;
+comparar dos corridas es un dato.
+
 ### Qué es, en una frase
 
 **Llamita Stock** sabe qué hay. **Llamita Lama** sabe qué se vende. Lama es el
