@@ -337,9 +337,18 @@ await caso('y se marca distinto del "+ comentario" vacío', async () => {
   const n = await page.evaluate(()=>document.querySelectorAll('.lama-linea .nm span.con').length);
   return n === 1 || 'marcó '+n+' comentarios escritos, y hay uno solo';
 });
+/* Ahora el comentario se escribe en la VENTANA del producto, junto con la
+   cantidad. Escondido en una línea gris de 11px dentro de la fila quedaba
+   opcional en la práctica, y es lo que la cocina lee. */
+await caso('tocar el producto abre su ventana, con cantidad y comentario', async () => {
+  await page.click('[data-lamaprod="11"]'); await page.waitForTimeout(400);
+  const t = await page.textContent('.lama-pp-caja');
+  return (t.includes('Comentario para la cocina') && await page.isVisible('.lama-pp-paso'))
+    || 'la ventana no trae las dos cosas: '+String(t).slice(0,120);
+});
 await caso('se puede escribir uno nuevo, y se guarda', async () => {
-  await page.evaluate(()=>{ window.pedirTexto = () => Promise.resolve('sin leche'); });
-  await page.click('[data-lamacom="11"]'); await page.waitForTimeout(500);
+  await page.fill('#lama-pp-com', 'sin leche'); await page.waitForTimeout(150);
+  await page.click('[data-lamaacc="pp-guardar"]'); await page.waitForTimeout(600);
   return (await page.textContent('.lama-cuerpo')).includes('sin leche')
     || 'no quedó escrito en la línea';
 });

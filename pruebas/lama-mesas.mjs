@@ -193,6 +193,36 @@ await caso('la pantalla ocupa todo el ancho', async () => {
   const w = await page.evaluate(()=>getComputedStyle(document.getElementById('view-lama')).maxWidth);
   return w === 'none' || 'sigue acotada a '+w;
 });
+console.log('\nLos colores, con la lógica de Fudo y la paleta de Stock:');
+/* Medido de las capturas de Fudo el 31-08: libre #D2F1C0 con el número en
+   #3D741C, ocupada #EF4444 sólida con blanco. Lo que se copia es la LÓGICA:
+   lo libre no grita —es el estado normal— y lo ocupado sí. Los valores salen
+   de la paleta de Stock. El primer intento pintó el verde también sólido y
+   quedó pesado; el borde es lo que hace que un relleno pálido se lea como un
+   cuadro sobre el fondo gris de la app. */
+await caso('la mesa LIBRE es pálida, con número oscuro y borde', async () => {
+  const c = await page.evaluate(()=>{
+    const s = getComputedStyle(document.querySelector('[data-lamamesa="103"]'));
+    return {f:s.backgroundColor, t:s.color, b:s.borderTopColor};
+  });
+  return (c.f === 'rgb(228, 241, 229)' && c.t === 'rgb(46, 125, 50)' && c.b === 'rgb(46, 125, 50)')
+    || 'quedó '+JSON.stringify(c);
+});
+await caso('la OCUPADA es sólida, con el número en blanco', async () => {
+  const c = await page.evaluate(()=>{
+    const s = getComputedStyle(document.querySelector('[data-lamamesa="101"]'));
+    return {f:s.backgroundColor, t:s.color};
+  });
+  return (c.f === 'rgb(192, 57, 43)' && c.t === 'rgb(255, 255, 255)') || 'quedó '+JSON.stringify(c);
+});
+/* Jhon: "en el teléfono quiero que siempre las mesas estén apiladas a la
+   izquierda y a la derecha la información". Sostenerlo siempre evita que la
+   pantalla cambie de forma cada vez que se toca una mesa. */
+await caso('en el teléfono el riel está SIEMPRE, no solo con mesa elegida', async () => {
+  const cols = await page.evaluate(()=>getComputedStyle(document.querySelector('.lama')).gridTemplateColumns);
+  return /^\d/.test(cols) && cols.split(' ').length === 2 || 'no está partido: '+cols;
+});
+
 
 console.log('\nAbrir una mesa es MANUAL, y se abre con el +:');
 /* Tocar el plano no puede crear nada. Antes tocar una mesa verde ya llamaba a
