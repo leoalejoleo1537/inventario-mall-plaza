@@ -3774,28 +3774,108 @@ direcciones. La batería entera, incluida `pantalla-sana.mjs`, en verde.
 **Plan y maqueta:** `docs/propuesta-lama.html` — aprobado por Jhon antes de
 escribir código, que es la regla de §0.7.
 
-### LO SIGUIENTE — etapa 4: mover mesa y mover productos
+### ETAPA 4, TERMINADA — al 2026-08-31
 
-Es el próximo trabajo, y existe porque **el garzón se equivoca**: anota en la
-mesa 3 lo que era de la 7, o el grupo se cambia de mesa a mitad de comida.
+Mover la mesa entera y mover algunos productos. Existe porque **el garzón se
+equivoca**: anota en la mesa 3 lo que era de la 7, o el grupo se cambia de
+mesa a mitad de comida. Las dos funciones (`cuenta_mover`, `items_mover`) ya
+estaban en la base desde la etapa 1; esta etapa fue **solo pantalla**, sin
+SQL nuevo.
 
-| | |
+**Cómo quedó:** el `✎` abre un **menú chico colgado del botón** —como el de
+Fudo— con *Mover la mesa* y *Mover productos*; la segunda nace apagada si la
+cuenta está vacía. Elegido el camino, el plano entra en **modo mover**: las
+mesas que la base va a rechazar se apagan y quedan `disabled`, las que sirven
+se marcan por dentro en naranja, y arriba una banda dice de dónde sale y cómo
+salir. La confirmación dice los **nombres** —*"Mesa 3 pasa a Mesa 5 · 4
+productos · $12.200"*—, nunca "¿Confirmar?".
+
+**LA REGLA NUEVA, y manda sobre varias decisiones** *(Jhon, 2026-08-31)*:
+
+> **Abrir y cerrar una mesa es MANUAL en todo momento. Nunca automático.**
+
+Tocar una mesa ya **no** la abre: solo la elige, y aparece un botón que dice
+*"Abrir mesa 5"*. Antes, un roce en el plano creaba una cuenta que después
+alguien tenía que ir a cerrar.
+
+Y esa regla contestó sola dos cosas que estaban abiertas:
+
+| Estaba en duda | Lo contesta la regla |
 |---|---|
-| **Mover la mesa entera** a una libre | se niega si la destino está ocupada |
-| **Mover productos** de una mesa a otra | eligiendo cuáles |
+| Si la mesa origen queda vacía al mover todo, ¿se cierra sola? | **No.** Queda abierta y sin nada. Cerrarla sola sería una venta de $0 en el historial del que después sale el arqueo |
+| ¿Mover productos a una mesa **libre** la abre sola? | **No.** Solo se puede mover a una mesa **ya abierta**. Si hay que mandar algo a una libre, primero se abre y después se mueve |
 
-**Las dos funciones ya están en la base** (`cuenta_mover`, `items_mover`) y ya
-corrieron. **Falta solo la pantalla.** Hoy el botón `✎` de una mesa contesta
-"Todavía no" — ese es el punto exacto donde se retoma.
+**Los otros cuatro arreglos de ese día**, todos pedidos mirando la pantalla
+de verdad en el computador:
 
-Las dos con vista previa y confirmación **por nombre** —*"Mesa 3 pasa a Mesa
-7"*, no "¿Confirmar?"— que es el patrón de §6.2.
+1. **El panel se pisaba con el plano en computador.** La causa **no** se pudo
+   reproducir leyendo el CSS, así que en vez de adivinar se cambió la clase
+   de falla: las dos columnas pasaron de `flex` a **`grid` con
+   `minmax(0,1fr) 380px`**, que por construcción no se puede pisar. De paso
+   apareció un bug real y comprobable: `.lama-panel{margin-top:14px}` estaba
+   **después** del `@media` y le pisaba el `margin-top:0`. Hay una prueba que
+   compara los rectángulos de verdad y falla si se vuelven a tocar.
+2. **El cuadrito mostraba quién abrió la mesa** (`leoalejoleo12` debajo de
+   cada número). Fuera: es ruido, y tapa lo único que se lee de un vistazo,
+   que es el color. Quién la abrió sigue guardado en la fila.
+3. **Los "más vendidos" eran los primeros del abecedario.** Salían *3
+   Masitas*, *Adicional Marshmelows*, *Affogato* — porque era
+   `LAMA_CARTA.slice(0,10)`, sin ordenar por nada. Ahora son **cuatro**, y se
+   cuentan de lo que Lama misma ya vendió (`cuenta_items`), **no** de
+   `fudo_movimientos`: eso es de Stock y las conexiones van al final (§0.9).
+   Sin historial caen a los primeros de la carta, así que nunca queda vacío.
+   Buscando sí se muestran hasta ocho: ahí la lista contesta una pregunta.
+4. **El comentario es lo que lee la cocina**, y ahora se ve: en ámbar cuando
+   está escrito, gris cuando no. Si el producto ya salió, se avisa antes de
+   cambiarlo —el papel se imprimió sin eso—. Hay una prueba de punta a punta
+   de que **viaja a la comanda**.
 
-**Los botones que Jhon dijo que no sirven no se construyen:** el del teléfono
-y la lupa de arriba de Fudo. Y las preguntas de Fudo —personas, cliente,
-garzón, comentario de mesa— **son ruido y quedaron fuera a propósito**: nadie
-las mira después. Una columna que nadie llena es una pregunta que la gente
-contesta por contestar.
+**Pruebas:** `pruebas/lama-mover.mjs`, 31 casos, y `lama-mesas.mjs` subió a
+22 (se le cambiaron los casos de "tocar abre la mesa", que ahora prueban lo
+contrario).
+
+**Y se comprobó contra una línea base, no de palabra.** Se sacó un
+`git worktree` de `origin/master` limpio, se corrió la batería entera ahí, se
+corrió sobre el árbol con los cambios, y se compararon los dos resultados:
+**las 30 pruebas de Stock dan exactamente lo mismo antes y después.** Lo único
+que se movió fue `lama-mesas` (19 → 22, a propósito) y `lama-mover`, que es
+nueva. Comparar contra una base es lo que convierte "no toqué Stock" en un
+dato; sin eso es una intención.
+
+⚠️ **Y ojo con esto, porque una sesión futura lo va a leer mal:** en esa
+batería hay **5 pruebas en rojo que YA estaban en rojo en `master` limpio** —
+`angamos-a-plaza` (2), `crear-sin-bodega` (6), `origen-del-reparto` (1),
+`recetas-en-pantalla` (5) y `tareas-y-reparto` (4). **No son de Lama y no las
+causó esta etapa.** Están anotadas acá justamente para que nadie las atribuya
+al chat de ventas ni las "arregle" de paso (§0.9). Son deuda de Stock, y
+arreglarlas es trabajo de Stock, con su propio chat.
+
+**Nota de herramienta:** esta máquina no tiene Playwright, así que la batería
+se corrió manejando el Chrome del sistema por CDP con una capa que imita la
+API de Playwright. `pruebas/navegador.mjs` **no se tocó** —es de Stock—: la
+capa vive fuera del repo. Varias pruebas salen "sin resumen" bajo esa capa
+porque usan APIs que no implementé; salen igual **antes y después**, así que
+la comparación se sostiene, pero no son un verde.
+
+**Los botones que Jhon dijo que no sirven no se construyeron:** el del
+teléfono y la lupa de arriba de Fudo. Y las preguntas de Fudo —personas,
+cliente, garzón, comentario de mesa— **son ruido y quedaron fuera a
+propósito**: nadie las mira después. Una columna que nadie llena es una
+pregunta que la gente contesta por contestar.
+
+**Maqueta:** `docs/propuesta-lama-mover.html`, aprobada antes de escribir
+código — cuarta vez que se usa el atajo de §0.7, y esta vez además sirvió
+para que Jhon detectara mirándola qué faltaba corregir de la pantalla real.
+
+### LO QUE FALTA PARA COMPLETAR EL ÁREA DE VENTAS
+
+Antes del arqueo, que necesita que las mesas estén firmes:
+
+| Pieza | Qué es |
+|---|---|
+| **Dividir la cuenta** | cuatro personas, cuatro pagos |
+| **Mostrador** | un café para llevar **no es una mesa**. Hoy habría que cobrarlo abriendo una mesa que no existe. Anotado el 2026-08-31; no estaba en la lista |
+| **Pulir precuenta y cerrar** | afinar el detalle que ve el cliente |
 
 ### DESPUÉS, en orden
 

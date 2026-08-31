@@ -163,15 +163,34 @@ await caso('los tres colores salen del estado de la cuenta', async () => {
 await caso('con un solo salón no se pinta el selector', async () =>
   (await page.textContent('#lama-salones')).trim() === '' || 'pinta un selector de una opción');
 
-console.log('\nAbrir una mesa libre:');
-await caso('tocarla llama a mesa_abrir con su id', async () => {
+/* El cuadrito dice el NÚMERO y nada más. Llegó a mostrar debajo el nombre de
+   quien abrió la mesa —"leoalejoleo12" en cada una— y era ruido: no ayuda a
+   decidir nada y tapa lo único que importa de un vistazo, que es el color.
+   Quién la abrió sigue guardado en la fila, solo no se pinta. */
+await caso('el cuadrito NO muestra quién abrió la mesa', async () =>
+  !(await page.textContent('[data-lamamesa="101"]')).includes('adriana')
+  || 'pinta el correo de quien la abrió, y eso es ruido');
+
+console.log('\nAbrir una mesa es MANUAL, siempre:');
+/* Tocar el plano no puede crear nada. Antes tocar una mesa verde ya llamaba a
+   mesa_abrir, así que un roce dejaba una cuenta abierta que después alguien
+   tenía que ir a cerrar. Abrir y cerrar son actos de la persona. */
+await caso('tocar una mesa libre NO la abre: solo la elige', async () => {
   await page.evaluate(()=>{ window.__rpc = []; });
-  await page.click('[data-lamamesa="104"]'); await page.waitForTimeout(500);
+  await page.click('[data-lamamesa="104"]'); await page.waitForTimeout(400);
+  const r = await page.evaluate(()=>window.__rpc.find(x=>x.nombre==='mesa_abrir'));
+  return !r || 'la abrió de solo tocarla, y eso deja cuentas que nadie pidió';
+});
+await caso('el panel dice qué mesa es y ofrece abrirla', async () => {
+  const t = await page.textContent('.lama-caja');
+  return (t.includes('Mesa 5') && t.includes('Abrir mesa 5')) || 'no ofrece abrirla: '+t.slice(0,120);
+});
+await caso('el botón Abrir mesa sí llama a mesa_abrir con su id', async () => {
+  await page.evaluate(()=>{ window.__rpc = []; });
+  await page.click('[data-lamaacc="abrir-mesa"]'); await page.waitForTimeout(500);
   const r = await page.evaluate(()=>window.__rpc.find(x=>x.nombre==='mesa_abrir'));
   return (r && r.args.p_mesa_id === 104) || 'llamó con '+JSON.stringify(r);
 });
-await caso('y el panel dice qué mesa es', async () =>
-  (await page.textContent('.lama-cab')).includes('Mesa 5') || 'no dice Mesa 5');
 
 console.log('\nLa carta sale del catálogo de Fudo:');
 await caso('los productos con precio aparecen', async () =>
@@ -191,6 +210,14 @@ await caso('el buscador filtra', async () => {
 await caso('y el campo NO se destruye al teclear', async () =>
   (await page.evaluate(()=>document.activeElement && document.activeElement.id)) === 'lama-q'
   || 'el foco se perdió al filtrar');
+/* CUATRO, no diez. Sin escribir nada son "los de siempre", no un catálogo:
+   diez botones en orden alfabético llenaban media pantalla de productos que
+   nadie pide ("3 Masitas", "Adicional Marshmelows", "Affogato"…). */
+await caso('sin escribir nada ofrece 4 como mucho', async () => {
+  await page.fill('#lama-q', ''); await page.waitForTimeout(300);
+  const n = (await page.$$('#lama-frec [data-lamaadd]')).length;
+  return n <= 4 || 'ofrece '+n+' de una, y eso invade el panel';
+});
 
 console.log('\nAgregar y confirmar:');
 await caso('agregar llama a cuenta_agregar con nombre y precio', async () => {

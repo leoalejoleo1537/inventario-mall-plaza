@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mover mesa y mover productos</title>
+<style>
+  /* ==================================================================
+     La paleta es la del index.html, copiada sin cambiar un valor (§2).
+     Si algo acá se ve distinto a la app, es un error de esta maqueta.
+     Sin modo oscuro a propósito: la app es clara, y una maqueta oscura
+     mentiría sobre cómo se ve en el mesón.
+     ================================================================== */
+  :root{
+    --navy:#0F1E31; --navy2:#16283F;
+    --orange:#DC4405; --orange-dark:#B93A04;
+    --bg:#F2F3F5; --card:#ffffff; --border:#E3E5E8;
+    --text:#1C2733; --muted:#6B7684;
+    --red-bg:#FDECEA; --red-fg:#C0392B;
+    --green-bg:#E6F4E6; --green-fg:#2E7D32;
+    --amber-bg:#FFF3E0; --amber-fg:#B26A00;
+    --gray-bg:#EDEEF0; --gray-fg:#5F6670;
+    --sec-bg:#2F4A6D; --sec-tx:#ffffff;
+    --azul-bg:#E8F0FB; --azul-fg:#2C5AA0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       -webkit-font-smoothing:antialiased}
+
+  /* ---------- envoltorio del documento (esto NO es la app) ---------- */
+  .doc{max-width:1100px;margin:0 auto;padding:22px 16px 80px}
+  .eyebrow{font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+           color:var(--sec-bg);margin:0 0 6px}
+  .doc h1{font-size:clamp(30px,6vw,46px);margin:0 0 8px;letter-spacing:-.5px;text-wrap:balance}
+  .doc .lede{color:var(--muted);font-size:17px;margin:0 0 26px;max-width:38ch;line-height:1.5}
+  .doc h2{font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+          color:var(--sec-bg);margin:46px 0 6px}
+  .doc .sub{font-size:24px;font-weight:800;margin:0 0 14px;letter-spacing:-.3px;line-height:1.25;
+            text-wrap:balance}
+  .doc p{line-height:1.65;max-width:66ch;font-size:15.5px}
+  .doc code{background:#fff;border:1px solid var(--border);border-radius:5px;padding:1px 5px;
+            font-size:12.5px}
+
+  .reglas{background:#fff;border:1px solid var(--border);border-left:3px solid var(--red-fg);
+          border-radius:0 12px 12px 0;padding:15px 18px;margin:0 0 8px}
+  .reglas h3{margin:0 0 9px;font-size:13px;letter-spacing:.6px;text-transform:uppercase;color:var(--red-fg)}
+  .reglas ul{margin:0;padding-left:19px}
+  .reglas li{font-size:14.5px;line-height:1.6;margin-bottom:5px}
+  .reglas li:last-child{margin-bottom:0}
+
+  table{border-collapse:collapse;width:100%;margin:14px 0 22px;font-size:14.5px;background:#fff;
+        border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  th{background:var(--sec-bg);color:#fff;text-align:left;padding:10px 13px;font-size:12.5px;
+     letter-spacing:.4px;text-transform:uppercase}
+  td{padding:10px 13px;border-top:1px solid var(--border);vertical-align:top;line-height:1.5}
+  td:first-child{font-weight:700}
+  .tabla-scroll{overflow-x:auto}
+
+  .pill{display:inline-block;font-size:11.5px;font-weight:800;padding:3px 10px;border-radius:999px;
+        white-space:nowrap}
+  .pill.si{background:var(--green-bg);color:var(--green-fg)}
+  .pill.no{background:var(--red-bg);color:var(--red-fg)}
+  .pill.ojo{background:var(--amber-bg);color:var(--amber-fg)}
+
+  .dec{background:#fff;border:1px solid var(--border);border-radius:12px;padding:15px 18px;margin:0 0 11px}
+  .dec h3{margin:0 0 7px;font-size:16px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .dec p{margin:0;font-size:14.5px}
+  .dec .porque{color:var(--muted);font-size:13.5px;margin-top:9px;border-top:1px dashed var(--border);
+               padding-top:9px}
+  .dos{display:grid;grid-template-columns:1fr;gap:11px;margin-bottom:11px}
+  @media (min-width:760px){ .dos{grid-template-columns:1fr 1fr} }
+  .dec.elegida{border-color:var(--green-fg);border-width:1.5px}
+  .dec.otra{opacity:.82}
+
+  /* selector teléfono / computador */
+  .tam{display:inline-flex;gap:6px;background:#fff;border:1px solid var(--border);
+       border-radius:999px;padding:4px;margin:0 0 16px}
+  .tam button{border:none;background:none;font:inherit;font-size:13.5px;font-weight:700;
+              color:var(--muted);padding:7px 16px;border-radius:999px;cursor:pointer}
+  .tam button.on{background:var(--sec-bg);color:#fff}
+  .tam button:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+
+  /* ---------- el marco: de acá para adentro es la app ---------- */
+  .marco{margin:0 auto;background:var(--bg);border:1px solid var(--border);border-radius:18px;
+         overflow:hidden;box-shadow:0 10px 34px rgba(15,30,49,.10);transition:max-width .25s ease;
+         position:relative}
+  .marco.tel{max-width:390px}
+  .marco.pc{max-width:1000px}
+
+  .topbar{background:var(--navy);color:#fff;padding:11px 15px;display:flex;align-items:center;gap:10px}
+  .topbar .tt{font-size:16px;font-weight:800;flex:1;line-height:1.2}
+  .topbar .sd{font-size:11.5px;opacity:.72;display:block;font-weight:600}
+  .ico{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.12);
+       display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto}
+  .tabs{display:flex;background:var(--navy2);padding:0 8px;gap:2px;overflow-x:auto}
+  .tabs span{color:rgba(255,255,255,.62);font-size:13.5px;font-weight:700;padding:11px 12px;
+             white-space:nowrap;border-bottom:2.5px solid transparent}
+  .tabs span.on{color:#fff;border-bottom-color:var(--orange)}
+  .wrap{padding:14px 16px 22px}
+
+  /* ---------- LLAMITA LAMA ---------- */
+  .lama{display:block}
+  .marco.pc .lama{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:14px;align-items:start}
+  .marco.pc .lama-plano{min-width:0}
+  .marco.pc .lama-panel{min-width:0;margin-top:0}
+
+  .mesas{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  .marco.pc .mesas{grid-template-columns:repeat(5,1fr)}
+  .mesa{aspect-ratio:1;border:none;border-radius:12px;cursor:default;font:inherit;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+        transition:transform .12s ease, opacity .18s ease, box-shadow .18s ease}
+  .mesa .n{font-size:22px;font-weight:800;line-height:1}
+  .mesa.libre{background:var(--green-bg);color:var(--green-fg)}
+  .mesa.ocupada{background:var(--red-bg);color:var(--red-fg)}
+  .mesa.cobrando{background:var(--azul-bg);color:var(--azul-fg)}
+  .mesa.sel{outline:2.5px solid var(--orange);outline-offset:2px}
+  /* modo mover: las que no sirven se apagan, las que sirven se pueden tocar */
+  .mesa.apagada{opacity:.28}
+  .mesa.viva{cursor:pointer;box-shadow:0 0 0 2px var(--orange) inset}
+  .mesa.viva:hover{transform:scale(1.04)}
+  .mesa.viva:active{transform:scale(.95)}
+  .mesa.viva:focus-visible{outline:2.5px solid var(--orange);outline-offset:2px}
+  .mesa.origen{box-shadow:0 0 0 2px var(--muted) inset;opacity:1}
+
+  .leyenda{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--muted)}
+  .leyenda span{display:flex;align-items:center;gap:6px;font-weight:600}
+  .leyenda i{width:12px;height:12px;border-radius:4px;display:block}
+  .leyenda i.lib{background:var(--green-bg);border:1px solid var(--green-fg)}
+  .leyenda i.ocu{background:var(--red-bg);border:1px solid var(--red-fg)}
+  .leyenda i.cob{background:var(--azul-bg);border:1px solid var(--azul-fg)}
+
+  /* la banda del modo mover, arriba del plano */
+  .banda{display:flex;align-items:center;gap:10px;background:var(--orange);color:#fff;
+         border-radius:11px;padding:10px 13px;margin-bottom:11px;font-size:14px;font-weight:700}
+  .banda .t{flex:1;line-height:1.3}
+  .banda button{border:none;background:rgba(255,255,255,.18);color:#fff;font:inherit;font-size:12.5px;
+                font-weight:700;padding:6px 11px;border-radius:8px;cursor:pointer}
+  .banda button:active{transform:scale(.95)}
+  .banda button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+  /* el panel de la cuenta */
+  .lama-panel{margin-top:14px}
+  .panel{background:#fff;border:1px solid var(--border);border-radius:14px}
+  .panel-cab{background:var(--red-fg);color:#fff;padding:11px 14px;display:flex;align-items:center;gap:8px;border-radius:14px 14px 0 0;position:relative}
+  .panel-cab.libre{background:var(--sec-bg)}
+  .panel-cab.cobrando{background:var(--azul-fg)}
+  .panel-cab b{flex:1;font-size:16px}
+  .panel-cab button{border:none;background:rgba(255,255,255,.16);color:#fff;font:inherit;font-size:13px;
+                    font-weight:700;padding:6px 11px;border-radius:8px;cursor:pointer}
+  .panel-cab button:active{transform:scale(.94)}
+  .panel-cab button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+  .panel-cuerpo{padding:13px 14px}
+  .panel-vacio{padding:38px 18px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.55}
+
+  .buscar{width:100%;height:42px;padding:0 13px;border:1px solid var(--border);border-radius:10px;
+          font:inherit;font-size:14.5px;background:var(--bg);color:var(--muted)}
+  .frecuentes{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .frecuentes span{border:1px solid var(--border);background:#fff;font-size:12.5px;
+                   font-weight:600;padding:7px 11px;border-radius:999px;color:var(--text)}
+
+  .linea{display:flex;align-items:center;gap:9px;padding:9px 0;border-top:1px solid var(--border)}
+  .linea .nm{flex:1;min-width:0}
+  .linea .nm b{display:block;font-size:14px;font-weight:700;white-space:nowrap;
+               overflow:hidden;text-overflow:ellipsis}
+  .linea .nm span{display:block;font-size:11.5px;color:var(--muted);margin-top:1px}
+  .linea .cant{display:flex;align-items:center;gap:5px;flex:0 0 auto}
+  .linea .cant i{width:26px;height:26px;border:1px solid var(--border);background:#fff;
+                 border-radius:8px;font-style:normal;font-weight:800;color:var(--text);
+                 display:flex;align-items:center;justify-content:center;font-size:14px}
+  .linea .cant b{min-width:18px;text-align:center;font-size:14px;font-variant-numeric:tabular-nums}
+  .linea .precio{font-size:13.5px;font-weight:700;flex:0 0 auto;min-width:56px;text-align:right;
+                 font-variant-numeric:tabular-nums}
+  .linea .x{color:var(--muted);font-size:16px;flex:0 0 auto;padding:2px 4px}
+  .linea.nueva{background:var(--amber-bg);margin:0 -14px;padding:9px 14px}
+
+  .total{display:flex;align-items:center;justify-content:space-between;padding:12px 0 4px;
+         border-top:2px solid var(--border);margin-top:6px;font-size:17px;font-weight:800;
+         font-variant-numeric:tabular-nums}
+  .acciones{display:flex;gap:8px;margin-top:12px}
+  .btn{border:none;font:inherit;font-size:14.5px;font-weight:700;padding:11px 16px;border-radius:10px;
+       cursor:pointer;flex:1}
+  .btn-naranja{background:var(--orange);color:#fff}
+  .btn-gris{background:var(--gray-bg);color:var(--gray-fg)}
+  .btn-navy{background:var(--navy);color:#fff}
+  .btn:active{transform:scale(.97)}
+  .btn:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+
+  /* el menu chico del lapiz, como el de Fudo */
+  .menu{position:absolute;top:calc(100% - 4px);right:10px;z-index:12;background:var(--card);
+        border:1px solid var(--border);border-radius:11px;box-shadow:0 8px 26px rgba(15,30,49,.22);
+        padding:5px;min-width:186px}
+  .menu button{display:block;width:100%;text-align:left;border:none;background:none;font:inherit;
+               font-size:14.5px;font-weight:600;color:var(--text);padding:10px 12px;border-radius:8px;
+               cursor:pointer}
+  .menu button:hover{background:var(--bg)}
+  .menu button[disabled]{color:var(--muted);opacity:.5;cursor:default}
+  .menu button[disabled]:hover{background:none}
+
+  /* elegir productos: el patrón del taller de recetas, tal cual */
+  .cand{width:100%;display:flex;align-items:center;gap:11px;background:var(--card);
+        border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;margin-bottom:7px;
+        cursor:pointer;text-align:left;font:inherit;color:inherit;
+        transition:border-color .15s,background .15s,transform .12s}
+  .cand:hover{border-color:var(--orange);background:#FFF7F3}
+  .cand:active{transform:scale(.985)}
+  .cand:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+  .cand .tk{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);flex:0 0 auto;
+            display:flex;align-items:center;justify-content:center;font-weight:800;color:transparent;
+            font-size:13px}
+  .cand:hover .tk{border-color:var(--orange);color:var(--orange)}
+  .cand.on{border-color:var(--orange);background:#FFF7F3}
+  .cand.on .tk{border-color:var(--orange);background:var(--orange);color:#fff}
+  .cand .tx{flex:1;min-width:0}
+  .cand .p1{font-weight:700;font-size:14.5px;display:block}
+  .cand .p2{font-size:12px;color:var(--muted);display:block;margin-top:1px}
+  .cand .pr{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .barra{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;
+         gap:12px;background:#fff;border-top:1px solid var(--border);padding:11px 0 2px;margin-top:4px}
+  .barra .tb{font-size:13px;font-weight:700;color:var(--muted)}
+  .barra .btn{flex:0 0 auto}
+
+  /* la confirmación por nombre, encima del marco */
+  .capa{position:absolute;inset:0;background:rgba(15,30,49,.42);
+        backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+        display:flex;align-items:center;justify-content:center;padding:16px;z-index:5}
+  .ask{background:#fff;border-radius:16px;width:100%;max-width:340px;padding:20px;text-align:center}
+  .ask h4{font-size:19px;font-weight:800;margin:2px 0 0;line-height:1.3;text-wrap:balance}
+  .ask .det{font-size:14px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+  .ask .acciones{margin-top:18px}
+
+  .toast{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:var(--navy);
+         color:#fff;font-size:13.5px;font-weight:700;padding:10px 16px;border-radius:999px;z-index:6;
+         box-shadow:0 6px 20px rgba(15,30,49,.3);white-space:nowrap}
+
+  .pie-marco{font-size:13px;color:var(--muted);margin:10px auto 0;text-align:center;line-height:1.5;
+             max-width:60ch}
+
+  footer{margin-top:54px;padding-top:18px;border-top:1px solid var(--border);
+         color:var(--muted);font-size:13.5px;line-height:1.6}
+
+  @media (prefers-reduced-motion: reduce){
+    .marco,.mesa,.btn,.cand{transition:none}
+    .mesa.viva:hover,.mesa.viva:active,.btn:active,.cand:active{transform:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+  <p class="eyebrow">Llamita Lama · etapa 4 · construida el 31 de agosto de 2026</p>
+  <h1>Mover mesa y mover productos</h1>
+  <p class="lede">El garzón anota en la mesa 3 lo que era de la 7. O el grupo se cambia de mesa a mitad de comida.</p>
+
+  <div class="dec elegida" style="margin-bottom:18px">
+    <h3>Ya está construido <span class="pill si">en la app</span></h3>
+    <p>Esta página era la propuesta del 30 de agosto. Se actualizó el 31 con lo que cambió al construirla, para que no diga una cosa distinta de la pantalla.</p>
+    <p class="porque"><b>Lo que cambió, y salió de una regla tuya:</b> «abrir o cerrar una mesa debe ser manual en todo momento». Eso dio vuelta la decisión C y la mesa destino de los productos — las dos están corregidas más abajo. Y el <b>✎</b> pasó de reemplazar el panel a un menú chico colgado del botón, como el de Fudo.</p>
+  </div>
+
+  <div class="reglas">
+    <h3>Las tres reglas que mandan sobre esto</h3>
+    <ul>
+      <li><b>Llamita Stock no se toca.</b> Nada de esto entra fuera de <code>view-lama</code> y las funciones <code>lama*</code>. Ni un enganche nuevo.</li>
+      <li><b>Solo <code>leoalejoleo12@gmail.com</code> lo ve.</b> La puerta es <code>puede_lama</code> en la tabla, apagada para todos los demás. El correo no está escrito en el código.</li>
+      <li><b>El inventario no se mueve.</b> Mover productos entre mesas no descuenta ni suma stock. Se puede probar veinte veces sin descuadrar nada.</li>
+    </ul>
+  </div>
+
+  <h2>Pruébalo</h2>
+  <p class="sub">Es una maqueta, y funciona de verdad</p>
+  <p>Toca el lápiz <b>✎</b> de la mesa 3 y sigue el camino completo. Las mesas responden. Nada de esto habla con la base — es solo la pantalla, para que la veas antes de que exista.</p>
+
+  <div class="tam" role="group" aria-label="Tamaño de pantalla">
+    <button type="button" id="btel" class="on">Teléfono</button>
+    <button type="button" id="bpc">Computador</button>
+  </div>
+
+  <div class="marco tel" id="marco">
+    <div class="topbar">
+      <span class="ico">☰</span>
+      <span class="tt">Mesas<span class="sd">Mall Plaza</span></span>
+      <span class="ico">⟳</span>
+    </div>
+    <div class="tabs">
+      <span>Inventario</span><span>Reparto</span><span class="on">Mesas</span><span>Recetas</span>
+    </div>
+    <div class="wrap">
+      <div class="lama">
+        <div class="lama-plano">
+          <div id="banda"></div>
+          <div class="mesas" id="mesas"></div>
+          <div class="leyenda">
+            <span><i class="lib"></i>libre</span>
+            <span><i class="ocu"></i>ocupada</span>
+            <span><i class="cob"></i>precuenta</span>
+          </div>
+        </div>
+        <div class="lama-panel" id="panel"></div>
+      </div>
+    </div>
+    <div id="capa"></div>
+    <div id="toast"></div>
+  </div>
+  <p class="pie-marco">Toca <b>Computador</b> para ver el mismo flujo con el plano y el panel lado a lado. La <b>✕</b> del panel vuelve todo al principio.</p>
+
+  <h2>Decisión A</h2>
+  <p class="sub">Un menú chico colgado del lápiz</p>
+  <div class="dec elegida">
+    <h3>Como el de Fudo <span class="pill si">así quedó</span></h3>
+    <p><b>Mover la mesa</b> y <b>Mover productos</b>, en un recuadro chico que cuelga del botón. <b>La cuenta se sigue viendo detrás</b> — el panel entero no se reemplaza para elegir entre dos cosas.</p>
+    <p class="porque">La propuesta del 30 cambiaba el cuerpo del panel completo, y perdía de vista la cuenta. Corregido el 31 mirando la pantalla de Fudo. <b>Mover productos</b> nace apagado si la mesa no tiene nada, igual que Fudo lo deja gris.</p>
+  </div>
+
+  <h2>Decisión B</h2>
+  <p class="sub">La mesa destino se toca en el plano</p>
+  <div class="dec">
+    <h3>El plano entra en <b>modo mover</b> <span class="pill si">recomendado</span></h3>
+    <p>Las mesas que no sirven se apagan; las que sirven quedan encendidas y se tocan. Arriba, una banda naranja dice de dónde sale y qué falta hacer, con una salida siempre a la vista.</p>
+    <p class="porque">Reusa el plano que ya existe en vez de inventar una lista. Y lo que se puede tocar cambia según el camino, porque las funciones de la base ya lo deciden así:</p>
+  </div>
+  <div class="tabla-scroll">
+  <table>
+    <thead><tr><th>Camino</th><th>Qué queda encendido</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td>Mover la mesa entera</td><td>solo las <b>verdes</b></td><td><code>cuenta_mover</code> se niega si la destino está ocupada — una mesa no puede tener dos cuentas vivas</td></tr>
+      <tr><td>Mover algunos productos</td><td>solo las <b>ya abiertas</b></td><td><code>items_mover</code> necesita una <i>cuenta</i> a la que mandar, y en una mesa verde no hay ninguna</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="dec elegida">
+    <h3>Y la mesa destino <b>no</b> se abre sola <span class="pill si">corregido el 31</span></h3>
+    <p>La propuesta del 30 abría la mesa verde por debajo antes de mover. Eso ya no pasa: para mandar productos a una mesa libre, primero se abre y después se mueve.</p>
+    <p class="porque">Dos toques en vez de uno, y ninguno pasa sin querer. Sale de la regla: abrir es un acto de la persona, en todo momento.</p>
+  </div>
+
+  <h2>Decisión C</h2>
+  <p class="sub">Qué pasa con la mesa que quedó vacía</p>
+  <p>Si se mueven <b>todos</b> los productos, la mesa origen queda abierta con $0. <b>La decisión la contestó tu propia regla</b>, no una recomendación mía.</p>
+  <div class="dos">
+    <div class="dec elegida">
+      <h3>Se queda abierta <span class="pill si">así quedó</span></h3>
+      <p>La mesa sigue ocupada y vacía hasta que alguien la cierre. La confirmación lo dice antes: <i>«Mesa 3 queda abierta y sin nada»</i>.</p>
+      <p class="porque">Cerrar es manual, siempre. Y cerrarla sola dejaría una cuenta cerrada de $0 en el historial del que después sale el arqueo: ruido hoy es un descuadre después.</p>
+    </div>
+    <div class="dec otra">
+      <h3>Vuelve a verde sola</h3>
+      <p>Era lo propuesto el 30 de agosto. <b>Descartado.</b></p>
+      <p class="porque">Borrar la cuenta vacía es una acción automática sobre una mesa, y eso es justo lo que la regla no permite.</p>
+    </div>
+  </div>
+
+  <h2>La confirmación</h2>
+  <p class="sub">Dice los nombres, nunca «¿Confirmar?»</p>
+  <div class="tabla-scroll">
+  <table>
+    <thead><tr><th>Acción</th><th>Lo que dice</th><th>Debajo, en gris</th></tr></thead>
+    <tbody>
+      <tr><td>Mover la mesa</td><td>Mesa 3 pasa a Mesa 7</td><td>4 productos · $12.200</td></tr>
+      <tr><td>Mover productos</td><td>2 productos de Mesa 3 pasan a Mesa 7</td><td>Mesa 3 queda con 2</td></tr>
+      <tr><td>Y si no queda nada</td><td>3 productos de Mesa 3 pasan a Mesa 7</td><td>Mesa 3 queda vacía y vuelve a verde</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Lo que no se construye</h2>
+  <div class="tabla-scroll">
+  <table>
+    <thead><tr><th>Qué</th><th>Por qué no</th></tr></thead>
+    <tbody>
+      <tr><td>El botón del teléfono y la lupa de arriba de Fudo</td><td>los descartaste: no sirven</td></tr>
+      <tr><td>Personas, cliente, garzón, comentario de mesa</td><td>ruido. Nadie las mira después</td></tr>
+      <tr><td>Mover entre sedes</td><td>la función ya lo prohíbe y no existe el caso</td></tr>
+      <tr><td>Que mover toque el inventario</td><td>las conexiones con Stock van al final, con interruptor</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Después de esto</h2>
+  <p class="sub">Lo que falta para completar el área de ventas</p>
+  <p>Sin entrar todavía al arqueo — eso necesita que las mesas estén firmes primero. En el orden en que las pondría:</p>
+  <div class="tabla-scroll">
+  <table>
+    <thead><tr><th>Pieza</th><th>Qué es</th><th>Estado</th></tr></thead>
+    <tbody>
+      <tr><td>Mover mesa y productos</td><td>corregir el error del garzón</td><td><span class="pill ojo">esta etapa</span></td></tr>
+      <tr><td>Dividir la cuenta</td><td>cuatro personas, cuatro pagos</td><td><span class="pill no">falta</span></td></tr>
+      <tr><td>Mostrador</td><td>un café para llevar no es una mesa</td><td><span class="pill no">falta</span></td></tr>
+      <tr><td>Pulir precuenta y cerrar</td><td>afinar el detalle que ve el cliente</td><td><span class="pill ojo">a medias</span></td></tr>
+      <tr><td>El puente de impresión</td><td>la Xprinter por USB necesita un programa en ese computador</td><td><span class="pill no">falta · hay que ir al local</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><b>Mostrador es el que no estaba anotado.</b> Hoy un café para llevar habría que cobrarlo abriendo una mesa que no existe. Conviene decidirlo dentro del área de ventas, no cuando llegue la caja.</p>
+
+  <footer>
+    Maqueta · no toca la base ni el inventario · Llamita Lama, etapa 4<br>
+    Paleta y formas copiadas de <code>index.html</code> sin cambiar un valor.
+  </footer>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* Las mesas del Salón de Plaza. La 3 es la que se mueve; la 2 y la 5 están
+     ahí para que se vea que el modo mover distingue ocupada de libre. */
+  var mesasBase = [
+    {n:1,  e:'libre'},                 {n:2,  e:'ocupada',  q:'marcela'},
+    {n:3,  e:'ocupada',  q:'adriana'}, {n:4,  e:'libre'},
+    {n:5,  e:'cobrando', q:'adriana'}, {n:6,  e:'libre'},
+    {n:7,  e:'libre'},                 {n:8,  e:'libre'},
+    {n:9,  e:'libre'},                 {n:10, e:'libre'},
+    {n:11, e:'libre'},                 {n:12, e:'libre'}
+  ];
+
+  var itemsBase = [
+    {id:1, nombre:'Café Latte',       cant:2, precio:3400, estado:'confirmado'},
+    {id:2, nombre:'Medialuna manjar', cant:1, precio:2900, estado:'confirmado'},
+    {id:3, nombre:'Americano',        cant:1, precio:2500, estado:'nuevo', com:'sin azúcar'}
+  ];
+
+  var S = {};
+  function reiniciar(){
+    S = {
+      mesas: mesasBase.map(function(m){ return {n:m.n, e:m.e, q:m.q || null}; }),
+      items: {3: itemsBase.map(function(i){ return Object.assign({}, i); })},
+      abierta: 3,        // la mesa cuyo panel está a la vista
+      paso: 'panel',     // panel · elegir · mover-mesa · mover-items
+      menu: false,       // el menu chico del lapiz
+      sel: [],           // ids de los productos elegidos
+      confirmar: null,   // {tipo, destino}
+      toast: null
+    };
+  }
+  reiniciar();
+
+  var $ = function(id){ return document.getElementById(id); };
+  var plata = function(n){ return '$' + Math.round(n).toLocaleString('es-CL'); };
+  var esc = function(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+
+  function mesa(n){
+    for(var i=0;i<S.mesas.length;i++){ if(S.mesas[i].n===n) return S.mesas[i]; }
+    return null;
+  }
+  function items(n){ return S.items[n] || []; }
+  function total(n){ return items(n).reduce(function(s,i){ return s + i.cant * i.precio; }, 0); }
+  function cuantos(n){ return items(n).reduce(function(s,i){ return s + i.cant; }, 0); }
+
+  /* ---------- el plano ---------- */
+  function pintarPlano(){
+    var moviendo = S.paso === 'mover-mesa' || S.paso === 'mover-items';
+    $('mesas').innerHTML = S.mesas.map(function(m){
+      /* Fuera del modo mover todas se pueden tocar — pero tocarlas solo las
+         ELIGE, nunca las abre. */
+      var clases = ['mesa', m.e], tocable = !moviendo;
+      if(moviendo){
+        if(m.n === S.abierta){ clases.push('origen'); }
+        else if(S.paso === 'mover-mesa'  && m.e === 'libre'){ tocable = true; }
+        /* Solo mesas YA abiertas reciben productos: abrir es manual. */
+        else if(S.paso === 'mover-items' && m.e !== 'libre'){ tocable = true; }
+        else { clases.push('apagada'); }
+        if(tocable) clases.push('viva');
+      } else if(m.n === S.abierta){
+        clases.push('sel');
+      }
+      return '<button type="button" class="' + clases.join(' ') + '"' +
+             (tocable ? '' : ' disabled') +
+             ' data-mesa="' + m.n + '"' +
+             ' aria-label="Mesa ' + m.n + (tocable ? ', mover acá' : '') + '">' +
+             '<span class="n">' + m.n + '</span>' +
+             '</button>';
+    }).join('');
+
+    if(!moviendo){ $('banda').innerHTML = ''; return; }
+    var texto = S.paso === 'mover-mesa'
+      ? 'Mesa ' + S.abierta + ' → toca la mesa destino'
+      : S.sel.length + ' producto' + (S.sel.length === 1 ? '' : 's') + ' → toca la mesa destino';
+    $('banda').innerHTML =
+      '<div class="banda"><span class="t">' + texto + '</span>' +
+      '<button type="button" data-a="salir">✕ Salir</button></div>';
+  }
+
+  /* ---------- el panel de la cuenta ---------- */
+  function pintarPanel(){
+    var n = S.abierta, cont = $('panel');
+    if(!n){
+      cont.innerHTML = '<div class="panel"><div class="panel-vacio">' +
+        'Toca una mesa para abrirla.<br>Verde está libre, roja tiene gente.</div></div>';
+      return;
+    }
+    var m = mesa(n);
+    var clase = m.e === 'libre' ? ' libre' : m.e === 'cobrando' ? ' cobrando' : '';
+    var cuerpo;
+
+    if(m.e === 'libre'){
+      /* Tocar una mesa NO la abre. Abrir es un botón con su nombre escrito. */
+      cuerpo = '<div class="acciones"><button type="button" class="btn btn-naranja"' +
+               ' data-a="abrir-mesa">Abrir mesa ' + n + '</button></div>';
+
+    } else if(S.paso === 'elegir'){
+      var lista = items(n).map(function(i){
+        var on = S.sel.indexOf(i.id) >= 0;
+        return '<button type="button" class="cand' + (on ? ' on' : '') + '"' +
+               ' data-item="' + i.id + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
+               '<span class="tk">✓</span>' +
+               '<span class="tx"><span class="p1">' + i.cant + ' × ' + esc(i.nombre) + '</span>' +
+               '<span class="p2">' +
+               (i.estado === 'nuevo' ? 'todavía no salió a la cocina' : 'ya salió a la cocina') +
+               (i.com ? ' · ' + esc(i.com) : '') + '</span></span>' +
+               '<span class="pr">' + plata(i.cant * i.precio) + '</span></button>';
+      }).join('');
+      cuerpo = lista + (S.sel.length
+        ? '<div class="barra"><span class="tb">' + S.sel.length +
+          ' elegido' + (S.sel.length === 1 ? '' : 's') + '</span>' +
+          '<button type="button" class="btn btn-naranja" data-a="a-destino">Elegir mesa</button></div>'
+        : '');
+
+    } else {
+      var filas = items(n).map(function(i){
+        return '<div class="linea' + (i.estado === 'nuevo' ? ' nueva' : '') + '">' +
+          '<div class="nm"><b>' + esc(i.nombre) + '</b>' +
+          '<span>' + (i.com ? esc(i.com) : '+ comentario') + '</span></div>' +
+          '<div class="cant"><i>−</i><b>' + i.cant + '</b><i>+</i></div>' +
+          '<span class="precio">' + plata(i.cant * i.precio) + '</span>' +
+          '<span class="x">✕</span></div>';
+      }).join('');
+      cuerpo =
+        '<input class="buscar" type="text" placeholder="Buscar producto…" disabled>' +
+        '<div class="frecuentes"><span>Americano</span><span>Café Latte</span>' +
+        '<span>Medialuna manjar</span></div>' +
+        (filas || '<div style="padding:18px 0;color:var(--muted);font-size:14px;text-align:center">' +
+                  'Todavía no hay nada. Busca un producto arriba.</div>') +
+        (items(n).length ? '<div class="total"><span>Total</span><span>' + plata(total(n)) + '</span></div>' : '') +
+        (items(n).length ? '<div class="acciones"><button type="button" class="btn btn-navy" data-a="nada">' +
+                           'Cerrar mesa ' + n + '</button></div>' : '');
+    }
+
+    var titulo = S.paso === 'elegir' ? 'Mesa ' + n + ' · qué se mueve' : 'Mesa ' + n;
+    var botones = (S.paso === 'panel' && m.e !== 'libre')
+      ? '<button type="button" data-a="lapiz" title="Mover la mesa o sus productos">✎</button>' +
+        '<button type="button" data-a="nada" title="Imprimir la precuenta">✓</button>'
+      : S.paso === 'elegir'
+        ? '<button type="button" data-a="volver">Volver</button>'
+        : '';
+
+    /* El menú chico cuelga del botón y deja ver la cuenta detrás. */
+    var menu = S.menu
+      ? '<div class="menu"><button type="button" data-a="camino-mesa">Mover la mesa</button>' +
+        '<button type="button" data-a="camino-items"' + (items(n).length ? '' : ' disabled') +
+        '>Mover productos</button></div>'
+      : '';
+
+    cont.innerHTML =
+      '<div class="panel"><div class="panel-cab' + clase + '">' +
+      '<b>' + titulo + '</b>' + botones +
+      '<button type="button" data-a="reiniciar" aria-label="Cerrar">✕</button>' + menu +
+      '</div><div class="panel-cuerpo">' + cuerpo + '</div></div>';
+  }
+
+  /* ---------- la confirmación, con los nombres ---------- */
+  function pintarCapa(){
+    var c = S.confirmar;
+    if(!c){ $('capa').innerHTML = ''; return; }
+    var titulo, detalle;
+
+    if(c.tipo === 'mesa'){
+      titulo  = 'Mesa ' + S.abierta + ' pasa a Mesa ' + c.destino;
+      detalle = cuantos(S.abierta) + ' producto' + (cuantos(S.abierta) === 1 ? '' : 's') +
+                ' · ' + plata(total(S.abierta));
+    } else {
+      var seleccionados = items(S.abierta).filter(function(i){ return S.sel.indexOf(i.id) >= 0; });
+      var vanCuantos = seleccionados.reduce(function(s,i){ return s + i.cant; }, 0);
+      var quedan = cuantos(S.abierta) - vanCuantos;
+      titulo  = vanCuantos + ' producto' + (vanCuantos === 1 ? '' : 's') +
+                ' de Mesa ' + S.abierta + (vanCuantos === 1 ? ' pasa' : ' pasan') + ' a Mesa ' + c.destino;
+      detalle = quedan > 0
+        ? 'Mesa ' + S.abierta + ' queda con ' + quedan
+        : 'Mesa ' + S.abierta + ' queda abierta y sin nada';
+    }
+
+    $('capa').innerHTML =
+      '<div class="capa"><div class="ask" role="dialog" aria-modal="true" aria-label="Confirmar">' +
+      '<h4>' + esc(titulo) + '</h4><p class="det">' + esc(detalle) + '</p>' +
+      '<div class="acciones">' +
+      '<button type="button" class="btn btn-gris" data-a="cancelar">Cancelar</button>' +
+      '<button type="button" class="btn btn-naranja" data-a="hacerlo">Mover</button>' +
+      '</div></div></div>';
+  }
+
+  function pintarToast(){
+    $('toast').innerHTML = S.toast ? '<div class="toast">' + esc(S.toast) + '</div>' : '';
+  }
+
+  function pintar(){ pintarPlano(); pintarPanel(); pintarCapa(); pintarToast(); }
+
+  var toastT = null;
+  function decir(txt){
+    S.toast = txt; pintarToast();
+    clearTimeout(toastT);
+    toastT = setTimeout(function(){ S.toast = null; pintarToast(); }, 2800);
+  }
+
+  /* ---------- mover ---------- */
+  function mover(){
+    var c = S.confirmar, origen = S.abierta, dest = c.destino;
+
+    if(c.tipo === 'mesa'){
+      S.items[dest] = items(origen);
+      delete S.items[origen];
+      mesa(dest).e   = mesa(origen).e;   mesa(dest).q   = mesa(origen).q;
+      mesa(origen).e = 'libre';          mesa(origen).q = null;
+      S.abierta = dest;
+      S.confirmar = null; S.sel = []; S.paso = 'panel';
+      pintar();
+      decir('✓ Mesa ' + origen + ' pasó a Mesa ' + dest);
+      return;
+    }
+
+    var llevan = items(origen).filter(function(i){ return S.sel.indexOf(i.id) >= 0; });
+    var quedan = items(origen).filter(function(i){ return S.sel.indexOf(i.id) < 0; });
+    S.items[dest]   = items(dest).concat(llevan);
+    S.items[origen] = quedan;
+
+    /* Decisión C: la mesa origen NO se cierra sola aunque quede sin nada.
+       Cerrar es manual, siempre. */
+
+    var cuantosVan = llevan.reduce(function(s,i){ return s + i.cant; }, 0);
+    S.confirmar = null; S.sel = []; S.paso = 'panel';
+    pintar();
+    decir('✓ ' + cuantosVan + ' producto' + (cuantosVan === 1 ? '' : 's') + ' a la Mesa ' + dest);
+  }
+
+  /* ---------- los toques ---------- */
+  $('marco').addEventListener('click', function(e){
+    var b = e.target.closest('button');
+    if(!b || b.disabled) return;
+
+    if(b.dataset.mesa){
+      var n = +b.dataset.mesa;
+      if(S.paso === 'mover-mesa'){  S.confirmar = {tipo:'mesa',  destino:n}; pintar(); return; }
+      if(S.paso === 'mover-items'){ S.confirmar = {tipo:'items', destino:n}; pintar(); return; }
+      /* Solo la elige. Abrirla es el botón "Abrir mesa N". */
+      S.abierta = n; S.menu = false; S.sel = []; pintar();
+      return;
+    }
+    if(b.dataset.item){
+      var id = +b.dataset.item, i = S.sel.indexOf(id);
+      if(i >= 0) S.sel.splice(i, 1); else S.sel.push(id);
+      pintarPanel();
+      return;
+    }
+
+    var a = b.dataset.a;
+    if(a === 'lapiz')             { S.menu = !S.menu;       pintarPanel(); }
+    else if(a === 'abrir-mesa')   { mesa(S.abierta).e = 'ocupada'; S.items[S.abierta] = S.items[S.abierta] || []; pintar(); }
+    else if(a === 'camino-mesa')  { S.menu = false; S.paso = 'mover-mesa';  pintar(); }
+    else if(a === 'camino-items') { S.menu = false; S.paso = 'elegir'; S.sel = []; pintar(); }
+    else if(a === 'a-destino')    { S.paso = 'mover-items'; pintar(); }
+    else if(a === 'volver')       { S.paso = 'panel'; S.sel = []; S.menu = false; pintar(); }
+    else if(a === 'salir')        { S.paso = S.sel.length ? 'elegir' : 'panel'; pintar(); }
+    else if(a === 'cancelar')     { S.confirmar = null;     pintar(); }
+    else if(a === 'hacerlo')      { mover(); }
+    else if(a === 'reiniciar')    { reiniciar(); pintar(); }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Escape') return;
+    if(S.confirmar){ S.confirmar = null; pintar(); }
+    else if(S.menu){ S.menu = false; pintarPanel(); }
+    else if(S.paso !== 'panel'){ S.paso = 'panel'; S.sel = []; pintar(); }
+  });
+
+  /* teléfono / computador */
+  $('btel').addEventListener('click', function(){
+    $('marco').className = 'marco tel';
+    $('btel').classList.add('on'); $('bpc').classList.remove('on');
+  });
+  $('bpc').addEventListener('click', function(){
+    $('marco').className = 'marco pc';
+    $('bpc').classList.add('on'); $('btel').classList.remove('on');
+  });
+
+  pintar();
+})();
+</script>
+</body>
+</html>
