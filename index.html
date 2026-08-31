@@ -657,10 +657,10 @@
   @media (min-width:720px){ .lama-panel{margin-top:0} }
 
   .lama-salones{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}
-  .lama-salones button{border:1px solid var(--border);background:var(--card);font:inherit;
+  .lama-salones button{border:none;box-shadow:var(--sombra);background:var(--card);font:inherit;
     font-size:13px;font-weight:700;color:var(--muted);padding:7px 15px;border-radius:999px;
     cursor:pointer;white-space:nowrap}
-  .lama-salones button.on{background:var(--sec-bg);border-color:var(--sec-bg);color:#fff}
+  .lama-salones button.on{background:var(--sec-bg);color:#fff}
 
   /* LAS MESAS. Sólidas y con el número en blanco, como las de Fudo.
      Antes iban en los tonos pálidos de la paleta (`--green-bg`) y el azul de
@@ -684,23 +684,27 @@
      El primer intento pinto tambien el verde solido y quedo pesado y ajeno.
      El borde es lo que faltaba: sin el, un relleno palido sobre el fondo gris
      de la app no se lee como un cuadro. */
-  .lama-mesa{aspect-ratio:auto;padding:11px 0;border:1.5px solid transparent;border-radius:10px;
+  .lama-mesa{aspect-ratio:auto;padding:12px 0;border:none;border-radius:14px;
     cursor:pointer;font:inherit;display:flex;align-items:center;justify-content:center;
-    transition:transform .12s ease, box-shadow .18s ease, opacity .18s ease}
+    box-shadow:var(--sombra);
+    transition:transform .12s ease, box-shadow .22s ease, opacity .18s ease}
   .lama-mesa:active{transform:scale(.95)}
   .lama-mesa .n{font-size:17px;font-weight:800;line-height:1}
   @media (min-width:720px){
-    .lama-mesa{aspect-ratio:1;padding:0;border-radius:12px}
+    .lama-mesa{aspect-ratio:1;padding:0;border-radius:var(--r-sec)}
     .lama-mesa .n{font-size:22px}
   }
-  .lama-mesa.libre{background:var(--green-bg);border-color:var(--green-fg);color:var(--green-fg)}
+  .lama-mesa.libre{background:var(--green-bg);color:var(--green-fg)}
   .lama-mesa.ocupada{background:var(--red-fg);color:#fff}
   .lama-mesa.cobrando{background:var(--azul-fg);color:#fff}
-  .lama-mesa.sel{box-shadow:0 0 0 3px var(--bg), 0 0 0 6px var(--orange)}
+  /* La mesa elegida se ENCIENDE, no se enmarca. Un halo naranja difuso que la
+     levanta del plano, sin contorno duro — el anillo grueso anterior se leia
+     como un ovalo con reborde, que es justo lo que la casa no usa. */
+  .lama-mesa.sel{box-shadow:0 0 0 5px rgba(220,68,5,.16), 0 8px 24px -6px rgba(220,68,5,.7)}
   /* MODO MOVER: lo que la base va a rechazar igual se apaga y no se puede tocar. */
   .lama-mesa.apagada{opacity:.3}
-  .lama-mesa.viva{box-shadow:0 0 0 3px var(--card), 0 0 0 6px var(--orange)}
-  .lama-mesa.origen{opacity:.55}
+  .lama-mesa.viva{box-shadow:0 0 0 5px rgba(220,68,5,.16), 0 8px 24px -6px rgba(220,68,5,.7)}
+  .lama-mesa.origen{opacity:.55;box-shadow:var(--sombra)}
 
   .lama-banda{display:flex;align-items:center;gap:10px;background:var(--orange);color:#fff;
     border-radius:11px;padding:10px 13px;margin-bottom:11px;font-size:14px;font-weight:700}
@@ -710,10 +714,10 @@
   .lama-banda button:active{transform:scale(.95)}
 
   /* EL PANEL DE LA CUENTA */
-  .lama-caja{background:var(--card);border:1px solid var(--border);border-radius:14px;
-    overflow:visible;position:relative}
-  .lama-cab{background:var(--red-fg);color:#fff;padding:12px 14px;display:flex;align-items:center;
-    gap:8px;border-radius:14px 14px 0 0;position:relative}
+  .lama-caja{background:var(--card);border:none;border-radius:var(--r-card);
+    box-shadow:var(--sombra);overflow:visible;position:relative}
+  .lama-cab{background:var(--red-fg);color:#fff;padding:13px 15px;display:flex;align-items:center;
+    gap:8px;border-radius:var(--r-card) var(--r-card) 0 0;position:relative}
   .lama-cab.libre{background:var(--green-fg)}
   .lama-cab.cobrando{background:var(--azul-fg)}
   .lama-cab .tit{flex:1;min-width:0}
@@ -728,7 +732,7 @@
 
   /* EL MENÚ DEL LÁPIZ — chico y colgado del botón, como el de Fudo. */
   .lama-menu{position:absolute;top:calc(100% - 4px);right:10px;z-index:12;background:var(--card);
-    border:1px solid var(--border);border-radius:11px;box-shadow:0 8px 26px rgba(15,30,49,.22);
+    border:none;border-radius:14px;box-shadow:0 10px 30px rgba(15,30,49,.26);
     padding:5px;min-width:190px}
   .lama-menu button{display:block;width:100%;text-align:left;border:none;background:none;font:inherit;
     font-size:14.5px;font-weight:600;color:var(--text);padding:10px 12px;border-radius:8px;cursor:pointer}
@@ -737,7 +741,11 @@
   .lama-menu button[disabled]:hover{background:none}
 
   /* UNA LÍNEA = UN RENGLÓN (la regla que salió del área de reparto). */
-  .lama-linea{display:flex;align-items:center;gap:9px;padding:10px 0;border-top:1px solid var(--border)}
+  /* Cada linea es una tarjeta con sombra, no una fila separada por una raya.
+     Es la regla de docs/DECISIONES-ESTETICA.md: "Filas: sin borde. Lo que
+     separa es la sombra". */
+  .lama-linea{display:flex;align-items:center;gap:9px;padding:11px 13px;margin-bottom:8px;
+    background:var(--card);border-radius:14px;box-shadow:var(--sombra)}
   .lama-linea .nm{flex:1;min-width:0}
   .lama-linea .nm b{display:block;font-size:14.5px;font-weight:700;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis}
@@ -746,35 +754,36 @@
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;max-width:100%}
   .lama-linea .nm span.con{color:var(--amber-fg);font-weight:700}
   .lama-linea .cant{display:flex;align-items:center;gap:5px;flex:0 0 auto}
-  .lama-linea .cant button{width:28px;height:28px;border:1px solid var(--border);
-    background:var(--card);border-radius:8px;font:inherit;font-weight:800;cursor:pointer;color:var(--text)}
+  .lama-linea .cant button{width:30px;height:30px;border:none;background:var(--bg);
+    border-radius:10px;font:inherit;font-size:17px;font-weight:800;cursor:pointer;color:var(--text)}
   .lama-linea .cant button:active{transform:scale(.9)}
   .lama-linea .cant b{min-width:20px;text-align:center;font-size:14.5px;font-variant-numeric:tabular-nums}
   .lama-linea .precio{font-size:13.5px;font-weight:700;flex:0 0 auto;min-width:60px;text-align:right;
     font-variant-numeric:tabular-nums}
   .lama-linea .x{border:none;background:none;color:var(--muted);font-size:16px;cursor:pointer;
     padding:2px 4px;flex:0 0 auto}
-  .lama-linea.nueva{background:var(--amber-bg);margin:0 -14px;padding:10px 14px}
+  .lama-linea.nueva{background:var(--card)}
 
-  .lama-total{display:flex;align-items:center;justify-content:space-between;padding:12px 0 4px;
-    border-top:2px solid var(--border);margin-top:6px;font-size:18px;font-weight:800;
-    font-variant-numeric:tabular-nums}
+  .lama-total{display:flex;align-items:center;justify-content:space-between;
+    padding:15px 14px 4px;margin-top:4px;font-size:19px;font-weight:800;
+    font-variant-numeric:tabular-nums;
+    box-shadow:0 -9px 12px -13px rgba(20,40,70,.75)}
   .lama-acc{display:flex;gap:8px;margin-top:12px}
   .lama-acc .btn{flex:1}
-  .lama-papel{background:var(--card);border:1px dashed var(--muted);border-radius:10px;padding:16px;
+  .lama-papel{background:var(--card);border:none;box-shadow:var(--sombra);border-radius:14px;padding:16px;
     font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.7;
     white-space:pre-wrap;margin-top:12px}
 
   /* ELEGIR QUÉ SE MUEVE — el patrón del taller de recetas (.tl-cand). */
   .lama-cand{width:100%;display:flex;align-items:center;gap:11px;background:var(--card);
-    border:1.5px solid var(--border);border-radius:11px;padding:11px 13px;margin-bottom:7px;
+    border:none;box-shadow:var(--sombra);border-radius:14px;padding:12px 13px;margin-bottom:8px;
     cursor:pointer;text-align:left;font:inherit;color:inherit;
-    transition:border-color .15s,background .15s,transform .12s}
+    transition:box-shadow .15s,background .15s,transform .12s}
   .lama-cand:active{transform:scale(.985)}
-  .lama-cand .tk{width:24px;height:24px;border-radius:50%;border:2px solid var(--border);flex:0 0 auto;
+  .lama-cand .tk{width:24px;height:24px;border-radius:50%;background:var(--bg);flex:0 0 auto;
     display:flex;align-items:center;justify-content:center;font-weight:800;color:transparent;font-size:13px}
-  .lama-cand.on{border-color:var(--orange);background:#FFF7F3}
-  .lama-cand.on .tk{border-color:var(--orange);background:var(--orange);color:#fff}
+  .lama-cand.on{background:#FFF7F3;box-shadow:var(--sombra),0 0 0 4px rgba(220,68,5,.14)}
+  .lama-cand.on .tk{background:var(--orange);color:#fff}
   .lama-cand .tx{flex:1;min-width:0}
   .lama-cand .p1{font-weight:700;font-size:14.5px;display:block;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis}
@@ -782,7 +791,8 @@
     overflow:hidden;text-overflow:ellipsis}
   .lama-cand .pr{font-size:13.5px;font-weight:700;flex:0 0 auto}
   .lama-barra{position:sticky;bottom:0;display:flex;justify-content:space-between;align-items:center;
-    gap:12px;background:var(--card);border-top:1px solid var(--border);padding:11px 0 2px;margin-top:4px}
+    gap:12px;background:var(--card);padding:12px 0 2px;margin-top:4px;
+    box-shadow:0 -9px 14px -12px rgba(20,40,70,.7)}
   .lama-barra .tb{font-size:13px;font-weight:700;color:var(--muted)}
 
   /* EL BOTÓN + . Abre la mesa si está libre; agrega productos si ya está
@@ -822,9 +832,9 @@
   .lama-carta-lista{flex:1;min-height:0;overflow-y:auto;padding:10px 12px 14px;
     -webkit-overflow-scrolling:touch}
   .lama-prod{width:100%;display:flex;align-items:center;gap:12px;background:var(--card);
-    border:1px solid var(--border);border-radius:11px;padding:12px 13px;margin-bottom:7px;
+    border:none;box-shadow:var(--sombra);border-radius:14px;padding:13px 14px;margin-bottom:8px;
     text-align:left;font:inherit;color:inherit;cursor:pointer;
-    transition:border-color .14s,background .14s,transform .1s}
+    transition:box-shadow .14s,background .14s,transform .1s}
   .lama-prod:active{transform:scale(.99)}
   .lama-prod .nm{flex:1;min-width:0;font-size:15px;font-weight:700;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -834,10 +844,11 @@
     color:var(--orange);font-size:21px;font-weight:600;line-height:1;
     display:flex;align-items:center;justify-content:center}
   /* Ya agregado: la fila lleva cuántos van, para no tener que salir a contar. */
-  .lama-prod.puesto{border-color:var(--orange);background:#FFF7F3}
+  .lama-prod.puesto{background:#FFF7F3;box-shadow:var(--sombra),0 0 0 4px rgba(220,68,5,.14)}
   .lama-prod.puesto .mas{background:var(--orange);color:#fff;font-size:14px;font-weight:800}
-  .lama-carta-pie{flex:0 0 auto;padding:11px 14px calc(11px + env(safe-area-inset-bottom));
-    background:var(--card);border-top:1px solid var(--border);display:flex;gap:10px;align-items:center}
+  .lama-carta-pie{flex:0 0 auto;padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+    background:var(--card);box-shadow:0 -6px 20px -8px rgba(20,40,70,.28);
+    display:flex;gap:10px;align-items:center}
   .lama-carta-pie .btn{flex:1}
   .lama-carta-cuenta{background:rgba(255,255,255,.25);border-radius:999px;min-width:24px;height:24px;
     display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;
@@ -850,21 +861,21 @@
      botones. Separarlo de lo ya confirmado es lo que evita mandar de más —
      mezclado en una sola lista hay que ir línea por línea para saber qué
      falta. */
-  .lama-pend{background:var(--amber-bg);border:1px solid var(--amber-fg);border-radius:12px;
-    padding:12px 13px;margin-bottom:12px}
+  .lama-pend{background:var(--amber-bg);border:none;border-radius:16px;box-shadow:var(--sombra);
+    padding:13px 14px;margin-bottom:14px}
   .lama-pend h4{margin:0 0 2px;font-size:13px;font-weight:800;letter-spacing:.4px;
     text-transform:uppercase;color:var(--amber-fg)}
-  .lama-pend .lama-linea{border-top-color:rgba(178,106,0,.22)}
-  .lama-pend .lama-linea:first-of-type{border-top:none}
+  .lama-pend .lama-linea{background:var(--card)}
   .lama-pend .tot{display:flex;justify-content:space-between;align-items:center;
-    border-top:1.5px solid rgba(178,106,0,.32);margin-top:6px;padding-top:10px;
-    font-size:15.5px;font-weight:800;font-variant-numeric:tabular-nums}
+    margin-top:2px;padding:12px 2px 2px;
+    font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;
+    box-shadow:0 -9px 12px -13px rgba(178,106,0,.85)}
 
   /* LA CANASTA VACÍA. Fudo la usa y el equipo ya la reconoce: dice "acá no hay
      nada todavía" sin una sola palabra técnica. Se dibuja en SVG con el color
      apagado de la app — no es el ícono del logo, que ese nunca se redibuja. */
-  .lama-canasta{border:1.5px dashed var(--border);border-radius:12px;padding:26px 18px;
-    text-align:center;margin-bottom:12px}
+  .lama-canasta{background:var(--bg);border:none;border-radius:16px;padding:26px 18px;
+    text-align:center;margin-bottom:14px}
   .lama-canasta svg{width:74px;height:56px;display:block;margin:0 auto 10px}
   .lama-canasta .t{font-size:14.5px;color:var(--muted);font-weight:600}
   .lama-canasta button{margin-top:10px;border:none;background:none;font:inherit;font-size:14.5px;
@@ -875,7 +886,7 @@
      que tocar el mismo producto otra vez y confiar. Ahora la fila muestra
      − n + como en Fudo, y se puede subir y bajar sin salir de la lista. */
   .lama-prod .paso{flex:0 0 auto;display:flex;align-items:center;gap:2px;
-    border:1.5px solid var(--orange);border-radius:999px;padding:2px;background:var(--card)}
+    border-radius:999px;padding:2px;background:var(--bg);box-shadow:0 0 0 3px rgba(220,68,5,.13)}
   .lama-prod .paso span{width:28px;height:28px;border-radius:50%;display:flex;
     align-items:center;justify-content:center;font-size:17px;font-weight:800;color:var(--orange)}
   .lama-prod .paso b{min-width:22px;text-align:center;font-size:14.5px;font-weight:800;
@@ -887,19 +898,19 @@
   .lama-pp{position:fixed;inset:0;z-index:70;background:rgba(15,30,49,.45);
     backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
     display:flex;align-items:center;justify-content:center;padding:16px}
-  .lama-pp-caja{background:var(--card);border-radius:16px;width:100%;max-width:380px;padding:18px}
+  .lama-pp-caja{background:var(--card);border-radius:var(--r-card);width:100%;max-width:380px;padding:20px}
   .lama-pp-caja h3{margin:0;font-size:19px;font-weight:800;line-height:1.25}
   .lama-pp-caja .pr{color:var(--muted);font-size:14px;font-weight:700;margin-top:3px}
   .lama-pp-paso{display:flex;align-items:center;justify-content:center;gap:18px;margin:18px 0 4px}
-  .lama-pp-paso button{width:52px;height:52px;border-radius:50%;border:1.5px solid var(--border);
-    background:var(--card);font:inherit;font-size:26px;font-weight:800;color:var(--text);cursor:pointer}
+  .lama-pp-paso button{width:52px;height:52px;border-radius:50%;border:none;
+    background:var(--bg);font:inherit;font-size:26px;font-weight:800;color:var(--text);cursor:pointer}
   .lama-pp-paso button:active{transform:scale(.92)}
   .lama-pp-paso b{min-width:56px;text-align:center;font-size:32px;font-weight:800;
     font-variant-numeric:tabular-nums}
   .lama-pp-caja label{display:block;font-size:12.5px;font-weight:800;letter-spacing:.4px;
     text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
-  .lama-pp-caja textarea{width:100%;min-height:64px;padding:10px 12px;border:1.5px solid var(--border);
-    border-radius:11px;font:inherit;font-size:15px;background:var(--bg);color:var(--text);resize:none}
+  .lama-pp-caja textarea{width:100%;min-height:64px;padding:11px 13px;border:none;
+    border-radius:14px;font:inherit;font-size:15px;background:var(--bg);color:var(--text);resize:none}
   .lama-pp-caja .mbtns{display:flex;gap:8px;margin-top:16px}
   .lama-pp-caja .mbtns .btn{flex:1}
   @media (prefers-reduced-motion: reduce){
@@ -5260,6 +5271,8 @@ let LAMA_Q       = '';      // lo escrito en el buscador
 let LAMA_TOP     = [];      // los nombres mas pedidos, para ordenar la carta
 let LAMA_TOP_SEDE = null;   // para cuál sede se contaron
 let LAMA_TOP_AT  = 0;       // cuándo, para no recontar en cada aviso en vivo
+let LAMA_CARTA_SEDE = null; // para cuál sede se trajo la carta (se pide una vez)
+let LAMA_CARGANDO = null;   // la carga en vuelo, para que dos avisos no hagan dos viajes
 let LAMA_MENU    = false;   // el menú chico del lápiz está abierto
 let LAMA_MODO    = null;    // null · 'mesa' · 'elegir' · 'items'
 let LAMA_ELEGIDOS = [];     // ids de los items marcados para mover
@@ -5279,27 +5292,51 @@ const plata = n => '$' + Math.round(+n || 0).toLocaleString('es-CL');
    categoría ya están ahí desde julio. */
 async function lamaCargar(){
   if(!SEDE || SEDE === 'central') return;
-  const [mm, cc, pp] = await Promise.all([
-    sb.from('mesas').select('*').eq('sede', SEDE).eq('activa', true)
-      .order('salon').order('orden').limit(500),
-    sb.from('cuentas').select('*').eq('sede', SEDE).neq('estado', 'cerrada').limit(500),
-    sb.from('fudo_productos').select('fudo_product_id,nombre,precio')
-      .eq('sede', SEDE).eq('activo', true).order('nombre').limit(1000),
-  ]);
-  LAMA_MESAS   = mm.data || [];
-  LAMA_CUENTAS = cc.data || [];
-  LAMA_CARTA   = (pp.data || []).filter(p => p.nombre && +p.precio > 0);
-  if(!LAMA_SALON) LAMA_SALON = (LAMA_MESAS[0] || {}).salon || 'Salón';
-  /* `lamaCargar` corre TAMBIÉN en cada aviso en vivo —y hay uno por cada
-     producto que alguien agrega—, así que los cuatro de siempre no se
-     recalculan cada vez: son un promedio de semanas, no un dato del minuto. */
-  if(LAMA_TOP_SEDE !== SEDE || Date.now() - LAMA_TOP_AT > 300000){
-    LAMA_TOP_SEDE = SEDE; LAMA_TOP_AT = Date.now();
-    await lamaTop();
-  }
-  await lamaCargarItems();
-  lamaPintar();
+
+  /* DOS COSAS QUE HACÍAN QUE SUMAR SE SINTIERA LENTO, y ninguna estaba en el
+     botón. `cuenta_recalcular` escribe en `cuentas`, eso enciende el aviso en
+     vivo, y el aviso volvía a llamar a esta función entera. O sea: cada toque
+     al + recargaba las mesas, las cuentas Y LA CARTA COMPLETA de Fudo —hasta
+     mil filas— para volver a pintar lo mismo.
+
+     1) La carta se pide UNA vez por sede. Cambia cuando alguien aprieta ⟳,
+        no cuando se vende un café.
+     2) Dos cargas a la vez se cuelgan de la misma: una ráfaga de avisos en
+        vivo hace un viaje, no cinco. */
+  if(LAMA_CARGANDO) return LAMA_CARGANDO;
+  LAMA_CARGANDO = (async () => {
+    const pide = [
+      sb.from('mesas').select('*').eq('sede', SEDE).eq('activa', true)
+        .order('salon').order('orden').limit(500),
+      sb.from('cuentas').select('*').eq('sede', SEDE).neq('estado', 'cerrada').limit(500),
+    ];
+    const cartaVieja = LAMA_CARTA_SEDE === SEDE && LAMA_CARTA.length;
+    if(!cartaVieja) pide.push(
+      sb.from('fudo_productos').select('fudo_product_id,nombre,precio')
+        .eq('sede', SEDE).eq('activo', true).order('nombre').limit(1000));
+
+    const [mm, cc, pp] = await Promise.all(pide);
+    LAMA_MESAS   = mm.data || [];
+    LAMA_CUENTAS = cc.data || [];
+    if(pp){
+      LAMA_CARTA = (pp.data || []).filter(p => p.nombre && +p.precio > 0);
+      LAMA_CARTA_SEDE = SEDE;
+    }
+    if(!LAMA_SALON) LAMA_SALON = (LAMA_MESAS[0] || {}).salon || 'Salón';
+    /* Los más pedidos son un promedio de semanas, no un dato del minuto. */
+    if(LAMA_TOP_SEDE !== SEDE || Date.now() - LAMA_TOP_AT > 300000){
+      LAMA_TOP_SEDE = SEDE; LAMA_TOP_AT = Date.now();
+      await lamaTop();
+    }
+    await lamaCargarItems();
+    lamaPintar();
+  })();
+  try { await LAMA_CARGANDO; } finally { LAMA_CARGANDO = null; }
 }
+
+/* El ⟳ de la barra sí tiene que volver a traer la carta: es el momento en que
+   alguien dice "cambió el catálogo en Fudo". */
+function lamaOlvidarCarta(){ LAMA_CARTA_SEDE = null; }
 
 /* LOS CUATRO DE SIEMPRE. Antes eran los primeros de la carta en orden
    alfabético, y por eso salían "3 Masitas", "Adicional Marshmelows",
@@ -5735,13 +5772,31 @@ async function lamaAgregar(fudoId){
   const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
   const p = LAMA_CARTA.find(x => String(x.fudo_product_id) === String(fudoId)); if(!p) return;
   LAMA_PAPEL = null;
+  /* SE VE PRIMERO, SE GUARDA DESPUÉS. Antes esto esperaba la ida y la vuelta
+     de la base antes de mover nada, y en el mesón se toca otra vez creyendo
+     que no agarró. La base manda igual: cuando contesta, su fila reemplaza a
+     la provisoria — y si se niega, se relee y la provisoria desaparece sola.
+
+     `cuenta_agregar` suma sobre la línea que todavía no salió a la cocina, y
+     acá se hace lo mismo para que el número provisorio coincida con el que va
+     a volver. Si no coincidiera, se vería un salto. */
+  const suelta = LAMA_ITEMS.find(x => x.nombre === p.nombre && x.estado === 'nuevo' && !x.comentario);
+  const provisorio = suelta ? null : {
+    id: 'nuevo-' + Date.now(), cuenta_id: c.id, nombre: p.nombre,
+    cantidad: 1, precio: +p.precio || 0, comentario: null, estado: 'nuevo'};
+  if(suelta) suelta.cantidad = (+suelta.cantidad || 0) + 1;
+  else LAMA_ITEMS.push(provisorio);
+  lamaPintarPanel();
+  if(LAMA_CARTA_ABIERTA) lamaPintarCartaLista();
+
   const it = await lamaLlamar('cuenta_agregar', {
     p_cuenta_id: c.id, p_nombre: p.nombre, p_precio: +p.precio || 0,
     p_cantidad: 1, p_comentario: null, p_fudo_id: String(p.fudo_product_id), p_quien: NOMBRE});
-  if(!it) return;
-  await lamaCargarItems();
-  /* Se repinta el panel de atras Y la lista de la carta, para que la fila
-     muestre cuantos van sin tener que salir a mirar la cuenta. */
+  if(!it){ await lamaCargarItems(); lamaPintarPanel(); return; }   // vuelve a la verdad
+
+  /* La fila que devolvió la base reemplaza a la provisoria, sin releer todo. */
+  const i = LAMA_ITEMS.findIndex(x => x.id === (provisorio ? provisorio.id : suelta.id));
+  if(i >= 0) LAMA_ITEMS[i] = it; else LAMA_ITEMS.push(it);
   lamaPintarPanel();
   if(LAMA_CARTA_ABIERTA) lamaPintarCartaLista();
 }

@@ -200,13 +200,37 @@ console.log('\nLos colores, con la lógica de Fudo y la paleta de Stock:');
    de la paleta de Stock. El primer intento pintó el verde también sólido y
    quedó pesado; el borde es lo que hace que un relleno pálido se lea como un
    cuadro sobre el fondo gris de la app. */
-await caso('la mesa LIBRE es pálida, con número oscuro y borde', async () => {
+await caso('la mesa LIBRE es pálida, con el número oscuro', async () => {
   const c = await page.evaluate(()=>{
     const s = getComputedStyle(document.querySelector('[data-lamamesa="103"]'));
-    return {f:s.backgroundColor, t:s.color, b:s.borderTopColor};
+    return {f:s.backgroundColor, t:s.color};
   });
-  return (c.f === 'rgb(228, 241, 229)' && c.t === 'rgb(46, 125, 50)' && c.b === 'rgb(46, 125, 50)')
-    || 'quedó '+JSON.stringify(c);
+  return (c.f === 'rgb(228, 241, 229)' && c.t === 'rgb(46, 125, 50)') || 'quedó '+JSON.stringify(c);
+});
+/* NADA CON REBORDE. Es regla de la casa —docs/DECISIONES-ESTETICA.md: "Filas:
+   sin borde. Lo que separa es la sombra"— y Jhon la dijo textual: "ya sabes
+   que no me gustan los rebordes, eso sí que no". Se comprueba el ANCHO, no el
+   color: con `border:none` el color calculado sigue devolviendo un valor, así
+   que mirarlo deja pasar un borde que sí existe. */
+await caso('ninguna mesa tiene reborde, y todas tienen sombra', async () => {
+  const r = await page.evaluate(()=>{
+    const malas = [], sinSombra = [];
+    for(const e of document.querySelectorAll('.lama-mesa')){
+      const s = getComputedStyle(e);
+      if(parseFloat(s.borderTopWidth) > 0) malas.push(e.textContent.trim());
+      if(s.boxShadow === 'none') sinSombra.push(e.textContent.trim());
+    }
+    return {malas, sinSombra};
+  });
+  return (!r.malas.length && !r.sinSombra.length)
+    || 'con reborde: '+r.malas.join(',')+' · sin sombra: '+r.sinSombra.join(',');
+});
+/* La elegida se ENCIENDE, no se enmarca: un halo difuso, no un anillo duro. */
+await caso('la mesa elegida se marca con un halo, no con un anillo', async () => {
+  await page.click('[data-lamamesa="103"]'); await page.waitForTimeout(300);
+  const s = await page.evaluate(()=>getComputedStyle(document.querySelector('.lama-mesa.sel')).boxShadow);
+  return (/rgba\(220, 68, 5/.test(s) && /px/.test(s) && !/0px 0px 0px 3px rgb/.test(s))
+    || 'la marca no es un halo: '+s;
 });
 await caso('la OCUPADA es sólida, con el número en blanco', async () => {
   const c = await page.evaluate(()=>{
