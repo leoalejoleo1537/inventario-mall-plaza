@@ -87,6 +87,20 @@
     <p>Se abre la lista del navegador. Elige la Xprinter y acepta.</p>
     <button id="bUsb">Buscar por USB</button>
     <button id="bSerie" class="otro">Buscar como puerto serie</button>
+    <!-- La velocidad del puerto serie hay que adivinarla: la impresora no la
+         dice. 9600 es lo más común en estas térmicas, pero si sale papel en
+         blanco o con símbolos raros, es esto. Se cambia acá y se vuelve a
+         probar, sin tener que tocar el código. -->
+    <label style="display:block;margin-top:12px;font-size:13px;color:var(--muted)">
+      Velocidad del puerto serie
+      <select id="baud" class="campo" style="margin-top:5px">
+        <option value="9600" selected>9600</option>
+        <option value="19200">19200</option>
+        <option value="38400">38400</option>
+        <option value="57600">57600</option>
+        <option value="115200">115200</option>
+      </select>
+    </label>
   </div>
 
   <div class="caja">
@@ -95,7 +109,15 @@
     <textarea class="campo" id="texto" rows="3">LLAMITA - PRUEBA
 Mesa 3
 1 x Cortado grande</textarea>
-    <button id="bPrint" style="margin-top:10px" disabled>Imprimir prueba</button>
+    <!-- LA PRUEBA MÁS SIMPLE VA PRIMERO, y es la que de verdad decide.
+         Solo despierta la impresora y le manda avanzar papel: sin texto, sin
+         corte, sin tabla de caracteres. Si el papel se mueve, le estamos
+         hablando, y eso no admite interpretación. Un ticket que sale en
+         blanco o con símbolos raros confunde dos preguntas distintas
+         —"¿me escucha?" y "¿entiende lo que le mando?"— y hace falta
+         contestarlas por separado. -->
+    <button id="bFeed" style="margin-top:10px" disabled>Solo avanzar papel</button>
+    <button id="bPrint" class="otro" disabled>Imprimir ticket de prueba</button>
     <button id="bSoltar" class="otro" disabled>Soltar la impresora</button>
   </div>
 
@@ -166,10 +188,13 @@ let VIA = null;        // 'usb' | 'serie'
 let USB = null, ENDPOINT = null, INTERFAZ = null;
 let PUERTO = null, ESCRITOR = null;
 
-const listo = (si) => { $('bPrint').disabled = !si; $('bSoltar').disabled = !si; };
+const listo = (si) => {
+  $('bFeed').disabled = !si; $('bPrint').disabled = !si; $('bSoltar').disabled = !si;
+};
 
 /* ---------- CAMINO 1 · USB directo ---------- */
 $('bUsb').addEventListener('click', async () => {
+  await soltar(true);
   try {
     log('Pidiendo la lista de dispositivos USB…');
     const d = await navigator.usb.requestDevice({ filters: [] });
@@ -218,18 +243,34 @@ $('bUsb').addEventListener('click', async () => {
    Muchas térmicas USB se presentan como un COM. Si Windows la tiene
    tomada como impresora, este camino suele funcionar igual. */
 $('bSerie').addEventListener('click', async () => {
+  /* Soltar lo anterior antes de pedir otra vez. Sin esto, el segundo intento
+     muere con "The port is already open", que suena a error de la impresora y
+     es solo que no habíamos cerrado el anterior. */
+  await soltar(true);
   try {
     log('Pidiendo la lista de puertos…');
     const p = await navigator.serial.requestPort();
-    await p.open({ baudRate: 9600 });
+    const baud = +$('baud').value || 9600;
+    await p.open({ baudRate: baud });
+
+    /* SIEMPRE se dice de qué dispositivo es el puerto, tenga o no identidad.
+       Que NO la tenga es un dato en sí: significa que ese COM probablemente
+       no es la impresora —puede ser un puerto de la placa o uno de
+       Bluetooth—, y entonces "Escrito" no prueba nada porque los bytes se
+       fueron a la nada. Callar eso convierte un puerto equivocado en un
+       éxito aparente. */
     const info = p.getInfo ? p.getInfo() : {};
     if (info.usbVendorId != null) {
       log('  vendorId 0x' + info.usbVendorId.toString(16).padStart(4,'0') +
           ' · productId 0x' + (info.usbProductId||0).toString(16).padStart(4,'0'), 'ok');
+      if (info.usbVendorId === 0x1FC9) log('  Es la Xprinter. Mismo vendorId que vio el USB.', 'ok');
+      else log('  OJO: este vendorId NO es el de la Xprinter (0x1fc9). Puede ser otro aparato.', 'avi');
+    } else {
+      log('  Este puerto no dice a qué dispositivo pertenece. Puede que no sea la impresora: si no sale papel, vuelve a la lista y elige otro.', 'avi');
     }
+
     PUERTO = p; ESCRITOR = p.writable.getWriter(); VIA = 'serie';
-    log('Puerto abierto a 9600. Ya se le puede escribir.', 'ok');
-    log('Si sale papel en blanco o simbolos raros, es la velocidad: se prueba con 19200, 38400 o 115200.', 'avi');
+    log('Puerto abierto a ' + baud + '. Ya se le puede escribir.', 'ok');
     listo(true);
   } catch (e) {
     log('No se pudo: ' + e.name + ' — ' + e.message, 'mal');
@@ -237,45 +278,65 @@ $('bSerie').addEventListener('click', async () => {
   }
 });
 
-/* ---------- IMPRIMIR ---------- */
-$('bPrint').addEventListener('click', async () => {
-  const datos = armarTicket($('texto').value || 'PRUEBA');
+/* ---------- LA PRUEBA QUE DECIDE ----------
+   Despertar y avanzar papel. Nada más. Si el rollo se mueve, le estamos
+   hablando; si no se mueve, no. No hay una tercera lectura. */
+$('bFeed').addEventListener('click', async () => {
+  const datos = new Uint8Array([0x1B,0x40, 0x0A,0x0A,0x0A,0x0A,0x0A,0x0A,0x0A,0x0A]);
+  await mandar(datos, 'avanzar papel');
+  log('MIRA EL ROLLO. ¿Se movio el papel, aunque sea un poco?', 'avi');
+});
+
+/* ---------- MANDAR BYTES ----------
+   Uno solo para los dos caminos y para los dos botones.
+
+   ⚠️ Y hay que decirlo: por puerto serie, `write` termina cuando el sistema
+   se hizo cargo de los bytes, NO cuando la impresora los recibió. Por eso
+   "Escrito" no es una prueba de nada y la pregunta siempre es el papel. */
+async function mandar(datos, que){
   try {
-    log('Mandando ' + datos.length + ' bytes por ' + VIA + '…');
+    log('Mandando ' + datos.length + ' bytes por ' + VIA + ' (' + que + ')…');
     if (VIA === 'usb') {
       const r = await USB.transferOut(ENDPOINT, datos);
       log('Respuesta: ' + r.status + ' · escritos ' + r.bytesWritten + ' bytes',
           r.status === 'ok' ? 'ok' : 'mal');
     } else {
       await ESCRITOR.write(datos);
-      log('Escrito.', 'ok');
+      log('Entregado al sistema. Esto NO prueba que la impresora lo recibiera.', 'ok');
     }
-    log('¿SALIO PAPEL? Eso es lo unico que importa: el navegador puede decir que escribio y la impresora no haber hecho nada.', 'avi');
+    return true;
   } catch (e) {
     log('Fallo al escribir: ' + e.name + ' — ' + e.message, 'mal');
+    return false;
   }
+}
+
+$('bPrint').addEventListener('click', async () => {
+  await mandar(armarTicket($('texto').value || 'PRUEBA'), 'ticket');
+  log('¿SALIO PAPEL CON TEXTO? Si sale papel pero con simbolos raros, le hablamos bien y falta la tabla de caracteres: es otro problema, y mas facil.', 'avi');
 });
 
 /* ---------- SOLTARLA ----------
    Importante de verdad: mientras esté tomada, Fudo no imprime. */
-$('bSoltar').addEventListener('click', async () => {
+async function soltar(callado){
   try {
-    if (VIA === 'usb' && USB) {
-      await USB.releaseInterface(INTERFAZ);
+    if (USB) {
+      try { await USB.releaseInterface(INTERFAZ); } catch (e) {}
       await USB.close();
       USB = null;
     }
-    if (VIA === 'serie' && PUERTO) {
-      if (ESCRITOR) { ESCRITOR.releaseLock(); ESCRITOR = null; }
+    if (PUERTO) {
+      if (ESCRITOR) { try { ESCRITOR.releaseLock(); } catch (e) {} ESCRITOR = null; }
       await PUERTO.close();
       PUERTO = null;
     }
     VIA = null; listo(false);
-    log('Impresora soltada. Fudo vuelve a poder imprimir.', 'ok');
+    if (!callado) log('Impresora soltada. Fudo vuelve a poder imprimir.', 'ok');
   } catch (e) {
-    log('No se pudo soltar: ' + e.message + '. Cierra la pestaña y listo.', 'mal');
+    if (!callado) log('No se pudo soltar: ' + e.message + '. Cierra la pestaña y listo.', 'mal');
   }
-});
+}
+$('bSoltar').addEventListener('click', () => soltar(false));
 
 /* Cerrar la pestaña sin soltar dejaría la impresora tomada. Se intenta
    soltar sola, aunque el navegador no siempre da tiempo. */
