@@ -941,6 +941,95 @@
   /* LA VENTANA DEL PRODUCTO: cantidad Y comentario en el mismo gesto. El
      comentario es lo que lee la cocina, y tenerlo escondido detrás de una
      línea gris de 11px lo volvía opcional en la práctica. */
+  /* ==========  LA VENTANA DE COBRO  ==========
+     Emergente, y nada más que emergente: flota sobre el plano de mesas, que
+     se sigue viendo atenuado detrás. Ancho tope 660px, alto tope 88vh, y si
+     la cuenta es larga scrollea la lista de adentro, no la página. Es pedido
+     textual de Jhon: "que este apartado sea solo emergente, y no ocupe toda
+     la pantalla". */
+  .lama-cob{position:fixed;inset:0;z-index:75;background:rgba(15,30,49,.45);
+    backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+    display:flex;align-items:center;justify-content:center;padding:16px}
+  .lama-cob-caja{background:var(--card);border-radius:var(--r-card);width:100%;
+    max-width:660px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;
+    box-shadow:0 24px 60px rgba(15,30,49,.4)}
+  .lama-cob-cab{background:var(--navy);color:#fff;padding:14px 18px;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .lama-cob-cab .t{font-size:17px;font-weight:800}
+  .lama-cob-cab .s{font-size:13px;opacity:.8;font-weight:700}
+  .lama-cob-cab button{border:none;background:rgba(255,255,255,.18);color:#fff;
+    font:inherit;font-size:15px;padding:6px 11px;border-radius:9px;cursor:pointer}
+
+  /* Dos mitades en computador: izquierda lo que se debe, derecha cómo se
+     paga. En el teléfono, una sola columna en el orden en que se trabaja. */
+  .lama-cob-cuerpo{flex:1 1 auto;overflow-y:auto;display:grid;grid-template-columns:1fr}
+  @media (min-width:640px){ .lama-cob-cuerpo{grid-template-columns:1fr 1fr} }
+  .lama-cob-mitad{padding:16px 18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+  @media (min-width:640px){
+    .lama-cob-mitad + .lama-cob-mitad{box-shadow:-9px 0 12px -13px rgba(20,40,70,.75)}
+  }
+  @media (max-width:639px){
+    .lama-cob-mitad + .lama-cob-mitad{box-shadow:0 -9px 12px -13px rgba(20,40,70,.75)}
+  }
+  .lama-cob-rot{font-size:11.5px;font-weight:800;letter-spacing:.8px;
+    text-transform:uppercase;color:var(--muted)}
+  .lama-cob-bloque{display:flex;flex-direction:column;gap:8px}
+  .lama-cob-bloque .tit{display:flex;align-items:center;justify-content:space-between;gap:10px}
+
+  .lama-cob-fila{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    font-size:14.5px;font-variant-numeric:tabular-nums;min-width:0}
+  .lama-cob-fila .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lama-cob-fila .q{color:var(--muted);font-weight:800}
+  .lama-cob-suma{display:flex;flex-direction:column;gap:6px;padding-top:12px;
+    box-shadow:0 -9px 12px -13px rgba(20,40,70,.75)}
+  .lama-cob-suma .lama-cob-fila{color:var(--muted)}
+  .lama-cob-suma .gordo{color:var(--text);font-size:19px;font-weight:800;padding-top:4px}
+  .lama-cob-suma .desc{color:var(--green-fg);font-weight:700}
+
+  .lama-cob-mas{width:28px;height:28px;border-radius:50%;border:none;background:var(--orange);
+    color:#fff;font-size:18px;font-weight:800;line-height:1;cursor:pointer;flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;padding:0}
+  .lama-cob-mas.flojo{background:var(--gray-bg);color:var(--gray-fg)}
+
+  .lama-cob-linea{display:flex;align-items:center;gap:8px;background:var(--bg);
+    border-radius:13px;padding:8px 10px;min-width:0}
+  .lama-cob-linea select{flex:1 1 auto;min-width:0;border:none;background:transparent;
+    color:var(--text);font:inherit;font-size:13.5px;font-weight:700;padding:2px 0;
+    cursor:pointer;-webkit-appearance:none;appearance:none}
+  .lama-cob-linea input{flex:0 0 100px;width:100px;border:none;background:var(--card);
+    color:var(--text);font:inherit;font-size:15px;font-weight:800;text-align:right;
+    padding:7px 9px;border-radius:10px;font-variant-numeric:tabular-nums;box-shadow:var(--sombra)}
+  .lama-cob-linea .qt{border:none;background:transparent;color:var(--muted);font:inherit;
+    font-size:17px;line-height:1;cursor:pointer;padding:2px 3px;flex:0 0 auto}
+
+  .lama-cob-cuad{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:3px;
+    font-variant-numeric:tabular-nums}
+  .lama-cob-vuelto{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    border-radius:var(--r-sec);padding:12px 15px;font-size:15px;font-weight:800;
+    font-variant-numeric:tabular-nums;background:var(--gray-bg);color:var(--gray-fg)}
+  .lama-cob-vuelto.hay{background:var(--amber-bg);color:var(--amber-fg)}
+  .lama-cob-vuelto.falta{background:var(--red-bg);color:var(--red-fg)}
+  .lama-cob-vuelto.cuadra{background:var(--green-bg);color:var(--green-fg)}
+
+  .lama-cob-pie{flex:0 0 auto;padding:13px 18px calc(13px + env(safe-area-inset-bottom));
+    background:var(--card);box-shadow:0 -6px 20px -8px rgba(20,40,70,.28);
+    display:flex;gap:10px;align-items:center}
+  .lama-cob-pie .btn{flex:1}
+
+  /* El descuento se despliega HACIA ABAJO, nunca superpuesto. */
+  .lama-cob-desc{display:flex;flex-direction:column;gap:8px;background:var(--bg);
+    border-radius:16px;padding:12px 13px}
+  .lama-cob-desc select,.lama-cob-desc input{border:none;background:var(--card);
+    box-shadow:var(--sombra);color:var(--text);font:inherit;font-size:14px;
+    padding:9px 11px;border-radius:11px;width:100%}
+  .lama-cob-desc .dos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .lama-cob-desc .mbtns{display:flex;gap:8px}
+  .lama-cob-desc .mbtns .btn{flex:1;font-size:14px;padding:9px 10px}
+  .lama-cob-abrir{border:none;background:var(--bg);box-shadow:var(--sombra);
+    border-radius:13px;padding:11px 14px;font:inherit;font-size:14px;font-weight:700;
+    color:var(--text);cursor:pointer;display:flex;align-items:center;
+    justify-content:space-between;gap:10px;width:100%;text-align:left}
+
   .lama-pp{position:fixed;inset:0;z-index:70;background:rgba(15,30,49,.45);
     backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
     display:flex;align-items:center;justify-content:center;padding:16px}
@@ -2671,6 +2760,7 @@
   <div id="lama-fab"></div>
   <div id="lama-carta"></div>
   <div id="lama-pp"></div>
+  <div id="lama-cob"></div>
 </div>
 
 <!-- ================= RECETAS ================= -->
@@ -5458,7 +5548,16 @@ async function lamaCargarItems(forzar){
   LAMA_ITEMS = r.data || [];
 }
 
-function lamaPintar(){ lamaPintarPlano(); lamaPintarPanel(); lamaPintarFab(); lamaPintarCarta(); lamaPintarPP(); }
+/* La ventana de cobro NO se repinta desde acá a propósito. Un aviso en vivo
+   —alguien agrega un producto en otra mesa— dispara un repintado, y si eso
+   volviera a dibujar la ventana mientras se escribe un monto, el campo
+   perdería el foco y el teclado del teléfono se cerraría solo. La ventana la
+   repinta quien la toca, y los números sueltos los actualiza lamaCobNumeros. */
+function lamaPintar(){
+  lamaCobrarEngancharUnaVez();
+  lamaPintarPlano(); lamaPintarPanel(); lamaPintarFab();
+  lamaPintarCarta(); lamaPintarPP();
+}
 
 /* EL TAMAÑO DE LAS MESAS — lo elige quien mira, no el código.
 
@@ -5890,9 +5989,16 @@ async function lamaGuardarPP(){
 /* Todas las acciones pasan por acá: llaman a la base, y si algo se niega
    muestran el motivo tal como lo escribió la función. Los mensajes están
    redactados para el mesón, así que no hay que traducirlos. */
-async function lamaLlamar(fn, args){
+/* `callado` = "si falla, no muestres nada, yo me encargo". Lo usa el cobro
+   para poder probar si `cuenta_cobrar` ya existe: sin esto, el usuario vería
+   un error crudo de Postgres antes de que la pantalla alcance a explicarle
+   que falta correr un .sql. */
+async function lamaLlamar(fn, args, callado){
   const {data, error} = await sb.rpc(fn, args);
-  if(error){ avisar(error.message || 'No se pudo. Revisa tu señal e inténtalo de nuevo.'); return null; }
+  if(error){
+    if(!callado) avisar(error.message || 'No se pudo. Revisa tu señal e inténtalo de nuevo.');
+    return null;
+  }
   return data;
 }
 
@@ -6123,18 +6229,475 @@ async function lamaPrecuenta(){
 async function lamaCerrar(){
   const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
   const m = lamaMesaDe(LAMA_SEL);
-  /* Una mesa SIN NADA se cierra de una, sin preguntar. Se abre por error mas
-     seguido de lo que parece, y preguntar "se guarda la cuenta por /usr/bin/bash" no
-     protege de nada: no hay nada que perder. Con productos si se pregunta,
-     porque ahi si se esta cerrando una venta. */
-  if(LAMA_ITEMS.length && !await preguntar('Cerrar la mesa ' + m.numero,
-      'Se guarda la cuenta por ' + plata(c.total) + ' y la mesa queda libre.', 'Cerrar')) return;
+
+  /* CON PRODUCTOS, SE COBRA. Esto era un "¿Cerrar la mesa 12?" que guardaba un
+     total y nada más, y con eso el arqueo de caja no puede existir: no hay
+     forma de responder qué se cobró en efectivo. Ahora abre la ventana de
+     cobro, que es donde se registra la venta de verdad. */
+  if(LAMA_ITEMS.length){ await lamaAbrirCobro(); return; }
+
+  /* Una mesa SIN NADA se cierra de una, sin preguntar ni cobrar. Se abre por
+     error mas seguido de lo que parece, y no hay ninguna venta que registrar:
+     abrir la ventana de cobro para cobrar $0 seria pedir una confirmacion que
+     no protege de nada. */
   const r = await lamaLlamar('cuenta_cerrar', {p_cuenta_id: c.id, p_quien: NOMBRE});
   if(!r) return;
   LAMA_CUENTAS = LAMA_CUENTAS.filter(x => x.id !== c.id);
   LAMA_SEL = null; LAMA_PAPEL = null; LAMA_ITEMS = [];
   lamaPintar();
   aviso('✓ Mesa ' + m.numero + ' cerrada');
+}
+
+
+/* ==================================================================
+   COBRAR — la ventana de cierre de mesa
+   ==================================================================
+   Es la parte más delicada del proceso: acá es donde la venta queda
+   registrada. Antes esto era un "¿Cerrar la mesa 12?" que guardaba un total y
+   nada más, y con eso el arqueo de caja no puede existir: no hay forma de
+   responder qué se cobró en efectivo.
+
+   LAS CINCO REGLAS que la pantalla hace cumplir, dictadas por Jhon:
+
+   1. El vuelto NUNCA es negativo. Si lo pagado es menos que el total, la mesa
+      no se cierra, y el botón dice cuánto falta en vez de quedarse gris.
+   2. En el pago va siempre el TOTAL con la propina adentro, no el subtotal.
+   3. El monto nace precargado con el total exacto: el caso normal —el cliente
+      paga justo— es apretar un botón y nada más.
+   4. Cambiar el medio del pago arrastra la propina al mismo medio, pero la
+      propina se puede soltar. El caso real: cuenta en débito, propina en
+      efectivo.
+   5. El + de la propina apila líneas y absorbe el excedente. Total 11.000, el
+      cliente paga 12.000: el sobrante aparece como vuelto y con el + se manda
+      a propina, que queda en 2.000 y el vuelto en 0.
+
+   LAS CUENTAS LAS HACE LA BASE. Acá se calculan igual para que se vea al
+   instante, pero quien decide es `cuenta_cobrar`: si la pantalla y la base no
+   coinciden, gana la base y la mesa no se cierra.
+
+   MIENTRAS NO SE HAYA CORRIDO `sql/2026-08-lama-cierre.sql`, esta ventana
+   igual funciona: al cobrar cae en la `cuenta_cerrar` de siempre y avisa que
+   el detalle del pago no quedó guardado. Se prefiere eso a esconder la
+   pantalla, porque así se puede mirar y corregir la forma antes. */
+
+let LAMA_COB = null;   // {propinas:[], pagos:[], desc:{...}, descAbierto, propSuelta}
+
+/* Los medios y los motivos salen de la base cuando existen. Si todavía no se
+   corrió el .sql, se usan estos, que son los mismos que el .sql siembra: así
+   la pantalla se puede probar antes y el día que la tabla exista no cambia
+   nada de lo que se ve. */
+const LAMA_MEDIOS_POR_DEFECTO = [
+  {codigo:'efectivo',  nombre:'Efectivo',                es_cobro:true},
+  {codigo:'debito',    nombre:'Tarjeta de débito',       es_cobro:true},
+  {codigo:'credito',   nombre:'Tarjeta de crédito',      es_cobro:true},
+  {codigo:'transfer',  nombre:'Transferencia',           es_cobro:true},
+  {codigo:'voucher',   nombre:'Voucher',                 es_cobro:true},
+  {codigo:'pedidosya', nombre:'Pedidos Ya',              es_cobro:true},
+  {codigo:'fidelidad', nombre:'Tarjeta de fidelización', es_cobro:true},
+  {codigo:'admin',     nombre:'Consumo administrativo',  es_cobro:false},
+  {codigo:'garzones',  nombre:'Consumo garzones',        es_cobro:false},
+  {codigo:'eventos',   nombre:'Consumo eventos',         es_cobro:false},
+  {codigo:'redes',     nombre:'Consumo redes',           es_cobro:false},
+  {codigo:'cumple',    nombre:'Cumpleaños',              es_cobro:false},
+];
+const LAMA_MOTIVOS_POR_DEFECTO = [
+  {codigo:'empleado', nombre:'Descuento de empleado'},
+  {codigo:'cumple',   nombre:'Cumpleaños'},
+  {codigo:'especial', nombre:'Cliente especial'},
+  {codigo:'cortesia', nombre:'Cortesía'},
+  {codigo:'otro',     nombre:'Otro'},
+];
+let LAMA_MEDIOS  = LAMA_MEDIOS_POR_DEFECTO;
+let LAMA_MOTIVOS = LAMA_MOTIVOS_POR_DEFECTO;
+let LAMA_HAY_COBRAR = null;   // null = todavía no se sabe si existe cuenta_cobrar
+
+/* Se piden UNA vez por sesión y en silencio: si las tablas todavía no existen
+   —porque el .sql no se corrió— se sigue con las de arriba sin molestar a
+   nadie. Una pantalla que se cae porque falta una tabla de configuración es
+   peor que una que usa los valores de fábrica. */
+async function lamaCargarMedios(){
+  if(LAMA_HAY_COBRAR !== null) return;
+  LAMA_HAY_COBRAR = false;
+  try{
+    const [mm, tt] = await Promise.all([
+      sb.from('lama_medios_pago').select('codigo,nombre,es_cobro,activo').order('orden'),
+      sb.from('lama_motivos_descuento').select('codigo,nombre,activo').order('orden'),
+    ]);
+    if(mm.data && mm.data.length){
+      LAMA_MEDIOS = mm.data.filter(x => x.activo !== false);
+      LAMA_HAY_COBRAR = true;
+    }
+    if(tt.data && tt.data.length) LAMA_MOTIVOS = tt.data.filter(x => x.activo !== false);
+  }catch{ /* sin tablas todavía: se sigue con las de fábrica */ }
+}
+
+const lamaMedioNom = c => (LAMA_MEDIOS.find(m => m.codigo === c) || {}).nombre || c;
+
+/* Las cuentas, en un solo lugar. La pantalla nunca calcula un total suelto:
+   siempre pregunta acá, para que el número del pie y el del botón no puedan
+   discrepar. */
+function lamaCobCuentas(){
+  const sub = LAMA_ITEMS.reduce((a,i) => a + (+i.cantidad||0) * (+i.precio||0), 0);
+  const d = LAMA_COB ? LAMA_COB.desc : null;
+  let desc = 0;
+  if(d && d.formato === 'pct')  desc = Math.round(sub * (+d.valor||0) / 100);
+  if(d && d.formato === 'fijo') desc = +d.valor || 0;
+  if(desc < 0) desc = 0;
+  if(desc > sub) desc = sub;      // un descuento no devuelve plata
+  const prop   = LAMA_COB ? LAMA_COB.propinas.reduce((a,l) => a + (+l.monto||0), 0) : 0;
+  const total  = sub - desc + prop;
+  const pagado = LAMA_COB ? LAMA_COB.pagos.reduce((a,l) => a + (+l.monto||0), 0) : 0;
+  return {sub, desc, prop, total, pagado, dif: pagado - total};
+}
+
+async function lamaAbrirCobro(){
+  const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
+  await lamaCargarMedios();
+  const sub = LAMA_ITEMS.reduce((a,i) => a + (+i.cantidad||0) * (+i.precio||0), 0);
+  LAMA_COB = {
+    propinas: [],
+    /* REGLA 3 — el monto nace con el total exacto. Sin propina todavía, el
+       total es el subtotal. */
+    pagos: [{medio:'efectivo', monto: sub}],
+    desc: {motivo:'', formato:'', valor:''},
+    descAbierto: false,
+    propSuelta: false,
+  };
+  lamaPintarCobro();
+}
+
+function lamaCerrarCobro(){ LAMA_COB = null; lamaPintarCobro(); }
+
+/* Al cambiar la propina o el descuento, el monto del pago se re-precarga
+   —siempre que nadie lo haya escrito a mano—, porque si no el garzón tiene
+   que corregirlo cada vez que toca el 10%. */
+function lamaCobRecargarPago(){
+  if(!LAMA_COB || LAMA_COB.pagos.length !== 1 || LAMA_COB.pagos[0].tocado) return;
+  const {sub, desc, prop} = lamaCobCuentas();
+  LAMA_COB.pagos[0].monto = sub - desc + prop;
+}
+
+function lamaCobOpciones(sel){
+  return LAMA_MEDIOS.map(m =>
+    `<option value="${esc(m.codigo)}"${m.codigo === sel ? ' selected' : ''}>${esc(m.nombre)}</option>`
+  ).join('');
+}
+
+function lamaCobLinea(l, i, tipo, sePuedeQuitar){
+  return `<div class="lama-cob-linea">
+    <select data-cobsel="${tipo}" data-i="${i}">${lamaCobOpciones(l.medio)}</select>
+    <input data-cobmonto="${tipo}" data-i="${i}" inputmode="numeric"
+           value="${(+l.monto||0).toLocaleString('es-CL')}" aria-label="Monto">
+    ${sePuedeQuitar ? `<button type="button" class="qt" data-cobquitar="${tipo}" data-i="${i}"
+       aria-label="Quitar línea">✕</button>` : ''}
+  </div>`;
+}
+
+function lamaPintarCobro(){
+  const cont = $('lama-cob'); if(!cont) return;
+  if(!LAMA_COB){ cont.innerHTML = ''; return; }
+  const m = lamaMesaDe(LAMA_SEL); if(!m){ cont.innerHTML = ''; return; }
+  const {sub, desc, prop, total, pagado, dif} = lamaCobCuentas();
+  const d = LAMA_COB.desc;
+
+  const items = LAMA_ITEMS.map(i =>
+    `<div class="lama-cob-fila"><span class="nm"><span class="q">${fmt(i.cantidad)}×</span> ${esc(i.nombre)}</span>
+     <span>${plata((+i.cantidad||0)*(+i.precio||0))}</span></div>`).join('');
+
+  const motivoNom = (LAMA_MOTIVOS.find(x => x.codigo === d.motivo) || {}).nombre || '';
+  const descuentoCaja = LAMA_COB.descAbierto
+    ? `<div class="lama-cob-desc">
+         <select data-cobdesc="motivo" aria-label="Motivo del descuento">
+           <option value="">¿Por qué el descuento?</option>
+           ${LAMA_MOTIVOS.map(x => `<option value="${esc(x.codigo)}"${
+              x.codigo === d.motivo ? ' selected' : ''}>${esc(x.nombre)}</option>`).join('')}
+         </select>
+         <div class="dos">
+           <select data-cobdesc="formato" aria-label="Formato del descuento">
+             <option value="pct"${d.formato === 'pct' ? ' selected' : ''}>Porcentaje %</option>
+             <option value="fijo"${d.formato === 'fijo' ? ' selected' : ''}>Monto fijo $</option>
+           </select>
+           <input data-cobdesc="valor" inputmode="numeric" placeholder="${
+             d.formato === 'fijo' ? '3.000' : '20'}" value="${esc(String(d.valor ?? ''))}"
+             aria-label="Valor del descuento">
+         </div>
+         <div class="mbtns">
+           <button type="button" class="btn btn-gris"   data-lamaacc="desc-cancelar">Cancelar</button>
+           <button type="button" class="btn btn-orange" data-lamaacc="desc-aplicar">Aplicar</button>
+         </div>
+       </div>`
+    : `<button type="button" class="lama-cob-abrir" data-lamaacc="desc-abrir">
+         <span>${desc ? `Descuento · ${esc(motivoNom)}` : 'Aplicar un descuento'}</span>
+         <span>${desc ? '−' + plata(desc) : '+'}</span>
+       </button>`;
+
+  const vClase = dif < 0 ? 'falta' : dif > 0 ? 'hay' : 'cuadra';
+  const vTexto = dif < 0
+    ? `<span>Falta</span><span>${plata(-dif)}</span>`
+    : `<span>Vuelto</span><span>${plata(dif)}</span>`;
+
+  cont.innerHTML = `<div class="lama-cob" data-cobfondo="1" role="dialog" aria-modal="true"
+                         aria-label="Cobrar la mesa ${m.numero}">
+    <div class="lama-cob-caja">
+      <div class="lama-cob-cab">
+        <div><div class="t">Cobrar mesa ${m.numero}</div>
+             <div class="s">${LAMA_ITEMS.length} producto${LAMA_ITEMS.length===1?'':'s'}</div></div>
+        <button type="button" data-lamaacc="cob-cerrar" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="lama-cob-cuerpo">
+        <div class="lama-cob-mitad">
+          <div class="lama-cob-rot">La cuenta</div>
+          <div>${items}</div>
+          ${descuentoCaja}
+          <div class="lama-cob-suma">
+            <div class="lama-cob-fila"><span>Subtotal</span><span>${plata(sub)}</span></div>
+            ${desc ? `<div class="lama-cob-fila desc"><span>Descuento${
+              d.formato === 'pct' ? ' ' + (+d.valor||0) + ' %' : ''}</span><span>−${plata(desc)}</span></div>` : ''}
+            <div class="lama-cob-fila"><span>Propina</span><span>${plata(prop)}</span></div>
+            <div class="lama-cob-fila gordo"><span>Total</span><span>${plata(total)}</span></div>
+          </div>
+        </div>
+
+        <div class="lama-cob-mitad">
+          <div class="lama-cob-bloque">
+            <div class="tit"><span class="lama-cob-rot">Propina</span>
+              <button type="button" class="lama-cob-mas${dif > 0 ? '' : ' flojo'}"
+                      data-lamaacc="cob-mas-propina"
+                      title="${dif > 0 ? 'Mandar los ' + plata(dif) + ' de vuelto a la propina'
+                                       : 'Agregar una línea de propina'}">+</button></div>
+            ${LAMA_COB.propinas.map((l,i) =>
+                lamaCobLinea(l, i, 'propina', true)).join('')
+              || '<div class="lama-cob-cuad">Sin propina</div>'}
+          </div>
+
+          <div class="lama-cob-bloque">
+            <div class="tit"><span class="lama-cob-rot">Pago</span>
+              <button type="button" class="lama-cob-mas" data-lamaacc="cob-mas-pago"
+                      title="Agregar otra forma de pago">+</button></div>
+            ${LAMA_COB.pagos.map((l,i) =>
+                lamaCobLinea(l, i, 'pago', LAMA_COB.pagos.length > 1)).join('')}
+          </div>
+
+          <div class="lama-cob-cuad">
+            <span>Total venta: ${plata(total)}</span>
+            <span>Total pagado: ${plata(pagado)}</span>
+            <span>Restante: ${plata(Math.max(0, -dif))}</span>
+          </div>
+          <div class="lama-cob-vuelto ${vClase}">${vTexto}</div>
+        </div>
+      </div>
+
+      <div class="lama-cob-pie">
+        <button type="button" class="btn btn-gris" data-lamaacc="cob-cerrar">Cancelar</button>
+        <button type="button" class="btn btn-orange" data-lamaacc="cob-confirmar"${
+          dif < 0 ? ' disabled' : ''}>${
+          dif < 0 ? 'Faltan ' + plata(-dif) : 'Cobrar ' + plata(total)}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* Los toques de la ventana. Van en su propio manejador, colgado del contenedor
+   de la ventana, para no engordar el de la pantalla de mesas. */
+function lamaCobrarEngancharUnaVez(){
+  const cont = $('lama-cob'); if(!cont || cont.dataset.enganchado) return;
+  cont.dataset.enganchado = '1';
+
+  cont.addEventListener('click', async e => {
+    if(!LAMA_COB) return;
+    /* Tocar fuera cierra: es una ventana, no una pantalla. */
+    if(e.target.dataset && e.target.dataset.cobfondo){ lamaCerrarCobro(); return; }
+
+    const qt = e.target.closest('[data-cobquitar]');
+    if(qt){
+      const t = qt.dataset.cobquitar, i = +qt.dataset.i;
+      (t === 'propina' ? LAMA_COB.propinas : LAMA_COB.pagos).splice(i, 1);
+      lamaCobRecargarPago(); lamaPintarCobro(); return;
+    }
+
+    const ac = e.target.closest('[data-lamaacc]');
+    if(!ac) return;
+    const a = ac.dataset.lamaacc;
+
+    if(a === 'cob-cerrar'){ lamaCerrarCobro(); return; }
+
+    if(a === 'cob-mas-propina'){
+      /* REGLA 5 — si hay vuelto, el + lo manda a la propina. Es el caso que
+         dictó Jhon: total 11.000, el cliente paga 12.000, el + deja la propina
+         en 2.000 y el vuelto en 0. Sin vuelto, agrega una línea vacía. */
+      const {dif} = lamaCobCuentas();
+      const medio = LAMA_COB.pagos.length
+        ? LAMA_COB.pagos[LAMA_COB.pagos.length - 1].medio : 'efectivo';
+      LAMA_COB.propinas.push({medio, monto: dif > 0 ? dif : 0});
+      lamaPintarCobro(); return;
+    }
+
+    if(a === 'cob-mas-pago'){
+      const {dif} = lamaCobCuentas();
+      LAMA_COB.pagos.push({medio:'efectivo', monto: dif < 0 ? -dif : 0, tocado:true});
+      lamaPintarCobro(); return;
+    }
+
+    if(a === 'desc-abrir'){
+      LAMA_COB.descAbierto = true;
+      if(!LAMA_COB.desc.formato) LAMA_COB.desc.formato = 'pct';
+      lamaPintarCobro(); return;
+    }
+    if(a === 'desc-cancelar'){
+      LAMA_COB.desc = {motivo:'', formato:'', valor:''};
+      LAMA_COB.descAbierto = false;
+      lamaCobRecargarPago(); lamaPintarCobro(); return;
+    }
+    if(a === 'desc-aplicar'){
+      if(!LAMA_COB.desc.motivo){ avisar('Elige por qué se hace el descuento.'); return; }
+      if(!(+LAMA_COB.desc.valor > 0)){ avisar('Escribe cuánto es el descuento.'); return; }
+      LAMA_COB.descAbierto = false;
+      lamaCobRecargarPago(); lamaPintarCobro(); return;
+    }
+
+    if(a === 'cob-confirmar'){ await lamaCobrarConfirmar(ac); return; }
+  });
+
+  cont.addEventListener('change', e => {
+    if(!LAMA_COB) return;
+    const s = e.target.closest('[data-cobsel]');
+    if(s){
+      const t = s.dataset.cobsel, i = +s.dataset.i;
+      if(t === 'propina'){
+        LAMA_COB.propinas[i].medio = s.value;
+        LAMA_COB.propSuelta = true;      // la tocaron: deja de seguir al pago
+      } else {
+        LAMA_COB.pagos[i].medio = s.value;
+        /* REGLA 4 — el medio del pago arrastra la propina, mientras nadie la
+           haya cambiado a mano. Cuenta en débito y propina en efectivo es el
+           caso de todos los días, y por eso se puede soltar. */
+        if(!LAMA_COB.propSuelta) LAMA_COB.propinas.forEach(l => l.medio = s.value);
+      }
+      lamaPintarCobro(); return;
+    }
+    const dd = e.target.closest('[data-cobdesc]');
+    if(dd){ LAMA_COB.desc[dd.dataset.cobdesc] = dd.value; lamaPintarCobro(); }
+  });
+
+  /* Escribir un monto NO repinta la ventana entera: repintar mientras se
+     escribe le saca el foco al campo y el teclado del teléfono se cierra
+     solo. Se actualiza el estado y solo los números que dependen de él. */
+  cont.addEventListener('input', e => {
+    if(!LAMA_COB) return;
+    const mo = e.target.closest('[data-cobmonto]');
+    if(mo){
+      const t = mo.dataset.cobmonto, i = +mo.dataset.i;
+      const v = parseInt(String(mo.value).replace(/[^\d]/g, ''), 10) || 0;
+      const l = (t === 'propina' ? LAMA_COB.propinas : LAMA_COB.pagos)[i];
+      if(!l) return;
+      l.monto = v;
+      if(t === 'pago') l.tocado = true;      // ya no se re-precarga solo
+      lamaCobNumeros();
+      return;
+    }
+    const dd = e.target.closest('[data-cobdesc]');
+    if(dd){ LAMA_COB.desc[dd.dataset.cobdesc] = dd.value; }
+  });
+
+  cont.addEventListener('keydown', e => {
+    if(e.key === 'Escape' && LAMA_COB){ e.preventDefault(); lamaCerrarCobro(); }
+  });
+}
+
+/* Repinta SOLO los números, sin tocar los campos de texto. Es lo que deja
+   escribir un monto y ver el vuelto cambiar sin perder el foco. */
+function lamaCobNumeros(){
+  if(!LAMA_COB) return;
+  const {desc, prop, total, pagado, dif} = lamaCobCuentas();
+  const cont = $('lama-cob'); if(!cont) return;
+
+  const suma = cont.querySelector('.lama-cob-suma');
+  if(suma){
+    const filas = suma.querySelectorAll('.lama-cob-fila');
+    // la última es el Total y la anterior la Propina; el descuento puede no estar
+    const tot  = suma.querySelector('.gordo span:last-child');
+    if(tot) tot.textContent = plata(total);
+    const pr = filas[filas.length - 2];
+    if(pr) pr.querySelector('span:last-child').textContent = plata(prop);
+  }
+  const cuad = cont.querySelector('.lama-cob-cuad');
+  if(cuad && cuad.children.length === 3){
+    cuad.children[0].textContent = 'Total venta: '  + plata(total);
+    cuad.children[1].textContent = 'Total pagado: ' + plata(pagado);
+    cuad.children[2].textContent = 'Restante: '     + plata(Math.max(0, -dif));
+  }
+  const v = cont.querySelector('.lama-cob-vuelto');
+  if(v){
+    v.className = 'lama-cob-vuelto ' + (dif < 0 ? 'falta' : dif > 0 ? 'hay' : 'cuadra');
+    v.innerHTML = dif < 0
+      ? `<span>Falta</span><span>${plata(-dif)}</span>`
+      : `<span>Vuelto</span><span>${plata(dif)}</span>`;
+  }
+  const b = cont.querySelector('[data-lamaacc="cob-confirmar"]');
+  if(b){
+    b.disabled = dif < 0;
+    b.textContent = dif < 0 ? 'Faltan ' + plata(-dif) : 'Cobrar ' + plata(total);
+  }
+  const mas = cont.querySelector('[data-lamaacc="cob-mas-propina"]');
+  if(mas) mas.classList.toggle('flojo', dif <= 0);
+  void desc;
+}
+
+async function lamaCobrarConfirmar(boton){
+  const c = lamaCuentaDe(LAMA_SEL); if(!c || !LAMA_COB) return;
+  const m = lamaMesaDe(LAMA_SEL);
+  const {total, dif} = lamaCobCuentas();
+  /* REGLA 1 — el vuelto nunca es negativo. La pantalla ya no deja apretar,
+     pero se comprueba igual: el botón se puede haber quedado habilitado por
+     una carrera, y la base lo va a rechazar de todas formas. */
+  if(dif < 0){ avisar('Faltan ' + plata(-dif) + ' para poder cerrar la mesa.'); return; }
+
+  boton.disabled = true;
+
+  /* CUÁL DE LOS DOS CAMINOS, y por qué NO se decide probando y viendo si falla.
+     Probar `cuenta_cobrar` y caer al camino viejo cuando da error confunde dos
+     cosas muy distintas: "esta función todavía no existe" y "la base rechazó
+     el cobro porque falta plata". Con la segunda, caer al camino viejo cerraría
+     la mesa igual, sin cobrarla. Por eso se mira si la migración está puesta
+     —`lamaCargarMedios` ya lo averiguó— y recién entonces se elige. */
+  if(LAMA_HAY_COBRAR){
+    const d = LAMA_COB.desc;
+    const r = await lamaLlamar('cuenta_cobrar', {
+      p_cuenta_id: c.id, p_quien: NOMBRE,
+      p_desc_motivo:  d.motivo || null,
+      p_desc_formato: (+d.valor > 0 && d.formato) ? d.formato : null,
+      p_desc_valor:   (+d.valor > 0 && d.formato) ? +d.valor  : null,
+      p_propinas: LAMA_COB.propinas.map(l => ({medio:l.medio, monto:+l.monto||0})),
+      p_pagos:    LAMA_COB.pagos.map(l    => ({medio:l.medio, monto:+l.monto||0})),
+    });
+    /* Si la base se negó, se queda todo como está: el mensaje ya salió y la
+       mesa NO se cierra. Nunca se cae al camino viejo desde acá. */
+    if(!r){ boton.disabled = false; return; }
+    LAMA_CUENTAS = LAMA_CUENTAS.filter(x => x.id !== c.id);
+    LAMA_COB = null; LAMA_SEL = null; LAMA_PAPEL = null; LAMA_ITEMS = [];
+    lamaPintarCobro(); lamaPintar();
+    aviso('✓ Mesa ' + m.numero + ' cobrada · ' + plata(total));
+    return;
+  }
+
+  /* NO EXISTE `cuenta_cobrar` TODAVÍA: falta correr sql/2026-08-lama-cierre.sql.
+     Se cierra igual con la función de siempre —la mesa tiene que quedar libre,
+     el local no puede esperar a una migración— pero se avisa CLARO que el
+     detalle del pago no quedó guardado. Un cierre silencioso que pierde el
+     medio de pago es exactamente lo que rompería el arqueo. */
+  boton.disabled = false;
+  if(!await preguntar('Todavía no se guarda el detalle del pago',
+      'Falta correr sql/2026-08-lama-cierre.sql en Supabase. Se puede cerrar la mesa igual, '
+      + 'pero el medio de pago, la propina y el descuento NO van a quedar registrados.',
+      'Cerrar igual')) return;
+
+  const r2 = await lamaLlamar('cuenta_cerrar', {p_cuenta_id: c.id, p_quien: NOMBRE});
+  if(!r2) return;
+  LAMA_CUENTAS = LAMA_CUENTAS.filter(x => x.id !== c.id);
+  LAMA_COB = null; LAMA_SEL = null; LAMA_PAPEL = null; LAMA_ITEMS = [];
+  lamaPintarCobro(); lamaPintar();
+  aviso('Mesa ' + m.numero + ' cerrada, sin el detalle del pago');
 }
 
 /* ==================================================================
@@ -6295,6 +6858,8 @@ $('view-lama').addEventListener('click', async e => {
    trabada — y la banda naranja tapa el plano. */
 document.addEventListener('keydown', e => {
   if(e.key !== 'Escape' || vistaActual !== 'lama') return;
+  /* La de cobro va primero: es la que está más arriba de todo. */
+  if(LAMA_COB){ lamaCerrarCobro(); return; }
   if(LAMA_PP){ LAMA_PP = null; lamaPintarPP(); return; }
   if(LAMA_CARTA_ABIERTA){ lamaCerrarCarta(); return; }
   if(LAMA_MENU){ LAMA_MENU = false; lamaPintarPanel(); return; }

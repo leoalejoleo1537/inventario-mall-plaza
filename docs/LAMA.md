@@ -457,9 +457,31 @@ rastro y nadie puede responder por qué el inventario no cuadra.
 | | Qué | Estado |
 |---|---|---|
 | **A1** | **Pago parcial.** Botón abajo a la izquierda. Cambia toda la interfaz: la izquierda pasa a listar los productos con `− n +` para elegir **cuáles** se cobran ahora, y el pie muestra **Total Seleccionado**. Es lo más grande de la lista | pendiente |
-| **A2** | Sacar el detalle del ticket que hoy sale debajo de "Cerrar mesa X". Se discute aparte, y va a tener su propia pantalla de edición | pendiente |
-| **A3** | El descuento se muestra en la suma: `Descuento 20 % · -$2.140` | pendiente |
-| **A4** | Al lado del pago: **Total Venta · Total pagado · Restante**, y el Vuelto abajo | pendiente |
+| **A2** | Sacar el detalle del ticket que hoy sale debajo de "Cerrar mesa X". Se discute aparte, y va a tener su propia pantalla de edición | **hecho** 2026-08-31 |
+| **A3** | El descuento se muestra en la suma: `Descuento 20 % · -$2.140` | **hecho** 2026-08-31 |
+| **A4** | Al lado del pago: **Total Venta · Total pagado · Restante**, y el Vuelto abajo | **hecho** 2026-08-31 |
+
+> **LA VENTANA DE COBRO YA ESTÁ CONSTRUIDA (2026-08-31).** Las cinco reglas
+> están implementadas y probadas en `pruebas/lama-cobrar.mjs` (29 casos). El
+> SQL es **`sql/2026-08-lama-cierre.sql`** y Jhon lo tiene que pegar a mano.
+>
+> **Dos decisiones que conviene no volver a discutir:**
+>
+> 1. **La función nueva se llama `cuenta_cobrar`, no `cuenta_cerrar` con otros
+>    parámetros.** Un nombre nuevo esquiva por completo la trampa de §0.5 —un
+>    `create or replace` con parámetros distintos agrega una segunda firma en
+>    vez de reemplazar— y además deja la vuelta atrás gratis.
+> 2. **Cuál camino toma el cobro NO se decide probando y viendo si falla.** Se
+>    mira si la migración está puesta. Probar `cuenta_cobrar` y caer a la
+>    función vieja cuando da error confunde "esta función no existe" con "la
+>    base rechazó el cobro porque falta plata", y con la segunda cerraría la
+>    mesa **sin cobrarla**. Es un error que se escribió y se corrigió antes de
+>    desplegar; queda anotado para que no vuelva.
+>
+> Mientras el `.sql` no esté corrido la ventana funciona igual y se puede
+> mirar, pero al cobrar **avisa** que el medio de pago, la propina y el
+> descuento no van a quedar registrados. Cerrar en silencio perdiendo eso es
+> exactamente lo que rompería el arqueo.
 
 > **DECISIÓN TOMADA (2026-08-31) sobre A1: el pago parcial paga PRODUCTOS, no
 > plata.** Jhon eligió entre las tres formas posibles. Los productos que se
@@ -494,9 +516,9 @@ Todo esto va **también al teléfono**, con el formato que le corresponda.
 | **C4** | ~~TOTAL~~ — ya está bien resuelto: muestra el total sin propina. **No se toca** | listo |
 | **C5** | **Descuento.** Recuadro bajo "Cerrar mesa" que despliega **hacia abajo, no superpuesto**: motivo → formato (% o $) → valor → Confirmar/Cancelar. Se refleja en el total | pendiente |
 
-| **C6** | **El lag del `+` / `−`.** Tres toques rápidos y no cambia hasta unas décimas después | pendiente |
+| **C6** | **El lag del `+` / `−`.** Tres toques rápidos y no cambia hasta unas décimas después | **hecho** 2026-08-31 · el eco propio |
 | **C7** | Sumar un producto **ya enviado** se comporta como producto nuevo: vuelve a pendientes con su precio y su Confirmar/Cancelar | pendiente |
-| **C8** | **Imprimir comprobante.** En teléfono, tres símbolos bajo TOTAL: `%` (descuento) · impresora (comprobante para el cliente) · lápiz (mover mesa o productos). En PC ya están en la barra del nombre: solo cambiar el de "listo" por el de impresora | pendiente |
+| **C8** | **Imprimir comprobante.** En teléfono, tres símbolos bajo TOTAL: `%` (descuento) · impresora · lápiz. En PC ya están en la barra del nombre | **a medias** · el símbolo de PC ya es la impresora y es reversible; faltan los tres del teléfono |
 | **C9** | **Anular producto con motivo.** Selector + caja de comentarios. El producto **nunca desaparece**: queda tachado y difuminado. Motivos: error de registro, producto no disponible, cambio de producto, cancelado por cliente, prueba, otro | pendiente |
 | **C10** | Sacar el botón de eliminar la mesa entera. Para vaciarla se anula producto por producto y después se cierra | pendiente |
 
@@ -527,7 +549,8 @@ queden anotadas acá para no perderlas.**
 2. **Medios de pago** — crear y editar. Lo necesita el cierre, y ya está previsto como tabla `lama_medios_pago`
 3. **Motivos de anulación** — crear y editar. Lo necesita C9
 4. **Qué detalle lleva el ticket** — editable, con su propia pantalla. Sale de A2
-5. **Dónde queda registrada la anulación** — qué se anuló, quién, por qué, cuándo. **Es dato de arqueo, no un registro técnico**, y hay que decidir su tabla antes de construir C9
+5. **El tamaño y la POSICIÓN de las mesas.** El tamaño ya se ajusta con el ⚙ del plano (2026-08-31, por dispositivo). Falta la posición, y primero hay que decidir qué significa: ¿reordenar las mesas en la grilla, o un plano de verdad con coordenadas, donde la mesa 7 esté junto a la ventana?
+6. **Dónde queda registrada la anulación** — qué se anuló, quién, por qué, cuándo. **Es dato de arqueo, no un registro técnico**, y hay que decidir su tabla antes de construir C9
 
 
 ### DESPUÉS, en orden
