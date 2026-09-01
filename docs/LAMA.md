@@ -582,7 +582,7 @@ queden anotadas acá para no perderlas.**
 3. **Motivos de anulación** — crear y editar. Lo necesita C9
 4. **Qué detalle lleva el ticket** — editable, con su propia pantalla. Sale de A2
 5. **El tamaño y la POSICIÓN de las mesas.** El tamaño ya se ajusta con el ⚙ del plano (2026-08-31, por dispositivo). Falta la posición, y primero hay que decidir qué significa: ¿reordenar las mesas en la grilla, o un plano de verdad con coordenadas, donde la mesa 7 esté junto a la ventana?
-6. **Dónde queda registrada la anulación** — qué se anuló, quién, por qué, cuándo. **Es dato de arqueo, no un registro técnico**, y hay que decidir su tabla antes de construir C9
+6. ~~**Dónde queda registrada la anulación**~~ — **resuelto el 2026-09-01**: en las columnas `anulado_at`, `anulado_por`, `anulado_motivo` y `anulado_comentario` de `cuenta_items`, y los motivos en `lama_motivos_anulacion`. **Lo que falta es la pantalla** para que Adriana cree motivos nuevos, y un listado de lo anulado del día para el arqueo.
 
 
 ### DESPUÉS, en orden
