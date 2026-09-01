@@ -1059,6 +1059,41 @@
     color:var(--text);cursor:pointer;display:flex;align-items:center;
     justify-content:space-between;gap:10px;width:100%;text-align:left}
 
+
+  /* ==========  LA LÍNEA ANULADA  ==========
+     No desaparece: se tacha y se apaga. Lo que salió de la cocina existió —
+     costó insumos y alguien lo preparó—, y si se borra de la lista el arqueo
+     pierde el rastro. Se ve, no se cobra. */
+  .lama-linea.anulada{opacity:.5}
+  .lama-linea.anulada .nm b,
+  .lama-linea.anulada .precio{text-decoration:line-through}
+  .lama-linea.anulada .cant{visibility:hidden}
+  .lama-motivo{display:block;font-size:11.5px;font-weight:800;letter-spacing:.3px;
+    text-transform:uppercase;color:var(--red-fg);margin-top:2px}
+  .lama-motivo .det{font-weight:600;letter-spacing:0;text-transform:none;color:var(--muted)}
+
+  /* La ventana del motivo. Misma familia que la del producto: emergente,
+     angosta, sin rebordes. */
+  .lama-anu{position:fixed;inset:0;z-index:72;background:rgba(15,30,49,.45);
+    backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+    display:flex;align-items:center;justify-content:center;padding:16px}
+  .lama-anu-caja{background:var(--card);border-radius:var(--r-card);width:100%;
+    max-width:400px;padding:20px;box-shadow:0 24px 60px rgba(15,30,49,.4)}
+  .lama-anu-caja h3{margin:0;font-size:19px;font-weight:800;line-height:1.25}
+  .lama-anu-caja .pr{color:var(--muted);font-size:14px;font-weight:700;margin-top:3px}
+  .lama-anu-caja label{display:block;font-size:11.5px;font-weight:800;letter-spacing:.4px;
+    text-transform:uppercase;color:var(--muted);margin:16px 0 7px}
+  .lama-anu-op{display:flex;flex-direction:column;gap:7px}
+  .lama-anu-op button{border:none;background:var(--bg);box-shadow:var(--sombra);
+    border-radius:13px;padding:11px 14px;font:inherit;font-size:14.5px;font-weight:700;
+    color:var(--text);cursor:pointer;text-align:left;transition:box-shadow .14s,background .14s}
+  .lama-anu-op button.on{background:var(--red-bg);color:var(--red-fg);
+    box-shadow:var(--sombra),0 0 0 4px rgba(192,57,43,.14)}
+  .lama-anu-caja textarea{width:100%;min-height:64px;padding:11px 13px;border:none;
+    border-radius:14px;font:inherit;font-size:15px;background:var(--bg);color:var(--text);resize:none}
+  .lama-anu-caja .mbtns{display:flex;gap:8px;margin-top:16px}
+  .lama-anu-caja .mbtns .btn{flex:1}
+
   .lama-pp{position:fixed;inset:0;z-index:70;background:rgba(15,30,49,.45);
     backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
     display:flex;align-items:center;justify-content:center;padding:16px}
@@ -2790,6 +2825,7 @@
   <div id="lama-carta"></div>
   <div id="lama-pp"></div>
   <div id="lama-cob"></div>
+  <div id="lama-anu"></div>
 </div>
 
 <!-- ================= RECETAS ================= -->
@@ -5583,8 +5619,41 @@ async function lamaCargarItems(forzar){
    volviera a dibujar la ventana mientras se escribe un monto, el campo
    perdería el foco y el teclado del teléfono se cerraría solo. La ventana la
    repinta quien la toca, y los números sueltos los actualiza lamaCobNumeros. */
+/* Los toques de la ventana de anular. Va en su propio manejador porque la
+   ventana vive fuera de #view-lama, como la de cobro. */
+function lamaAnularEngancharUnaVez(){
+  const cont = $('lama-anu'); if(!cont || cont.dataset.enganchado) return;
+  cont.dataset.enganchado = '1';
+
+  cont.addEventListener('click', async e => {
+    if(!LAMA_ANU) return;
+    if(e.target.dataset && e.target.dataset.anufondo){ lamaCerrarAnular(); return; }
+
+    const mo = e.target.closest('[data-anumotivo]');
+    if(mo){ LAMA_ANU.motivo = mo.dataset.anumotivo; lamaPintarAnular(); return; }
+
+    const ac = e.target.closest('[data-lamaacc]');
+    if(!ac) return;
+    if(ac.dataset.lamaacc === 'anu-cancelar'){ lamaCerrarAnular(); return; }
+    if(ac.dataset.lamaacc === 'anu-confirmar'){ await lamaAnularConfirmar(); return; }
+  });
+
+  /* El detalle se guarda en el estado mientras se escribe, sin repintar: si
+     repintara, el campo perdería el foco en la primera letra. El botón se
+     habilita a mano por la misma razón. */
+  cont.addEventListener('input', e => {
+    if(!LAMA_ANU || e.target.id !== 'lama-anu-com') return;
+    LAMA_ANU.comentario = e.target.value;
+    const m = LAMA_MOTIVOS_ANU.find(x => x.codigo === LAMA_ANU.motivo);
+    const obliga = !!(m && m.pide_comentario);
+    const b = cont.querySelector('[data-lamaacc="anu-confirmar"]');
+    if(b) b.disabled = !LAMA_ANU.motivo || (obliga && !LAMA_ANU.comentario.trim());
+  });
+}
+
 function lamaPintar(){
   lamaCobrarEngancharUnaVez();
+  lamaAnularEngancharUnaVez();
   lamaPintarPlano(); lamaPintarPanel(); lamaPintarFab();
   lamaPintarCarta(); lamaPintarPP();
 }
@@ -5722,11 +5791,18 @@ function lamaPintarFab(){
    (cantidad + comentario); los − y + de al lado son el atajo para lo más
    común, que es corregir de a uno. */
 function lamaLinea(i){
-  return `<div class="lama-linea">
-    <div class="nm" data-lamaprod="${i.id}">
+  /* ANULADA: se ve, no se cobra. Se tacha y se apaga, con el motivo debajo.
+     No se le ofrece ni cambiar la cantidad ni volver a quitarla: ya está
+     decidido, y lo único que queda es el registro de por qué no salió. */
+  const anu = lamaEstaAnulado(i);
+  return `<div class="lama-linea${anu ? ' anulada' : ''}">
+    <div class="nm"${anu ? '' : ` data-lamaprod="${i.id}"`}>
       <b>${esc(i.nombre)}</b>
-      <span class="${i.comentario ? 'con' : ''}"
-        >${i.comentario ? esc(i.comentario) : '+ comentario'}</span>
+      ${anu
+        ? `<span class="lama-motivo">${esc(lamaMotivoAnuNom(i.anulado_motivo))}${
+            i.anulado_comentario ? ` <span class="det">· ${esc(i.anulado_comentario)}</span>` : ''}</span>`
+        : `<span class="${i.comentario ? 'con' : ''}"
+             >${i.comentario ? esc(i.comentario) : '+ comentario'}</span>`}
     </div>
     <div class="cant">
       <button type="button" data-lamamenos="${i.id}" aria-label="Uno menos">−</button>
@@ -5734,7 +5810,8 @@ function lamaLinea(i){
       <button type="button" data-lamamas="${i.id}" aria-label="Uno más">+</button>
     </div>
     <span class="precio">${plata((+i.cantidad||0)*(+i.precio||0))}</span>
-    <button type="button" class="x" data-lamaquitar="${i.id}" aria-label="Quitar">✕</button>
+    ${anu ? '<span class="x" aria-hidden="true"></span>'
+           : `<button type="button" class="x" data-lamaquitar="${i.id}" aria-label="Quitar">✕</button>`}
   </div>`;
 }
 
@@ -5768,7 +5845,11 @@ function lamaPintarPanel(){
   const nuevos     = LAMA_ITEMS.filter(i => i.estado === 'nuevo');
   const salidos    = LAMA_ITEMS.filter(i => i.estado !== 'nuevo');
   const totalNuevo = nuevos.reduce((s,i) => s + (+i.cantidad||0) * (+i.precio||0), 0);
-  const total      = LAMA_ITEMS.reduce((s,i) => s + (+i.cantidad||0) * (+i.precio||0), 0);
+  /* LO ANULADO NO SUMA. Se sigue viendo en la lista, tachado, pero sale del
+     total — igual que sale del que calcula la base en cuenta_recalcular. Si
+     los dos no coinciden, la pantalla dice un número y el cobro guarda otro. */
+  const total      = LAMA_ITEMS.filter(i => !lamaEstaAnulado(i))
+    .reduce((s,i) => s + (+i.cantidad||0) * (+i.precio||0), 0);
   const cobrando = c.estado === 'precuenta';
   const clase  = cobrando ? 'cobrando' : '';
   const estado = cobrando ? 'Cobrando' : 'Ocupada';
@@ -5811,7 +5892,11 @@ function lamaPintarPanel(){
       ${nuevos.map(lamaLinea).join('')}
       <div class="tot"><span>Total a confirmar</span><span>${plata(totalNuevo)}</span></div>
       <div class="lama-acc">
-        <button type="button" class="btn btn-gris"   data-lamaacc="cancelar">Cancelar</button>
+        <!-- C10 · ACÁ IBA "Cancelar", que borraba TODO lo pendiente de un
+             golpe. Se sacó el 2026-09-01: la mesa no se vacía de una. Si hay
+             que sacar productos, se sacan de a uno con el ✕ de su línea, y
+             después se cierra la mesa. Es la misma regla que hace que lo ya
+             comandado se anule en vez de borrarse. -->
         <button type="button" class="btn btn-orange" data-lamaacc="confirmar">Confirmar</button>
       </div>
     </div>` : '';
@@ -6167,6 +6252,21 @@ async function lamaAgregar(fudoId){
 let LAMA_ESPERA = {};
 async function lamaCantidad(itemId, delta){
   const it = LAMA_ITEMS.find(x => x.id === itemId); if(!it) return;
+
+  /* UNA LÍNEA QUE YA SALIÓ A LA COCINA NO SE EDITA (C7).
+     El cliente pidió otro cortado: eso no es "el cortado de antes ahora son
+     dos", es un cortado nuevo que hay que preparar y mandar. Por eso el +
+     crea una línea NUEVA pendiente, con su Confirmar, y no toca la que ya
+     salió. Es como funciona Fudo y es lo que la cocina necesita ver.
+
+     Y el − de una línea ya salida tampoco resta: lleva a anularla, que es la
+     única forma de sacar algo que ya se preparó dejando dicho por qué. */
+  if(it.estado === 'confirmado' && !lamaEstaAnulado(it)){
+    if(delta > 0) return lamaAgregar(it.fudo_product_id);
+    return lamaAbrirAnular(itemId);
+  }
+  if(lamaEstaAnulado(it)) return;      // lo anulado ya no se toca
+
   const n = (+it.cantidad || 0) + delta;
   if(n <= 0) return lamaQuitar(itemId);
 
@@ -6206,12 +6306,18 @@ async function lamaCantidad(itemId, delta){
 
 async function lamaQuitar(itemId){
   const it = LAMA_ITEMS.find(x => x.id === itemId); if(!it) return;
-  /* Lo que YA salió a la cocina se pregunta antes de quitar: alguien lo está
-     preparando. Lo que todavía no salió se quita de una — es corregir el
-     pedido mientras se toma. */
-  if(it.estado === 'confirmado' &&
-     !await preguntar('Quitar "' + it.nombre + '"',
-        'Ya salió a la cocina. Avísale a quien lo esté preparando.', 'Quitar')) return;
+  if(lamaEstaAnulado(it)) return;
+
+  /* LO QUE YA SALIÓ A LA COCINA NO SE BORRA: SE ANULA (C9).
+     Antes esto preguntaba "¿quitar?" y borraba la fila. Y ahí se perdía todo:
+     qué se anuló, quién, por qué y cuándo. Ese dato es del arqueo, no un
+     registro técnico — es lo que responde por qué el inventario no cuadra.
+
+     Lo que TODAVÍA NO salió sí se borra sin más: no llegó a existir para
+     nadie más que para quien lo tecleó, y pedirle un motivo sería trámite
+     sin dato. */
+  if(it.estado === 'confirmado') return lamaAbrirAnular(itemId);
+
   const {error} = await sb.from('cuenta_items').delete().eq('id', itemId);
   if(error){ avisar('No se pudo quitar.\n\n' + (error.message||'')); return; }
   await lamaLlamar('cuenta_recalcular', {p_cuenta_id: it.cuenta_id});
@@ -6279,7 +6385,7 @@ function lamaPrecuentaTxt(mesa, total){
     '   ─────────────────────────',
     `   MESA ${mesa.numero} · precuenta`,
     '   ─────────────────────────',
-    ...LAMA_ITEMS.map(i =>
+    ...LAMA_ITEMS.filter(i => !lamaEstaAnulado(i)).map(i =>
       `   ${fmt(i.cantidad)} x ${i.nombre}\n       ${plata((+i.cantidad||0)*(+i.precio||0))}`),
     '   ─────────────────────────',
     `   TOTAL          ${plata(total)}`,
@@ -6342,6 +6448,129 @@ async function lamaCerrar(){
   aviso('✓ Mesa ' + m.numero + ' cerrada');
 }
 
+
+
+/* ==================================================================
+   ANULAR — lo que ya salió a la cocina no se edita, se anula
+   ==================================================================
+   ES UN SOLO CONCEPTO, y de él salen tres cosas que parecían separadas:
+
+     · sumar un producto ya enviado no cambia esa línea: crea una línea
+       NUEVA pendiente, con su Confirmar (C7)
+     · quitarlo no lo borra: lo tacha, lo apaga y pide el motivo (C9)
+     · y por eso la mesa entera tampoco se vacía de un golpe (C10)
+
+   La razón es de negocio y no de pantalla: lo que salió de la cocina existió.
+   Costó insumos y alguien lo preparó. Si desaparece de la lista, el arqueo
+   pierde el rastro y nadie puede responder por qué el inventario no cuadra al
+   final del turno.
+
+   Lo que TODAVÍA NO salió es otra cosa: se quita y ya está, sin motivo. No
+   llegó a existir para nadie más que para quien lo tecleó, y pedir un motivo
+   ahí sería trámite sin dato. */
+
+let LAMA_ANU = null;   // {itemId, motivo, comentario}
+
+/* Los motivos salen de la base cuando existe la tabla. Si todavía no se corrió
+   sql/2026-09-lama-anulacion.sql se usan estos, que son los mismos que el .sql
+   siembra: la pantalla se puede mirar antes y el día que la tabla exista no
+   cambia nada de lo que se ve. */
+const LAMA_MOTIVOS_ANU_POR_DEFECTO = [
+  {codigo:'error_registro', nombre:'Error de registro',      pide_comentario:false},
+  {codigo:'no_disponible',  nombre:'Producto no disponible', pide_comentario:false},
+  {codigo:'cambio',         nombre:'Cambio de producto',     pide_comentario:false},
+  {codigo:'cliente',        nombre:'Cancelado por cliente',  pide_comentario:false},
+  {codigo:'prueba',         nombre:'Prueba',                 pide_comentario:false},
+  {codigo:'otro',           nombre:'Otro',                   pide_comentario:true},
+];
+let LAMA_MOTIVOS_ANU = LAMA_MOTIVOS_ANU_POR_DEFECTO;
+let LAMA_HAY_ANULAR  = null;   // null = todavía no se sabe si existe la tabla
+
+async function lamaCargarMotivosAnu(){
+  if(LAMA_HAY_ANULAR !== null) return;
+  LAMA_HAY_ANULAR = false;
+  try{
+    const r = await sb.from('lama_motivos_anulacion')
+      .select('codigo,nombre,pide_comentario,activo').order('orden');
+    if(r.data && r.data.length){
+      LAMA_MOTIVOS_ANU = r.data.filter(x => x.activo !== false);
+      LAMA_HAY_ANULAR = true;
+    }
+  }catch{ /* sin tabla todavía: se sigue con los de fábrica */ }
+}
+
+const lamaMotivoAnuNom = c => (LAMA_MOTIVOS_ANU.find(m => m.codigo === c) || {}).nombre || c;
+const lamaEstaAnulado  = i => !!i.anulado_at;
+
+async function lamaAbrirAnular(itemId){
+  const it = LAMA_ITEMS.find(x => x.id === itemId); if(!it) return;
+  if(lamaEstaAnulado(it)) return;                 // ya está anulado
+  await lamaCargarMotivosAnu();
+  LAMA_ANU = {itemId, motivo:'', comentario:''};
+  lamaPintarAnular();
+}
+
+function lamaCerrarAnular(){ LAMA_ANU = null; lamaPintarAnular(); }
+
+function lamaPintarAnular(){
+  const caja = $('lama-anu'); if(!caja) return;
+  if(!LAMA_ANU){ caja.innerHTML = ''; return; }
+  const it = LAMA_ITEMS.find(x => x.id === LAMA_ANU.itemId);
+  if(!it){ caja.innerHTML = ''; return; }
+  const m = LAMA_MOTIVOS_ANU.find(x => x.codigo === LAMA_ANU.motivo);
+  /* El comentario se pide siempre, pero solo es OBLIGATORIO cuando el motivo
+     no dice nada por sí solo. "Otro" sin detalle es un dato que no sirve. */
+  const obliga = !!(m && m.pide_comentario);
+
+  caja.innerHTML = `<div class="lama-anu" data-anufondo="1" role="dialog" aria-modal="true"
+                         aria-label="Anular ${esc(it.nombre)}">
+    <div class="lama-anu-caja">
+      <h3>Anular ${esc(it.nombre)}</h3>
+      <div class="pr">${fmt(it.cantidad)} × ${plata(it.precio)} · ya salió a la cocina</div>
+      <label>¿Por qué no va a salir?</label>
+      <div class="lama-anu-op">${LAMA_MOTIVOS_ANU.map(x =>
+        `<button type="button" data-anumotivo="${esc(x.codigo)}"${
+          x.codigo === LAMA_ANU.motivo ? ' class="on"' : ''}>${esc(x.nombre)}</button>`).join('')}
+      </div>
+      <label for="lama-anu-com">Detalle${obliga ? '' : ' (si hace falta)'}</label>
+      <textarea id="lama-anu-com" placeholder="${
+        obliga ? 'Escribe qué pasó' : 'Opcional'}">${esc(LAMA_ANU.comentario)}</textarea>
+      <div class="mbtns">
+        <button type="button" class="btn btn-gris" data-lamaacc="anu-cancelar">Cancelar</button>
+        <button type="button" class="btn btn-orange" data-lamaacc="anu-confirmar"${
+          (!LAMA_ANU.motivo || (obliga && !LAMA_ANU.comentario.trim())) ? ' disabled' : ''
+        }>Anular</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function lamaAnularConfirmar(){
+  const a = LAMA_ANU; if(!a) return;
+  const it = LAMA_ITEMS.find(x => x.id === a.itemId); if(!it) return;
+
+  /* Sin la tabla de motivos no se anula NADA. Antes esto borraba la línea, y
+     caer a ese camino viejo sería exactamente lo que se vino a arreglar: el
+     producto desaparecería sin dejar por qué. Mejor no hacer nada y decirlo. */
+  if(!LAMA_HAY_ANULAR){
+    avisar('Todavía no se puede anular.\n\n' +
+      'Falta correr sql/2026-09-lama-anulacion.sql en Supabase. Hasta entonces, ' +
+      'el producto no se puede quitar sin perder el motivo, y perderlo es lo que ' +
+      'descuadra el arqueo.');
+    return;
+  }
+
+  const r = await lamaLlamar('item_anular', {
+    p_item_id: it.id, p_motivo: a.motivo,
+    p_comentario: a.comentario.trim() || null, p_quien: NOMBRE});
+  if(!r) return;
+
+  LAMA_ANU = null;
+  await lamaCargarItems(true);
+  await lamaCargar(true);        // el total de la mesa bajó
+  lamaPintarAnular(); lamaPintar();
+  aviso('Anulado: ' + it.nombre + ' · ' + lamaMotivoAnuNom(a.motivo));
+}
 
 /* ==================================================================
    COBRAR — la ventana de cierre de mesa
@@ -6431,7 +6660,8 @@ const lamaMedioNom = c => (LAMA_MEDIOS.find(m => m.codigo === c) || {}).nombre |
    siempre pregunta acá, para que el número del pie y el del botón no puedan
    discrepar. */
 function lamaCobCuentas(){
-  const sub = LAMA_ITEMS.reduce((a,i) => a + (+i.cantidad||0) * (+i.precio||0), 0);
+  const sub = LAMA_ITEMS.filter(i => !lamaEstaAnulado(i))
+    .reduce((a,i) => a + (+i.cantidad||0) * (+i.precio||0), 0);
   const d = LAMA_COB ? LAMA_COB.desc : null;
   let desc = 0;
   if(d && d.formato === 'pct')  desc = Math.round(sub * (+d.valor||0) / 100);
@@ -6447,7 +6677,8 @@ function lamaCobCuentas(){
 async function lamaAbrirCobro(){
   const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
   await lamaCargarMedios();
-  const sub = LAMA_ITEMS.reduce((a,i) => a + (+i.cantidad||0) * (+i.precio||0), 0);
+  const sub = LAMA_ITEMS.filter(i => !lamaEstaAnulado(i))
+    .reduce((a,i) => a + (+i.cantidad||0) * (+i.precio||0), 0);
   LAMA_COB = {
     propinas: [],
     /* REGLA 3 — el monto nace con el total exacto. Sin propina todavía, el
@@ -6494,7 +6725,10 @@ function lamaPintarCobro(){
   const {sub, desc, prop, total, pagado, dif} = lamaCobCuentas();
   const d = LAMA_COB.desc;
 
-  const items = LAMA_ITEMS.map(i =>
+  /* En el cobro se listan SOLO los que se cobran. Lo anulado ya se ve en el
+     panel, tachado y con su motivo; repetirlo acá, en la pantalla donde se
+     recibe la plata, es una fila que invita a cobrar algo que no salió. */
+  const items = LAMA_ITEMS.filter(i => !lamaEstaAnulado(i)).map(i =>
     `<div class="lama-cob-fila"><span class="nm"><span class="q">${fmt(i.cantidad)}×</span> ${esc(i.nombre)}</span>
      <span>${plata((+i.cantidad||0)*(+i.precio||0))}</span></div>`).join('');
 
@@ -6960,7 +7194,8 @@ $('view-lama').addEventListener('click', async e => {
    trabada — y la banda naranja tapa el plano. */
 document.addEventListener('keydown', e => {
   if(e.key !== 'Escape' || vistaActual !== 'lama') return;
-  /* La de cobro va primero: es la que está más arriba de todo. */
+  /* La de anular va primero: se abre POR ENCIMA de la de cobro. */
+  if(LAMA_ANU){ lamaCerrarAnular(); return; }
   if(LAMA_COB){ lamaCerrarCobro(); return; }
   /* Después la lista del buscador: Escape la cierra sin cerrar la mesa. */
   if(LAMA_QP){ LAMA_QP = ''; lamaPintarPanel(); return; }
