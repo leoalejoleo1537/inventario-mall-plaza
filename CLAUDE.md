@@ -1325,12 +1325,35 @@ Hasta acá lo de arriba era razonamiento. Esto es la prueba, hecha con
 |---|---|
 | ¿El navegador VE la impresora? | **Sí.** `Printer-80`, fabricante `Printer` |
 | Su identidad | **vendorId `0x1FC9` · productId `0x2016`** |
-| ¿Puede abrirla? | **NO.** `SecurityError — Access denied` en `open()` |
+| ¿Puede abrirla por USB? | **NO.** `SecurityError — Access denied` en `open()` |
+| ¿Aparece como puerto serie? | **NO.** Ningún COM de la máquina es la impresora — se abrieron, se escribió, y **el papel no se movió** |
 
-**Falló ANTES de intentar imprimir**, al abrir el dispositivo. Windows lo tiene
-tomado con su propio driver de impresora y no lo comparte. **Ese fue el
-resultado útil**: cierra la puerta del navegador con un dato y no con una
-suposición, en un rato y no en dos meses (§0.5).
+**Las dos puertas del navegador están cerradas, y con datos.** El USB falló
+**antes de intentar imprimir**, al abrir el dispositivo. Y por serie se probó
+lo mínimo posible —despertar y avanzar papel, diez bytes, sin texto ni corte—
+justamente para que un resultado en blanco no admitiera dos lecturas: si el
+rollo no se mueve, no le estamos hablando.
+
+**Todo esto costó un rato en el local, no dos meses de puente a medio hacer**
+(§0.5).
+
+### ⚠️ NO es Fudo el que no suelta la impresora — es Windows, y nunca la suelta
+
+Jhon lo interpretó así al medirlo, y es la conclusión natural: *"Fudo no ha
+terminado de soltar la impresora"*. **No es eso**, y la diferencia decide el
+diseño entero:
+
+- Windows toma la impresora con su driver **al instalarla**, y se queda con
+  ella. No es un préstamo temporal.
+- **Fudo no se apodera del aparato**: le pide a Windows que imprima. Por eso
+  su programa convive con el driver en vez de pelearlo.
+- Cerrar Fudo, entonces, **no libera nada**. No hay nada que esperar.
+
+**Y acá está la salida, que es lo contrario de lo que uno intenta primero:**
+si Windows no comparte la impresora pero sí imprime cuando se lo piden, el
+puente **no tiene que quitarle el aparato — tiene que pedírselo**. Se le
+mandan los bytes ESC/POS crudos a la cola de impresión de Windows, con el
+driver que ya está puesto. Nada se desinstala y **Fudo sigue imprimiendo igual**.
 
 ⚠️ **Existe una forma de forzarlo y NO se hace:** cambiarle el driver a la
 impresora en Windows (Zadig/WinUSB) dejaría que el navegador la tome — **y con
@@ -1345,6 +1368,31 @@ computador. **La salida limpia es que el puente no reciba nada: que se
 suscriba a Supabase y saque lo que aparezca.** Sin conexión entrante no hay
 contenido mixto, ni firewall, ni IP fija que averiguar, y funciona desde
 cualquier teléfono del local. Es el mismo tiempo real que ya usa la app.
+
+### CÓMO QUEDA EL PUENTE, decidido con lo medido
+
+Un programa chico en el computador del local que hace **dos cosas y ninguna
+más**:
+
+| | |
+|---|---|
+| **Escucha a Supabase** | se suscribe a una cola de impresión y espera. **No abre ningún puerto**: la conexión sale de él |
+| **Le pide a Windows que imprima** | manda los bytes ESC/POS crudos a la cola de impresión, con el driver que ya está |
+
+**Las tres cosas que esto evita**, y cada una era un problema real:
+
+1. **No pelea con Windows por el aparato** — que es lo que acaba de fallar.
+2. **No hay contenido mixto ni firewall**, porque nadie le habla de afuera.
+3. **Funciona desde cualquier teléfono del local**, y desde fuera del local
+   también, sin averiguar ninguna IP.
+
+**Lo que cuesta, dicho sin adornos:** hay que instalarlo en ese computador y
+dejarlo arrancando con Windows. Es una visita al local, y **es la misma visita
+que Fudo ya te cobró** con su extensión y su aplicación. No hay una versión de
+esto sin programa instalado: eso es justo lo que se acaba de medir.
+
+**Y va aislado**, sin tocar la app ni la base, como pide el orden de trabajo de
+más abajo: si falla, que falle solo.
 
 ### Lo que ya está resuelto y no hay que volver a hacer
 
