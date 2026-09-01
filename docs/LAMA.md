@@ -493,11 +493,23 @@ Todo esto va **también al teléfono**, con el formato que le corresponda.
 | **C3** | **Píldoras de los más comandados**, en dos columnas, bajo la barra | pendiente |
 | **C4** | ~~TOTAL~~ — ya está bien resuelto: muestra el total sin propina. **No se toca** | listo |
 | **C5** | **Descuento.** Recuadro bajo "Cerrar mesa" que despliega **hacia abajo, no superpuesto**: motivo → formato (% o $) → valor → Confirmar/Cancelar. Se refleja en el total | pendiente |
+
 | **C6** | **El lag del `+` / `−`.** Tres toques rápidos y no cambia hasta unas décimas después | pendiente |
 | **C7** | Sumar un producto **ya enviado** se comporta como producto nuevo: vuelve a pendientes con su precio y su Confirmar/Cancelar | pendiente |
 | **C8** | **Imprimir comprobante.** En teléfono, tres símbolos bajo TOTAL: `%` (descuento) · impresora (comprobante para el cliente) · lápiz (mover mesa o productos). En PC ya están en la barra del nombre: solo cambiar el de "listo" por el de impresora | pendiente |
 | **C9** | **Anular producto con motivo.** Selector + caja de comentarios. El producto **nunca desaparece**: queda tachado y difuminado. Motivos: error de registro, producto no disponible, cambio de producto, cancelado por cliente, prueba, otro | pendiente |
 | **C10** | Sacar el botón de eliminar la mesa entera. Para vaciarla se anula producto por producto y después se cierra | pendiente |
+
+> **DECISIÓN TOMADA (2026-08-31) sobre C5 y A3: hay UN solo descuento por
+> cuenta, visto en dos lugares.** El garzón lo aplica desde el panel de la mesa
+> y la ventana de cierre lo muestra ya puesto; si se cambia en un lado, cambia
+> en el otro. No se suman dos descuentos.
+>
+> La razón es de arqueo, no de pantalla: **una sola cifra que explicar.** Dos
+> descuentos que se apilan obligan a decidir qué pasa cuando entre los dos el
+> total llega a cero, y dejan al arqueo con dos números que pueden no cuadrar.
+> En la base es una columna de `cuentas` (motivo, formato, valor), no una tabla
+> hija.
 
 > **Sobre C6, y hay que decirlo:** el 2026-08-31 se dio por arreglado y **no lo
 > estaba**. La causa que se arregló era real —cada `+` volvía a bajar las ~1000

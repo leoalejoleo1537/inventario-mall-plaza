@@ -353,12 +353,26 @@ await caso('se puede escribir uno nuevo, y se guarda', async () => {
     || 'no quedó escrito en la línea';
 });
 /* LA QUE IMPORTA. El comentario es lo que la cocina lee; si no viaja a la
-   comanda, sale un plato que hay que rehacer. */
+   comanda, sale un plato que hay que rehacer.
+
+   Se mira el TEXTO de la comanda, no el papel dibujado en pantalla. El papel
+   se sacó el 2026-08-31 —lo que lleva el comprobante se decide aparte y va a
+   tener su propia pantalla— pero el texto se sigue armando igual, y es el que
+   va a salir por la impresora. Probar el dato en vez del dibujo además hace
+   que esta prueba sobreviva al próximo cambio de forma. */
 await caso('y VIAJA a la comanda al confirmar', async () => {
   await page.click('[data-lamaacc="confirmar"]'); await page.waitForTimeout(600);
-  const papel = await page.textContent('.lama-papel');
+  /* `let` en el nivel superior NO cuelga de window, así que se lee el
+     identificador directo: vive en el ámbito léxico global igual. */
+  const papel = await page.evaluate(() => (typeof LAMA_PAPEL === 'undefined' ? null : LAMA_PAPEL));
   return (papel && papel.includes('sin azúcar'))
     || 'la comanda salió sin el comentario: '+String(papel).slice(0,160);
+});
+
+/* Y que el papel ya NO se dibuje: es el pedido de Jhon del 2026-08-31. */
+await caso('pero el papel ya no se dibuja debajo de "Cerrar mesa"', async () => {
+  const hay = await page.evaluate(() => !!document.querySelector('.lama-papel'));
+  return hay === false || 'el detalle del ticket sigue en pantalla';
 });
 
 console.log('\nSin errores de JavaScript:');

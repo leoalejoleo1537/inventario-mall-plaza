@@ -649,8 +649,17 @@
      de Fudo en el celular, y sostenerla siempre evita que la pantalla salte
      de forma cada vez que se toca una mesa. */
   .lama{display:grid;grid-template-columns:66px minmax(0,1fr);gap:10px;align-items:start}
+  /* EL REPARTO EN COMPUTADOR, corregido el 2026-08-31. Antes el plano se
+     llevaba todo lo que sobraba y la cuenta quedaba fija en 400px: las mesas
+     se comían la pantalla y en el panel los nombres se cortaban en
+     "selladito + Sprite z…". Ahora es al revés — la cuenta es la que crece y
+     el plano el que se achica—, porque el panel es donde se trabaja y donde
+     el texto tiene que caber entero. */
   @media (min-width:720px){
-    .lama{grid-template-columns:minmax(0,1fr) 400px;gap:18px}
+    .lama{grid-template-columns:minmax(0,1fr) minmax(430px,44%);gap:18px}
+  }
+  @media (min-width:1100px){
+    .lama{grid-template-columns:minmax(0,1fr) minmax(500px,40%)}
   }
   .lama-plano{min-width:0}
   .lama-panel{min-width:0;margin-top:12px}
@@ -671,10 +680,13 @@
      computador se abre en cuadricula, que es donde el plano se lee como plano. */
   .lama-mesas{display:grid;grid-template-columns:1fr;gap:7px;
     max-height:74vh;overflow-y:auto;padding-right:2px;-webkit-overflow-scrolling:touch}
+  /* Menos columnas que antes (eran 5 y 6): el plano ahora tiene menos ancho
+     porque se lo cedió al panel, y meter seis mesas ahí las dejaba diminutas.
+     Cuatro se leen bien y el plano sigue leyéndose como plano. */
   @media (min-width:720px){
-    .lama-mesas{grid-template-columns:repeat(5,1fr);gap:10px;max-height:none;overflow:visible}
+    .lama-mesas{grid-template-columns:repeat(3,1fr);gap:10px;max-height:none;overflow:visible}
   }
-  @media (min-width:1100px){ .lama-mesas{grid-template-columns:repeat(6,1fr)} }
+  @media (min-width:1100px){ .lama-mesas{grid-template-columns:repeat(4,1fr)} }
 
   /* LOS TRES COLORES. Medidos de las capturas de Fudo el 31 de agosto:
      libre #D2F1C0 con el numero en #3D741C, ocupada #EF4444 solida con el
@@ -5283,6 +5295,16 @@ let LAMA_CARTA_ABIERTA = false;  // el buscador de productos esta a la vista
    y con precio, asi que lo que importa es el ORDEN, no cuantos caben. */
 const LAMA_TOP_CUANTOS = 8;
 
+/* La impresora, de línea, para que combine con el ✎ y el ✕ que la acompañan.
+   Se dibuja en vez de usar el emoji 🖨 porque el emoji sale de color y con el
+   tamaño que cada teléfono quiera, y acá tiene que ser un símbolo más de la
+   misma barra. */
+const ICONO_IMPRESORA =
+  '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" ' +
+  'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+  '<path d="M6 8V3h8v5"/><path d="M6 14H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-2"/>' +
+  '<rect x="6" y="12" width="8" height="5" rx="1"/></svg>';
+
 const lamaCuentaDe = mesaId => LAMA_CUENTAS.find(c => c.mesa_id === mesaId) || null;
 const lamaMesaDe   = id     => LAMA_MESAS.find(m => m.id === id) || null;
 const plata = n => '$' + Math.round(+n || 0).toLocaleString('es-CL');
@@ -5290,14 +5312,37 @@ const plata = n => '$' + Math.round(+n || 0).toLocaleString('es-CL');
 /* La carta sale de `fudo_productos`, el espejo del catálogo de Fudo que se
    sincroniza con el botón ⟳. No hay que cargar nada: nombre, precio y
    categoría ya están ahí desde julio. */
-async function lamaCargar(){
-  if(!SEDE || SEDE === 'central') return;
+/* EL ECO DE LO PROPIO — la tercera causa del lag al sumar, y la que faltaba.
 
-  /* DOS COSAS QUE HACÍAN QUE SUMAR SE SINTIERA LENTO, y ninguna estaba en el
-     botón. `cuenta_recalcular` escribe en `cuentas`, eso enciende el aviso en
-     vivo, y el aviso volvía a llamar a esta función entera. O sea: cada toque
-     al + recargaba las mesas, las cuentas Y LA CARTA COMPLETA de Fudo —hasta
-     mil filas— para volver a pintar lo mismo.
+   Cada toque al + escribe en `cuenta_items` y después llama a
+   `cuenta_recalcular`, que escribe en `cuentas`. Las dos escrituras encienden
+   el aviso en vivo, y el aviso vuelve a pedirle los datos al servidor y a
+   repintar. O sea: el teléfono se avisa a sí mismo. Tres toques rápidos son
+   seis viajes que repintan desordenados ENCIMA del número que ya se veía, y
+   por eso el número se quedaba quieto y después saltaba.
+
+   La solución no es tocar el canal en vivo —eso es de Llamita Stock (§0.9)—
+   sino que estas dos funciones sepan distinguir un aviso ajeno de su propio
+   eco. Mientras haya una escritura propia en vuelo, el eco se ignora; al
+   terminar la ráfaga se pide la verdad UNA vez, con `forzar`.
+
+   El respiro de medio segundo es porque el eco llega DESPUÉS de que la
+   escritura terminó: sin él, el último aviso de la ráfaga entra igual. */
+let LAMA_MIO = 0;         // escrituras propias en vuelo
+let LAMA_MIO_HASTA = 0;   // y el respiro para el eco que llega tarde
+const lamaMioEmpieza = () => { LAMA_MIO++; };
+const lamaMioTermina = () => { LAMA_MIO--; LAMA_MIO_HASTA = Date.now() + 500; };
+const lamaEsEcoPropio = () => LAMA_MIO > 0 || Date.now() < LAMA_MIO_HASTA;
+
+async function lamaCargar(forzar){
+  if(!SEDE || SEDE === 'central') return;
+  if(!forzar && lamaEsEcoPropio()) return;   // es mi propio eco: ya lo pinté
+
+  /* DOS COSAS MÁS que hacían que sumar se sintiera lento, y ninguna estaba en
+     el botón. `cuenta_recalcular` escribe en `cuentas`, eso enciende el aviso
+     en vivo, y el aviso volvía a llamar a esta función entera. O sea: cada
+     toque al + recargaba las mesas, las cuentas Y LA CARTA COMPLETA de Fudo
+     —hasta mil filas— para volver a pintar lo mismo.
 
      1) La carta se pide UNA vez por sede. Cambia cuando alguien aprieta ⟳,
         no cuando se vende un café.
@@ -5328,7 +5373,7 @@ async function lamaCargar(){
       LAMA_TOP_SEDE = SEDE; LAMA_TOP_AT = Date.now();
       await lamaTop();
     }
-    await lamaCargarItems();
+    await lamaCargarItems(true);
     lamaPintar();
   })();
   try { await LAMA_CARGANDO; } finally { LAMA_CARGANDO = null; }
@@ -5365,7 +5410,11 @@ async function lamaTop(){
   });
 }
 
-async function lamaCargarItems(){
+/* `forzar` = "esta la pedí yo, tráela igual". Sin `forzar` es el aviso en
+   vivo, y si viene de mi propia escritura se ignora: el número ya está
+   pintado y volver a pedirlo solo lo hace parpadear. Ver lamaEsEcoPropio. */
+async function lamaCargarItems(forzar){
+  if(!forzar && lamaEsEcoPropio()) return;
   const c = LAMA_SEL ? lamaCuentaDe(LAMA_SEL) : null;
   if(!c){ LAMA_ITEMS = []; return; }
   const r = await sb.from('cuenta_items').select('*').eq('cuenta_id', c.id).order('id').limit(500);
@@ -5556,8 +5605,10 @@ function lamaPintarPanel(){
       <span class="tit"><b>Mesa ${m.numero}</b><span>${estado}</span></span>
       <button type="button" data-lamaacc="menu" title="Mover la mesa o sus productos"
               aria-haspopup="true" aria-expanded="${LAMA_MENU?'true':'false'}">✎</button>
-      <button type="button" data-lamaacc="precuenta" title="Imprimir la precuenta"${
-        LAMA_ITEMS.length ? '' : ' disabled'}>✓</button>
+      <!-- Era un ✓ de "listo", que no decía lo que hace. Ahora es la
+           impresora: imprime el comprobante con el detalle para el cliente. -->
+      <button type="button" data-lamaacc="precuenta" title="Imprimir el comprobante para el cliente"${
+        LAMA_ITEMS.length ? '' : ' disabled'}>${ICONO_IMPRESORA}</button>
       <button type="button" data-lamaacc="cerrar-panel" aria-label="Cerrar">✕</button>
       ${LAMA_MENU ? `<div class="lama-menu" id="lama-menu" role="menu">
         <button type="button" role="menuitem" data-lamaacc="mover-mesa">Mover la mesa</button>
@@ -5570,9 +5621,17 @@ function lamaPintarPanel(){
       <div class="lama-acc">
         <button type="button" class="btn btn-navy" data-lamaacc="cobrar">Cerrar mesa ${m.numero}</button>
       </div>
-      ${LAMA_PAPEL ? `<div class="lama-papel">${esc(LAMA_PAPEL)}</div>` : ''}
     </div>
   </div>`;
+  /* ACÁ IBA EL DETALLE DEL TICKET, y se sacó el 2026-08-31 a pedido de Jhon.
+     Se dibujaba un papel con el desglose debajo de "Cerrar mesa", y era una
+     decisión tomada de paso: qué lleva el comprobante del cliente es un tema
+     propio, va a tener su pantalla para editarlo (área nueva N°4 de la lista),
+     y hasta entonces mostrar una versión inventada solo la da por buena.
+
+     `lamaComandaTxt()` y `lamaPrecuentaTxt()` SIGUEN EXISTIENDO y siguen
+     armando el texto: son las que va a usar el puente de impresión. Lo que se
+     fue es el papel en pantalla, no el contenido. */
 }
 
 /* La canasta vacía de Fudo. El equipo ya la reconoce, así que dice "acá no
@@ -5733,7 +5792,7 @@ async function lamaGuardarPP(){
     .update({cantidad, comentario: limpio}).eq('id', itemId);
   if(error){ avisar('No se pudo guardar.\n\n' + (error.message||'')); return; }
   await lamaLlamar('cuenta_recalcular', {p_cuenta_id: it.cuenta_id});
-  await lamaCargarItems();
+  await lamaCargarItems(true);
   lamaPintarPanel();
   if(LAMA_CARTA_ABIERTA) lamaPintarCartaLista();
 }
@@ -5754,7 +5813,7 @@ async function lamaLlamar(fn, args){
 async function lamaSeleccionar(mesaId){
   LAMA_SEL = mesaId; LAMA_PAPEL = null; LAMA_Q = '';
   LAMA_MENU = false; LAMA_MODO = null; LAMA_ELEGIDOS = []; LAMA_CARTA_ABIERTA = false;
-  await lamaCargarItems();
+  await lamaCargarItems(true);
   lamaPintar();
 }
 
@@ -5764,7 +5823,7 @@ async function lamaAbrirMesa(){
   const c = await lamaLlamar('mesa_abrir', {p_mesa_id: mesaId, p_quien: NOMBRE});
   if(!c) return;
   LAMA_CUENTAS = LAMA_CUENTAS.filter(x => x.mesa_id !== mesaId).concat(c);
-  await lamaCargarItems();
+  await lamaCargarItems(true);
   lamaPintar();
 }
 
@@ -5789,10 +5848,14 @@ async function lamaAgregar(fudoId){
   lamaPintarPanel();
   if(LAMA_CARTA_ABIERTA) lamaPintarCartaLista();
 
-  const it = await lamaLlamar('cuenta_agregar', {
-    p_cuenta_id: c.id, p_nombre: p.nombre, p_precio: +p.precio || 0,
-    p_cantidad: 1, p_comentario: null, p_fudo_id: String(p.fudo_product_id), p_quien: NOMBRE});
-  if(!it){ await lamaCargarItems(); lamaPintarPanel(); return; }   // vuelve a la verdad
+  lamaMioEmpieza();                 // el aviso en vivo que venga es mi propio eco
+  let it;
+  try{
+    it = await lamaLlamar('cuenta_agregar', {
+      p_cuenta_id: c.id, p_nombre: p.nombre, p_precio: +p.precio || 0,
+      p_cantidad: 1, p_comentario: null, p_fudo_id: String(p.fudo_product_id), p_quien: NOMBRE});
+  } finally { lamaMioTermina(); }
+  if(!it){ await lamaCargarItems(true); lamaPintarPanel(); return; }   // vuelve a la verdad
 
   /* La fila que devolvió la base reemplaza a la provisoria, sin releer todo. */
   const i = LAMA_ITEMS.findIndex(x => x.id === (provisorio ? provisorio.id : suelta.id));
@@ -5823,6 +5886,7 @@ async function lamaCantidad(itemId, delta){
 
   if(LAMA_ESPERA[itemId]){ LAMA_ESPERA[itemId].n = n; return; }   // ya hay uno viajando
   LAMA_ESPERA[itemId] = {n};
+  lamaMioEmpieza();                       // desde acá, el aviso en vivo es mi propio eco
   try{
     let ultimo = null;
     while(LAMA_ESPERA[itemId] && LAMA_ESPERA[itemId].n !== ultimo){
@@ -5830,12 +5894,24 @@ async function lamaCantidad(itemId, delta){
       const {error} = await sb.from('cuenta_items').update({cantidad: ultimo}).eq('id', itemId);
       if(error){
         avisar('No se pudo cambiar la cantidad.\n\n' + (error.message||''));
-        await lamaCargarItems(); lamaPintarPanel();    // el número vuelve a la verdad
+        await lamaCargarItems(true); lamaPintarPanel();    // el número vuelve a la verdad
         return;
       }
     }
     await lamaLlamar('cuenta_recalcular', {p_cuenta_id: it.cuenta_id});
-  } finally { delete LAMA_ESPERA[itemId]; }
+  } finally {
+    delete LAMA_ESPERA[itemId];
+    lamaMioTermina();
+    /* Terminada la ráfaga, UNA sola lectura de la verdad — y solo si no quedó
+       otra escritura mía en vuelo, porque esa va a hacer la suya al terminar.
+       Antes era una lectura por toque, y llegaban desordenadas encima de lo
+       que ya se veía. */
+    if(LAMA_MIO === 0){
+      await lamaCargarItems(true);
+      lamaPintarPanel();
+      if(LAMA_CARTA_ABIERTA) lamaPintarCartaLista();
+    }
+  }
 }
 
 async function lamaQuitar(itemId){
@@ -5849,7 +5925,7 @@ async function lamaQuitar(itemId){
   const {error} = await sb.from('cuenta_items').delete().eq('id', itemId);
   if(error){ avisar('No se pudo quitar.\n\n' + (error.message||'')); return; }
   await lamaLlamar('cuenta_recalcular', {p_cuenta_id: it.cuenta_id});
-  await lamaCargarItems();
+  await lamaCargarItems(true);
   lamaPintarPanel();
 }
 
@@ -5886,7 +5962,7 @@ async function lamaConfirmar(){
   const cm = await lamaLlamar('cuenta_confirmar', {p_cuenta_id: c.id, p_quien: NOMBRE});
   if(!cm) return;
   LAMA_PAPEL = lamaComandaTxt(lamaMesaDe(LAMA_SEL), cm);
-  await lamaCargarItems();
+  await lamaCargarItems(true);
   lamaPintar();
   aviso('✓ Comanda #' + cm.numero);
 }
@@ -5903,7 +5979,7 @@ async function lamaCancelar(){
   const {error} = await sb.from('cuenta_items').delete().in('id', nuevos.map(i => i.id));
   if(error){ avisar('No se pudo cancelar.\n\n' + (error.message||'')); return; }
   await lamaLlamar('cuenta_recalcular', {p_cuenta_id: c.id});
-  await lamaCargarItems();
+  await lamaCargarItems(true);
   lamaPintar();
 }
 
@@ -5990,7 +6066,7 @@ async function lamaMoverMesa(destinoId){
   if(!r) return;
   LAMA_MODO = null; LAMA_ELEGIDOS = [];
   LAMA_SEL = destinoId;               // el panel sigue a la mesa que se movió
-  await lamaCargar();
+  await lamaCargar(true);
   aviso(`✓ Mesa ${origen.numero} pasó a Mesa ${destino.numero}`);
 }
 
@@ -6017,7 +6093,7 @@ async function lamaMoverItems(destinoId){
     {p_items: LAMA_ELEGIDOS, p_cuenta_id: cDestino.id, p_quien: NOMBRE});
   if(r === null) return;
   LAMA_MODO = null; LAMA_ELEGIDOS = [];
-  await lamaCargar();
+  await lamaCargar(true);
   aviso(`✓ ${van} producto${van===1?'':'s'} a la Mesa ${destino.numero}`);
 }
 
