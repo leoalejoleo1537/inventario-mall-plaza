@@ -17,6 +17,7 @@ partió. Lo que quedó acá son **las reglas duras**, que sí se leen siempre.
 | Si vas a… | Leé ESTO antes, completo | Líneas |
 |---|---|---|
 | **tocar cualquier cosa de Llamita Lama** | **[`docs/LAMA.md`](docs/LAMA.md)** | 427 |
+| **replicar una pantalla de Fudo** | **[`docs/atlas-fudo.md`](docs/atlas-fudo.md)** — cómo se comporta lo que estamos copiando. Lo que siga en `⬜ PENDIENTE` **se pregunta, no se inventa** | — |
 | tocar la pantalla | [`docs/DECISIONES-ESTETICA.md`](docs/DECISIONES-ESTETICA.md) | — |
 | entender por qué algo quedó como quedó | [`docs/bitacora.md`](docs/bitacora.md) | 981 |
 | arreglar algo que huele a ya resuelto | [`docs/soluciones.md`](docs/soluciones.md) | 153 |
