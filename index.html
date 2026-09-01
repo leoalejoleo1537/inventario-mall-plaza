@@ -680,13 +680,44 @@
      computador se abre en cuadricula, que es donde el plano se lee como plano. */
   .lama-mesas{display:grid;grid-template-columns:1fr;gap:7px;
     max-height:74vh;overflow-y:auto;padding-right:2px;-webkit-overflow-scrolling:touch}
-  /* Menos columnas que antes (eran 5 y 6): el plano ahora tiene menos ancho
-     porque se lo cedió al panel, y meter seis mesas ahí las dejaba diminutas.
-     Cuatro se leen bien y el plano sigue leyéndose como plano. */
+  /* EL TAMAÑO DE LAS MESAS, y por qué es una variable.
+
+     Un `repeat(4,1fr)` reparte el ancho que haya entre cuatro columnas, así
+     que cuando el plano se ensanchó las mesas se volvieron gigantes —era el
+     mismo ancho repartido entre menos—. `auto-fill` con un mínimo hace lo
+     contrario: la mesa mide lo que tiene que medir y entran las que quepan.
+
+     Y va en `--mesa` porque el tamaño lo elige quien mira: la pantalla del
+     mesón, la de caja y la de la oficina no son la misma. Se guarda por
+     dispositivo (localStorage), no en la base: es comodidad de quien mira,
+     no un dato del negocio. */
   @media (min-width:720px){
-    .lama-mesas{grid-template-columns:repeat(3,1fr);gap:10px;max-height:none;overflow:visible}
+    .lama-mesas{--mesa:82px;grid-template-columns:repeat(auto-fill,minmax(var(--mesa),1fr));
+      gap:10px;max-height:none;overflow:visible}
   }
-  @media (min-width:1100px){ .lama-mesas{grid-template-columns:repeat(4,1fr)} }
+
+  /* La regla del plano: la fila de salones a la izquierda y el ⚙ a la
+     derecha. Solo aparece en computador — en el teléfono el riel es de una
+     columna y no hay nada que ajustar. */
+  .lama-regla{display:none}
+  @media (min-width:720px){
+    .lama-regla{display:flex;align-items:center;justify-content:flex-end;
+      gap:10px;margin-bottom:10px;position:relative}
+  }
+  .lama-regla .eng{border:none;background:var(--card);box-shadow:var(--sombra);
+    width:34px;height:34px;border-radius:50%;cursor:pointer;color:var(--muted);
+    font:inherit;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0}
+  .lama-regla .eng.on{background:var(--sec-bg);color:var(--sec-tx)}
+  .lama-tam{position:absolute;top:40px;right:0;z-index:30;background:var(--card);
+    box-shadow:0 10px 30px rgba(15,30,49,.26);border-radius:16px;padding:14px 16px;
+    width:250px;display:flex;flex-direction:column;gap:9px}
+  .lama-tam label{font-size:11.5px;font-weight:800;letter-spacing:.5px;
+    text-transform:uppercase;color:var(--muted)}
+  .lama-tam input[type=range]{width:100%;accent-color:var(--orange)}
+  .lama-tam .pie{display:flex;justify-content:space-between;align-items:center;
+    font-size:12.5px;color:var(--muted)}
+  .lama-tam .pie button{border:none;background:transparent;color:var(--orange);
+    font:inherit;font-size:12.5px;font-weight:800;cursor:pointer;padding:0}
 
   /* LOS TRES COLORES. Medidos de las capturas de Fudo el 31 de agosto:
      libre #D2F1C0 con el numero en #3D741C, ocupada #EF4444 solida con el
@@ -739,6 +770,9 @@
     font-size:14px;font-weight:700;padding:7px 11px;border-radius:9px;cursor:pointer;flex:0 0 auto}
   .lama-cab button:active{transform:scale(.94)}
   .lama-cab button[disabled]{opacity:.45;cursor:default}
+  /* La impresora encendida: la mesa está azul y este botón la devuelve. Que se
+     vea apretado es lo que dice que hay algo que deshacer. */
+  .lama-cab button.on{background:#fff;color:var(--azul-fg)}
   .lama-cuerpo{padding:13px 14px}
   .lama-vacio{padding:34px 18px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.55}
 
@@ -2623,6 +2657,9 @@
   <div class="lama">
     <div class="lama-plano">
       <div class="lama-salones" id="lama-salones"></div>
+      <div class="lama-regla"><div id="lama-tam"></div>
+        <button type="button" class="eng" id="lama-eng" data-lamaacc="tam"
+                title="Ajustar el tamaño de las mesas" aria-expanded="false">⚙</button></div>
       <div id="lama-banda"></div>
       <div class="lama-mesas" id="lama-mesas"><div class="empty">Cargando…</div></div>
     </div>
@@ -5423,8 +5460,58 @@ async function lamaCargarItems(forzar){
 
 function lamaPintar(){ lamaPintarPlano(); lamaPintarPanel(); lamaPintarFab(); lamaPintarCarta(); lamaPintarPP(); }
 
+/* EL TAMAÑO DE LAS MESAS — lo elige quien mira, no el código.
+
+   Se guarda por dispositivo y no en la base porque no es un dato del negocio:
+   la pantalla del mesón, la de caja y la del computador de la oficina no son
+   la misma, y cada una necesita su medida. Si mañana hace falta que sea del
+   local y no del aparato, se muda a `lama_ajustes` sin cambiar la pantalla.
+
+   El try/catch es porque leer localStorage puede REVENTAR, no solo venir
+   vacío: en una ventana privada o con las cookies bloqueadas, el acceso mismo
+   lanza. Sin esto, el plano entero se cae por un ajuste de comodidad. */
+const LAMA_TAM_MIN = 56, LAMA_TAM_MAX = 190, LAMA_TAM_DEF = 82;
+let LAMA_TAM_ABIERTO = false;
+
+function lamaTamLeer(){
+  try{
+    const v = parseInt(localStorage.getItem('lama-tam-mesa'), 10);
+    return v >= LAMA_TAM_MIN && v <= LAMA_TAM_MAX ? v : LAMA_TAM_DEF;
+  }catch{ return LAMA_TAM_DEF; }
+}
+function lamaTamGuardar(v){
+  try{ localStorage.setItem('lama-tam-mesa', String(v)); }catch{}
+}
+function lamaTamAplicar(v){
+  const cont = $('lama-mesas'); if(!cont) return;
+  cont.style.setProperty('--mesa', (v || lamaTamLeer()) + 'px');
+}
+function lamaPintarTam(){
+  const caja = $('lama-tam'), eng = $('lama-eng');
+  if(!caja) return;
+  if(eng) eng.classList.toggle('on', LAMA_TAM_ABIERTO);
+  if(eng) eng.setAttribute('aria-expanded', LAMA_TAM_ABIERTO ? 'true' : 'false');
+  if(!LAMA_TAM_ABIERTO){ caja.innerHTML = ''; return; }
+  const v = lamaTamLeer();
+  caja.innerHTML = `<div class="lama-tam">
+    <label for="lama-tam-r">Tamaño de las mesas</label>
+    <input type="range" id="lama-tam-r" min="${LAMA_TAM_MIN}" max="${LAMA_TAM_MAX}"
+           step="2" value="${v}">
+    <div class="pie"><span id="lama-tam-n">${v} px</span>
+      <button type="button" data-lamaacc="tam-def">Volver al normal</button></div>
+  </div>`;
+  const r = $('lama-tam-r');
+  r.addEventListener('input', () => {
+    const n = +r.value;
+    $('lama-tam-n').textContent = n + ' px';
+    lamaTamAplicar(n);          // se ve mientras se arrastra
+    lamaTamGuardar(n);
+  });
+}
+
 function lamaPintarPlano(){
   const cont = $('lama-mesas'); if(!cont) return;
+  lamaTamAplicar();      // el tamaño que eligió este aparato
   const salones = [...new Set(LAMA_MESAS.map(m => m.salon))];
   /* La franja de salones solo aparece si hay más de uno. Hoy solo existe
      "Salón" — Terraza y POPUP están en Fudo pero no se usan — y un selector
@@ -5549,8 +5636,9 @@ function lamaPintarPanel(){
   const salidos    = LAMA_ITEMS.filter(i => i.estado !== 'nuevo');
   const totalNuevo = nuevos.reduce((s,i) => s + (+i.cantidad||0) * (+i.precio||0), 0);
   const total      = LAMA_ITEMS.reduce((s,i) => s + (+i.cantidad||0) * (+i.precio||0), 0);
-  const clase  = c.estado === 'precuenta' ? 'cobrando' : '';
-  const estado = c.estado === 'precuenta' ? 'Cobrando' : 'Ocupada';
+  const cobrando = c.estado === 'precuenta';
+  const clase  = cobrando ? 'cobrando' : '';
+  const estado = cobrando ? 'Cobrando' : 'Ocupada';
 
   /* ELEGIR QUÉ SE MUEVE. Reemplaza el cuerpo del panel y no la pantalla
      entera, y la cabecera se queda para no perder de vista en qué mesa se está. */
@@ -5606,8 +5694,10 @@ function lamaPintarPanel(){
       <button type="button" data-lamaacc="menu" title="Mover la mesa o sus productos"
               aria-haspopup="true" aria-expanded="${LAMA_MENU?'true':'false'}">✎</button>
       <!-- Era un ✓ de "listo", que no decía lo que hace. Ahora es la
-           impresora: imprime el comprobante con el detalle para el cliente. -->
-      <button type="button" data-lamaacc="precuenta" title="Imprimir el comprobante para el cliente"${
+           impresora: imprime el comprobante con el detalle para el cliente.
+           Y es un interruptor: si la mesa ya está azul, lo devuelve a roja. -->
+      <button type="button" data-lamaacc="precuenta" class="${cobrando ? 'on' : ''}"
+              title="${cobrando ? 'Volver a ocupada' : 'Imprimir el comprobante para el cliente'}"${
         LAMA_ITEMS.length ? '' : ' disabled'}>${ICONO_IMPRESORA}</button>
       <button type="button" data-lamaacc="cerrar-panel" aria-label="Cerrar">✕</button>
       ${LAMA_MENU ? `<div class="lama-menu" id="lama-menu" role="menu">
@@ -5998,8 +6088,31 @@ function lamaPrecuentaTxt(mesa, total){
   ].join('\n');
 }
 
+/* EL BOTÓN DE IMPRIMIR ES UN INTERRUPTOR, no un camino de ida.
+
+   Al imprimir el comprobante la mesa se pone azul, que significa "están
+   pagando". Pero eso pasa por error —o el cliente cambia de idea y pide otra
+   cosa— y hasta el 2026-08-31 no había vuelta atrás: la mesa quedaba azul
+   hasta cerrarla. Ahora el mismo botón la devuelve a roja.
+
+   La vuelta se escribe directo en `cuentas` en vez de con una función nueva
+   porque no hay ninguna regla que hacer cumplir: es deshacer una marca, y la
+   política de la tabla ya permite escribirla. Una función más sería una firma
+   más que mantener (§0.5) para no ganar nada. */
 async function lamaPrecuenta(){
   const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
+
+  if(c.estado === 'precuenta'){
+    const {data, error} = await sb.from('cuentas')
+      .update({estado:'abierta', precuenta_at:null}).eq('id', c.id).select().single();
+    if(error){ avisar('No se pudo volver atrás.\n\n' + (error.message||'')); return; }
+    LAMA_CUENTAS = LAMA_CUENTAS.map(x => x.id === data.id ? data : x);
+    LAMA_PAPEL = null;
+    lamaPintar();
+    aviso('Mesa ' + (lamaMesaDe(LAMA_SEL)||{}).numero + ' vuelve a ocupada');
+    return;
+  }
+
   const r = await lamaLlamar('cuenta_precuenta', {p_cuenta_id: c.id, p_quien: NOMBRE});
   if(!r) return;
   LAMA_CUENTAS = LAMA_CUENTAS.map(x => x.id === r.id ? r : x);
@@ -6151,6 +6264,8 @@ $('view-lama').addEventListener('click', async e => {
     if(a === 'confirmar')          await lamaConfirmar();
     else if(a === 'cancelar')      await lamaCancelar();
     else if(a === 'precuenta')     await lamaPrecuenta();
+    else if(a === 'tam')           { LAMA_TAM_ABIERTO = !LAMA_TAM_ABIERTO; lamaPintarTam(); }
+    else if(a === 'tam-def')       { lamaTamGuardar(LAMA_TAM_DEF); lamaTamAplicar(LAMA_TAM_DEF); lamaPintarTam(); }
     else if(a === 'cobrar')        await lamaCerrar();
     else if(a === 'mas')           await lamaMas();
     else if(a === 'cerrar-carta')  lamaCerrarCarta();
