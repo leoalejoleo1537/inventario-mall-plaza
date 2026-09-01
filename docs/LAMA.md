@@ -517,10 +517,10 @@ Todo esto va **también al teléfono**, con el formato que le corresponda.
 | **C5** | **Descuento.** Recuadro bajo "Cerrar mesa" que despliega **hacia abajo, no superpuesto**: motivo → formato (% o $) → valor → Confirmar/Cancelar. Se refleja en el total | pendiente |
 
 | **C6** | **El lag del `+` / `−`.** Tres toques rápidos y no cambia hasta unas décimas después | **hecho** 2026-08-31 · el eco propio |
-| **C7** | Sumar un producto **ya enviado** se comporta como producto nuevo: vuelve a pendientes con su precio y su Confirmar/Cancelar | pendiente |
+| **C7** | Sumar un producto **ya enviado** crea una línea nueva pendiente | **hecho** 2026-09-01 |
 | **C8** | **Imprimir comprobante.** En teléfono, tres símbolos bajo TOTAL: `%` (descuento) · impresora · lápiz. En PC ya están en la barra del nombre | **a medias** · el símbolo de PC ya es la impresora y es reversible; faltan los tres del teléfono |
-| **C9** | **Anular producto con motivo.** Selector + caja de comentarios. El producto **nunca desaparece**: queda tachado y difuminado. Motivos: error de registro, producto no disponible, cambio de producto, cancelado por cliente, prueba, otro | pendiente |
-| **C10** | Sacar el botón de eliminar la mesa entera. Para vaciarla se anula producto por producto y después se cierra | pendiente |
+| **C9** | **Anular producto con motivo.** El producto nunca desaparece: queda tachado | **hecho** 2026-09-01 |
+| **C10** | Sacar el botón de vaciar la mesa de un golpe | **hecho** 2026-09-01 |
 
 > **DECISIÓN TOMADA (2026-08-31) sobre C5 y A3: hay UN solo descuento por
 > cuenta, visto en dos lugares.** El garzón lo aplica desde el panel de la mesa
@@ -532,6 +532,23 @@ Todo esto va **también al teléfono**, con el formato que le corresponda.
 > total llega a cero, y dejan al arqueo con dos números que pueden no cuadrar.
 > En la base es una columna de `cuentas` (motivo, formato, valor), no una tabla
 > hija.
+
+> **EL BLOQUE C7+C9+C10, y por qué son uno solo** (2026-09-01). La regla es:
+> **una línea que ya salió a la cocina no se edita, se anula.** De ahí salen
+> los tres: sumar crea línea nueva, quitar tacha y pide motivo, y la mesa
+> entera no se vacía de un golpe.
+>
+> Lo que **todavía no salió** es otra cosa y se quita sin motivo: no llegó a
+> existir para nadie más que para quien lo tecleó.
+>
+> **Lo anulado deja de sumar en CUATRO lugares**, y si se arregla en menos la
+> pantalla dice un número y el cobro guarda otro: el total del panel, el
+> subtotal de la ventana de cobro, el comprobante del cliente, y
+> `cuenta_recalcular` en la base.
+>
+> **Sin `sql/2026-09-lama-anulacion.sql` corrido, anular NO borra nada** —
+> avisa que falta correrlo. Caer al camino viejo y borrar la línea sería
+> exactamente lo que se vino a arreglar.
 
 > **SOBRE C1-C2-C3, lo que decide si sirve o no** (2026-09-01). No es el
 > buscador: es el foco.
