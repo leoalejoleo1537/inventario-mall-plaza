@@ -4021,6 +4021,13 @@ Una ventana. **A la izquierda, lo que se debe** —los productos, subtotal,
 propina, total—. **A la derecha, cómo se paga** —propina arriba, pago abajo—.
 En el teléfono, la misma información en una sola columna.
 
+**Y es emergente, y nada más que emergente.** Jhon lo anotó sobre la maqueta el
+2026-09-01: *"es importante que este apartado sea solo emergente, y no ocupe
+toda la pantalla"*. Flota centrada sobre el plano de mesas, que se sigue viendo
+atenuado detrás. Ancho tope ~640 px, alto tope 85% de la ventana —si la cuenta
+es larga scrollea la lista adentro, no la página— y se sale con Escape, con la
+× o tocando fuera. **No es una vista más ni reemplaza el plano.**
+
 #### Los medios de pago
 
 Efectivo · Tarjeta de débito · Tarjeta de crédito · Transferencia · Voucher ·
