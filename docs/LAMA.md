@@ -510,9 +510,9 @@ Todo esto va **también al teléfono**, con el formato que le corresponda.
 
 | | Qué | Estado |
 |---|---|---|
-| **C1** | **Barra de búsqueda** dentro del panel, visible apenas se abre la mesa. El botón "Agregar" se mantiene. Es para que el garzón y quien esté en caja tomen la orden rápido | pendiente |
-| **C2** | Los resultados salen **flotando por encima**, justo debajo de la barra. **No desplazan ni deforman nada** de lo que hay atrás | pendiente |
-| **C3** | **Píldoras de los más comandados**, en dos columnas, bajo la barra | pendiente |
+| **C1** | **Barra de búsqueda** dentro del panel, visible apenas se abre la mesa | **hecho** 2026-09-01 |
+| **C2** | Los resultados salen **flotando por encima**. No desplazan ni deforman nada | **hecho** 2026-09-01 |
+| **C3** | **Píldoras de los más comandados**, cuatro, en dos columnas | **hecho** 2026-09-01 |
 | **C4** | ~~TOTAL~~ — ya está bien resuelto: muestra el total sin propina. **No se toca** | listo |
 | **C5** | **Descuento.** Recuadro bajo "Cerrar mesa" que despliega **hacia abajo, no superpuesto**: motivo → formato (% o $) → valor → Confirmar/Cancelar. Se refleja en el total | pendiente |
 
@@ -532,6 +532,21 @@ Todo esto va **también al teléfono**, con el formato que le corresponda.
 > total llega a cero, y dejan al arqueo con dos números que pueden no cuadrar.
 > En la base es una columna de `cuentas` (motivo, formato, valor), no una tabla
 > hija.
+
+> **SOBRE C1-C2-C3, lo que decide si sirve o no** (2026-09-01). No es el
+> buscador: es el foco.
+>
+> · Escribir repinta **solo la lista**, no el panel. Repintar el panel entero le
+>   saca el foco al campo, y en el teléfono el teclado se cierra en la primera
+>   letra: se escribe una y hay que volver a tocar la caja.
+> · Agregar un producto **sí** repinta el panel —cambia la cuenta—, así que el
+>   foco se devuelve a mano y el texto buscado se conserva. Se agrega uno y se
+>   sigue escribiendo.
+>
+> Y la lista **flota** (`position:absolute`). Si empujara el contenido, el total
+> y el botón de cobrar se irían saltando hacia abajo con cada letra. Hay una
+> prueba que mide exactamente eso: que el botón de cobrar no se corra ni un
+> pixel al escribir.
 
 > **Sobre C6, y hay que decirlo:** el 2026-08-31 se dio por arreglado y **no lo
 > estaba**. La causa que se arregló era real —cada `+` volvía a bajar las ~1000
