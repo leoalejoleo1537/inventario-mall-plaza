@@ -1316,6 +1316,36 @@ Esto **corrige** lo que decía §7, que daba por hecho que Fudo no instala nada
 en el computador del local. Sí instala. Lo que corre 100% en el navegador es
 la parte de vender; imprimir necesita el puente.
 
+### MEDIDO EN EL LOCAL — 2026-09-01. El puente es obligatorio
+
+Hasta acá lo de arriba era razonamiento. Esto es la prueba, hecha con
+`impresora-prueba.html` en el Chrome del computador del local.
+
+| Pregunta | Respuesta medida |
+|---|---|
+| ¿El navegador VE la impresora? | **Sí.** `Printer-80`, fabricante `Printer` |
+| Su identidad | **vendorId `0x1FC9` · productId `0x2016`** |
+| ¿Puede abrirla? | **NO.** `SecurityError — Access denied` en `open()` |
+
+**Falló ANTES de intentar imprimir**, al abrir el dispositivo. Windows lo tiene
+tomado con su propio driver de impresora y no lo comparte. **Ese fue el
+resultado útil**: cierra la puerta del navegador con un dato y no con una
+suposición, en un rato y no en dos meses (§0.5).
+
+⚠️ **Existe una forma de forzarlo y NO se hace:** cambiarle el driver a la
+impresora en Windows (Zadig/WinUSB) dejaría que el navegador la tome — **y con
+eso Fudo deja de imprimir.** Es romper el servicio del café para ganar una
+comodidad nuestra. No se propone ni se prueba en el computador del local.
+
+**Consecuencia de diseño, y hay que decirla ahora porque cambia el puente:**
+si el garzón imprime desde el TELÉFONO, el puente no puede escuchar y ya está.
+Una página en `https` no puede llamar a `http://192.168.x.x` — el navegador lo
+bloquea por contenido mixto—, y `localhost` solo le sirve a ese mismo
+computador. **La salida limpia es que el puente no reciba nada: que se
+suscriba a Supabase y saque lo que aparezca.** Sin conexión entrante no hay
+contenido mixto, ni firewall, ni IP fija que averiguar, y funciona desde
+cualquier teléfono del local. Es el mismo tiempo real que ya usa la app.
+
 ### Lo que ya está resuelto y no hay que volver a hacer
 
 - **La impresora está instalada y funcionando.** No hay que configurarla, ni
@@ -1323,6 +1353,8 @@ la parte de vender; imprimir necesita el puente.
 - **Habla ESC/POS**, que es el estándar que el propio Fudo exige. Nuestro
   código le hablaría el mismo idioma.
 - Modelo: **Xprinter XP-N160II**, térmica de 80 mm.
+- La página de prueba queda en el repo (`impresora-prueba.html`) y sirve para
+  repetir la medición en otro local o con otra impresora.
 
 ### Marcas que Fudo desaconseja, y por qué importa
 
