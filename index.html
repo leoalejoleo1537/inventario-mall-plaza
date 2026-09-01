@@ -773,6 +773,35 @@
   /* La impresora encendida: la mesa está azul y este botón la devuelve. Que se
      vea apretado es lo que dice que hay algo que deshacer. */
   .lama-cab button.on{background:#fff;color:var(--azul-fg)}
+  /* ==========  EL BUSCADOR DENTRO DEL PANEL  ==========
+     Antes había que abrir una pantalla entera para agregar un producto. El
+     garzón y quien está en caja toman la orden mientras el cliente habla, y
+     eso no da para abrir y cerrar pantallas: la barra tiene que estar ahí.
+
+     LA LISTA FLOTA. `position:absolute` sobre lo de atrás, y no empuja nada.
+     Si empujara, el total y el botón de cobrar se irían saltando hacia abajo
+     con cada letra que se escribe, y lo que estabas mirando se mueve solo. */
+  .lama-buscar{position:relative;margin-bottom:11px}
+  .lama-buscar input{width:100%;border:none;background:var(--bg);border-radius:14px;
+    padding:11px 13px;font:inherit;font-size:15px;color:var(--text)}
+  .lama-buscar input::placeholder{color:var(--muted)}
+  .lama-qp-lista{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;
+    background:var(--card);border-radius:16px;box-shadow:0 14px 34px rgba(15,30,49,.28);
+    max-height:min(48vh,330px);overflow-y:auto;padding:8px;-webkit-overflow-scrolling:touch}
+  .lama-qp-lista .lama-prod{margin-bottom:6px}
+  .lama-qp-lista .lama-prod:last-child{margin-bottom:0}
+  .lama-qp-nada{padding:16px 12px;text-align:center;color:var(--muted);font-size:14px}
+
+  /* LAS PÍLDORAS. Cuatro, en dos columnas. Son los que más se comandan, para
+     el caso de siempre —un cortado, un americano— sin escribir nada. Cuatro y
+     no ocho a propósito: esto acompaña, no invade. */
+  .lama-pildoras{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+  .lama-pil{border:none;background:var(--bg);box-shadow:var(--sombra);border-radius:999px;
+    padding:9px 14px;font:inherit;font-size:13px;font-weight:700;color:var(--text);
+    cursor:pointer;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    transition:box-shadow .14s,background .14s}
+  .lama-pil:active{transform:scale(.97)}
+
   .lama-cuerpo{padding:13px 14px}
   .lama-vacio{padding:34px 18px;text-align:center;color:var(--muted);font-size:14.5px;line-height:1.55}
 
@@ -5406,7 +5435,8 @@ let LAMA_SALON   = null;    // el salón elegido
 let LAMA_SEL     = null;    // id de la mesa abierta en el panel
 let LAMA_PAPEL   = null;    // el texto de la última comanda o precuenta
 let LAMA_CARTA   = [];      // el catálogo vendible de esta sede
-let LAMA_Q       = '';      // lo escrito en el buscador
+let LAMA_Q       = '';      // lo escrito en el buscador de la carta completa
+let LAMA_QP      = '';      // y lo escrito en el buscador del panel de la mesa
 let LAMA_TOP     = [];      // los nombres mas pedidos, para ordenar la carta
 let LAMA_TOP_SEDE = null;   // para cuál sede se contaron
 let LAMA_TOP_AT  = 0;       // cuándo, para no recontar en cada aviso en vivo
@@ -5710,6 +5740,10 @@ function lamaLinea(i){
 
 function lamaPintarPanel(){
   const cont = $('lama-panel'); if(!cont) return;
+  /* EL FOCO SE DEVUELVE. Agregar un producto repinta el panel entero, y sin
+     esto el buscador se queda vacío y sin cursor justo cuando el garzón va a
+     escribir el siguiente. Se agrega uno, se sigue escribiendo. */
+  const teniaFoco = document.activeElement && document.activeElement.id === 'lama-qp';
   const m = LAMA_SEL ? lamaMesaDe(LAMA_SEL) : null;
   if(!m){
     cont.innerHTML = `<div class="lama-caja"><div class="lama-vacio">
@@ -5782,10 +5816,13 @@ function lamaPintarPanel(){
       </div>
     </div>` : '';
 
-  const cuerpo = LAMA_ITEMS.length
+  /* El buscador va PRIMERO, siempre, aunque la mesa esté vacía: es lo primero
+     que se necesita al abrirla. El botón "Agregar productos" se queda —abre la
+     carta completa, que sirve para mirar todo— pero ya no es el único camino. */
+  const cuerpo = lamaPanelBuscador() + (LAMA_ITEMS.length
     ? pendiente + (salidos.length ? salidos.map(lamaLinea).join('')
         + `<div class="lama-total"><span>Total</span><span>${plata(total)}</span></div>` : '')
-    : lamaCanasta('Sin productos agregados', 'Adicionar productos');
+    : lamaCanasta('Sin productos agregados', 'Adicionar productos'));
 
   cont.innerHTML = `<div class="lama-caja">
     <div class="lama-cab ${clase}">
@@ -5821,6 +5858,11 @@ function lamaPintarPanel(){
      `lamaComandaTxt()` y `lamaPrecuentaTxt()` SIGUEN EXISTIENDO y siguen
      armando el texto: son las que va a usar el puente de impresión. Lo que se
      fue es el papel en pantalla, no el contenido. */
+
+  if(teniaFoco){
+    const q = $('lama-qp');
+    if(q){ q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+  }
 }
 
 /* La canasta vacía de Fudo. El equipo ya la reconoce, así que dice "acá no
@@ -5856,6 +5898,58 @@ function lamaFilaCarta(p, puestos){
       </span>`
       : '<span class="mas">+</span>'}
   </button>`;
+}
+
+/* ==================================================================
+   EL BUSCADOR DEL PANEL — tomar la orden sin salir de la mesa
+   ==================================================================
+   Hasta el 2026-08-31 agregar un producto era: tocar "Agregar", esperar una
+   pantalla entera, buscar, elegir, volver. El garzón toma la orden mientras
+   el cliente está hablando, y eso no da para abrir y cerrar pantallas.
+
+   La lista de resultados FLOTA sobre lo de atrás. Si empujara el contenido,
+   el total y el botón de cobrar se irían saltando hacia abajo con cada letra,
+   y lo que estás mirando se mueve solo. Es pedido textual de Jhon: "no quiero
+   que se traslade todo hacia abajo… esta lista no puede modificar la interfaz
+   mientras estamos en el pc, debe estar sobre la info de atrás". */
+function lamaPanelBuscador(){
+  const puestos = lamaPuestos();
+  /* Las cuatro más comandadas. Salen de LAMA_TOP, que se cuenta de las ventas
+     de verdad; si todavía no hay historia, se usan las primeras de la carta
+     para que el espacio no quede vacío el primer día. */
+  const nombres = (LAMA_TOP.length ? LAMA_TOP : LAMA_CARTA.map(p => p.nombre)).slice(0, 8);
+  const pil = nombres
+    .map(n => LAMA_CARTA.find(p => p.nombre === n))
+    .filter(Boolean).slice(0, 4);
+
+  return `<div class="lama-buscar">
+      <input type="text" id="lama-qp" placeholder="Buscar producto…"
+             autocomplete="off" value="${esc(LAMA_QP)}" aria-label="Buscar producto">
+      <div id="lama-qp-lista">${lamaPanelResultados()}</div>
+    </div>
+    ${pil.length ? `<div class="lama-pildoras">${pil.map(p =>
+      `<button type="button" class="lama-pil" data-lamaadd="${esc(p.fudo_product_id)}"
+        title="${esc(p.nombre)} · ${plata(p.precio)}">${
+        puestos[p.nombre] ? fmt(puestos[p.nombre]) + '× ' : '+ '}${esc(p.nombre)}</button>`
+      ).join('')}</div>` : ''}`;
+}
+
+/* Solo la lista. Se pinta aparte para poder escribir sin repintar el panel
+   entero: repintarlo le saca el foco al campo y en el teléfono se cierra el
+   teclado en la primera letra. */
+function lamaPanelResultados(){
+  const q = normNombre(LAMA_QP.trim());
+  if(!q) return '';
+  const lista = LAMA_CARTA.filter(p => normNombre(p.nombre).includes(q)).slice(0, 40);
+  const puestos = lamaPuestos();
+  return `<div class="lama-qp-lista">${
+    lista.length ? lista.map(p => lamaFilaCarta(p, puestos)).join('')
+                 : '<div class="lama-qp-nada">Nada con ese nombre.</div>'}</div>`;
+}
+
+function lamaPintarPanelResultados(){
+  const caja = $('lama-qp-lista'); if(!caja) return;
+  caja.innerHTML = lamaPanelResultados();
 }
 
 /* Cuántos van de cada uno. Se lee de los items de verdad y no de un contador
@@ -6775,6 +6869,14 @@ async function lamaMoverItems(destinoId){
 
 /* ---------- los toques ---------- */
 $('view-lama').addEventListener('click', async e => {
+  /* Tocar fuera del buscador cierra su lista. Va primero y NO corta el resto:
+     si el toque era para otra cosa, esa otra cosa igual tiene que pasar. */
+  if(LAMA_QP && !e.target.closest('.lama-buscar')){
+    LAMA_QP = '';
+    const q = $('lama-qp'); if(q) q.value = '';
+    lamaPintarPanelResultados();
+  }
+
   const sa = e.target.closest('[data-lamasalon]');
   if(sa){ LAMA_SALON = sa.dataset.lamasalon; LAMA_SEL = null; LAMA_PAPEL = null; lamaPintar(); return; }
 
@@ -6860,6 +6962,8 @@ document.addEventListener('keydown', e => {
   if(e.key !== 'Escape' || vistaActual !== 'lama') return;
   /* La de cobro va primero: es la que está más arriba de todo. */
   if(LAMA_COB){ lamaCerrarCobro(); return; }
+  /* Después la lista del buscador: Escape la cierra sin cerrar la mesa. */
+  if(LAMA_QP){ LAMA_QP = ''; lamaPintarPanel(); return; }
   if(LAMA_PP){ LAMA_PP = null; lamaPintarPP(); return; }
   if(LAMA_CARTA_ABIERTA){ lamaCerrarCarta(); return; }
   if(LAMA_MENU){ LAMA_MENU = false; lamaPintarPanel(); return; }
@@ -6868,6 +6972,10 @@ document.addEventListener('keydown', e => {
 
 $('view-lama').addEventListener('input', e => {
   if(e.target.id === 'lama-q'){ LAMA_Q = e.target.value; lamaPintarCartaLista(); }
+  /* El buscador del panel repinta SOLO su lista. Repintar el panel entero le
+     saca el foco al campo y en el teléfono el teclado se cierra en la primera
+     letra: se escribe una y hay que volver a tocar la caja. */
+  if(e.target.id === 'lama-qp'){ LAMA_QP = e.target.value; lamaPintarPanelResultados(); }
   /* La cantidad y el comentario de la ventana se guardan en LAMA_PP mientras
      se escribe, para que repintar no borre lo tecleado. */
   if(e.target.id === 'lama-pp-com' && LAMA_PP) LAMA_PP.comentario = e.target.value;
