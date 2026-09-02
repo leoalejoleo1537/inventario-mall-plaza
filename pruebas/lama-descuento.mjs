@@ -284,10 +284,13 @@ await caso('el cobro nace con el descuento ya puesto', async () => {
 });
 /* Es lo que de verdad se toca en el mesón: si el monto no viniera descontado,
    el garzón cobraría 10.000 con un descuento aplicado. */
-await caso('y el monto a cobrar ya viene descontado: 8.000', async () => {
+/* OJO CON EL SELECTOR: desde que la propina del 10 % nace puesta, el PRIMER
+   `[data-cobmonto]` del DOM es la propina, no el pago. Hay que pedir el pago
+   por su nombre o se lee el número equivocado. */
+await caso('y el monto a cobrar ya viene descontado: 8.000 + 800 de propina', async () => {
   const v = await page.evaluate(()=>{
-    const i = document.querySelector('[data-cobmonto]'); return i ? i.value : null; });
-  return (v && String(v).replace(/\./g,'').includes('8000')) || 'el monto precargado es ' + v;
+    const i = document.querySelector('[data-cobmonto="pago"]'); return i ? i.value : null; });
+  return (v && String(v).replace(/\./g,'') === '8800') || 'el monto precargado es ' + v;
 });
 
 console.log('\nEL INTERRUPTOR APAGADO deja lo de antes, no un hueco (§2.2):');

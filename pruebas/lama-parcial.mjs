@@ -236,19 +236,28 @@ await caso('la ventana muestra "Ya cobrado −$3.200"', async () => {
   const t = (await page.textContent('.lama-cob-mitad')).replace(/\s+/g,' ');
   return (t.includes('Ya cobrado') && t.includes('3.200')) || 'dice: ' + t.slice(0,200);
 });
-await caso('y "Falta $6.800"', async () => {
+/* 6.800 es lo que queda de PRODUCTOS; lo que hay que cobrar son 7.480, porque
+   la propina sugerida del 10 % se calcula sobre lo pendiente (680) y va
+   adentro. Que la propina se calcule sobre lo que falta —y no sobre la venta
+   entera— es lo que evita que el último de la mesa cargue con la propina de
+   todos. */
+await caso('y "Falta $7.480" — los 6.800 que quedan más su propina', async () => {
   const t = (await page.textContent('.lama-cob-mitad')).replace(/\s+/g,' ');
-  return (t.includes('Falta') && t.includes('6.800')) || 'dice: ' + t.slice(0,200);
+  return (t.includes('Falta') && t.includes('7.480') && t.includes('680'))
+    || 'dice: ' + t.slice(0,220);
 });
 /* EL CASO QUE MÁS IMPORTA DE TODA LA SUITE. Si el monto precargado volviera a
    ser el total, la mesa se cobraría dos veces. */
+/* Se pide el pago POR SU NOMBRE: desde que la propina nace puesta, el primer
+   `[data-cobmonto]` del DOM es la propina. */
 await caso('el pago del cierre se precarga con lo que FALTA, no con el total', async () => {
   const v = await page.evaluate(()=>{
-    const i = document.querySelector('[data-cobmonto]'); return i ? i.value : null; });
-  return (v && String(v).replace(/\./g,'') === '6800') || 'precargó ' + v + ' (tendría que ser 6.800)';
+    const i = document.querySelector('[data-cobmonto="pago"]'); return i ? i.value : null; });
+  return (v && String(v).replace(/\./g,'') === '7480')
+    || 'precargó ' + v + ' (tendría que ser 7.480: 6.800 + 680 de propina)';
 });
-await caso('y el botón dice "Cobrar $6.800"', async () =>
-  (await pie()).includes('6.800') || 'el botón dice: ' + (await pie()));
+await caso('y el botón dice "Cobrar $7.480"', async () =>
+  (await pie()).includes('7.480') || 'el botón dice: ' + (await pie()));
 
 console.log('\nLo ya cobrado se ve y se puede deshacer:');
 await caso('aparece la fila del cobro, con su medio', async () => {
@@ -266,10 +275,10 @@ await caso('deshacer llama a cuenta_pago_parcial_deshacer', async () => {
   const r = await page.evaluate(()=>window.__rpc.find(x=>x.nombre==='cuenta_pago_parcial_deshacer'));
   return !!r || 'no lo llamó';
 });
-await caso('y el pago vuelve a pedir los 10.000 completos', async () => {
+await caso('y el pago vuelve a pedir la cuenta entera: 10.000 + 1.000', async () => {
   const v = await page.evaluate(()=>{
-    const i = document.querySelector('[data-cobmonto]'); return i ? i.value : null; });
-  return (v && String(v).replace(/\./g,'') === '10000') || 'quedó en ' + v;
+    const i = document.querySelector('[data-cobmonto="pago"]'); return i ? i.value : null; });
+  return (v && String(v).replace(/\./g,'') === '11000') || 'quedó en ' + v;
 });
 
 console.log('\nEL DESCUENTO SE REPARTE, y la pantalla dice lo mismo que la base:');

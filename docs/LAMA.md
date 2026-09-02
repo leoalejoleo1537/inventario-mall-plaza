@@ -64,6 +64,39 @@ Lama estén en verde, y **comparar la batería contra una línea base** sacada d
 `origin/master` con `git worktree`. Decir "no toqué Stock" es una intención;
 comparar dos corridas es un dato.
 
+### LA PROPINA DEL 10 % NACE PUESTA — 2026-09-02
+
+> Jhon: *"el 99 % de los clientes la dejan"*.
+
+La ventana de cobro abre con **una línea de propina al 10 % ya puesta**, y el
+pago precargado la incluye: el caso normal vuelve a ser **apretar un botón**,
+que es la regla 3 del cierre. Se saca con su ✕ como cualquier otra línea.
+
+⚠️ **SE CALCULA SOBRE LO QUE FALTA, NO SOBRE LA VENTA ENTERA**, y esa es la
+decisión que importa. En una mesa donde tres ya pagaron su parte en cobros
+parciales —que **no** llevan propina—, calcularla sobre la venta le cargaría al
+último **la propina de los cuatro**. Sobre lo pendiente, cada uno propina lo
+suyo.
+
+**Se pone al día sola** mientras nadie la toque: si después se aplica un
+descuento, o se cobra una parte, o se anula un producto, la línea automática se
+recalcula. **Apenas se escribe encima, deja de moverse** — lo que puso una
+persona no se pisa. Es el mismo criterio que `propSuelta` con el medio de pago.
+
+**Dónde vive el recálculo, y por qué ahí:** en `lamaPropinaAlDia()`, que corre
+**antes de cada repintado** de la ventana. El primer intento la colgó del botón
+"Aplicar" del descuento y quedaba desactualizada — hay más caminos que cambian
+lo que se debe, y cada uno habría tenido que acordarse de avisar. **Un solo
+lugar por el que pasa todo no se puede saltar ninguno.**
+
+**Interruptor** (§2.2): `LAMA_PROPINA_PCT`. En `0` la ventana vuelve
+**exactamente** a lo de antes, sin línea de propina. No queda un hueco.
+
+⚠️ **Y una trampa para las pruebas:** desde ahora el **primer** `[data-cobmonto]`
+del DOM es la **propina**, no el pago. Hay que pedir el pago por su nombre
+(`[data-cobmonto="pago"]`) o se lee el número equivocado — tres pruebas ya
+cayeron en eso.
+
 ### LA RUTINA DE NOCHE — esta sesión se despierta sola a las 03:00
 
 *(Creada el 2026-09-02 a pedido de Jhon, que no puede mirar el chat durante sus
@@ -73,6 +106,7 @@ turnos.)*
 |---|---|
 | Trigger | `trig_0113wW8VvBFhcvDtApDUSSYz` · *Llamita Lama — construir de noche* |
 | Cuándo | `0 7 * * *` en **UTC** = **03:00 de Chile**, todos los días |
+| **Y otra de día** | `trig_01SNVsuzNq59pPXvMn2eg1qc` · `0 13 * * *` UTC = **09:00 de Chile**. Agregada el 2026-09-02: Jhon trabaja y quiere que *mientras tanto le alcance con aceptar*. ⚠️ **Con el horario de verano del 5 de septiembre esta pasa a las 10:00** — a la de la noche eso le da igual porque está en el centro de una ventana de 12 horas, pero las 9:00 es una hora elegida, así que hay que moverla a `0 12 * * *` |
 | Sobre qué | **la MISMA sesión** (`session_01AFS6zizEKYe4nd8chvUAjh`), no una nueva |
 | Qué manda | *"Seguí con el próximo punto pendiente de `docs/LAMA.md`…"* |
 
@@ -591,10 +625,9 @@ alguien la cierra. La prueba daba seis timeouts seguidos y parecía un bug de la
 caja del descuento; era el aviso haciendo bien su trabajo. En una prueba, después
 de un `avisar()` hay que cerrar `#ask-ok`.
 
-**A1 · Pago parcial por producto. ✅ CONSTRUIDO 2026-09-02** — y **dormido
-hasta que Jhon corra `sql/2026-09-lama-pago-parcial.sql`**, que está esperando
-en [`sql-pendientes.md`](sql-pendientes.md) con el texto completo. Sin la
-migración el botón no aparece, y todo lo demás sigue igual que antes.
+**A1 · Pago parcial por producto. ✅ HECHO Y ANDANDO — 2026-09-02.** Jhon corrió
+los tres bloques de `sql/2026-09-lama-pago-parcial.sql` sin errores, así que
+dejó de estar dormido.
 
 **Fue lo más grande de la ruta, y no era solo frontend.**
 

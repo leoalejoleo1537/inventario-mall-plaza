@@ -180,12 +180,29 @@ await caso('ningún elemento de la ventana lleva reborde', async () => {
   return n === 0 || n + ' elementos con reborde';
 });
 
+/* LA PROPINA DEL 10 % NACE PUESTA (2026-09-02). Jhon: "el 99 % de los clientes
+   la dejan", así que el caso normal es apretar un botón, no escribir un número.
+   Los números de acá para abajo la incluyen: sobre 10.000 son 1.000, y el total
+   pasa a 11.000. */
+console.log('\nLA PROPINA SUGERIDA:');
+await caso('nace una línea de propina al 10 %: $1.000', async () =>
+  await monto('propina', 0) === 1000 || 'nació en ' + await monto('propina', 0));
+await caso('y se puede sacar con su ✕', async () => {
+  await page.click('[data-cobquitar="propina"][data-i="0"]'); await page.waitForTimeout(300);
+  const n = await page.evaluate(()=>document.querySelectorAll('[data-cobmonto="propina"]').length);
+  if(n !== 0) return 'quedaron ' + n + ' líneas de propina';
+  /* y se vuelve a abrir la ventana para seguir con la propina puesta */
+  await page.click('[data-lamaacc="cob-cerrar"]'); await page.waitForTimeout(300);
+  await page.click('[data-lamaacc="cobrar"]'); await page.waitForTimeout(500);
+  return await monto('propina', 0) === 1000 || 'al reabrir no volvió la propina';
+});
+
 console.log('\nREGLA 3 · el monto nace con el total exacto:');
-await caso('el pago viene precargado en $10.000', async () =>
-  await monto('pago', 0) === 10000 || 'vino en ' + await monto('pago', 0));
+await caso('el pago viene precargado en $11.000, propina adentro', async () =>
+  await monto('pago', 0) === 11000 || 'vino en ' + await monto('pago', 0));
 await caso('y el botón dice cuánto se va a cobrar', async () => {
   const t = await page.textContent('[data-lamaacc="cob-confirmar"]');
-  return t.includes('10.000') || 'dice: ' + t;
+  return t.includes('11.000') || 'dice: ' + t;
 });
 await caso('el vuelto arranca en cero, o sea cuadra', async () => {
   const c = await page.getAttribute('.lama-cob-vuelto', 'class');
@@ -201,11 +218,11 @@ await caso('pagando de menos, el botón se apaga', async () => {
 /* Un botón gris y mudo no dice qué hacer. Este dice cuánto falta. */
 await caso('y dice cuánto falta, en vez de quedarse mudo', async () => {
   const t = await page.textContent('[data-lamaacc="cob-confirmar"]');
-  return t.includes('Faltan') && t.includes('2.000') || 'dice: ' + t;
+  return t.includes('Faltan') && t.includes('3.000') || 'dice: ' + t;
 });
 await caso('el aviso de arriba también lo dice', async () => {
   const t = await page.textContent('.lama-cob-vuelto');
-  return t.includes('Falta') && t.includes('2.000') || 'dice: ' + t;
+  return t.includes('Falta') && t.includes('3.000') || 'dice: ' + t;
 });
 
 console.log('\nREGLA 5 · el + de la propina absorbe el excedente:');
@@ -214,11 +231,16 @@ console.log('\nREGLA 5 · el + de la propina absorbe el excedente:');
 await caso('pagando de más, aparece el vuelto', async () => {
   await escribir('pago', 0, 12000);
   const t = await page.textContent('.lama-cob-vuelto');
-  return t.includes('Vuelto') && t.includes('2.000') || 'dice: ' + t;
+  return t.includes('Vuelto') && t.includes('1.000') || 'dice: ' + t;
 });
+/* Se mira la SUMA y no la primera línea: con la propina sugerida ya puesta, el
+   + agrega una segunda con el excedente en vez de engordar la primera. Lo que
+   importa es cuánta propina hay, no en cuántos renglones está repartida. */
 await caso('el + manda el excedente a la propina', async () => {
   await page.click('[data-lamaacc="cob-mas-propina"]'); await page.waitForTimeout(300);
-  return await monto('propina', 0) === 2000 || 'la propina quedó en ' + await monto('propina', 0);
+  const suma = await page.evaluate(()=>[...document.querySelectorAll('[data-cobmonto="propina"]')]
+    .reduce((a,i)=> a + (parseInt(String(i.value).replace(/[^\d]/g,''),10)||0), 0));
+  return suma === 2000 || 'la propina quedó en ' + suma;
 });
 await caso('y entonces el vuelto queda en cero', async () => {
   const c = await page.getAttribute('.lama-cob-vuelto', 'class');
@@ -275,9 +297,18 @@ await caso('un 20% sobre 10.000 descuenta 2.000', async () => {
   const t = await page.textContent('.lama-cob-suma');
   return t.includes('2.000') || 'la suma dice: ' + t.replace(/\s+/g,' ').slice(0,120);
 });
-await caso('y el total baja a 10.000 (8.000 + 2.000 de propina)', async () => {
+/* Y ACÁ SE VE LA PROPINA SUGERIDA PONIÉNDOSE AL DÍA SOLA: al aplicar el 20 %,
+   la línea automática baja de 1.000 a 800 —el 10 % de los 8.000 que quedan—
+   mientras que la que se agregó a mano con el + se queda en 1.000, porque
+   tocarla la volvió manual. Total: 8.000 + 1.800 = 9.800. */
+await caso('la propina automática se pone al día: el total queda en 9.800', async () => {
   const t = await page.textContent('.lama-cob-suma');
-  return t.includes('10.000') || 'la suma dice: ' + t.replace(/\s+/g,' ').slice(0,120);
+  return t.includes('9.800') || 'la suma dice: ' + t.replace(/\s+/g,' ').slice(0,120);
+});
+await caso('pero la propina escrita a mano NO se toca', async () => {
+  const l = await page.evaluate(()=>[...document.querySelectorAll('[data-cobmonto="propina"]')]
+    .map(i => parseInt(String(i.value).replace(/[^\d]/g,''),10)||0));
+  return (l.includes(1000) && l.includes(800)) || 'las propinas son: ' + JSON.stringify(l);
 });
 
 console.log('\nAL COBRAR, qué se le manda a la base:');
@@ -292,8 +323,12 @@ await caso('y le manda el descuento, la propina y el pago', async () => {
   const a = await page.evaluate(() =>
     (window.__rpc.filter(x => x.nombre === 'cuenta_cobrar').pop() || {}).args);
   if(!a) return 'no hay llamada';
+  /* Se mira que VAYA propina, no cuántos renglones: con la sugerida más la del
+     + son dos, y mañana podrían ser tres. Lo que no puede fallar es que el
+     descuento y la plata lleguen. */
+  const propTotal = (a.p_propinas || []).reduce((z,x) => z + (+x.monto||0), 0);
   return (a.p_desc_motivo === 'empleado' && a.p_desc_formato === 'pct' && +a.p_desc_valor === 20
-          && a.p_propinas.length === 1 && a.p_pagos.length === 1)
+          && propTotal === 1800 && a.p_pagos.length === 1)
     || 'mandó: ' + JSON.stringify(a).slice(0, 200);
 });
 await caso('la mesa vuelve a verde', async () => {

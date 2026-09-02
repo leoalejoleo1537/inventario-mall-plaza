@@ -6779,6 +6779,11 @@ let LAMA_HAY_COBRAR = null;   // null = todavía no se sabe si existe cuenta_cob
    Es la misma lección que dejó escrita `LAMA_HAY_COBRAR`.                  */
 let LAMA_HAY_PARCIAL = false;  // ¿está corrida la migración del pago parcial?
 let LAMA_PAGOS_PAR   = [];     // los cobros parciales de la cuenta abierta
+
+/* LA PROPINA SUGERIDA, en por ciento. INTERRUPTOR (§2.2): en 0 la ventana de
+   cobro vuelve EXACTAMENTE a lo de antes —sin línea de propina—, no queda un
+   hueco. El día que exista el panel de configuración, se muda ahí. */
+const LAMA_PROPINA_PCT = 10;
 let LAMA_PARCIAL     = null;   // {sel:{itemId:cantidad}, medio} mientras se elige
 
 /* Cuántas unidades de esta línea faltan por cobrar. */
@@ -6956,14 +6961,29 @@ async function lamaAbrirCobro(){
      la ventana lo muestra hecho y el monto a cobrar ya viene descontado. Antes
      nacía vacío y había que volver a escribirlo acá. */
   const d0 = lamaDescDe(c);
+
+  /* LA PROPINA NACE PUESTA AL 10 %. Jhon: "el 99 % de los clientes la dejan",
+     así que el caso normal tiene que ser apretar un botón, no escribir un
+     número — es la misma regla 3 del cierre aplicada a la propina.
+
+     ⚠️ SE CALCULA SOBRE LO QUE FALTA, NO SOBRE LA VENTA ENTERA, y no es un
+     detalle: en una mesa donde tres ya pagaron su parte en cobros parciales
+     —que no llevan propina—, calcularla sobre la venta le cargaría al último
+     la propina de los cuatro. Sobre lo pendiente, cada uno propina lo suyo.
+
+     Se borra con su ✕, que ya existe. Y nace marcada `auto`: mientras nadie la
+     toque se pone al día sola si cambia el descuento; apenas se edita, deja de
+     moverse. Es el mismo criterio que `propSuelta` con el medio de pago. */
+  const pendiente = Math.max(0, sub - lamaDescMonto(sub, d0) - lamaYaCobrado());
+  const propAuto  = Math.round(pendiente * LAMA_PROPINA_PCT / 100);
+
   LAMA_COB = {
-    propinas: [],
-    /* REGLA 3 — el monto nace con el total exacto. Sin propina todavía, el
-       total es el subtotal menos el descuento que ya estuviera puesto. */
+    propinas: propAuto > 0 ? [{medio:'efectivo', monto: propAuto, auto:true}] : [],
+    /* REGLA 3 — el monto nace con el total exacto, propina incluida. */
     /* A1 · y menos lo ya cobrado de a poco: al reabrir el cobro solo se pide
        lo que falta, como hace Fudo. Pedir el total otra vez sería cobrar dos
        veces lo mismo. */
-    pagos: [{medio:'efectivo', monto: Math.max(0, sub - lamaDescMonto(sub, d0) - lamaYaCobrado())}],
+    pagos: [{medio:'efectivo', monto: pendiente + propAuto}],
     desc: d0,
     descAbierto: false,
     propSuelta: false,
@@ -6977,7 +6997,8 @@ function lamaCerrarCobro(){ LAMA_COB = null; lamaPintarCobro(); }
    —siempre que nadie lo haya escrito a mano—, porque si no el garzón tiene
    que corregirlo cada vez que toca el 10%. */
 function lamaCobRecargarPago(){
-  if(!LAMA_COB || LAMA_COB.pagos.length !== 1 || LAMA_COB.pagos[0].tocado) return;
+  if(!LAMA_COB) return;
+  if(LAMA_COB.pagos.length !== 1 || LAMA_COB.pagos[0].tocado) return;
   /* A1 · lo que falta, NO el total: si ya se cobró una parte, precargar el
      total entero haría cobrar dos veces lo mismo. */
   const {falta} = lamaCobCuentas();
@@ -7000,9 +7021,37 @@ function lamaCobLinea(l, i, tipo, sePuedeQuitar){
   </div>`;
 }
 
+/* LA PROPINA SUGERIDA SE PONE AL DÍA, y va acá —antes de dibujar— y no colgada
+   de cada acción que puede cambiarla.
+
+   Se intentó primero engancharla al "Aplicar" del descuento y quedaba
+   desactualizada: hay más caminos que cambian lo que se debe —un cobro
+   parcial, anular un producto, quitar el descuento— y cada uno habría tenido
+   que acordarse de avisar. Un solo lugar por el que pasa TODO no se puede
+   saltar ninguno.
+
+   Y solo se toca la línea marcada `auto`: lo que alguien escribió a mano no se
+   pisa nunca. */
+function lamaPropinaAlDia(){
+  if(!LAMA_COB) return;
+  const auto = LAMA_COB.propinas.find(l => l.auto);
+  if(!auto) return;
+  const {sub, desc, yaCobrado} = lamaCobCuentas();
+  const pend = Math.max(0, sub - desc - yaCobrado);
+  const nuevo = Math.round(pend * LAMA_PROPINA_PCT / 100);
+  if(nuevo === auto.monto) return;
+  auto.monto = nuevo;
+  /* El pago sigue a la propina: si la propina baja, lo que se cobra baja. */
+  if(LAMA_COB.pagos.length === 1 && !LAMA_COB.pagos[0].tocado){
+    const {falta} = lamaCobCuentas();
+    LAMA_COB.pagos[0].monto = Math.max(0, falta);
+  }
+}
+
 function lamaPintarCobro(){
   const cont = $('lama-cob'); if(!cont) return;
   if(!LAMA_COB){ cont.innerHTML = ''; return; }
+  lamaPropinaAlDia();
   const m = lamaMesaDe(LAMA_SEL); if(!m){ cont.innerHTML = ''; return; }
   const {sub, desc, prop, total, pagado, yaCobrado, falta, dif} = lamaCobCuentas();
   const d = LAMA_COB.desc;
@@ -7301,6 +7350,9 @@ function lamaCobrarEngancharUnaVez(){
       if(!l) return;
       l.monto = v;
       if(t === 'pago') l.tocado = true;      // ya no se re-precarga solo
+      /* Tocar la propina sugerida la vuelve manual: deja de recalcularse sola
+         si después cambia el descuento. Lo que uno escribió no se pisa. */
+      if(t === 'propina') l.auto = false;
       lamaCobNumeros();
       return;
     }
