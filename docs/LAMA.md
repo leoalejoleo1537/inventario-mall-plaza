@@ -591,7 +591,12 @@ alguien la cierra. La prueba daba seis timeouts seguidos y parecía un bug de la
 caja del descuento; era el aviso haciendo bien su trabajo. En una prueba, después
 de un `avisar()` hay que cerrar `#ask-ok`.
 
-**A1 · Pago parcial por producto.** Lo más grande, y **no es solo frontend**.
+**A1 · Pago parcial por producto. ✅ CONSTRUIDO 2026-09-02** — y **dormido
+hasta que Jhon corra `sql/2026-09-lama-pago-parcial.sql`**, que está esperando
+en [`sql-pendientes.md`](sql-pendientes.md) con el texto completo. Sin la
+migración el botón no aparece, y todo lo demás sigue igual que antes.
+
+**Fue lo más grande de la ruta, y no era solo frontend.**
 
 ⚠️ **Leer esto antes de escribir una línea.** Se revisó `cuenta_cobrar` y hoy
 la base **prohíbe** el pago parcial:
@@ -618,6 +623,55 @@ Hace falta `sql/2026-09-lama-pago-parcial.sql`:
 En pantalla (atlas D2): botón abajo a la izquierda · la izquierda lista los
 productos con `− n +` · el pie muestra **Total Seleccionado** · **lo pagado en
 verde y bloqueado**, lo pendiente en ámbar · al reabrir, solo queda lo que falta.
+
+##### Las tres cosas que valió la pena aprender construyéndolo
+
+**1 · La pieza más importante del `.sql` es una columna booleana.**
+`cuenta_pagos.parcial`. Sin ella, `cuenta_cobrar` —que hace `delete from
+cuenta_pagos` antes de insertar— **habría borrado los cobros parciales al cerrar
+la mesa**: plata cobrada de verdad, desaparecida del arqueo, sin que nadie se
+entere. Es la clase de falla que no se ve el día que pasa.
+
+**2 · Lo que se congela al cerrar describe LA VENTA ENTERA**, no lo que faltaba.
+Si se congelara el resto, el arqueo vería una venta del tamaño del resto y la
+plata de los parciales quedaría sin ninguna venta que la explique. Y el monto
+del cierre sale de *total de la venta − lo ya cobrado*, no de calcular un
+"descuento de lo que falta": así los redondeos de cada parcial no se acumulan.
+
+**3 · Deshacer un cobro parcial no era un extra.** Salió de la pregunta 3 de
+§0.8 —*nombrá una excepción legítima*— y apareció enseguida: **cobrar los
+productos equivocados**. Sin deshacer, ese error deja la mesa sin ninguna forma
+de cerrarse bien.
+
+**Y dos candados más**, los dos de datos y no de forma de trabajar: no se anula
+ni se mueve a otra mesa algo ya cobrado. Más un `check` en la tabla que hace
+**imposible** cobrar dos veces la misma unidad, en vez de confiar en que la app
+se acuerde — misma clase que el tope en cero (§0.2), y por eso sin interruptor.
+
+##### Probado contra un Postgres de verdad, no contra un esquema inventado
+
+Es la trampa de §0.5, y esta vez se esquivó: se levantó un PostgreSQL 16, se le
+cargó **el DDL de este repo** —los cuatro `.sql` de Lama, en orden— y se corrió
+el archivo encima. Nueve escenarios de plata, todos verdes, incluido el crítico
+—*el cobro parcial sobrevive al cierre*— y el del descuento repartido, que da
+**$2.560** por un café de $3.200 con 20 %: **el mismo número que muestra la
+pantalla**, que es lo que hay que comprobar cuando la cuenta se hace en dos
+lados.
+
+⚠️ **Lo que eso NO prueba es que encaje con producción** (§0.1.2: el repo no es
+la base). Por eso el `.sql` termina con una comprobación que cuenta firmas: las
+cinco tienen que decir **"1 firma"**.
+
+⚠️ **Y un falso verde que casi se cuela**, que vale más que las nueve pruebas:
+la primera versión de *"no se puede mover lo cobrado"* **pasó**… pero se negó
+por otra razón — la mesa destino no existía, porque el índice único impide dos
+cuentas vivas en la misma mesa. Se rehízo hasta ver el mensaje del candado
+propio. **Un rechazo no es una prueba si no se mira POR QUÉ rechazó.**
+
+**Pruebas de pantalla: `pruebas/lama-parcial.mjs`, 22 casos.** La que más pesa
+es que **el pago del cierre se precargue con lo que FALTA y no con el total**:
+si eso fallara, la mesa se cobraría dos veces y se sabría al final del turno, o
+nunca.
 
 **C8 · Los tres símbolos del teléfono** bajo TOTAL. Está a medias.
 

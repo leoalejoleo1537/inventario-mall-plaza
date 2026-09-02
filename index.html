@@ -1068,6 +1068,37 @@
     display:flex;gap:10px;align-items:center}
   .lama-cob-pie .btn{flex:1}
 
+  /* A1 · EL PAGO PARCIAL. Lo ya cobrado en verde, como en Fudo: el equipo ya
+     lee ese color. Y lo pendiente sigue como estaba — no se le cambia el
+     aspecto a lo normal para marcar la excepción. */
+  .lama-cob-fila.pagado{opacity:.62}
+  .lama-cob-fila .ypag{display:block;font-size:11px;font-weight:700;color:var(--green-fg)}
+  .lama-cob-fila .pr.listo{color:var(--green-fg);font-weight:800}
+  .lama-cob-fila.yacob{color:var(--green-fg);font-weight:700}
+  /* La fila con el − n +, en el modo elegir. */
+  .lama-cob-fila.elegir{align-items:center;gap:10px}
+  .lama-cob-fila.elegir .paso{display:inline-flex;align-items:center;gap:9px;
+    background:var(--card);box-shadow:var(--sombra);border-radius:999px;padding:3px 9px;
+    font-weight:800;font-size:15px;user-select:none}
+  .lama-cob-fila.elegir .paso span{cursor:pointer;padding:2px 5px;color:var(--orange)}
+  .lama-cob-fila.elegir .paso b{min-width:16px;text-align:center;font-variant-numeric:tabular-nums}
+  .lama-cob-fila.elegir .pr{font-variant-numeric:tabular-nums;min-width:66px;text-align:right}
+  /* Los cobros ya hechos, con su ✕ para deshacer. */
+  .lama-cob-pagados{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+  .lama-cob-pagados .pagado-fila{align-items:center;gap:8px;background:var(--green-bg);
+    color:var(--green-fg);border-radius:11px;padding:8px 11px;font-weight:700}
+  .lama-cob-pagados .qt{border:none;background:none;font:inherit;font-size:15px;
+    color:var(--green-fg);cursor:pointer;padding:0 2px;opacity:.75}
+  /* El pie del modo elegir: el total seleccionado manda, por eso va primero
+     y en grande. */
+  .lama-cob-pie.parcial{flex-wrap:wrap}
+  .lama-cob-pie.parcial .sel{flex:1 0 100%;display:flex;align-items:center;
+    justify-content:space-between;font-size:15px;font-weight:700;margin-bottom:4px;
+    font-variant-numeric:tabular-nums}
+  .lama-cob-pie.parcial .sel b{font-size:19px;font-weight:800}
+  .lama-cob-pie.parcial select{flex:1;border:none;background:var(--bg);box-shadow:var(--sombra);
+    color:var(--text);font:inherit;font-size:14px;padding:10px 11px;border-radius:11px}
+
   /* El descuento se despliega HACIA ABAJO, nunca superpuesto. */
   .lama-cob-desc{display:flex;flex-direction:column;gap:8px;background:var(--bg);
     border-radius:16px;padding:12px 13px}
@@ -5636,9 +5667,17 @@ async function lamaTop(){
 async function lamaCargarItems(forzar){
   if(!forzar && lamaEsEcoPropio()) return;
   const c = LAMA_SEL ? lamaCuentaDe(LAMA_SEL) : null;
-  if(!c){ LAMA_ITEMS = []; return; }
+  if(!c){ LAMA_ITEMS = []; LAMA_PAGOS_PAR = []; return; }
   const r = await sb.from('cuenta_items').select('*').eq('cuenta_id', c.id).order('id').limit(500);
   LAMA_ITEMS = r.data || [];
+  /* A1 · Lo ya cobrado de a poco. Se pide junto con los productos porque los
+     dos contestan la misma pregunta —cuánto falta— y pedirlos por separado
+     deja una ventana en la que la pantalla muestra un número viejo. */
+  if(LAMA_HAY_PARCIAL){
+    const pp = await sb.from('cuenta_pagos').select('*')
+      .eq('cuenta_id', c.id).eq('parcial', true).order('id');
+    LAMA_PAGOS_PAR = pp.data || [];
+  } else LAMA_PAGOS_PAR = [];
 }
 
 /* La ventana de cobro NO se repinta desde acá a propósito. Un aviso en vivo
@@ -6723,6 +6762,31 @@ let LAMA_MEDIOS  = LAMA_MEDIOS_POR_DEFECTO;
 let LAMA_MOTIVOS = LAMA_MOTIVOS_POR_DEFECTO;
 let LAMA_HAY_COBRAR = null;   // null = todavía no se sabe si existe cuenta_cobrar
 
+/* ==================================================================
+   A1 · PAGO PARCIAL — cobrar una parte de la mesa
+   ==================================================================
+   Cuatro personas, una se va antes. Se eligen SUS productos, se cobran, y la
+   mesa sigue abierta con lo que falta.
+
+   PAGA PRODUCTOS, NO PLATA, y es la decisión que ordena todo lo demás: es lo
+   único que después deja responder "qué se vendió en efectivo", que es
+   exactamente lo que el arqueo va a preguntar. Un abono en plata sin decir qué
+   cubre no se puede desarmar más tarde.
+
+   CÓMO SE SABE SI SE PUEDE: se mira si la migración está puesta, NO se prueba
+   a ver si falla. Probar y caer al camino viejo confunde "esta función no
+   existe" con "la base rechazó el cobro", y con la segunda se cobraría mal.
+   Es la misma lección que dejó escrita `LAMA_HAY_COBRAR`.                  */
+let LAMA_HAY_PARCIAL = false;  // ¿está corrida la migración del pago parcial?
+let LAMA_PAGOS_PAR   = [];     // los cobros parciales de la cuenta abierta
+let LAMA_PARCIAL     = null;   // {sel:{itemId:cantidad}, medio} mientras se elige
+
+/* Cuántas unidades de esta línea faltan por cobrar. */
+const lamaFaltan = i => (+i.cantidad || 0) - (+i.cantidad_pagada || 0);
+const lamaPagadas = i => (+i.cantidad_pagada || 0);
+/* Lo ya cobrado de a poco, en plata. */
+const lamaYaCobrado = () => LAMA_PAGOS_PAR.reduce((a,p) => a + (+p.monto || 0), 0);
+
 /* Se piden UNA vez por sesión y en silencio: si las tablas todavía no existen
    —porque el .sql no se corrió— se sigue con las de arriba sin molestar a
    nadie. Una pantalla que se cae porque falta una tabla de configuración es
@@ -6740,6 +6804,11 @@ async function lamaCargarMedios(){
       LAMA_HAY_COBRAR = true;
     }
     if(tt.data && tt.data.length) LAMA_MOTIVOS = tt.data.filter(x => x.activo !== false);
+    /* A1 · ¿está la migración del pago parcial? Se pregunta por la tabla, que
+       existe o no existe — sin ambigüedad. Si no está, el botón no aparece y
+       todo lo demás sigue igual que antes. */
+    const pi = await sb.from('cuenta_pago_items').select('id').limit(1);
+    LAMA_HAY_PARCIAL = !pi.error;
   }catch{ /* sin tablas todavía: se sigue con las de fábrica */ }
 }
 
@@ -6847,7 +6916,35 @@ function lamaCobCuentas(){
   const prop   = LAMA_COB ? LAMA_COB.propinas.reduce((a,l) => a + (+l.monto||0), 0) : 0;
   const total  = sub - desc + prop;
   const pagado = LAMA_COB ? LAMA_COB.pagos.reduce((a,l) => a + (+l.monto||0), 0) : 0;
-  return {sub, desc, prop, total, pagado, dif: pagado - total};
+
+  /* A1 · LO QUE FALTA NO ES EL TOTAL: es el total menos lo que ya se cobró de
+     a poco. Sin esto, una mesa con la mitad pagada pediría la cuenta entera
+     otra vez y se cobraría dos veces.
+
+     El mismo criterio que usa la base al cerrar: se resta lo ya cobrado del
+     total de la venta, en vez de calcular un "total de lo que falta". Así los
+     redondeos de cada cobro parcial no se pueden acumular. */
+  const yaCobrado = lamaYaCobrado();
+  const falta     = total - yaCobrado;
+  return {sub, desc, prop, total, pagado, yaCobrado, falta, dif: pagado - falta};
+}
+
+/* LO SELECCIONADO PARA COBRAR AHORA, con su parte del descuento. Es la misma
+   cuenta que hace `cuenta_cobrar_parcial` en la base — se repite acá para que
+   la pantalla pueda mostrar el número ANTES de mandarlo, y las dos tienen que
+   dar lo mismo. Si algún día se cambia una, se cambia la otra. */
+function lamaParcialCuentas(){
+  const {sub, desc} = lamaCobCuentas();
+  let subSel = 0;
+  if(LAMA_PARCIAL){
+    for(const i of LAMA_ITEMS){
+      const n = +LAMA_PARCIAL.sel[i.id] || 0;
+      if(n > 0) subSel += n * (+i.precio || 0);
+    }
+  }
+  const descSel = sub > 0 ? Math.round(desc * subSel / sub) : 0;
+  const monto   = Math.max(0, subSel - descSel);
+  return {subSel, descSel, monto};
 }
 
 async function lamaAbrirCobro(){
@@ -6863,7 +6960,10 @@ async function lamaAbrirCobro(){
     propinas: [],
     /* REGLA 3 — el monto nace con el total exacto. Sin propina todavía, el
        total es el subtotal menos el descuento que ya estuviera puesto. */
-    pagos: [{medio:'efectivo', monto: sub - lamaDescMonto(sub, d0)}],
+    /* A1 · y menos lo ya cobrado de a poco: al reabrir el cobro solo se pide
+       lo que falta, como hace Fudo. Pedir el total otra vez sería cobrar dos
+       veces lo mismo. */
+    pagos: [{medio:'efectivo', monto: Math.max(0, sub - lamaDescMonto(sub, d0) - lamaYaCobrado())}],
     desc: d0,
     descAbierto: false,
     propSuelta: false,
@@ -6878,8 +6978,10 @@ function lamaCerrarCobro(){ LAMA_COB = null; lamaPintarCobro(); }
    que corregirlo cada vez que toca el 10%. */
 function lamaCobRecargarPago(){
   if(!LAMA_COB || LAMA_COB.pagos.length !== 1 || LAMA_COB.pagos[0].tocado) return;
-  const {sub, desc, prop} = lamaCobCuentas();
-  LAMA_COB.pagos[0].monto = sub - desc + prop;
+  /* A1 · lo que falta, NO el total: si ya se cobró una parte, precargar el
+     total entero haría cobrar dos veces lo mismo. */
+  const {falta} = lamaCobCuentas();
+  LAMA_COB.pagos[0].monto = Math.max(0, falta);
 }
 
 function lamaCobOpciones(sel){
@@ -6902,15 +7004,39 @@ function lamaPintarCobro(){
   const cont = $('lama-cob'); if(!cont) return;
   if(!LAMA_COB){ cont.innerHTML = ''; return; }
   const m = lamaMesaDe(LAMA_SEL); if(!m){ cont.innerHTML = ''; return; }
-  const {sub, desc, prop, total, pagado, dif} = lamaCobCuentas();
+  const {sub, desc, prop, total, pagado, yaCobrado, falta, dif} = lamaCobCuentas();
   const d = LAMA_COB.desc;
 
   /* En el cobro se listan SOLO los que se cobran. Lo anulado ya se ve en el
      panel, tachado y con su motivo; repetirlo acá, en la pantalla donde se
      recibe la plata, es una fila que invita a cobrar algo que no salió. */
-  const items = LAMA_ITEMS.filter(i => !lamaEstaAnulado(i)).map(i =>
-    `<div class="lama-cob-fila"><span class="nm"><span class="q">${fmt(i.cantidad)}×</span> ${esc(i.nombre)}</span>
-     <span>${plata((+i.cantidad||0)*(+i.precio||0))}</span></div>`).join('');
+  /* A1 · EN MODO PAGO PARCIAL la izquierda cambia de cara: cada producto trae
+     su `− n +` para elegir cuántos se cobran ahora. Lo ya cobrado se muestra
+     en verde y NO se puede volver a elegir — es el código de color de Fudo,
+     que el equipo ya lee, y además la base lo rechazaría. */
+  const vivos = LAMA_ITEMS.filter(i => !lamaEstaAnulado(i));
+  const items = LAMA_PARCIAL
+    ? vivos.map(i => {
+        const faltan = lamaFaltan(i), pag = lamaPagadas(i);
+        const n = +LAMA_PARCIAL.sel[i.id] || 0;
+        return `<div class="lama-cob-fila elegir${faltan <= 0 ? ' pagado' : ''}">
+          <span class="nm">${esc(i.nombre)}${
+            pag ? `<span class="ypag">${fmt(pag)} ya cobrado${pag===1?'':'s'}</span>` : ''}</span>
+          ${faltan > 0
+            ? `<span class="paso">
+                 <span data-parmenos="${i.id}">−</span><b>${fmt(n)}</b><span data-parmas="${i.id}">+</span>
+               </span><span class="pr">${plata(n * (+i.precio||0))}</span>`
+            : '<span class="pr listo">pagado</span>'}
+        </div>`;
+      }).join('')
+    : vivos.map(i => {
+        const pag = lamaPagadas(i), faltan = lamaFaltan(i);
+        return `<div class="lama-cob-fila${faltan <= 0 ? ' pagado' : ''}">
+          <span class="nm"><span class="q">${fmt(faltan > 0 ? faltan : i.cantidad)}×</span> ${esc(i.nombre)}${
+            pag && faltan > 0 ? `<span class="ypag">${fmt(pag)} ya cobrado${pag===1?'':'s'}</span>` : ''}</span>
+          <span>${faltan > 0 ? plata(faltan * (+i.precio||0)) : 'pagado'}</span>
+        </div>`;
+      }).join('');
 
   const motivoNom = lamaMotivoDescNom(d.motivo);
   const descuentoCaja = LAMA_COB.descAbierto
@@ -6966,7 +7092,18 @@ function lamaPintarCobro(){
               d.formato === 'pct' ? ' ' + (+d.valor||0) + ' %' : ''}</span><span>−${plata(desc)}</span></div>` : ''}
             <div class="lama-cob-fila"><span>Propina</span><span>${plata(prop)}</span></div>
             <div class="lama-cob-fila gordo"><span>Total</span><span>${plata(total)}</span></div>
+            ${yaCobrado ? `<div class="lama-cob-fila yacob"><span>Ya cobrado</span><span>−${
+              plata(yaCobrado)}</span></div>
+            <div class="lama-cob-fila gordo"><span>Falta</span><span>${plata(falta)}</span></div>` : ''}
           </div>
+          ${LAMA_PAGOS_PAR.length && !LAMA_PARCIAL ? `<div class="lama-cob-pagados">
+            ${LAMA_PAGOS_PAR.map(pp => `<div class="lama-cob-fila pagado-fila">
+              <span class="nm">Cobrado · ${esc(lamaMedioNom(pp.medio))}</span>
+              <span>${plata(pp.monto)}</span>
+              <button type="button" class="qt" data-pardeshacer="${pp.id}"
+                      title="Deshacer este cobro" aria-label="Deshacer este cobro">✕</button>
+            </div>`).join('')}
+          </div>` : ''}
         </div>
 
         <div class="lama-cob-mitad">
@@ -6998,12 +7135,26 @@ function lamaPintarCobro(){
         </div>
       </div>
 
+      ${LAMA_PARCIAL ? `
+      <div class="lama-cob-pie parcial">
+        <div class="sel">
+          <span>Total Seleccionado</span><b>${plata(lamaParcialCuentas().monto)}</b>
+        </div>
+        <select data-parmedio aria-label="Con qué se paga">${
+          lamaCobOpciones(LAMA_PARCIAL.medio)}</select>
+        <button type="button" class="btn btn-gris" data-lamaacc="par-salir">Volver</button>
+        <button type="button" class="btn btn-orange" data-lamaacc="par-cobrar"${
+          lamaParcialCuentas().monto > 0 ? '' : ' disabled'}>Cobrar lo elegido</button>
+      </div>`
+      : `
       <div class="lama-cob-pie">
-        <button type="button" class="btn btn-gris" data-lamaacc="cob-cerrar">Cancelar</button>
+        ${LAMA_HAY_PARCIAL && vivos.some(i => lamaFaltan(i) > 0)
+          ? '<button type="button" class="btn btn-gris" data-lamaacc="par-entrar">Pago parcial</button>'
+          : '<button type="button" class="btn btn-gris" data-lamaacc="cob-cerrar">Cancelar</button>'}
         <button type="button" class="btn btn-orange" data-lamaacc="cob-confirmar"${
           dif < 0 ? ' disabled' : ''}>${
-          dif < 0 ? 'Faltan ' + plata(-dif) : 'Cobrar ' + plata(total)}</button>
-      </div>
+          dif < 0 ? 'Faltan ' + plata(-dif) : 'Cobrar ' + plata(falta)}</button>
+      </div>`}
     </div>
   </div>`;
 }
@@ -7015,6 +7166,30 @@ function lamaCobrarEngancharUnaVez(){
   cont.dataset.enganchado = '1';
 
   cont.addEventListener('click', async e => {
+
+    /* A1 · EL − n + DE CADA PRODUCTO. Va antes que `data-lamaacc` porque son
+       toques propios del modo elegir, y no acciones de la ventana. */
+    const pmas = e.target.closest('[data-parmas]');
+    if(pmas && LAMA_PARCIAL){
+      const it = LAMA_ITEMS.find(x => x.id === +pmas.dataset.parmas);
+      if(it){
+        const n = (+LAMA_PARCIAL.sel[it.id] || 0) + 1;
+        /* Nunca más de lo que falta: la base lo rechazaría, y es mejor que el
+           botón no ofrezca lo que no se puede. */
+        if(n <= lamaFaltan(it)){ LAMA_PARCIAL.sel[it.id] = n; lamaPintarCobro(); }
+      }
+      return;
+    }
+    const pdes = e.target.closest('[data-pardeshacer]');
+    if(pdes){ await lamaParcialDeshacer(+pdes.dataset.pardeshacer); return; }
+
+    const pmen = e.target.closest('[data-parmenos]');
+    if(pmen && LAMA_PARCIAL){
+      const id = +pmen.dataset.parmenos;
+      const n = (+LAMA_PARCIAL.sel[id] || 0) - 1;
+      if(n <= 0) delete LAMA_PARCIAL.sel[id]; else LAMA_PARCIAL.sel[id] = n;
+      lamaPintarCobro(); return;
+    }
     if(!LAMA_COB) return;
     /* Tocar fuera cierra: es una ventana, no una pantalla. */
     if(e.target.dataset && e.target.dataset.cobfondo){ lamaCerrarCobro(); return; }
@@ -7080,6 +7255,13 @@ function lamaCobrarEngancharUnaVez(){
       lamaCobRecargarPago(); lamaPintarCobro(); return;
     }
 
+    if(a === 'par-entrar'){
+      LAMA_PARCIAL = {sel:{}, medio:'efectivo'};
+      lamaPintarCobro(); return;
+    }
+    if(a === 'par-salir'){ LAMA_PARCIAL = null; lamaPintarCobro(); return; }
+    if(a === 'par-cobrar'){ await lamaParcialCobrar(ac); return; }
+
     if(a === 'cob-confirmar'){ await lamaCobrarConfirmar(ac); return; }
   });
 
@@ -7101,7 +7283,9 @@ function lamaCobrarEngancharUnaVez(){
       lamaPintarCobro(); return;
     }
     const dd = e.target.closest('[data-cobdesc]');
-    if(dd){ LAMA_COB.desc[dd.dataset.cobdesc] = dd.value; lamaPintarCobro(); }
+    if(dd){ LAMA_COB.desc[dd.dataset.cobdesc] = dd.value; lamaPintarCobro(); return; }
+    const pm = e.target.closest('[data-parmedio]');
+    if(pm && LAMA_PARCIAL){ LAMA_PARCIAL.medio = pm.value; }
   });
 
   /* Escribir un monto NO repinta la ventana entera: repintar mientras se
@@ -7166,6 +7350,50 @@ function lamaCobNumeros(){
   const mas = cont.querySelector('[data-lamaacc="cob-mas-propina"]');
   if(mas) mas.classList.toggle('flojo', dif <= 0);
   void desc;
+}
+
+/* A1 · COBRAR LO ELEGIDO. No cierra la mesa: la mesa sigue abierta con lo que
+   falta, y se cierra a mano cuando corresponda — abrir y cerrar una mesa es
+   manual en todo momento, y eso no cambia porque el cobro sea de a partes. */
+async function lamaParcialCobrar(boton){
+  const c = lamaCuentaDe(LAMA_SEL); if(!c || !LAMA_PARCIAL) return;
+  const items = Object.entries(LAMA_PARCIAL.sel)
+    .map(([id, n]) => ({item_id: +id, cantidad: +n}))
+    .filter(x => x.cantidad > 0);
+  if(!items.length){ avisar('Elegí qué productos se cobran ahora.'); return; }
+
+  const {monto} = lamaParcialCuentas();
+  boton.disabled = true;
+  const r = await lamaLlamar('cuenta_cobrar_parcial', {
+    p_cuenta_id: c.id, p_items: items, p_medio: LAMA_PARCIAL.medio, p_quien: NOMBRE });
+  /* Si la base se negó, NO se toca nada: el mensaje ya salió y las unidades
+     siguen sin cobrar. Nunca se cae a otro camino desde acá. */
+  if(!r){ boton.disabled = false; return; }
+
+  LAMA_PARCIAL = null;
+  await lamaCargarItems(true);
+  /* El monto del pago del cierre se re-precarga solo con lo que quedó. */
+  lamaCobRecargarPago();
+  lamaPintarCobro();
+  aviso('✓ Cobrado ' + plata(monto) + ' · ' + lamaMedioNom(r.medio || ''));
+}
+
+/* Deshacer el último cobro parcial. Existe porque la excepción legítima del
+   candado de "no se anula ni se mueve lo cobrado" es haber cobrado los
+   productos equivocados — y sin esto, ese error deja la mesa sin forma de
+   cerrarse bien. */
+async function lamaParcialDeshacer(pagoId){
+  const p = LAMA_PAGOS_PAR.find(x => x.id === pagoId); if(!p) return;
+  if(!await preguntar('Deshacer este cobro',
+      'Se devuelven los productos a la cuenta y se borra el cobro de '
+      + plata(p.monto) + '. La mesa sigue abierta.', 'Deshacer')) return;
+  const r = await lamaLlamar('cuenta_pago_parcial_deshacer',
+    {p_pago_id: pagoId, p_quien: NOMBRE});
+  if(r === null || r === undefined) return;
+  await lamaCargarItems(true);
+  lamaCobRecargarPago();
+  lamaPintarCobro();
+  aviso('Cobro deshecho');
 }
 
 async function lamaCobrarConfirmar(boton){
