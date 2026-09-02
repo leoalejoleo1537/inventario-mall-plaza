@@ -296,6 +296,92 @@ await caso('y tocarla abre la carta', async () => {
   return abierta || 'no abrió la carta';
 });
 
+/* ===================================================================
+   C8 · LOS TRES SÍMBOLOS, Y QUE EL MENÚ SIGA SIENDO UNO SOLO
+   =================================================================== */
+console.log('\nC8 · en el TELÉFONO los tres símbolos van bajo el TOTAL:');
+await caso('a 390px aparece el trío', async () => {
+  await page.setViewportSize({width:390, height:900});
+  await page.waitForTimeout(400);
+  await page.click('[data-lamamesa="102"]'); await page.waitForTimeout(600);
+  const n = await page.evaluate(()=>document.querySelectorAll('.lama-trio button').length);
+  return n === 3 || 'hay ' + n + ' botones en el trío';
+});
+await caso('y está DEBAJO del total, no arriba', async () => {
+  const r = await page.evaluate(()=>{
+    const t = document.querySelector('.lama-suma'), tr = document.querySelector('.lama-trio');
+    if(!t || !tr) return null;
+    return tr.getBoundingClientRect().top >= t.getBoundingClientRect().bottom - 1;
+  });
+  return r === true || 'el trío no quedó debajo del total';
+});
+/* Si quedaran también arriba, habría dos botones para lo mismo en una pantalla
+   de 390 px — que es justo lo que se vino a descongestionar. */
+await caso('la cabecera se libera: sin ✎ ni impresora', async () => {
+  const n = await page.evaluate(()=>document.querySelectorAll(
+    '.lama-cab [data-lamaacc="menu"], .lama-cab [data-lamaacc="precuenta"]').length);
+  return n === 0 || 'la cabecera todavía tiene ' + n + ' de esos botones';
+});
+await caso('pero la ✕ de cerrar sigue arriba', async () =>
+  (await page.isVisible('.lama-cab [data-lamaacc="cerrar-panel"]')) || 'se perdió la ✕');
+
+console.log('\nEl menú del lápiz: UNO solo, y cuelga de su propio botón:');
+/* Dos elementos con el mismo `id` rompen `pantalla-sana`, y es la clase de bug
+   que dejó un Cancelar sin manejador. Por eso el menú se dibuja una vez, en el
+   contenedor que corresponde al ancho. */
+await caso('el lápiz del teléfono abre el menú, y hay exactamente uno', async () => {
+  await page.click('.lama-trio [data-lamaacc="menu"]'); await page.waitForTimeout(350);
+  const n = await page.evaluate(()=>document.querySelectorAll('#lama-menu').length);
+  return n === 1 || 'hay ' + n + ' menús en el DOM';
+});
+/* §2.0 — la animación sale de donde ocurrió el gesto. Un menú que aparece en la
+   cabecera cuando se tocó un botón de abajo se siente desconectado. */
+await caso('y se abre PEGADO al lápiz, no en la cabecera', async () => {
+  const r = await page.evaluate(()=>{
+    const m = document.querySelector('#lama-menu');
+    const l = document.querySelector('.lama-trio [data-lamaacc="menu"]');
+    const cab = document.querySelector('.lama-cab');
+    if(!m || !l) return null;
+    const rm = m.getBoundingClientRect(), rl = l.getBoundingClientRect();
+    return {cerca: Math.abs(rm.bottom - rl.top) < 40,
+            lejosDeLaCabecera: rm.top > cab.getBoundingClientRect().bottom};
+  });
+  if(!r) return 'no encontré el menú o el lápiz';
+  return (r.cerca && r.lejosDeLaCabecera) || 'quedó suelto: ' + JSON.stringify(r);
+});
+
+console.log('\nEn el computador se queda arriba, como estaba:');
+await caso('a 1280px NO hay trío abajo', async () => {
+  await page.setViewportSize({width:1280, height:900});
+  await page.waitForTimeout(450);
+  return !(await page.isVisible('.lama-trio')) || 'el trío se quedó en el computador';
+});
+await caso('y el ✎ y la impresora vuelven a la cabecera', async () => {
+  const n = await page.evaluate(()=>document.querySelectorAll(
+    '.lama-cab [data-lamaacc="menu"], .lama-cab [data-lamaacc="precuenta"]').length);
+  return n === 2 || 'la cabecera tiene ' + n + ' de esos botones';
+});
+/* ESTA ES LA PRUEBA QUE DE VERDAD IMPORTA DE C8, y salió de un tropiezo: el
+   menú venía ABIERTO desde el teléfono cuando se cambió el ancho. Volver a
+   tocar el lápiz lo cerraba y la prueba leía "0 menús", que no probaba nada.
+   Mirar el menú que ya está abierto es mejor: comprueba que al cambiar de
+   ancho SE MUDÓ —de abajo a la cabecera— sin duplicarse. Un `id` repetido es
+   lo único que este diseño no puede permitirse. */
+await caso('el menú que venía abierto se MUDÓ a la cabecera, y sigue siendo uno', async () => {
+  const r = await page.evaluate(()=>{
+    const ms = document.querySelectorAll('#lama-menu');
+    if(ms.length !== 1) return {cuantos: ms.length};
+    return {cuantos:1, enLaCabecera: !!ms[0].closest('.lama-cab'),
+            enElTrio: !!ms[0].closest('.lama-trio')};
+  });
+  if(r.cuantos !== 1) return 'hay ' + r.cuantos + ' menús en el DOM';
+  return (r.enLaCabecera && !r.enElTrio) || 'no se mudó: ' + JSON.stringify(r);
+});
+await caso('y Escape lo cierra', async () => {
+  await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  return !(await page.isVisible('#lama-menu')) || 'quedó abierto';
+});
+
 console.log('\nEl teléfono queda como estaba:');
 await caso('a 390px sigue partido en dos columnas', async () => {
   await page.setViewportSize({width:390, height:900});

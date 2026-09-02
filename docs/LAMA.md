@@ -64,6 +64,34 @@ Lama estén en verde, y **comparar la batería contra una línea base** sacada d
 `origin/master` con `git worktree`. Decir "no toqué Stock" es una intención;
 comparar dos corridas es un dato.
 
+### ✅ C8 · LOS TRES SÍMBOLOS DEL TELÉFONO — 2026-09-02 · **la F1 queda cerrada**
+
+En el teléfono, `%` · impresora · lápiz bajan **debajo del TOTAL**, donde llega
+el pulgar. Arriba la cabecera va apretada y esos botones quedan en la esquina
+más lejana de la mano. En el computador **se quedan donde estaban**. La ✕ de
+cerrar vive **siempre** arriba: es salir, no una acción sobre la mesa.
+
+⚠️ **POR QUÉ SE DECIDE EN JAVASCRIPT Y NO CON UNA MEDIA-QUERY**, que era el plan
+original y estaba mal. La tentación es dibujar los dos juegos y esconder uno con
+CSS. Se cae en un punto: **el menú del lápiz tiene que colgar del botón que lo
+abrió.** Con el lápiz abajo y el menú arriba se rompe §2.0 —*la animación sale
+de donde ocurrió el gesto*— y queda desconectado. Y dibujarlo dos veces es
+imposible: **dos elementos con el mismo `id` rompen `pantalla-sana`**, y es la
+clase de bug que dejó un Cancelar sin manejador.
+
+Entonces se dibuja **uno solo**, en el contenedor que corresponde al ancho. Y
+como depende del ancho, **hay un `resize` que repinta** — sin él, al girar el
+teléfono los botones quedan donde los dejó el ancho anterior. Va con retardo y
+**solo si la vista activa es Lama**: repintar Lama desde un evento global sería
+hacer trabajo por toda la app (§0.9).
+
+**Prueba: `lama-ancho.mjs` pasó de 16 a 26 casos.** La que más vale salió de un
+tropiezo: al cambiar de ancho con el menú **abierto**, la primera versión volvía
+a tocar el lápiz y leía "0 menús" —lo había cerrado— sin probar nada. Mirar el
+menú **que ya está abierto** es mejor: comprueba que al cambiar de ancho **se
+mudó** de abajo a la cabecera **sin duplicarse**, que es lo único que este
+diseño no puede permitirse.
+
 ### LA LÍNEA DEL TELÉFONO, COMO LA DE FUDO — 2026-09-02
 
 > Jhon, mirando Fudo y Lama lado a lado: *"lo que me importa es que se pueda

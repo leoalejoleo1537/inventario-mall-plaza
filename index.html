@@ -882,6 +882,22 @@
   /* LA SUMA DEL PANEL. Limpia y sin adornos, como la de Fudo: una línea por
      concepto, el total en negrita y nada más. Sin recuadros ni fondos — lo que
      separa es el aire y una raya fina. */
+  /* C8 · LOS TRES SÍMBOLOS DEL TELÉFONO, bajo el TOTAL. Fondo rosado suave y
+     el símbolo naranja, como los de Fudo: se ven como un grupo y no compiten
+     con "Cerrar mesa", que es lo que de verdad se aprieta. */
+  .lama-trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;
+    position:relative}
+  .lama-trio button{border:none;background:#FFF1EC;color:var(--orange);font:inherit;
+    font-size:17px;font-weight:800;padding:12px 0;border-radius:13px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:transform .12s ease}
+  .lama-trio button:active{transform:scale(.94)}
+  .lama-trio button[disabled]{opacity:.4;cursor:default}
+  .lama-trio button.on{background:var(--orange);color:#fff}
+  .lama-trio svg{width:19px;height:19px}
+  /* El menú cuelga del lápiz, que en el teléfono está acá abajo: se abre HACIA
+     ARRIBA para no salirse de la pantalla. */
+  .lama-trio .lama-menu{top:auto;bottom:calc(100% + 6px);right:0}
+
   .lama-suma{margin-top:12px;padding-top:11px;border-top:1px solid var(--border)}
   .lama-suma-fila{display:flex;align-items:center;justify-content:space-between;gap:12px;
     padding:4px 2px;font-size:14.5px;color:var(--text);font-variant-numeric:tabular-nums}
@@ -6089,26 +6105,58 @@ function lamaPintarPanel(){
          <span>${lamaDescHay(dPanel) ? '−' + plata(descPan) : '+'}</span>
        </button>`);
 
-  cont.innerHTML = `<div class="lama-caja">
-    <div class="lama-cab ${clase}">
-      <span class="tit"><b>Mesa ${m.numero}</b><span>${estado}</span></span>
-      <button type="button" data-lamaacc="menu" title="Mover la mesa o sus productos"
-              aria-haspopup="true" aria-expanded="${LAMA_MENU?'true':'false'}">✎</button>
-      <!-- Era un ✓ de "listo", que no decía lo que hace. Ahora es la
-           impresora: imprime el comprobante con el detalle para el cliente.
-           Y es un interruptor: si la mesa ya está azul, lo devuelve a roja. -->
-      <button type="button" data-lamaacc="precuenta" class="${cobrando ? 'on' : ''}"
-              title="${cobrando ? 'Volver a ocupada' : 'Imprimir control de mesa'}"${
-        LAMA_ITEMS.length ? '' : ' disabled'}>${ICONO_IMPRESORA}</button>
-      <button type="button" data-lamaacc="cerrar-panel" aria-label="Cerrar">✕</button>
-      ${LAMA_MENU ? `<div class="lama-menu" id="lama-menu" role="menu">
+  /* C8 · LOS TRES SÍMBOLOS, Y DÓNDE VIVEN SEGÚN EL ANCHO.
+     En el computador siguen en la barra del nombre, como estaban. En el
+     TELÉFONO se van abajo del TOTAL, donde llega el pulgar: arriba la cabecera
+     va apretada y esos botones quedan en la esquina más lejana de la mano.
+
+     ⚠️ POR QUÉ SE DECIDE ACÁ Y NO CON UNA MEDIA-QUERY. La tentación es
+     dibujar los dos juegos y esconder uno con CSS. Se cae en un punto: el menú
+     del lápiz tiene que COLGAR DEL BOTÓN QUE LO ABRIÓ. Con el lápiz abajo y el
+     menú arriba se rompe §2.0 —la animación sale de donde ocurrió el gesto— y
+     queda desconectado. Y dibujar el menú dos veces es imposible: dos
+     elementos con el mismo `id` rompen `pantalla-sana`, y es la clase de bug
+     que dejó un Cancelar sin manejador.
+
+     Entonces se dibuja UNO, en el contenedor que corresponde. Como depende del
+     ancho, hay un `resize` que repinta — sin él, al girar el teléfono los
+     botones quedan donde los dejó el ancho anterior. */
+  const menuHTML = LAMA_MENU ? `<div class="lama-menu" id="lama-menu" role="menu">
         <button type="button" role="menuitem" data-lamaacc="mover-mesa">Mover la mesa</button>
         <button type="button" role="menuitem" data-lamaacc="mover-items"${
           LAMA_ITEMS.length ? '' : ' disabled'}>Mover productos</button>
-      </div>` : ''}
+      </div>` : '';
+  const btnLapiz = `<button type="button" data-lamaacc="menu" title="Mover la mesa o sus productos"
+              aria-haspopup="true" aria-expanded="${LAMA_MENU?'true':'false'}">✎</button>`;
+  /* La impresora: era un ✓ de "listo", que no decía lo que hace. Y es un
+     interruptor: si la mesa ya está azul, la devuelve a roja. */
+  const btnImpr = `<button type="button" data-lamaacc="precuenta" class="${cobrando ? 'on' : ''}"
+              title="${cobrando ? 'Volver a ocupada' : 'Imprimir control de mesa'}"${
+        LAMA_ITEMS.length ? '' : ' disabled'}>${ICONO_IMPRESORA}</button>`;
+
+  const enTelefono = lamaEsTelefono();
+  /* En el teléfono se suma el % — el descuento, que en el computador ya vive
+     en su recuadro de más abajo. Los tres juntos y con la misma pinta, como en
+     Fudo. La ✕ de cerrar se queda SIEMPRE arriba: es salir, no una acción
+     sobre la mesa. */
+  const trio = (enTelefono && LAMA_ITEMS.length) ? `<div class="lama-trio">
+      <button type="button" data-lamaacc="desc-p-abrir" title="Aplicar un descuento"
+        class="${lamaDescHay(dPanel) ? 'on' : ''}">%</button>
+      ${btnImpr}
+      ${btnLapiz}
+      ${menuHTML}
+    </div>` : '';
+
+  cont.innerHTML = `<div class="lama-caja">
+    <div class="lama-cab ${clase}">
+      <span class="tit"><b>Mesa ${m.numero}</b><span>${estado}</span></span>
+      ${enTelefono ? '' : btnLapiz + btnImpr}
+      <button type="button" data-lamaacc="cerrar-panel" aria-label="Cerrar">✕</button>
+      ${enTelefono ? '' : menuHTML}
     </div>
     <div class="lama-cuerpo">
       ${cuerpo}
+      ${trio}
       <div class="lama-acc">
         <button type="button" class="btn btn-navy" data-lamaacc="cobrar">Cerrar mesa ${m.numero}</button>
       </div>
@@ -6910,6 +6958,12 @@ const lamaFaltan = i => (+i.cantidad || 0) - (+i.cantidad_pagada || 0);
 const lamaPagadas = i => (+i.cantidad_pagada || 0);
 /* Lo ya cobrado de a poco, en plata. */
 const lamaYaCobrado = () => LAMA_PAGOS_PAR.reduce((a,p) => a + (+p.monto || 0), 0);
+
+/* C8 · 720 es el mismo corte que usa todo el bloque de Lama en el CSS. Se lee
+   acá y no en una media-query porque el menú del lápiz tiene que colgar del
+   botón que lo abrió, y para eso hay que dibujar UNO solo en el lugar que
+   corresponde (ver la nota larga en lamaPintarPanel). */
+const lamaEsTelefono = () => window.innerWidth < 720;
 
 /* Se piden UNA vez por sesión y en silencio: si las tablas todavía no existen
    —porque el .sql no se corrió— se sigue con las de arriba sin molestar a
@@ -7828,6 +7882,17 @@ document.addEventListener('keydown', e => {
 /* Los campos de la caja del descuento del panel. Se anota el valor y NO se
    repinta: repintar mientras se escribe le saca el foco al campo y en el
    teléfono cierra el teclado — la misma lección que el buscador (C1-C2-C3). */
+/* C8 · AL GIRAR EL TELÉFONO hay que repintar, o los tres símbolos quedan donde
+   los dejó el ancho anterior. Con retardo, porque `resize` dispara decenas de
+   veces mientras se arrastra, y SOLO si la vista activa es Lama: repintar Lama
+   desde un evento global sería hacer trabajo por toda la app (§0.9). */
+let LAMA_GIRO = null;
+window.addEventListener('resize', () => {
+  if(vistaActual !== 'lama') return;
+  clearTimeout(LAMA_GIRO);
+  LAMA_GIRO = setTimeout(() => { if(vistaActual === 'lama') lamaPintarPanel(); }, 180);
+});
+
 $('view-lama').addEventListener('change', e => {
   const dc = e.target.closest('[data-descampo]');
   if(dc && LAMA_DESC){
