@@ -19,6 +19,7 @@ partió. Lo que quedó acá son **las reglas duras**, que sí se leen siempre.
 | **tocar cualquier cosa de Llamita Lama** | **[`docs/LAMA.md`](docs/LAMA.md)** | 427 |
 | **replicar una pantalla de Fudo** | **[`docs/atlas-fudo.md`](docs/atlas-fudo.md)** — cómo se comporta lo que estamos copiando. Lo que siga en `⬜ PENDIENTE` **se pregunta, no se inventa** | — |
 | **dejar un `.sql` nuevo listo para Jhon** | agregarlo a **[`docs/sql-pendientes.md`](docs/sql-pendientes.md)** — es el único lugar donde se sabe qué falta correr | — |
+| **entender por qué aparece un `docs/salud-del-codigo*.md` nuevo** | son revisiones automáticas, programadas el 2026-09-02: lunes 08:00 para Stock, lunes/miércoles/viernes ~06:00 para Lama. Cada una abre una sesión NUEVA sin memoria de las anteriores —lee el repo, no toca nada, solo reporta— para no acumular contexto para siempre en un mismo chat | — |
 | tocar la pantalla | [`docs/DECISIONES-ESTETICA.md`](docs/DECISIONES-ESTETICA.md) | — |
 | entender por qué algo quedó como quedó | [`docs/bitacora.md`](docs/bitacora.md) | 981 |
 | arreglar algo que huele a ya resuelto | [`docs/soluciones.md`](docs/soluciones.md) | 153 |
