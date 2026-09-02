@@ -207,20 +207,42 @@ que se movió fue `lama-mesas` (19 → 22, a propósito) y `lama-mover`, que es
 nueva. Comparar contra una base es lo que convierte "no toqué Stock" en un
 dato; sin eso es una intención.
 
-⚠️ **Y ojo con esto, porque una sesión futura lo va a leer mal:** en esa
-batería hay **5 pruebas en rojo que YA estaban en rojo en `master` limpio** —
-`angamos-a-plaza` (2), `crear-sin-bodega` (6), `origen-del-reparto` (1),
-`recetas-en-pantalla` (5) y `tareas-y-reparto` (4). **No son de Lama y no las
-causó esta etapa.** Están anotadas acá justamente para que nadie las atribuya
-al chat de ventas ni las "arregle" de paso (§0.9). Son deuda de Stock, y
-arreglarlas es trabajo de Stock, con su propio chat.
+~~⚠️ **Y ojo con esto:** en esa batería hay **5 pruebas en rojo que YA estaban
+en rojo en `master` limpio** — `angamos-a-plaza`, `crear-sin-bodega`,
+`origen-del-reparto`, `recetas-en-pantalla` y `tareas-y-reparto`. Son deuda de
+Stock.~~
 
-**Nota de herramienta:** esta máquina no tiene Playwright, así que la batería
-se corrió manejando el Chrome del sistema por CDP con una capa que imita la
-API de Playwright. `pruebas/navegador.mjs` **no se tocó** —es de Stock—: la
-capa vive fuera del repo. Varias pruebas salen "sin resumen" bajo esa capa
-porque usan APIs que no implementé; salen igual **antes y después**, así que
-la comparación se sostiene, pero no son un verde.
+⚠️ **ESTO ERA FALSO, y se corrige el 2026-09-02.** Esas cinco pruebas de Stock
+**están verdes y probablemente lo estuvieron siempre.** No eran deuda de nadie:
+las ponía en rojo **la capa de CDP** con que se corrió la batería ese día, que
+imitaba a Playwright a medias. Con Playwright de verdad instalado
+(`npm install playwright`, que en esta máquina funciona), las cinco pasan.
+
+**La lección, y es la de §0.5 otra vez:** *una prueba contra un mundo que uno
+mismo construyó no valida nada.* La capa era el mundo inventado, y su veredicto
+se anotó acá como si fuera un hecho sobre Stock. Peor todavía: quedó escrito
+como advertencia —*"que nadie las arregle de paso"*—, o sea que el error venía
+con instrucciones para no revisarlo.
+
+**Cómo quedó de verdad, medido el 2026-09-02** con Playwright real y comparando
+contra un `git worktree` de `origin/master`:
+
+| | |
+|---|---|
+| Stock | **todo verde salvo una**, ver abajo |
+| Lama | tenía **13 en rojo** que nadie había visto, porque la capa no las corría |
+
+**La única roja real de todo el repo es `estetica-no-rompio-nada`** (4 casos de
+la gráfica de metas de venta, y termina con excepción). **Es de Stock, es
+idéntica en `master` limpio, y no se toca desde acá** (§0.9): queda anotada
+para el chat de Stock.
+
+**Nota de herramienta, corregida:** ~~esta máquina no tiene Playwright~~ — sí
+lo tiene, basta `npm install` (ya está en `.gitignore`). Correr la batería sin
+él es peor que no correrla: `abrirNavegador()` devuelve `null` y **cada prueba
+de pantalla se salta sola diciendo "(se salta: no hay navegador instalado)" y
+termina en verde**. Un verde que no probó nada. Antes de creerle a una corrida,
+comprobar que los números de casos sean los de siempre.
 
 **Los botones que Jhon dijo que no sirven no se construyeron:** el del
 teléfono y la lupa de arriba de Fudo. Y las preguntas de Fudo —personas,
@@ -502,7 +524,49 @@ rastro y nadie puede responder por qué el inventario no cuadra.
 
 | | Qué | Estado |
 |---|---|---|
-| **B1** | El panel derecho **más ancho** y el plano de mesas **más angosto**. Hoy las mesas se comen la pantalla y los nombres se cortan en *"selladito + Sprite z…"* | pendiente |
+| **B1** | El panel derecho **más ancho** y el plano de mesas **más angosto**. Hoy las mesas se comen la pantalla y los nombres se cortan en *"selladito + Sprite z…"* | **hecho** 2026-09-02 |
+
+> **B1 SE DIO POR HECHO EL 31 DE AGOSTO Y NO LO ESTABA. Vale la pena el
+> detalle, porque es un error que este proyecto ya cometió tres veces.**
+>
+> Ese día se subió el panel de `400px` fijo a `40%`, y el commit lo dio por
+> cerrado. **La tabla de arriba nunca se marcó** —quedó en "pendiente" por
+> catorce minutos de diferencia entre un commit y otro—, y esa distracción
+> terminó siendo la suerte del asunto: obligó a volver a mirarlo.
+>
+> Al medirlo, el arreglo **estaba a medias**:
+>
+> | Ancho | Antes (40%) | ¿Entra `Selladito jamón queso + Sprite zero 350cc`? |
+> |---|---|---|
+> | 1280 px · **el portátil del mesón** | panel 500 | ❌ **no** — pedía 290, tenía 248 |
+> | 1440 px | panel 562 | ✅ sí, justo |
+>
+> **Por eso pareció resuelto: se miró en la pantalla donde alcanzaba.** Es
+> exactamente la forma de la falla de las 15 horas (§0.5) y la de C6 —*"se dio
+> por arreglado y no lo estaba"*—: probar donde es cómodo.
+>
+> **Cómo quedó** (`46%`, piso `540px`), medido y no estimado:
+>
+> | Ancho | plano | panel | columnas de mesas | nombre largo |
+> |---|---|---|---|---|
+> | 1280 | 654 | **572** | 7 | ✅ entra |
+> | 1440 | 740 | **646** | 8 | ✅ entra |
+> | 1920 | 999 | **867** | 10 | ✅ entra |
+>
+> **El 46% no es una proporción elegida por bonita: sale de medir el texto más
+> largo de la carta.**
+>
+> ⚠️ **LO QUE FALTA, Y ES DECISIÓN DE JHON, NO MÍA.** A **1024 px** el nombre
+> largo **sigue cortándose** (panel 454, pide 542). Se puede arreglar, pero
+> cuesta: el plano bajaría a ~427 px y pasaría de 5 columnas de mesas a 4.
+> **Eso es cambiar un problema por otro, y quién prefiere cuál lo dice él.**
+> Si el computador del local es de 1280 o más, no hay nada que hacer.
+>
+> **Prueba: `pruebas/lama-ancho.mjs`, 9 casos.** No mira el CSS ni el
+> porcentaje —eso puede cambiar— sino la única pregunta que le importa a quien
+> usa la pantalla: *¿el nombre se lee entero?*, con `scrollWidth >
+> clientWidth`, que es el navegador diciendo "no me cupo". **Probada en las dos
+> direcciones**: con el CSS viejo da 2 rojas, con el nuevo 9 verdes.
 
 #### C · El panel de la mesa
 
@@ -558,7 +622,9 @@ Todo esto va **también al teléfono**, con el formato que le corresponda.
 >   letra: se escribe una y hay que volver a tocar la caja.
 > · Agregar un producto **sí** repinta el panel —cambia la cuenta—, así que el
 >   foco se devuelve a mano y el texto buscado se conserva. Se agrega uno y se
->   sigue escribiendo.
+>   sigue escribiendo. ⚠️ **Esto estaba escrito acá pero NO funcionaba**: el
+>   foco no volvía. Arreglado el 2026-09-02 — ver *"El día que la batería dejó
+>   de mentir"*, más abajo.
 >
 > Y la lista **flota** (`position:absolute`). Si empujara el contenido, el total
 > y el botón de cobrar se irían saltando hacia abajo con cada letra. Hay una
@@ -570,6 +636,63 @@ Todo esto va **también al teléfono**, con el formato que le corresponda.
 > filas del catálogo de Fudo— pero hay una segunda. **La próxima vez se mide
 > antes de tocar**, en vez de adivinar y volver a anunciar un arreglo que el
 > teléfono desmiente.
+
+#### EL DÍA QUE LA BATERÍA DEJÓ DE MENTIR — 2026-09-02
+
+Al ir a hacer B1 apareció algo más grande: **la batería no estaba probando
+Lama.** Trece pruebas en rojo que nadie había visto, y cinco de Stock acusadas
+en falso. La causa es una sola y conviene entenderla, porque se va a repetir.
+
+**`abrirNavegador()` devuelve `null` si no hay Playwright, y entonces cada
+prueba de pantalla se salta sola y termina en VERDE.** Un `npm install` que
+nadie corrió convierte la batería entera en un sí automático. La corrida del 31
+de agosto se hizo con una capa de CDP hecha a mano en vez de Playwright, y esa
+capa **no comprueba si un clic llega de verdad al elemento**: hacía
+`el.click()` y seguía. Por eso pasaban cosas que en un navegador real no pasan.
+
+**Las trece rojas, y ninguna era lo que parecía:**
+
+| Cuántas | Qué pasaba | Qué era |
+|---|---|---|
+| 6 en `lama-mesas` | `page.click` esperando 30 s | **selectores ambiguos.** `data-lamaadd` lo llevan la fila de la carta **y** la píldora del panel (C3); `cerrar-carta` lo llevan **tres** elementos, y el primero del DOM es el fondo, que está debajo. Playwright tomaba el primero, que está tapado |
+| 6 en `lama-mover` | ídem, en cadena | el clic "tocar fuera" caía en el **centro** de `.lama-cuerpo`, y ahí hay un botón: el manejador lo atendía y hacía `return` antes de cerrar el menú. Y una mesa `disabled` no es un clic que "no hace nada" — Playwright **espera** a que se habilite |
+| 1 en `lama-buscador` | el foco no volvía | **bug de verdad de la app.** Ver abajo |
+
+**Doce eran deriva de las pruebas. Una era un bug real, y es el que importa.**
+
+##### El foco del buscador — un bug que la capa de CDP tapaba
+
+`lamaPintarPanel()` devolvía el foco al buscador solo si el campo lo tenía
+**en el momento del repintado**. Pero tocar un producto de la lista flotante le
+da el foco **a ese botón**, no al campo. Así que la condición daba falso, el
+botón desaparecía en el repintado, y el foco caía al `body`.
+
+**En el teléfono eso es el teclado cerrándose después de cada producto** — o
+sea exactamente lo que C1-C3 vino a evitar, y lo que este archivo ya prometía
+con estas palabras: *"se agrega uno y se sigue escribiendo"*.
+
+Arreglado preguntando lo correcto: no *"¿el foco estaba en el campo?"* sino
+**"¿estaba dentro del buscador?"**, y la lista flotante es parte del buscador.
+
+**La lección, que es vieja pero con cara nueva:** una prueba que no puede
+fallar no es una prueba. Antes de creerle a una corrida en verde, mirar que el
+número de casos sea el de siempre — un `0 mal` con la mitad de los casos es un
+`no probé nada`.
+
+**Cómo quedó el repo**, comparado contra un `git worktree` de `origin/master`:
+
+| | master limpio | ahora |
+|---|---|---|
+| `lama-mesas` | 30 bien · **6 mal** | **36 · 0** |
+| `lama-mover` | 27 bien · **6 mal** | **33 · 0** |
+| `lama-buscador` | 16 bien · **1 mal** | **17 · 0** |
+| `lama-ancho` | — | **9 · 0** (nueva, B1) |
+| **todo Stock** | — | **idéntico, línea por línea** |
+
+⚠️ **La única roja de todo el repo es `estetica-no-rompio-nada`** — 4 casos de
+la gráfica de metas de venta, y termina con excepción. **Es de Stock, está
+igual en `master` limpio, y no se toca desde este chat** (§0.9). Queda anotada
+para el chat de Stock, que es a quien le toca.
 
 #### D · Áreas nuevas que hay que construir
 

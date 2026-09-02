@@ -187,8 +187,13 @@ await caso('el lápiz lo abre, con sus dos opciones', async () => {
 await caso('y la cuenta se sigue viendo detrás', async () =>
   (await page.textContent('.lama-cuerpo')).includes('Café Latte')
   || 'el menú tapó la cuenta en vez de colgarse del botón');
+/* `position` NO es un detalle: sin él Playwright toca el CENTRO de
+   .lama-cuerpo, y ahí vive un botón. El manejador de la app atiende ese botón
+   y hace `return` antes de llegar al cierre del menú, así que la prueba
+   fallaba midiendo otra cosa. "Tocar fuera" es tocar donde no hay nada — la
+   esquina del cuerpo—, que es lo que hace un dedo cuando descarta un menú. */
 await caso('tocar fuera lo cierra', async () => {
-  await page.click('.lama-cuerpo'); await page.waitForTimeout(300);
+  await page.click('.lama-cuerpo', {position:{x:5, y:5}}); await page.waitForTimeout(300);
   return !(await page.isVisible('#lama-menu')) || 'queda abierto y traba la pantalla';
 });
 
@@ -217,10 +222,17 @@ await caso('la banda dice de dónde sale y cómo salir', async () => {
 /* Ojo con el destino que se elige acá: tiene que ser una mesa LIBRE. Si se
    apunta a una ocupada, el botón está `disabled` —que es lo correcto— y el
    clic no hace nada: la prueba pasaría en verde sin haber probado nada. */
+/* Y ojo con CÓMO se comprueba, que acá se cayó una vez: `page.click` sobre un
+   botón `disabled` no "no hace nada" — Playwright se queda esperando a que se
+   habilite hasta agotar el tiempo. Lo que hay que afirmar es el candado mismo,
+   que es lo que de verdad impide el toque: el botón está deshabilitado, y
+   nadie preguntó nada. Intentar atravesarlo probaría un camino que en la
+   pantalla no existe. */
 await caso('una mesa OCUPADA no acepta el toque', async () => {
   await contestar(false);
-  await page.click('[data-lamamesa="107"]'); await page.waitForTimeout(300);
+  const d = await page.getAttribute('[data-lamamesa="107"]', 'disabled');
   const n = await page.evaluate(()=>window.__preg.length);
+  if(d === null) return 'la mesa en precuenta quedó tocable, y la base la va a rechazar';
   return n === 0 || 'preguntó por una mesa que la base va a rechazar';
 });
 await caso('confirma con los dos nombres y el total', async () => {

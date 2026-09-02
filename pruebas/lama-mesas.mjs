@@ -320,15 +320,27 @@ await caso('y el campo NO se destruye al teclear', async () =>
   || 'el foco se perdió al filtrar');
 
 console.log('\nAgregar y confirmar:');
+/* OJO CON EL SELECTOR, y costó media sesión encontrarlo: `data-lamaadd` NO es
+   único. Lo llevan la fila de la carta (.lama-prod) Y la píldora de los más
+   comandados del panel (.lama-pil, agregada en C3 el 2026-09-01). Sin acotar,
+   Playwright toma la primera del DOM —la píldora—, que con la carta abierta
+   está TAPADA por ella, y el clic se queda esperando 30 segundos.
+
+   No era un fallo de la app: al garzón la píldora tapada no le estorba, porque
+   tiene la carta encima. Era la prueba apuntando a dos sitios a la vez. */
 await caso('agregar llama a cuenta_agregar con nombre y precio', async () => {
   await page.evaluate(()=>{ window.__rpc = []; });
-  await page.click('[data-lamaadd="F-38"]'); await page.waitForTimeout(400);
+  await page.click('.lama-carta [data-lamaadd="F-38"]'); await page.waitForTimeout(400);
   const r = await page.evaluate(()=>window.__rpc.find(x=>x.nombre==='cuenta_agregar'));
   return (r && r.args.p_nombre === 'Café Latte' && r.args.p_precio === 3400)
     || 'mandó '+JSON.stringify(r && r.args);
 });
+/* Otro selector que apuntaba a tres sitios: `cerrar-carta` lo llevan el fondo
+   oscuro, la flecha ← de la cabecera y el botón Listo del pie. El primero del
+   DOM es el fondo, y está DEBAJO de la carta, así que el clic nunca llega.
+   La prueba dice "con Listo": entonces se toca Listo, no lo que quede. */
 await caso('y se sale de la carta con Listo', async () => {
-  await page.click('[data-lamaacc="cerrar-carta"]'); await page.waitForTimeout(300);
+  await page.click('.lama-carta-pie [data-lamaacc="cerrar-carta"]'); await page.waitForTimeout(300);
   return !(await page.isVisible('.lama-carta')) || 'la carta quedó abierta';
 });
 
