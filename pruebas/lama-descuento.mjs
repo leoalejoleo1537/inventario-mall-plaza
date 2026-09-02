@@ -234,13 +234,17 @@ await caso('la caja se cierra sola al aplicar', async () =>
   !(await page.isVisible('#lama-desc')) || 'quedó abierta');
 
 console.log('\nSe refleja en la suma del panel:');
-await caso('aparece la línea "Descuento 20 % · −$2.000"', async () => {
-  const t = (await page.textContent('.lama-desc-linea')).replace(/\s+/g,' ').trim();
+await caso('aparece la línea del descuento: 20 % · −$2.000', async () => {
+  const t = (await page.textContent('.lama-suma-fila.desc')).replace(/\s+/g,' ').trim();
   return (t.includes('20') && t.includes('2.000')) || 'la línea dice: ' + t;
 });
-await caso('y el total baja de 10.000 a 8.000', async () => {
-  const t = await page.textContent('.lama-total');
-  return t.includes('8.000') || 'el total dice: ' + t;
+/* EL TOTAL DEL PANEL AHORA TRAE LA PROPINA SUGERIDA ADENTRO (2026-09-02), como
+   el de Fudo: 10.000 − 2.000 de descuento = 8.000, más el 10 % de eso = 8.800.
+   Antes el panel decía un número y la ventana de cobro otro, y el garzón le
+   nombraba al cliente el que no iba a pagar. */
+await caso('y el total baja a 8.800: 8.000 más su propina', async () => {
+  const t = await page.textContent('.lama-suma-fila.gordo');
+  return t.includes('8.800') || 'el total dice: ' + t;
 });
 await caso('el botón ahora nombra el descuento puesto', async () => {
   const t = await page.textContent('[data-lamaacc="desc-p-abrir"]');
@@ -255,7 +259,7 @@ await caso('cancelar no escribe en la base', async () => {
   return (await page.evaluate(()=>window.__upd.length)) === 0 || 'cancelar borró el descuento';
 });
 await caso('y el descuento sigue puesto', async () =>
-  (await page.textContent('.lama-total')).includes('8.000') || 'se perdió el descuento');
+  (await page.textContent('.lama-suma-fila.gordo')).includes('8.800') || 'se perdió el descuento');
 
 console.log('\nQuitar sí lo saca:');
 await caso('escribe los tres campos en null', async () => {
@@ -266,8 +270,8 @@ await caso('escribe los tres campos en null', async () => {
   return (u && u.datos.descuento_motivo === null && u.datos.descuento_formato === null
           && u.datos.descuento_valor === null) || 'escribió ' + JSON.stringify(u);
 });
-await caso('y el total vuelve a 10.000', async () =>
-  (await page.textContent('.lama-total')).includes('10.000') || 'no volvió el total');
+await caso('y el total vuelve a 11.000: los 10.000 más su propina', async () =>
+  (await page.textContent('.lama-suma-fila.gordo')).includes('11.000') || 'no volvió el total');
 
 console.log('\nLA VENTANA DE COBRO LO VE PUESTO — es la mitad que importa:');
 await caso('se aplica un 20 % desde el panel', async () => {
@@ -275,7 +279,7 @@ await caso('se aplica un 20 % desde el panel', async () => {
   await page.selectOption('[data-descampo="motivo"]', 'cumple');
   await page.fill('[data-descampo="valor"]', '20');
   await page.click('[data-lamaacc="desc-p-aplicar"]'); await page.waitForTimeout(500);
-  return (await page.textContent('.lama-total')).includes('8.000') || 'no se aplicó';
+  return (await page.textContent('.lama-suma-fila.gordo')).includes('8.800') || 'no se aplicó';
 });
 await caso('el cobro nace con el descuento ya puesto', async () => {
   await page.click('[data-lamaacc="cobrar"]'); await page.waitForTimeout(600);

@@ -830,24 +830,29 @@
   /* Cada linea es una tarjeta con sombra, no una fila separada por una raya.
      Es la regla de docs/DECISIONES-ESTETICA.md: "Filas: sin borde. Lo que
      separa es la sombra". */
-  .lama-linea{display:flex;align-items:center;gap:9px;padding:11px 13px;margin-bottom:8px;
+  .lama-linea{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;margin-bottom:8px;
     background:var(--card);border-radius:14px;box-shadow:var(--sombra)}
   .lama-linea .nm{flex:1;min-width:0}
-  .lama-linea .nm b{display:block;font-size:14.5px;font-weight:700;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis}
+  /* EL NOMBRE SE LEE ENTERO, SIEMPRE. Antes era `nowrap` con puntos
+     suspensivos y un nombre largo quedaba en "Selladito jamón que…". Ahora
+     baja de línea: una fila un poco más alta es barata; un producto que no se
+     puede leer obliga a tocarlo para saber qué es. */
+  .lama-linea .nm b{display:block;font-size:14.5px;font-weight:700;
+    white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+  /* LA CANTIDAD: un número suelto, sin cuadrado, como Fudo. */
+  .lama-linea .q{flex:0 0 auto;font-size:14.5px;font-weight:700;color:var(--muted);
+    font-variant-numeric:tabular-nums;min-width:13px;text-align:right;align-self:flex-start;
+    padding-top:1px}
   /* EL COMENTARIO es lo que lee la cocina: ámbar cuando está escrito. */
   .lama-linea .nm span{display:block;font-size:11.5px;color:var(--muted);margin-top:1px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;max-width:100%}
   .lama-linea .nm span.con{color:var(--amber-fg);font-weight:700}
-  .lama-linea .cant{display:flex;align-items:center;gap:5px;flex:0 0 auto}
-  .lama-linea .cant button{width:30px;height:30px;border:none;background:var(--bg);
-    border-radius:10px;font:inherit;font-size:17px;font-weight:800;cursor:pointer;color:var(--text)}
-  .lama-linea .cant button:active{transform:scale(.9)}
-  .lama-linea .cant b{min-width:20px;text-align:center;font-size:14.5px;font-variant-numeric:tabular-nums}
-  .lama-linea .precio{font-size:13.5px;font-weight:700;flex:0 0 auto;min-width:60px;text-align:right;
-    font-variant-numeric:tabular-nums}
+  /* El precio, gris y a la derecha: es dato de apoyo, no lo que se busca. */
+  .lama-linea .precio{font-size:13.5px;font-weight:600;color:var(--muted);flex:0 0 auto;
+    min-width:58px;text-align:right;font-variant-numeric:tabular-nums;align-self:flex-start;
+    padding-top:1px}
   .lama-linea .x{border:none;background:none;color:var(--muted);font-size:16px;cursor:pointer;
-    padding:2px 4px;flex:0 0 auto}
+    padding:2px 4px;flex:0 0 auto;align-self:flex-start}
   .lama-linea.nueva{background:var(--card)}
 
   .lama-total{display:flex;align-items:center;justify-content:space-between;
@@ -874,9 +879,17 @@
   .lama-desc-abrir{margin-top:10px}
   /* La línea de la suma: "Descuento 20 % · −$2.140". Ámbar, como todo lo que
      resta en esta app, y alineada con el total que va justo abajo. */
-  .lama-desc-linea{display:flex;align-items:center;justify-content:flex-end;
-    padding:8px 14px 0;font-size:14px;font-weight:700;color:var(--amber-fg);
-    font-variant-numeric:tabular-nums}
+  /* LA SUMA DEL PANEL. Limpia y sin adornos, como la de Fudo: una línea por
+     concepto, el total en negrita y nada más. Sin recuadros ni fondos — lo que
+     separa es el aire y una raya fina. */
+  .lama-suma{margin-top:12px;padding-top:11px;border-top:1px solid var(--border)}
+  .lama-suma-fila{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:4px 2px;font-size:14.5px;color:var(--text);font-variant-numeric:tabular-nums}
+  .lama-suma-fila span:first-child{color:var(--muted);font-weight:600}
+  .lama-suma-fila.desc span{color:var(--amber-fg);font-weight:700}
+  .lama-suma-fila.yacob span{color:var(--green-fg);font-weight:700}
+  .lama-suma-fila.gordo{font-size:18px;font-weight:800;padding-top:8px}
+  .lama-suma-fila.gordo span:first-child{color:var(--text);font-weight:800}
   .lama-papel{background:var(--card);border:none;box-shadow:var(--sombra);border-radius:14px;padding:16px;
     font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.7;
     white-space:pre-wrap;margin-top:12px}
@@ -981,13 +994,15 @@
   /* LA CANASTA VACÍA. Fudo la usa y el equipo ya la reconoce: dice "acá no hay
      nada todavía" sin una sola palabra técnica. Se dibuja en SVG con el color
      apagado de la app — no es el ícono del logo, que ese nunca se redibuja. */
-  .lama-canasta{background:var(--bg);border:none;border-radius:16px;padding:26px 18px;
-    text-align:center;margin-bottom:14px}
-  .lama-canasta svg{width:74px;height:56px;display:block;margin:0 auto 10px}
+  /* La tarjeta ENTERA es el botón de agregar, no solo el texto. */
+  .lama-canasta{display:block;width:100%;background:var(--bg);border:none;border-radius:16px;
+    padding:28px 18px;text-align:center;margin-bottom:14px;font:inherit;color:inherit;
+    cursor:pointer;transition:transform .12s ease}
+  .lama-canasta:active{transform:scale(.985)}
+  .lama-canasta svg{width:62px;height:62px;display:block;margin:0 auto 12px;opacity:.7}
   .lama-canasta .t{font-size:14.5px;color:var(--muted);font-weight:600}
-  .lama-canasta button{margin-top:10px;border:none;background:none;font:inherit;font-size:14.5px;
-    font-weight:800;color:var(--orange);cursor:pointer;padding:6px 10px;border-radius:8px}
-  .lama-canasta button:active{transform:scale(.96)}
+  .lama-canasta .cta{display:block;margin-top:10px;font-size:14.5px;
+    font-weight:800;color:var(--orange)}
 
   /* EL CONTADOR DENTRO DE LA CARTA. Lo que no se ve no se cuenta: antes había
      que tocar el mismo producto otra vez y confiar. Ahora la fila muestra
@@ -5876,7 +5891,20 @@ function lamaLinea(i){
      No se le ofrece ni cambiar la cantidad ni volver a quitarla: ya está
      decidido, y lo único que queda es el registro de por qué no salió. */
   const anu = lamaEstaAnulado(i);
+  /* LA CANTIDAD VA ADELANTE Y SUELTA — un número, sin cuadrado que lo
+     contenga, como en Fudo. Y los botones − + se fueron de la línea a pedido
+     de Jhon (2026-09-02): se comían el ancho y el nombre terminaba en "C…".
+
+     LO QUE MANDA ACÁ ES QUE EL PRODUCTO SE LEA. Un nombre cortado obliga a
+     tocar para saber qué es, y eso en el mesón es peor que una fila más alta.
+
+     No se pierde nada al sacar los botones: Fudo tampoco los tiene en la
+     línea. Para cambiar la cantidad se toca la fila —se abre la ventana del
+     producto, con cantidad y comentario juntos— y para sumar otro de algo que
+     YA salió a la cocina está el buscador o su píldora, que crea la línea
+     nueva pendiente como manda C7. */
   return `<div class="lama-linea${anu ? ' anulada' : ''}">
+    <span class="q">${fmt(i.cantidad)}</span>
     <div class="nm"${anu ? '' : ` data-lamaprod="${i.id}"`}>
       <b>${esc(i.nombre)}</b>
       ${anu
@@ -5884,11 +5912,6 @@ function lamaLinea(i){
             i.anulado_comentario ? ` <span class="det">· ${esc(i.anulado_comentario)}</span>` : ''}</span>`
         : `<span class="${i.comentario ? 'con' : ''}"
              >${i.comentario ? esc(i.comentario) : '+ comentario'}</span>`}
-    </div>
-    <div class="cant">
-      <button type="button" data-lamamenos="${i.id}" aria-label="Uno menos">−</button>
-      <b>${fmt(i.cantidad)}</b>
-      <button type="button" data-lamamas="${i.id}" aria-label="Uno más">+</button>
     </div>
     <span class="precio">${plata((+i.cantidad||0)*(+i.precio||0))}</span>
     ${anu ? '<span class="x" aria-hidden="true"></span>'
@@ -6002,14 +6025,30 @@ function lamaPintarPanel(){
      con el formato que fijó Jhon en A3: "Descuento 20 % · −$2.140". El total
      de abajo ya viene con él restado — si el descuento no se viera, el total
      parecería estar mal calculado. Sigue sin propina, que es C4 y no se toca. */
-  const dPanel   = lamaDescDe(c);
-  const descPan  = lamaDescMonto(total, dPanel);
-  const lineaDesc = lamaDescHay(dPanel)
-    ? `<div class="lama-desc-linea"><span>${esc(lamaDescTexto(dPanel, descPan))}</span></div>`
-    : '';
+  /* LA SUMA, como la de Fudo: Subtotal · Descuento · Propina sugerida · Total,
+     una línea cada uno y nada más. Antes acá había un solo "Total" sin desglose
+     (C4) y la propina recién aparecía al cobrar — o sea que el número del panel
+     y el de la ventana de cobro no coincidían, y el garzón le decía al cliente
+     uno distinto del que iba a pagar.
+
+     La propina se llama "sugerida" a propósito: no está cobrada, es una
+     propuesta que se puede sacar al cobrar. */
+  const dPanel  = lamaDescDe(c);
+  const descPan = lamaDescMonto(total, dPanel);
+  const yaPan   = lamaYaCobrado();
+  const propPan = Math.round(Math.max(0, total - descPan - yaPan) * LAMA_PROPINA_PCT / 100);
+  const fila = (k, v, cl) =>
+    `<div class="lama-suma-fila${cl ? ' ' + cl : ''}"><span>${k}</span><span>${v}</span></div>`;
+  const suma = `<div class="lama-suma">
+      ${fila('Subtotal', plata(total))}
+      ${lamaDescHay(dPanel) ? fila(esc(lamaDescTexto(dPanel, descPan).replace(' · −' + plata(descPan), '')),
+          '−' + plata(descPan), 'desc') : ''}
+      ${propPan ? fila('Propina sugerida', plata(propPan)) : ''}
+      ${yaPan ? fila('Ya cobrado', '−' + plata(yaPan), 'yacob') : ''}
+      ${fila('Total', plata(Math.max(0, total - descPan + propPan - yaPan)), 'gordo')}
+    </div>`;
   const cuerpo = lamaPanelBuscador() + (LAMA_ITEMS.length
-    ? pendiente + (salidos.length ? salidos.map(lamaLinea).join('') + lineaDesc
-        + `<div class="lama-total"><span>Total</span><span>${plata(total - descPan)}</span></div>` : '')
+    ? pendiente + (salidos.length ? salidos.map(lamaLinea).join('') + suma : '')
     : lamaCanasta('Sin productos agregados', 'Adicionar productos'));
 
   /* LA CAJA DEL DESCUENTO. Se despliega HACIA ABAJO y nunca superpuesta —
@@ -6094,19 +6133,33 @@ function lamaPintarPanel(){
 
 /* La canasta vacía de Fudo. El equipo ya la reconoce, así que dice "acá no
    hay nada" sin una palabra técnica. Es un dibujo de línea, no el logo. */
+/* EL ESPACIO VACÍO DE LA MESA.
+   ---------------------------------------------------------------------------
+   Acá había una canasta de frutas con una lupa —copiada de la de Fudo— y se
+   veía mal: demasiados trazos finos para 56 píxeles de alto, con la lupa
+   encimada al borde. Jhon: *"se nota la baja calidad"*, y tenía razón.
+
+   SE CAMBIÓ POR UNA TAZA, y el criterio es el que importa: un dibujo de línea
+   se ve bien cuando tiene POCAS formas GRANDES. La canasta tenía siete trazos
+   compitiendo en un espacio chico; la taza tiene cuatro y ninguno se cruza.
+   Además es de esta casa — un café dibuja una taza, no una frutera.
+
+   Y EL ESPACIO SIGUE SIENDO EL LUGAR DONDE SE AGREGA: la tarjeta entera es el
+   botón, no solo el texto de abajo. Un espacio vacío del tamaño de media
+   pantalla que no se puede tocar es media pantalla desperdiciada. */
 function lamaCanasta(texto, boton){
-  return `<div class="lama-canasta">
-    <svg viewBox="0 0 74 56" fill="none" stroke="var(--muted)" stroke-width="2"
+  return `<button type="button" class="lama-canasta" data-lamaacc="mas">
+    <svg viewBox="0 0 64 64" fill="none" stroke="var(--muted)" stroke-width="2.2"
          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M8 22h58l-5 28H13L8 22Z"/>
-      <path d="M8 30h58M8 39h58"/>
-      <path d="M22 22 32 6M52 22 42 6"/>
-      <circle cx="55" cy="16" r="9"/>
-      <path d="M55 12v5M55 20v.5"/>
+      <path d="M25 12c0 3.5-3 3.5-3 7s3 3.5 3 7"/>
+      <path d="M36 12c0 3.5-3 3.5-3 7s3 3.5 3 7"/>
+      <path d="M13 33h31v8a12 12 0 0 1-12 12h-7a12 12 0 0 1-12-12v-8Z"/>
+      <path d="M44 36h3.5a6.5 6.5 0 0 1 0 13H46"/>
+      <path d="M9 58h42"/>
     </svg>
     <div class="t">${esc(texto)}</div>
-    <button type="button" data-lamaacc="mas">+ ${esc(boton)}</button>
-  </div>`;
+    <span class="cta">+ ${esc(boton)}</span>
+  </button>`;
 }
 
 /* Una fila de la carta. Si el producto ya está en la cuenta, la fila muestra

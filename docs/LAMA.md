@@ -64,6 +64,60 @@ Lama estén en verde, y **comparar la batería contra una línea base** sacada d
 `origin/master` con `git worktree`. Decir "no toqué Stock" es una intención;
 comparar dos corridas es un dato.
 
+### LA LÍNEA DEL TELÉFONO, COMO LA DE FUDO — 2026-09-02
+
+> Jhon, mirando Fudo y Lama lado a lado: *"lo que me importa es que se pueda
+> leer el producto, en todo momento"*.
+
+En el teléfono la línea decía **"C…"**. Los botones `− +` se comían el ancho y
+del nombre no quedaba nada. Un producto que no se puede leer obliga a tocarlo
+para saber qué es, y eso en el mesón cuesta más que una fila más alta.
+
+**Qué cambió:**
+
+| Antes | Ahora |
+|---|---|
+| `C…  [−] 1 [+]  $5.200  ✕` | `1  Café Cortado  $5.200  ✕` |
+| el nombre en una línea forzada, con puntos suspensivos | **baja de línea y se lee entero** |
+| la cantidad en un cuadrado gris | un **número suelto**, gris, adelante |
+| el precio en negro, compitiendo | gris: es dato de apoyo, no lo que se busca |
+
+**Sacar los `− +` no perdió nada, y esto conviene tenerlo claro:** Fudo tampoco
+los tiene en la línea (se ve en su pantalla de productos comandados). La
+cantidad se cambia **tocando la fila** —se abre la ventana del producto, con
+cantidad y comentario juntos— y para sumar otro de algo **que ya salió a la
+cocina** está el buscador o su píldora, que crea la línea nueva pendiente como
+manda C7. La prueba de C7 se movió a ese camino: cambió la ruta, no la regla.
+
+#### La canasta se fue
+
+Era la de Fudo copiada, y se veía mal. La razón es concreta y sirve para la
+próxima: **un dibujo de línea se ve bien cuando tiene POCAS formas GRANDES.**
+La canasta tenía siete trazos finos peleando en 56 píxeles de alto, con una
+lupa encimada al borde. La taza que la reemplaza tiene cuatro y ninguno se
+cruza — y además es de esta casa: un café dibuja una taza, no una frutera.
+
+**Y el espacio sigue siendo donde se agrega:** ahora la tarjeta **entera** es el
+botón, no solo el texto de abajo. Media pantalla vacía que no se puede tocar es
+media pantalla desperdiciada.
+
+#### La suma del panel, con desglose
+
+⚠️ **Esto cambia el C4, que decía "el TOTAL ya está bien resuelto, no se
+toca".** Lo pidió Jhon señalando la pantalla de Fudo, y hay una razón de fondo
+que apareció con la propina: **el panel mostraba un número y la ventana de cobro
+otro**, así que el garzón le nombraba al cliente el total que no iba a pagar.
+
+Ahora el panel muestra lo mismo que Fudo: **Subtotal · Descuento · Propina
+sugerida · Ya cobrado · Total** — una línea por concepto, sin recuadros ni
+fondos, separadas por aire y una raya fina. Se llama *sugerida* a propósito: no
+está cobrada, se puede sacar al cobrar.
+
+**Pruebas:** `pruebas/lama-ancho.mjs` pasó de 9 a **16 casos**, y los nuevos
+miden **lo que se ve a 390 px**: que el nombre largo no quede cortado, que se
+lea **completo**, que no queden botones `− +`, que la cantidad no venga en una
+caja, y que la tarjeta vacía siga abriendo la carta al tocarla.
+
 ### LA PROPINA DEL 10 % NACE PUESTA — 2026-09-02
 
 > Jhon: *"el 99 % de los clientes la dejan"*.

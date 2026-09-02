@@ -218,6 +218,84 @@ await caso('a 1280px las mesas siguen en varias columnas', async () => {
 });
 
 /* El teléfono no se toca: sigue partido en riel + cuenta. */
+/* ===================================================================
+   EL TELÉFONO — pedido de Jhon el 2026-09-02, mirando Fudo al lado
+   ===================================================================
+   Lo dijo en una frase: *"lo que me importa es que se pueda leer el producto,
+   en todo momento"*. En el teléfono el nombre quedaba en "C…" porque los
+   botones − + de la línea se comían el ancho.
+
+   Acá se prueba a 390 px, que es donde dolía.                            */
+console.log('\nEN EL TELÉFONO, el producto se lee entero:');
+await caso('a 390px el nombre largo NO queda cortado', async () => {
+  await page.setViewportSize({width:390, height:900});
+  await page.waitForTimeout(400);
+  const r = await page.evaluate(()=>{
+    const b = [...document.querySelectorAll('.lama-linea .nm b')]
+      .find(x => x.textContent.includes('Selladito'));
+    if(!b) return null;
+    const cs = getComputedStyle(b);
+    return {txt:b.textContent.trim(), corta: b.scrollWidth > b.clientWidth + 1,
+            ws: cs.whiteSpace, ov: cs.textOverflow};
+  });
+  if(!r) return 'no encontré la línea del selladito';
+  if(r.ws === 'nowrap') return 'sigue en una sola línea forzada: se va a cortar';
+  return r.corta === false || 'el nombre se corta: ' + JSON.stringify(r);
+});
+await caso('y se lee el nombre COMPLETO, no un pedazo', async () => {
+  const t = await page.evaluate(()=>{
+    const b = [...document.querySelectorAll('.lama-linea .nm b')]
+      .find(x => x.textContent.includes('Selladito'));
+    return b ? b.textContent.trim() : null; });
+  return t === 'Selladito jamón queso + Sprite zero 350cc' || 'dice: ' + t;
+});
+
+console.log('\nLa línea quedó como la de Fudo:');
+/* Los − + se fueron: eran los que se comían el ancho. Se cambia la cantidad
+   tocando la fila, y para sumar otro de lo ya enviado está el buscador. */
+await caso('ya no hay botones − + en las líneas', async () => {
+  const n = await page.evaluate(()=>
+    document.querySelectorAll('[data-lamamas],[data-lamamenos]').length);
+  return n === 0 || 'quedan ' + n + ' botones de cantidad en las líneas';
+});
+await caso('la cantidad es un número suelto, sin cuadrado', async () => {
+  const r = await page.evaluate(()=>{
+    const q = document.querySelector('.lama-linea .q');
+    if(!q) return null;
+    const cs = getComputedStyle(q);
+    return {txt:q.textContent.trim(), fondo:cs.backgroundColor,
+            borde:parseFloat(cs.borderTopWidth) || 0, radio:cs.borderTopLeftRadius};
+  });
+  if(!r) return 'no está la cantidad';
+  const sinFondo = r.fondo === 'rgba(0, 0, 0, 0)' || r.fondo === 'transparent';
+  return (sinFondo && r.borde === 0) || 'la cantidad viene en una caja: ' + JSON.stringify(r);
+});
+await caso('y sigue estando la ✕ para sacar la línea', async () =>
+  (await page.$$('.lama-linea button.x')).length > 0 || 'se perdió la ✕');
+
+console.log('\nLa mesa vacía: el espacio sigue sirviendo para agregar:');
+/* La canasta de frutas con lupa se veía mal —siete trazos finos peleando en 56
+   píxeles— y se cambió por una taza. Lo que NO puede perderse es que ese
+   espacio, que ocupa media pantalla, siga siendo el lugar donde se agrega. */
+await caso('la tarjeta ENTERA es el botón de agregar', async () => {
+  await page.click('[data-lamamesa="106"]'); await page.waitForTimeout(600);
+  const r = await page.evaluate(()=>{
+    const el = document.querySelector('.lama-canasta');
+    if(!el) return null;
+    return {tag: el.tagName, acc: el.dataset.lamaacc,
+            alto: Math.round(el.getBoundingClientRect().height)};
+  });
+  if(!r) return 'no está el estado vacío';
+  return (r.tag === 'BUTTON' && r.acc === 'mas' && r.alto > 100)
+    || 'no es tocable entera: ' + JSON.stringify(r);
+});
+await caso('y tocarla abre la carta', async () => {
+  await page.click('.lama-canasta'); await page.waitForTimeout(500);
+  const abierta = await page.isVisible('.lama-carta');
+  if(abierta) await page.click('.lama-carta-pie [data-lamaacc="cerrar-carta"]');
+  return abierta || 'no abrió la carta';
+});
+
 console.log('\nEl teléfono queda como estaba:');
 await caso('a 390px sigue partido en dos columnas', async () => {
   await page.setViewportSize({width:390, height:900});

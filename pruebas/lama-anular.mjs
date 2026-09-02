@@ -174,9 +174,16 @@ await caso('cada línea pendiente conserva su ✕ para sacarla de a una', async 
   await page.isVisible('[data-lamaquitar="3"]') || 'la línea pendiente no tiene ✕');
 
 console.log('\nC7 · SUMAR EN UNA LÍNEA YA ENVIADA CREA UNA LÍNEA NUEVA:');
-await caso('el + de un producto ya enviado llama a cuenta_agregar', async () => {
+/* EL CAMINO CAMBIÓ EL 2026-09-02, la regla NO. Los botones − + se fueron de la
+   línea porque se comían el ancho y el nombre quedaba en "C…" — y Fudo tampoco
+   los tiene ahí. Para sumar otro de algo ya enviado se usa el buscador o su
+   píldora, que es lo que hace el equipo en Fudo. Lo que esta prueba protege
+   sigue siendo lo mismo: que se cree una línea NUEVA y que la ya enviada no se
+   toque. */
+await caso('sumar otro de lo ya enviado, desde el buscador', async () => {
   const antes = await page.evaluate(() => window.__rpc.length);
-  await page.click('[data-lamamas="1"]'); await page.waitForTimeout(600);
+  await page.fill('#lama-qp', 'Cortado'); await page.waitForTimeout(350);
+  await page.click('.lama-qp-lista .lama-prod'); await page.waitForTimeout(700);
   const r = await page.evaluate(() => window.__rpc.map(x => x.nombre).slice(-3));
   return r.includes('cuenta_agregar') || 'llamó a: ' + r.join(' · ') + ' (antes ' + antes + ')';
 });
@@ -184,8 +191,9 @@ await caso('el + de un producto ya enviado llama a cuenta_agregar', async () => 
    preparó una, y esa segunda hay que mandarla. */
 await caso('y la línea que ya salió sigue en 1, sin tocar', async () => {
   const n = await page.evaluate(() => {
-    const b = document.querySelector('[data-lamamas="1"]');
-    return b ? b.parentElement.querySelector('b').textContent.trim() : null; });
+    const l = [...document.querySelectorAll('.lama-linea')]
+      .find(x => !x.closest('.lama-pend') && x.textContent.includes('Café Cortado'));
+    return l ? l.querySelector('.q').textContent.trim() : null; });
   return n === '1' || 'la línea ya enviada quedó en ' + n;
 });
 await caso('la nueva aparece en Pendiente, esperando Confirmar', async () => {
@@ -259,22 +267,24 @@ await caso('dice por qué no salió', async () => {
   return t.includes('Producto no disponible') || 'el motivo dice: ' + t;
 });
 await caso('y ya no se le puede cambiar la cantidad ni volver a quitar', async () => {
+  /* Desde que los − + se fueron de la línea, "no se puede cambiar la cantidad"
+     se comprueba de otra forma y más fuerte: la línea anulada NO abre la
+     ventana del producto (no lleva `data-lamaprod`) y no tiene ✕. */
   const r = await page.evaluate(() => {
     const l = [...document.querySelectorAll('.lama-linea')]
       .find(x => x.textContent.includes('Café Latte'));
     if(!l) return null;
-    return {cant:getComputedStyle(l.querySelector('.cant')).visibility,
-            x:!!l.querySelector('button.x')};
+    return {tocable:!!l.querySelector('[data-lamaprod]'), x:!!l.querySelector('button.x')};
   });
   if(!r) return 'no encontré la línea';
-  return (r.cant === 'hidden' && r.x === false) || JSON.stringify(r);
+  return (r.tocable === false && r.x === false) || JSON.stringify(r);
 });
 
 console.log('\nY DEJA DE COBRARSE:');
 /* La plata es lo que no puede quedar mal: el total de la pantalla y el que
    calcula la base tienen que decir lo mismo. */
 await caso('el total del panel baja: ya no cuenta el anulado', async () => {
-  const t = await page.textContent('.lama-total');
+  const t = await page.textContent('.lama-suma');
   /* La cuenta, para poder seguirla: empezo en 9.400 (Cortado 3.000 + Latte
      3.400 + Americano 3.000). El + de C7 agrego otro Cortado (+3.000) y
      anular el Latte lo saca (-3.400). Quedan 9.000. Lo que NO puede pasar
