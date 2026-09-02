@@ -722,6 +722,72 @@ llegue, se revisa contra los textos que Lama ya tiene puestos"*. Ya llegó. Va
 **antes de F3**, porque en F3 nacen pantallas nuevas y conviene que nazcan con
 las palabras correctas.
 
+#### ✅ F2 · HECHA — 2026-09-02
+
+**La precuenta bloquea agregar** (atlas E1). Con el papel impreso no se agrega
+nada hasta devolver la mesa a Ocupada.
+
+**La razón es del negocio, no de la pantalla:** el cliente tiene un papel en la
+mano con un total. Si la cuenta sigue creciendo por detrás, el papel y el
+sistema dicen cosas distintas — y eso se descubre **al cobrar, discutiendo con
+el cliente delante de la caja**.
+
+**El candado va en UN solo lugar: `lamaAgregar()`.** Todos los caminos que suman
+un producto terminan ahí —la carta, el buscador del panel, las píldoras, y el
+`+` de una línea ya confirmada, que delega— así que un solo `if` los cubre a
+todos. Repartirlo por cada botón sería dejar que el próximo camino nuevo se
+olvide de pedirlo. Es la misma lección que `lamaPropinaAlDia()`.
+
+**Y la mitad que importa es la salida.** Un candado sin salida visible es una
+pantalla trabada, y eso es peor que el problema que viene a resolver. Por eso:
+el buscador se reemplaza por una franja ámbar que dice **cómo volver**; el `+`
+queda apagado **pero no desaparece** —si desapareciera, quien lo busca creería
+que la app se rompió—; y el aviso dice **qué hacer**, no solo que no se puede.
+
+**Interruptor** (§2.2): `LAMA_PRECUENTA_BLOQUEA`. En `false` vuelve exactamente
+a lo de antes.
+
+##### El paso de vocabulario, contra el atlas F1
+
+El atlas trae las palabras exactas de Fudo, y el propio archivo pedía
+compararlas con las de Lama *"cuando esta llegue"*. Llegó. Lo que se corrigió:
+
+| Decía Lama | Dice Fudo | |
+|---|---|---|
+| "Imprimir el comprobante para el cliente" | **"Imprimir control de mesa"** | corregido |
+| "Abrir **la** mesa 5" | **"Abrir mesa 5"** | corregido |
+| "Pago parcial" | **"Cobro parcial"** | corregido ⚠️ |
+
+⚠️ **El de "Cobro parcial" es el discutible, y por eso se dice acá.** Jhon lo
+había nombrado *"Pago parcial"* en la lista de trabajo, antes de que existiera
+el atlas. Fudo lo llama **"Cierre parcial"** o **"Cobro parcial"**; se eligió el
+segundo porque además rima con el botón *Cobrar* que ya está al lado. **Si Jhon
+prefiere su nombre, se vuelve atrás en una línea.**
+
+**Lo que NO se cambió, y a propósito:**
+
+- **"Anular" se queda.** Fudo dice *cancelación*, pero en Lama ya existe
+  **"Cancelar"** para descartar una acción. Usar la misma palabra para dos
+  gestos distintos es *la forma más barata de que alguien mande de más* — es la
+  razón por la que el pie de la carta dice "Listo" y no "Confirmar".
+- **"Listo"** en la carta: decisión ya tomada y documentada.
+
+**Prueba: `pruebas/lama-precuenta.mjs`, 13 casos.** Lo que más se prueba no es el
+candado: es **que la salida funcione** y que la franja diga cómo. Incluye el
+interruptor apagado en sus dos mitades.
+
+⚠️ **Dos trampas de prueba anotadas, porque las dos costaron una vuelta:**
+
+1. **`page.evaluate(() => lamaAgregar(...))` cuelga la prueba para siempre.** La
+   flecha **devuelve** la promesa y Playwright la espera; con el aviso modal
+   abierto, esa promesa no resuelve hasta que alguien lo cierre. Con cuerpo de
+   bloque `{ lamaAgregar(...); }` se dispara y no se espera.
+2. **El `update` simulado tiene que aplicar el cambio.** Con uno que no lo
+   aplicaba, devolver la mesa a Ocupada no hacía nada y **parecía un bug de la
+   app**: la prueba estaba midiendo la falta del mock, no el código.
+
+---
+
 #### F3 · Las pantallas de configuración
 
 Que Adriana cree y edite ella, sin que nadie toque la base. **Las tablas ya

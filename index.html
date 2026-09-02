@@ -861,6 +861,15 @@
      despliega hacia abajo, empujando lo de abajo — nunca superpuesta, que es
      pedido textual. Las clases de dentro son las MISMAS de la ventana de cobro
      (.lama-cob-desc): es el mismo descuento, tiene que verse igual. */
+  /* F2 · LA FRANJA DE "PRECUENTA IMPRESA". Ámbar: no es un error —la mesa está
+     bien— es un estado que hay que deshacer para seguir agregando. */
+  .lama-trabada{display:flex;flex-direction:column;gap:3px;background:var(--amber-bg);
+    color:var(--amber-fg);border-radius:13px;padding:11px 13px;margin-bottom:11px}
+  .lama-trabada b{font-size:14px;font-weight:800}
+  .lama-trabada span{font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:5px}
+  .lama-trabada svg{width:15px;height:15px;flex:0 0 auto}
+  .lama-fab.trabada{background:var(--gray-fg);opacity:.55}
+
   .lama-desc{margin-top:10px}
   .lama-desc-abrir{margin-top:10px}
   /* La línea de la suma: "Descuento 20 % · −$2.140". Ámbar, como todo lo que
@@ -5848,9 +5857,15 @@ function lamaPintarFab(){
   const m = LAMA_SEL ? lamaMesaDe(LAMA_SEL) : null;
   if(!m || LAMA_MODO || LAMA_CARTA_ABIERTA){ caja.innerHTML = ''; return; }
   const c = lamaCuentaDe(m.id);
-  caja.innerHTML = `<button type="button" class="lama-fab" data-lamaacc="mas"
-    aria-label="${c ? 'Agregar productos a la mesa ' + m.numero : 'Abrir la mesa ' + m.numero}"
-    title="${c ? 'Agregar productos' : 'Abrir la mesa ' + m.numero}">+</button>`;
+  /* Con la precuenta impresa el + se ve apagado, pero NO se esconde: si
+     desapareciera, quien lo busca creería que la app se rompió. Apagado y con
+     su porqué al tocarlo es lo que se entiende. */
+  const trabada = lamaTrabadaPorPrecuenta(c);
+  caja.innerHTML = `<button type="button" class="lama-fab${trabada ? ' trabada' : ''}"
+    data-lamaacc="mas"
+    aria-label="${c ? 'Agregar productos a la mesa ' + m.numero : 'Abrir mesa ' + m.numero}"
+    title="${trabada ? 'La precuenta ya está impresa'
+                     : (c ? 'Agregar productos' : 'Abrir mesa ' + m.numero)}">+</button>`;
 }
 
 /* Una línea de la cuenta. Tocar el nombre abre la ventana del producto
@@ -6044,7 +6059,7 @@ function lamaPintarPanel(){
            impresora: imprime el comprobante con el detalle para el cliente.
            Y es un interruptor: si la mesa ya está azul, lo devuelve a roja. -->
       <button type="button" data-lamaacc="precuenta" class="${cobrando ? 'on' : ''}"
-              title="${cobrando ? 'Volver a ocupada' : 'Imprimir el comprobante para el cliente'}"${
+              title="${cobrando ? 'Volver a ocupada' : 'Imprimir control de mesa'}"${
         LAMA_ITEMS.length ? '' : ' disabled'}>${ICONO_IMPRESORA}</button>
       <button type="button" data-lamaacc="cerrar-panel" aria-label="Cerrar">✕</button>
       ${LAMA_MENU ? `<div class="lama-menu" id="lama-menu" role="menu">
@@ -6125,6 +6140,16 @@ function lamaFilaCarta(p, puestos){
    que se traslade todo hacia abajo… esta lista no puede modificar la interfaz
    mientras estamos en el pc, debe estar sobre la info de atrás". */
 function lamaPanelBuscador(){
+  /* F2 · CON LA PRECUENTA IMPRESA no se ofrece buscar ni las píldoras: no se
+     muestra un camino que después se va a negar. En su lugar, una franja que
+     dice por qué y —lo que importa— cómo salir. Texto corto (§2.1): quien la
+     lee está de pie frente a un cliente. */
+  if(lamaTrabadaPorPrecuenta(lamaCuentaDe(LAMA_SEL))){
+    return `<div class="lama-trabada">
+      <b>Precuenta impresa</b>
+      <span>Para agregar, volvé la mesa a Ocupada con ${ICONO_IMPRESORA}</span>
+    </div>`;
+  }
   const puestos = lamaPuestos();
   /* Las cuatro más comandadas. Salen de LAMA_TOP, que se cuenta de las ventas
      de verdad; si todavía no hay historia, se usan las primeras de la carta
@@ -6223,7 +6248,11 @@ function lamaCerrarCarta(){
    carta. Un solo botón para "agregar algo acá". */
 async function lamaMas(){
   if(!LAMA_SEL) return;
-  if(!lamaCuentaDe(LAMA_SEL)){ await lamaAbrirMesa(); return; }
+  const cm = lamaCuentaDe(LAMA_SEL);
+  if(!cm){ await lamaAbrirMesa(); return; }
+  /* Ni siquiera se abre la carta: ofrecer una pantalla entera de productos
+     para después negar cada uno sería una burla. */
+  if(lamaTrabadaPorPrecuenta(cm)){ await lamaAvisarTrabada(); return; }
   LAMA_CARTA_ABIERTA = true; LAMA_Q = '';
   lamaPintar();
   const inp = $('lama-q'); if(inp) setTimeout(()=>inp.focus(), 60);
@@ -6332,6 +6361,12 @@ async function lamaAbrirMesa(){
 
 async function lamaAgregar(fudoId){
   const c = lamaCuentaDe(LAMA_SEL); if(!c) return;
+  /* F2 · EL CANDADO VA ACÁ Y EN NINGÚN OTRO LADO. Todos los caminos que suman
+     un producto terminan en esta función —la carta, el buscador del panel, las
+     píldoras, y el + de una línea ya confirmada, que delega acá—, así que un
+     solo `if` los cubre a todos. Repartirlo por cada botón sería dejar que el
+     próximo camino nuevo se olvide de pedirlo. */
+  if(lamaTrabadaPorPrecuenta(c)){ await lamaAvisarTrabada(); return; }
   const p = LAMA_CARTA.find(x => String(x.fudo_product_id) === String(fudoId)); if(!p) return;
   LAMA_PAPEL = null;
   /* SE VE PRIMERO, SE GUARDA DESPUÉS. Antes esto esperaba la ida y la vuelta
@@ -6784,6 +6819,37 @@ let LAMA_PAGOS_PAR   = [];     // los cobros parciales de la cuenta abierta
    cobro vuelve EXACTAMENTE a lo de antes —sin línea de propina—, no queda un
    hueco. El día que exista el panel de configuración, se muda ahí. */
 const LAMA_PROPINA_PCT = 10;
+
+/* ==================================================================
+   F2 · CON LA PRECUENTA IMPRESA NO SE AGREGA NADA
+   ==================================================================
+   Sale del atlas E1: Fudo **bloquea de forma automática la adición de nuevos
+   productos** cuando la precuenta ya se imprimió. La razón es del negocio, no
+   de la pantalla: el cliente tiene un papel en la mano, y si la cuenta sigue
+   creciendo por detrás, el papel y el sistema dicen cosas distintas. Eso se
+   descubre al cobrar, discutiendo con el cliente.
+
+   Jhon eligió copiarlo (2026-09-02). El equipo ya conoce ese comportamiento de
+   Fudo, así que no hay nada que aprender.
+
+   LA SALIDA ESTÁ SIEMPRE A LA VISTA: el mismo botón de la impresora devuelve
+   la mesa a Ocupada, y ahí se puede agregar de nuevo. Un candado sin salida
+   visible es una pantalla trabada — por eso el mensaje dice QUÉ HACER, no solo
+   que no se puede.
+
+   INTERRUPTOR (§2.2): en `false` vuelve exactamente a lo de antes, se agrega
+   con la precuenta impresa y nadie se entera. No queda un hueco. */
+const LAMA_PRECUENTA_BLOQUEA = true;
+
+const lamaTrabadaPorPrecuenta = c =>
+  LAMA_PRECUENTA_BLOQUEA && !!c && c.estado === 'precuenta';
+
+/* El aviso, en un solo lugar para que diga lo mismo en todos los caminos. */
+function lamaAvisarTrabada(){
+  return avisar('La precuenta ya está impresa\n\n'
+    + 'El cliente tiene el papel con este total. Para agregar productos, '
+    + 'volvé la mesa a Ocupada con el botón de la impresora.');
+}
 let LAMA_PARCIAL     = null;   // {sel:{itemId:cantidad}, medio} mientras se elige
 
 /* Cuántas unidades de esta línea faltan por cobrar. */
@@ -7198,7 +7264,7 @@ function lamaPintarCobro(){
       : `
       <div class="lama-cob-pie">
         ${LAMA_HAY_PARCIAL && vivos.some(i => lamaFaltan(i) > 0)
-          ? '<button type="button" class="btn btn-gris" data-lamaacc="par-entrar">Pago parcial</button>'
+          ? '<button type="button" class="btn btn-gris" data-lamaacc="par-entrar">Cobro parcial</button>'
           : '<button type="button" class="btn btn-gris" data-lamaacc="cob-cerrar">Cancelar</button>'}
         <button type="button" class="btn btn-orange" data-lamaacc="cob-confirmar"${
           dif < 0 ? ' disabled' : ''}>${
