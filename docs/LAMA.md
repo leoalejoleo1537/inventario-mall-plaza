@@ -20,8 +20,14 @@
 | **Etapas 1 y 4** | lo que ya está terminado |
 | **Las dos vueltas del 31 de agosto** | la limpieza, y los colores medidos de Fudo |
 | **El cierre de mesa** | la especificación completa, dictada por Jhon |
-| **LA LISTA DE TRABAJO** | ← *lo que está en curso hoy* |
-| **Después, en orden** | lo que viene, y por qué en ese orden |
+| **LA RUTA** | ← *lo que está en curso hoy*, F0 a F7, armada sobre el atlas |
+| **Decisiones y lecciones** | el porqué de lo ya decidido · acá vivía el plan viejo |
+| **Las áreas de configuración** | el detalle que alimenta la F3 |
+
+> ⚠️ **El plan cambió el 2026-09-02.** Si venís de una sesión vieja buscando la
+> lista **A1–C10** o la sección **DESPUÉS, en orden**: ya no existen, las
+> reemplazó **LA RUTA**. Y **`docs/plan-lama.md` se borró** — era un tercer plan
+> huérfano que decía que la etapa 4 estaba por hacer, terminada hace días.
 
 ---
 
@@ -356,17 +362,6 @@ ve**: los colores calculados de cada estado, que en el teléfono el `.lama` est�
 partido en dos columnas, y que la ventana del producto traiga cantidad **y**
 comentario. Comparado contra línea base: las 30 de Stock, idénticas.
 
-### LO QUE FALTA PARA COMPLETAR EL ÁREA DE VENTAS
-
-Antes del arqueo, que necesita que las mesas estén firmes:
-
-| Pieza | Qué es |
-|---|---|
-| **Dividir la cuenta** | cuatro personas, cuatro pagos |
-| **Mostrador** | un café para llevar **no es una mesa**. Hoy habría que cobrarlo abriendo una mesa que no existe. Anotado el 2026-08-31; no estaba en la lista |
-| **Pulir precuenta y cerrar** | afinar el detalle que ve el cliente |
-
-
 ### EL CIERRE DE MESA — la especificación, dictada por Jhon el 2026-08-31
 
 > *"Al momento de cerrar una mesa actualmente es simplemente un botón… pero es
@@ -452,11 +447,192 @@ parámetros nuevos **no reemplaza: agrega una segunda firma**, y la llamada
 desde la app se vuelve ambigua. Es exactamente lo que dejó el sistema 15 horas
 sin descontar.
 
-### LA LISTA DE TRABAJO — dictada por Jhon el 2026-08-31
+### LA RUTA — armada sobre el atlas de Fudo · 2026-09-02
 
-Es lo que está en curso. Se avanza **de a poco y en orden**, no todo junto: es
-pedido explícito de Jhon (*"vamos avanzando lento"*). Cada punto tiene código
-para poder nombrarlo en el chat.
+> **Esto es lo que está en curso.** Reemplaza a los tres planes que había y que
+> no coincidían entre sí: la lista A1–C10, la sección *DESPUÉS, en orden*, y un
+> `docs/plan-lama.md` huérfano del 28 de agosto que nadie referenciaba. La
+> constancia del cambio está en la sección siguiente.
+>
+> **La diferencia de fondo:** los tres se escribieron **antes** de que
+> existiera `docs/atlas-fudo.md`. Este sale de ahí.
+
+Se avanza **de a poco y en orden** — *"vamos avanzando lento"*. Cada fase
+termina en verde y desplegada antes de empezar la siguiente.
+
+#### Dónde Lama COPIA a Fudo y dónde se APARTA
+
+Copiar a Fudo no es un fin: **es la curva de aprendizaje** (§0.7). Donde Fudo no
+sirve, no se copia — y se dice por qué. Esta tabla es el corazón de la ruta.
+
+**Se copia, porque el equipo ya lo sabe usar:**
+
+| Pieza | Atlas | Estado |
+|---|---|---|
+| Mapa de mesas con colores por estado | B1 | ✅ |
+| Confirmar = mandar a cocina | C1 | ✅ |
+| Lo comandado no se edita, **se anula con motivo** | C2 | ✅ |
+| Precuenta imprime y cambia el color | B1 | ✅ |
+| Mover productos y mover la mesa | B4 | ✅ |
+| Pago parcial **por producto** · verde lo pagado, ámbar lo pendiente | D2 | ⬜ **F1** |
+| Descuento con el ícono `%` | D3 | ⬜ **F1** |
+| **La precuenta bloquea agregar** | E1 | ⬜ **F2** |
+| Las palabras exactas de los botones | F1 | ⬜ **F2** |
+| Mostrador — vender sin mesa | A1 | ⬜ **F4** |
+| Reimprimir un ticket | B3 | ⬜ **F5** |
+
+**NO se copia, y cada una tiene su razón:**
+
+| Lo que hace Fudo | Qué hace Lama | Por qué |
+|---|---|---|
+| Pide **comensales obligatorio** al abrir mesa (B2, E1) | no lo pide | *Una columna que nadie llena es una pregunta que la gente contesta por contestar* |
+| Pide cliente, garzón, comentario de mesa | no los pide | Lo mismo: nadie los mira después |
+| **Cinco roles** con PIN de autorización (A2) | ningún rol | §6.1 — la seguridad se mantiene en mínimos; el único candado es Ajustes |
+| **No tiene consumo interno ni cortesía** (D5, G1) | **sí los tiene**: los 5 consumos | Acá Fudo **no sirve de modelo**. Hay que registrar lo que sale sin cobrarse, o la caja cuadra y el inventario no |
+| **No tiene medio de pago propio para la propina** (D4) | **sí lo tiene** | Pedido de Jhon: *propina en efectivo y cuenta en débito*. Fudo obliga a simularlo con pagos combinados |
+| **No tiene calculadora de vuelto** en el salón (D6) | **sí la tiene**, y nunca es negativo | Acá Lama es mejor que Fudo. Se mantiene |
+| Dividir **en partes iguales** o **por monto** (D2) | solo **por producto** | Un abono en plata sin decir qué cubre no se puede desarmar en el arqueo |
+| **Unir dos mesas** (B4) | no | Jhon: no hace falta |
+| **Estados de cocina / KDS** (C1) | no | Tiene sentido con cocina caliente, no en una cafetería |
+| Etiquetas de *ventas individuales* (D2) | no | El pago parcial por producto ya resuelve el caso real |
+
+> **Las cuatro últimas se decidieron el 2026-09-02 y quedan cerradas.** No se
+> vuelven a proponer: lo que no está en la ruta está fuera **a propósito**.
+
+#### F0 · Poner el tablero al día ✅ *2026-09-02*
+
+Sin código. Es dejar de mentirle a la próxima sesión: los tres `.sql` marcados
+como corridos, el plan huérfano borrado, y esta ruta en lugar de las tablas.
+
+#### F1 · Terminar el cobro — *el bloque D del atlas*
+
+**C5 · El descuento desde el panel.** Recuadro bajo "Cerrar mesa" que se
+despliega **hacia abajo, no superpuesto**: motivo → formato (% o $) → valor →
+Confirmar/Cancelar. **Un solo descuento por cuenta**, visto en dos lugares. La
+base ya lo soporta entero, así que es **solo pantalla**.
+
+**A1 · Pago parcial por producto.** Lo más grande, y **no es solo frontend**.
+
+⚠️ **Leer esto antes de escribir una línea.** Se revisó `cuenta_cobrar` y hoy
+la base **prohíbe** el pago parcial:
+
+- es un cierre **todo o nada**: `if v_pagado < v_total then raise 'Falta plata'`
+- antes de insertar hace `delete from cuenta_pagos` — **borraría los pagos
+  parciales anteriores**
+- `cuenta_pagos` **no sabe qué ítems cubre**: solo `cuenta_id`, `medio`, `monto`
+
+Hace falta `sql/2026-09-lama-pago-parcial.sql`:
+
+1. `cuenta_items.cantidad_pagada numeric not null default 0` + `pagado_pago_id`.
+   **Cantidad y no un booleano**, porque la pantalla lleva `− n +` (se cobran 2
+   de 3 cafés). Y **la línea no se parte en dos**: partirla sería editar algo que
+   ya salió a la cocina, justo lo que prohíbe el bloque C7+C9+C10.
+2. `cuenta_cobrar_parcial(...)` — cobra lo elegido, marca la cantidad, ata el
+   pago a la línea, y **no cierra la cuenta**.
+3. `cuenta_cobrar` **cambia de cuerpo, misma firma** (así `create or replace` es
+   seguro, §0.5): el subtotal cuenta `cantidad - cantidad_pagada`, igual que ya
+   descuenta lo anulado; y deja de borrar los pagos parciales.
+4. `cuenta_recalcular` tiene que dar el mismo número que la pantalla y que el
+   comprobante — es el cuarto lugar del que ya advierte C9.
+
+En pantalla (atlas D2): botón abajo a la izquierda · la izquierda lista los
+productos con `− n +` · el pie muestra **Total Seleccionado** · **lo pagado en
+verde y bloqueado**, lo pendiente en ámbar · al reabrir, solo queda lo que falta.
+
+**C8 · Los tres símbolos del teléfono** bajo TOTAL. Está a medias.
+
+#### F2 · Las reglas y las palabras de Fudo — *barato, alto retorno*
+
+**La precuenta bloquea agregar** (atlas E1 · decidido por Jhon el 2026-09-02).
+Con la precuenta impresa no se agrega nada hasta devolver la mesa a "Ocupada",
+cosa que Lama ya sabe hacer.
+⚠️ **Va con interruptor** (§2.2): apagado tiene que volver **exactamente** al
+comportamiento de hoy, no dejar un hueco. Y el mensaje dice **qué hacer**, no
+solo que no se puede.
+
+**El paso de vocabulario** (atlas F1). El propio atlas lo pide: *"cuando esta
+llegue, se revisa contra los textos que Lama ya tiene puestos"*. Ya llegó. Va
+**antes de F3**, porque en F3 nacen pantallas nuevas y conviene que nazcan con
+las palabras correctas.
+
+#### F3 · Las pantallas de configuración
+
+Que Adriana cree y edite ella, sin que nadie toque la base. **Las tablas ya
+existen todas; falta la pantalla.** El detalle está más abajo, en *Las áreas de
+configuración*. Incluye el **listado de lo anulado del día** — lo que Fudo llama
+*Historial de cancelaciones* (atlas C2) y lo que el arqueo va a pedir.
+
+#### F4 · Mostrador — la venta que no es una mesa
+
+Un café para llevar no es una mesa, y hoy habría que abrir una mesa falsa para
+cobrarlo.
+
+⚠️ **Tiene un costo en la base, y hay que decirlo ahora:** `cuentas.mesa_id` es
+`not null references mesas(id)`. Las dos salidas —hacer `mesa_id` opcional, o
+una mesa especial "Mostrador" por sede— **se deciden con maqueta antes de
+escribir código** (§0.7), porque tocan el candado `cuentas_una_viva_por_mesa`:
+en mostrador hay muchas ventas a la vez y ese índice único las prohibiría.
+
+#### F5 · El puente de impresión — *aislado, y hay que ir al local*
+
+Ya está **medido, no supuesto** (§2.3). Va **aislado**, sin tocar la app ni la
+base: si falla, que falle solo. El texto ya está armado —`lamaComandaTxt` y
+`lamaPrecuentaTxt`—, así que el puente no tiene que saber nada de mesas.
+**Reimprimir un ticket** entra acá, porque sin puente no sirve de nada.
+
+#### F6 · El arqueo de caja
+
+⚠️ **BLOQUEADO POR EL ATLAS.** El bloque **H tiene sus tres preguntas en
+`⬜ PENDIENTE`**. La regla es explícita: *una pregunta pendiente es un hueco
+conocido — se pregunta, no se inventa.* **Jhon las pasa por NotebookLM antes.**
+
+Lo que el atlas ya reveló de paso y hay que respetar: existe el *sobrante de
+caja en verde* (D6), **cerrar un arqueo es irreversible**, y una venta cerrada
+solo se anula mientras su arqueo siga abierto (E2).
+
+Los datos ya están guardados: `cuenta_pagos`, `cuenta_propinas` y las columnas
+congeladas de `cuentas` se diseñaron para alimentar esto.
+
+#### F7 · Al final de todo: las conexiones con Stock
+
+Que cerrar una mesa descuente el inventario. Es la razón de fondo del proyecto y
+aun así va última (§0.9), **con interruptor** (§2.2), y solo cuando las comandas
+sean confiables. La boleta sigue saliendo por Mercado Pago (§7).
+
+**Fuera de la ruta a propósito:** la barra de dos niveles Stock|Lama y separar
+en `/caja` — se hacen el día que Lama se muestre, no antes.
+
+#### Lo que hace falta de Jhon, y cuándo
+
+| Cuándo | Qué |
+|---|---|
+| antes de **F3** | **El descuento de cada uno de los 5 consumos** (administrativo, garzones, eventos, redes, cumpleaños). Hoy son todos 0 |
+| antes de **F4** | Aprobar la maqueta de Mostrador |
+| antes de **F6** | Las **tres respuestas del bloque H** del atlas, por NotebookLM |
+| cuando pueda | Una visita al local para instalar el puente (**F5**) |
+
+---
+
+### DECISIONES Y LECCIONES — acá vivía el plan viejo
+
+> **CONSTANCIA DEL CAMBIO (2026-09-02).** Esta sección era **LA LISTA DE
+> TRABAJO**, dictada por Jhon el 31 de agosto. **Ya no es el plan**: la ruta
+> está arriba, y sale del atlas.
+>
+> **Lo que se fue:** las tablas de estado A1–C10 —qué falta y qué no— y la
+> sección *DESPUÉS, en orden*. Estaban dictadas **antes de que existiera el
+> atlas**, así que no sabían de la precuenta que bloquea, del vocabulario de
+> Fudo, ni de que el pago parcial necesita tocar la base.
+>
+> **Lo que se quedó, y a propósito: todo el POR QUÉ.** Las decisiones que
+> están más abajo se tomaron mirando el problema de verdad y **siguen
+> valiendo** — cambió la ruta, no el criterio. Tirar el porqué junto con el
+> qué es la forma más cara de rehacer una discusión ya cerrada.
+>
+> También se borró **`docs/plan-lama.md`**, un tercer plan del 28 de agosto que
+> nadie referenciaba y que todavía decía *"lo siguiente: etapa 4"* — terminada
+> hace días. Era exactamente la sección de estado que engaña de la que advierte
+> este archivo.
 
 #### El concepto de fondo, y es uno solo
 
@@ -476,16 +652,14 @@ rastro y nadie puede responder por qué el inventario no cuadra.
 
 #### A · La ventana de cierre
 
-| | Qué | Estado |
-|---|---|---|
-| **A1** | **Pago parcial.** Botón abajo a la izquierda. Cambia toda la interfaz: la izquierda pasa a listar los productos con `− n +` para elegir **cuáles** se cobran ahora, y el pie muestra **Total Seleccionado**. Es lo más grande de la lista | pendiente |
-| **A2** | Sacar el detalle del ticket que hoy sale debajo de "Cerrar mesa X". Se discute aparte, y va a tener su propia pantalla de edición | **hecho** 2026-08-31 |
-| **A3** | El descuento se muestra en la suma: `Descuento 20 % · -$2.140` | **hecho** 2026-08-31 |
-| **A4** | Al lado del pago: **Total Venta · Total pagado · Restante**, y el Vuelto abajo | **hecho** 2026-08-31 |
+> **La tabla A1–A4 que estaba acá se fue** (ver la constancia arriba). A2, A3 y
+> A4 quedaron **hechos** el 2026-08-31; **A1, el pago parcial, es la F1 de la
+> ruta** y ahora se sabe que además necesita tocar la base.
 
-> **LA VENTANA DE COBRO YA ESTÁ CONSTRUIDA (2026-08-31).** Las cinco reglas
-> están implementadas y probadas en `pruebas/lama-cobrar.mjs` (29 casos). El
-> SQL es **`sql/2026-08-lama-cierre.sql`** y Jhon lo tiene que pegar a mano.
+> **LA VENTANA DE COBRO ESTÁ CONSTRUIDA Y YA REGISTRA (2026-09-02).** Las cinco
+> reglas están implementadas y probadas en `pruebas/lama-cobrar.mjs` (29 casos),
+> y **`sql/2026-08-lama-cierre.sql` ya corrió**: el medio de pago, la propina y
+> el descuento **quedan guardados de verdad**.
 >
 > **Dos decisiones que conviene no volver a discutir:**
 >
@@ -500,10 +674,11 @@ rastro y nadie puede responder por qué el inventario no cuadra.
 >    mesa **sin cobrarla**. Es un error que se escribió y se corrigió antes de
 >    desplegar; queda anotado para que no vuelva.
 >
-> Mientras el `.sql` no esté corrido la ventana funciona igual y se puede
-> mirar, pero al cobrar **avisa** que el medio de pago, la propina y el
-> descuento no van a quedar registrados. Cerrar en silencio perdiendo eso es
-> exactamente lo que rompería el arqueo.
+> El aviso de *"esto no va a quedar registrado"* **ya no aparece**, porque la
+> migración está puesta. Se deja escrito el mecanismo porque vale para la
+> próxima: mientras un `.sql` no esté corrido, la ventana funciona y se puede
+> mirar, pero al cobrar **avisa**. Cerrar en silencio perdiendo el medio de pago
+> es exactamente lo que rompería el arqueo.
 
 > **DECISIÓN TOMADA (2026-08-31) sobre A1: el pago parcial paga PRODUCTOS, no
 > plata.** Jhon eligió entre las tres formas posibles. Los productos que se
@@ -522,9 +697,9 @@ rastro y nadie puede responder por qué el inventario no cuadra.
 
 #### B · La distribución en el computador
 
-| | Qué | Estado |
-|---|---|---|
-| **B1** | El panel derecho **más ancho** y el plano de mesas **más angosto**. Hoy las mesas se comen la pantalla y los nombres se cortan en *"selladito + Sprite z…"* | **hecho** 2026-09-02 |
+> **La tabla B1 que estaba acá se fue.** B1 quedó **hecho el 2026-09-02** — y
+> cómo casi no lo queda está contado justo abajo, que es lo que valía la pena
+> guardar.
 
 > **B1 SE DIO POR HECHO EL 31 DE AGOSTO Y NO LO ESTABA. Vale la pena el
 > detalle, porque es un error que este proyecto ya cometió tres veces.**
@@ -576,19 +751,10 @@ rastro y nadie puede responder por qué el inventario no cuadra.
 
 Todo esto va **también al teléfono**, con el formato que le corresponda.
 
-| | Qué | Estado |
-|---|---|---|
-| **C1** | **Barra de búsqueda** dentro del panel, visible apenas se abre la mesa | **hecho** 2026-09-01 |
-| **C2** | Los resultados salen **flotando por encima**. No desplazan ni deforman nada | **hecho** 2026-09-01 |
-| **C3** | **Píldoras de los más comandados**, cuatro, en dos columnas | **hecho** 2026-09-01 |
-| **C4** | ~~TOTAL~~ — ya está bien resuelto: muestra el total sin propina. **No se toca** | listo |
-| **C5** | **Descuento.** Recuadro bajo "Cerrar mesa" que despliega **hacia abajo, no superpuesto**: motivo → formato (% o $) → valor → Confirmar/Cancelar. Se refleja en el total | pendiente |
-
-| **C6** | **El lag del `+` / `−`.** Tres toques rápidos y no cambia hasta unas décimas después | **hecho** 2026-08-31 · el eco propio |
-| **C7** | Sumar un producto **ya enviado** crea una línea nueva pendiente | **hecho** 2026-09-01 |
-| **C8** | **Imprimir comprobante.** En teléfono, tres símbolos bajo TOTAL: `%` (descuento) · impresora · lápiz. En PC ya están en la barra del nombre | **a medias** · el símbolo de PC ya es la impresora y es reversible; faltan los tres del teléfono |
-| **C9** | **Anular producto con motivo.** El producto nunca desaparece: queda tachado | **hecho** 2026-09-01 |
-| **C10** | Sacar el botón de vaciar la mesa de un golpe | **hecho** 2026-09-01 |
+> **La tabla C1–C10 que estaba acá se fue.** Quedaron hechos C1, C2, C3, C6,
+> C7, C9 y C10; C4 no se toca por decisión. **Lo que sigue vivo es C5 (el
+> descuento), que es la F1 de la ruta, y C8 (los tres símbolos del teléfono),
+> que está a medias.**
 
 > **DECISIÓN TOMADA (2026-08-31) sobre C5 y A3: hay UN solo descuento por
 > cuenta, visto en dos lugares.** El garzón lo aplica desde el panel de la mesa
@@ -614,9 +780,10 @@ Todo esto va **también al teléfono**, con el formato que le corresponda.
 > subtotal de la ventana de cobro, el comprobante del cliente, y
 > `cuenta_recalcular` en la base.
 >
-> **Sin `sql/2026-09-lama-anulacion.sql` corrido, anular NO borra nada** —
-> avisa que falta correrlo. Caer al camino viejo y borrar la línea sería
-> exactamente lo que se vino a arreglar.
+> **`sql/2026-09-lama-anulacion.sql` ya corrió (2026-09-02)**, así que anular
+> tacha de verdad. El resguardo sigue en pie por si algún día falta: sin la
+> migración, anular **no borra nada** y avisa. Caer al camino viejo y borrar la
+> línea sería exactamente lo que se vino a arreglar.
 
 > **SOBRE C1-C2-C3, lo que decide si sirve o no** (2026-09-01). No es el
 > buscador: es el foco.
@@ -698,11 +865,14 @@ la gráfica de metas de venta, y termina con excepción. **Es de Stock, está
 igual en `master` limpio, y no se toca desde este chat** (§0.9). Queda anotada
 para el chat de Stock, que es a quien le toca.
 
-#### D · Áreas nuevas que hay que construir
+#### Las áreas de configuración — el detalle que alimenta la F3
 
-Salen de la lista de arriba: varias cosas que hoy serían una lista escrita en el
-código, Adriana tiene que poder crearlas ella. **Jhon pidió expresamente que
-queden anotadas acá para no perderlas.**
+> Esto **no es un plan**: es el detalle de qué hay que construir cuando llegue
+> la **F3** de la ruta. Jhon pidió expresamente que quedara anotado para no
+> perderlo, y por eso sobrevive al cambio de plan.
+
+Varias cosas que hoy son una lista escrita en la base, y Adriana tiene que
+poder crearlas ella:
 
 1. **Motivos de descuento** — crear y editar (empleados, cumpleaños, cliente especial…). Lo necesita C5
 2. **Medios de pago** — crear y editar. Lo necesita el cierre, y ya está previsto como tabla `lama_medios_pago`
@@ -710,26 +880,3 @@ queden anotadas acá para no perderlas.**
 4. **Qué detalle lleva el ticket** — editable, con su propia pantalla. Sale de A2
 5. **El tamaño y la POSICIÓN de las mesas.** El tamaño ya se ajusta con el ⚙ del plano (2026-08-31, por dispositivo). Falta la posición, y primero hay que decidir qué significa: ¿reordenar las mesas en la grilla, o un plano de verdad con coordenadas, donde la mesa 7 esté junto a la ventana?
 6. ~~**Dónde queda registrada la anulación**~~ — **resuelto el 2026-09-01**: en las columnas `anulado_at`, `anulado_por`, `anulado_motivo` y `anulado_comentario` de `cuenta_items`, y los motivos en `lama_motivos_anulacion`. **Lo que falta es la pantalla** para que Adriana cree motivos nuevos, y un listado de lo anulado del día para el arqueo.
-
-
-### DESPUÉS, en orden
-
-1. **Pulir precuenta y cerrar.** Funcionan; falta afinar cómo se ve el detalle
-   que se le muestra al cliente.
-2. **El puente de impresión** (§2.3). Va **aislado y de primero entre las
-   cosas grandes**: la impresora está por USB, así que el navegador no le
-   habla directo y hace falta un programa chico en ese computador — lo mismo
-   que hace Fudo con su extensión de Chrome y su aplicación de Windows. Es la
-   lección de §0.5 aplicada antes de escribir: si falla, que falle solo, y que
-   se sepa en dos días y no en dos meses. Necesita que Jhon vaya al local.
-3. **El cierre de caja:** arqueo, efectivo/débito, cuadratura del turno.
-4. **La barra de dos niveles** (Stock | Lama arriba, como los iconos de Fudo).
-   Es el destino correcto y **no se hace todavía**: tocaría la navegación que
-   el equipo usa todos los días para un beneficio que aún no existe. Se hace
-   el día que Lama se muestre, y es trabajo de un día porque `moverCarril()`
-   ya es genérico.
-5. **Separar en `/caja`** (§7), con el peso de Lama **medido**, no adivinado.
-6. **AL FINAL DE TODO: las conexiones.** Que cerrar una mesa descuente el
-   inventario. Es la razón de fondo del proyecto entero y aun así va última
-   (§0.9), con interruptor (§2.2), y solo cuando las comandas sean confiables.
-   **La boleta sigue saliendo por Mercado Pago** — esa línea no se cruza (§7).
