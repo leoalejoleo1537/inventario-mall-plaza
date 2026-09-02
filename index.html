@@ -649,17 +649,28 @@
      de Fudo en el celular, y sostenerla siempre evita que la pantalla salte
      de forma cada vez que se toca una mesa. */
   .lama{display:grid;grid-template-columns:66px minmax(0,1fr);gap:10px;align-items:start}
-  /* EL REPARTO EN COMPUTADOR, corregido el 2026-08-31. Antes el plano se
-     llevaba todo lo que sobraba y la cuenta quedaba fija en 400px: las mesas
-     se comían la pantalla y en el panel los nombres se cortaban en
-     "selladito + Sprite z…". Ahora es al revés — la cuenta es la que crece y
-     el plano el que se achica—, porque el panel es donde se trabaja y donde
-     el texto tiene que caber entero. */
+  /* EL REPARTO EN COMPUTADOR (B1). Antes el plano se llevaba todo lo que
+     sobraba y la cuenta quedaba fija en 400px: las mesas se comían la pantalla
+     y en el panel los nombres se cortaban en "selladito + Sprite z…". Ahora es
+     al revés — la cuenta es la que crece y el plano el que se achica—, porque
+     el panel es donde se trabaja y donde el texto tiene que caber entero.
+
+     EL 31 DE AGOSTO ESTO SE DIO POR CERRADO Y NO LO ESTABA. Se subió el panel
+     de 400px a 40%, que en una pantalla de 1440 alcanzaba justo — y por eso
+     pareció resuelto—, pero en un portátil de 1280, que es la pantalla del
+     mesón, el nombre largo seguía cortado: pedía 290px y tenía 248. Lo que
+     faltó no fue el cambio, fue MEDIRLO en el ancho donde dolía.
+
+     De ahí el 46% y el piso de 540px: a 1280 el panel queda en ~572 y el
+     nombre entra con aire. El número no salió de elegir una proporción
+     bonita, salió de medir el texto más largo de la carta. La prueba que lo
+     sostiene es `pruebas/lama-ancho.mjs`, y falla si alguien lo vuelve a
+     angostar. */
   @media (min-width:720px){
-    .lama{grid-template-columns:minmax(0,1fr) minmax(430px,44%);gap:18px}
+    .lama{grid-template-columns:minmax(0,1fr) minmax(430px,46%);gap:18px}
   }
   @media (min-width:1100px){
-    .lama{grid-template-columns:minmax(0,1fr) minmax(500px,40%)}
+    .lama{grid-template-columns:minmax(0,1fr) minmax(540px,46%)}
   }
   .lama-plano{min-width:0}
   .lama-panel{min-width:0;margin-top:12px}
@@ -5819,8 +5830,21 @@ function lamaPintarPanel(){
   const cont = $('lama-panel'); if(!cont) return;
   /* EL FOCO SE DEVUELVE. Agregar un producto repinta el panel entero, y sin
      esto el buscador se queda vacío y sin cursor justo cuando el garzón va a
-     escribir el siguiente. Se agrega uno, se sigue escribiendo. */
-  const teniaFoco = document.activeElement && document.activeElement.id === 'lama-qp';
+     escribir el siguiente. Se agrega uno, se sigue escribiendo.
+
+     Y NO ALCANZA CON PREGUNTAR SI EL CAMPO TENÍA EL FOCO, que es como estaba
+     y por eso no funcionaba: tocar un producto de la lista flotante le da el
+     foco A ESE BOTÓN. Para cuando este repintado corre, el foco ya no está en
+     el campo, así que la condición daba falso y no se devolvía nada. El botón
+     desaparece en el repintado, el foco cae al body, y en el teléfono el
+     teclado se cierra — exactamente lo que esto venía a evitar.
+
+     Entonces la pregunta correcta no es "¿estaba en el campo?" sino "¿estaba
+     el garzón dentro del buscador?", y la lista flotante es parte del
+     buscador. */
+  const act = document.activeElement;
+  const teniaFoco = !!act && (act.id === 'lama-qp' ||
+                              !!(act.closest && act.closest('#lama-qp-lista')));
   const m = LAMA_SEL ? lamaMesaDe(LAMA_SEL) : null;
   if(!m){
     cont.innerHTML = `<div class="lama-caja"><div class="lama-vacio">
