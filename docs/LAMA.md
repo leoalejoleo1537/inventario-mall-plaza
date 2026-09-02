@@ -556,11 +556,15 @@ rastro y nadie puede responder por qué el inventario no cuadra.
 > **El 46% no es una proporción elegida por bonita: sale de medir el texto más
 > largo de la carta.**
 >
-> ⚠️ **LO QUE FALTA, Y ES DECISIÓN DE JHON, NO MÍA.** A **1024 px** el nombre
-> largo **sigue cortándose** (panel 454, pide 542). Se puede arreglar, pero
-> cuesta: el plano bajaría a ~427 px y pasaría de 5 columnas de mesas a 4.
-> **Eso es cambiar un problema por otro, y quién prefiere cuál lo dice él.**
-> Si el computador del local es de 1280 o más, no hay nada que hacer.
+> **DECISIÓN TOMADA (Jhon, 2026-09-02): a 1024 px se deja como está.** Ahí el
+> nombre largo **sigue cortándose** (panel 454, pide 542), y se acepta. La
+> alternativa era angostar el plano a ~427 px, que lo bajaba de 5 columnas de
+> mesas a 4: **cambiar un problema por otro.** No se vuelve a discutir salvo
+> que aparezca un computador de 1024 en un local.
+>
+> Se ofreció además una tercera vía —que el nombre **baje de línea** en vez de
+> cortarse— y también se descartó: las filas de la cuenta dejarían de tener
+> todas la misma altura, y esa lista se recorre con el dedo.
 >
 > **Prueba: `pruebas/lama-ancho.mjs`, 9 casos.** No mira el CSS ni el
 > porcentaje —eso puede cambiar— sino la única pregunta que le importa a quien
