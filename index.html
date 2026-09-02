@@ -856,6 +856,18 @@
     box-shadow:0 -9px 12px -13px rgba(20,40,70,.75)}
   .lama-acc{display:flex;gap:8px;margin-top:12px}
   .lama-acc .btn{flex:1}
+
+  /* C5 · LA CAJA DEL DESCUENTO EN EL PANEL. Va DEBAJO de "Cerrar mesa" y se
+     despliega hacia abajo, empujando lo de abajo — nunca superpuesta, que es
+     pedido textual. Las clases de dentro son las MISMAS de la ventana de cobro
+     (.lama-cob-desc): es el mismo descuento, tiene que verse igual. */
+  .lama-desc{margin-top:10px}
+  .lama-desc-abrir{margin-top:10px}
+  /* La línea de la suma: "Descuento 20 % · −$2.140". Ámbar, como todo lo que
+     resta en esta app, y alineada con el total que va justo abajo. */
+  .lama-desc-linea{display:flex;align-items:center;justify-content:flex-end;
+    padding:8px 14px 0;font-size:14px;font-weight:700;color:var(--amber-fg);
+    font-variant-numeric:tabular-nums}
   .lama-papel{background:var(--card);border:none;box-shadow:var(--sombra);border-radius:14px;padding:16px;
     font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13px;line-height:1.7;
     white-space:pre-wrap;margin-top:12px}
@@ -5572,6 +5584,10 @@ async function lamaCargar(forzar){
       LAMA_CARTA_SEDE = SEDE;
     }
     if(!LAMA_SALON) LAMA_SALON = (LAMA_MESAS[0] || {}).salon || 'Salón';
+    /* Los motivos de descuento los necesita AHORA el panel, no solo la ventana
+       de cobro (C5). `lamaCargarMedios` se pide una vez por sesión y en
+       silencio, así que llamarla acá no cuesta nada. */
+    await lamaCargarMedios();
     /* Los más pedidos son un promedio de semanas, no un dato del minuto. */
     if(LAMA_TOP_SEDE !== SEDE || Date.now() - LAMA_TOP_AT > 300000){
       LAMA_TOP_SEDE = SEDE; LAMA_TOP_AT = Date.now();
@@ -5928,10 +5944,57 @@ function lamaPintarPanel(){
   /* El buscador va PRIMERO, siempre, aunque la mesa esté vacía: es lo primero
      que se necesita al abrirla. El botón "Agregar productos" se queda —abre la
      carta completa, que sirve para mirar todo— pero ya no es el único camino. */
+  /* C5 · EL DESCUENTO EN LA SUMA. Va como una línea propia arriba del total,
+     con el formato que fijó Jhon en A3: "Descuento 20 % · −$2.140". El total
+     de abajo ya viene con él restado — si el descuento no se viera, el total
+     parecería estar mal calculado. Sigue sin propina, que es C4 y no se toca. */
+  const dPanel   = lamaDescDe(c);
+  const descPan  = lamaDescMonto(total, dPanel);
+  const lineaDesc = lamaDescHay(dPanel)
+    ? `<div class="lama-desc-linea"><span>${esc(lamaDescTexto(dPanel, descPan))}</span></div>`
+    : '';
   const cuerpo = lamaPanelBuscador() + (LAMA_ITEMS.length
-    ? pendiente + (salidos.length ? salidos.map(lamaLinea).join('')
-        + `<div class="lama-total"><span>Total</span><span>${plata(total)}</span></div>` : '')
+    ? pendiente + (salidos.length ? salidos.map(lamaLinea).join('') + lineaDesc
+        + `<div class="lama-total"><span>Total</span><span>${plata(total - descPan)}</span></div>` : '')
     : lamaCanasta('Sin productos agregados', 'Adicionar productos'));
+
+  /* LA CAJA DEL DESCUENTO. Se despliega HACIA ABAJO y nunca superpuesta —
+     pedido textual de C5—, así que va dentro del flujo del panel y empuja lo
+     de abajo. Reutiliza las clases de la ventana de cobro a propósito: es el
+     mismo descuento, tiene que verse igual en los dos lugares.
+
+     Solo aparece con la mesa abierta y con productos: un descuento sobre una
+     cuenta vacía es cero, y ofrecerlo invita a un gesto que no hace nada. */
+  const dEdit = LAMA_DESC;
+  const cajaDesc = (!LAMA_DESC_EN_PANEL || !LAMA_ITEMS.length) ? '' : (dEdit
+    ? `<div class="lama-cob-desc lama-desc" id="lama-desc">
+         <select data-descampo="motivo" aria-label="Motivo del descuento">
+           <option value="">¿Por qué el descuento?</option>
+           ${LAMA_MOTIVOS.map(x => `<option value="${esc(x.codigo)}"${
+              x.codigo === dEdit.motivo ? ' selected' : ''}>${esc(x.nombre)}</option>`).join('')}
+         </select>
+         <div class="dos">
+           <select data-descampo="formato" aria-label="Formato del descuento">
+             <option value="pct"${dEdit.formato === 'pct' ? ' selected' : ''}>Porcentaje %</option>
+             <option value="fijo"${dEdit.formato === 'fijo' ? ' selected' : ''}>Monto fijo $</option>
+           </select>
+           <input data-descampo="valor" inputmode="numeric" id="lama-desc-valor"
+             placeholder="${dEdit.formato === 'fijo' ? '3.000' : '20'}"
+             value="${esc(String(dEdit.valor ?? ''))}" aria-label="Valor del descuento">
+         </div>
+         <div class="mbtns">
+           <button type="button" class="btn btn-gris" data-lamaacc="desc-p-cancelar">Cancelar</button>
+           ${lamaDescHay(dPanel)
+             ? '<button type="button" class="btn btn-gris" data-lamaacc="desc-p-quitar">Quitar</button>' : ''}
+           <button type="button" class="btn btn-orange" data-lamaacc="desc-p-aplicar">Aplicar</button>
+         </div>
+       </div>`
+    : `<button type="button" class="lama-cob-abrir lama-desc-abrir" data-lamaacc="desc-p-abrir">
+         <span>${lamaDescHay(dPanel)
+           ? esc('Descuento · ' + (lamaMotivoDescNom(dPanel.motivo)))
+           : 'Aplicar un descuento'}</span>
+         <span>${lamaDescHay(dPanel) ? '−' + plata(descPan) : '+'}</span>
+       </button>`);
 
   cont.innerHTML = `<div class="lama-caja">
     <div class="lama-cab ${clase}">
@@ -5956,6 +6019,7 @@ function lamaPintarPanel(){
       <div class="lama-acc">
         <button type="button" class="btn btn-navy" data-lamaacc="cobrar">Cerrar mesa ${m.numero}</button>
       </div>
+      ${cajaDesc}
     </div>
   </div>`;
   /* ACÁ IBA EL DETALLE DEL TICKET, y se sacó el 2026-08-31 a pedido de Jhon.
@@ -6212,6 +6276,7 @@ async function lamaLlamar(fn, args, callado){
 async function lamaSeleccionar(mesaId){
   LAMA_SEL = mesaId; LAMA_PAPEL = null; LAMA_Q = '';
   LAMA_MENU = false; LAMA_MODO = null; LAMA_ELEGIDOS = []; LAMA_CARTA_ABIERTA = false;
+  LAMA_DESC = null;
   await lamaCargarItems(true);
   lamaPintar();
 }
@@ -6683,15 +6748,102 @@ const lamaMedioNom = c => (LAMA_MEDIOS.find(m => m.codigo === c) || {}).nombre |
 /* Las cuentas, en un solo lugar. La pantalla nunca calcula un total suelto:
    siempre pregunta acá, para que el número del pie y el del botón no puedan
    discrepar. */
+/* ==================================================================
+   C5 · EL DESCUENTO — uno solo por cuenta, visto en dos lugares
+   ==================================================================
+   Se aplica desde el panel de la mesa (el garzón, mientras atiende) y la
+   ventana de cobro lo muestra ya puesto. Si se cambia en un lado, cambia en
+   el otro, porque NO son dos descuentos: es uno.
+
+   POR QUÉ VIVE EN LA CUENTA Y NO EN LA PANTALLA. Hasta hoy el descuento
+   existía solo dentro de `LAMA_COB` —nacía vacío cada vez que se abría el
+   cobro— y recién se guardaba al cobrar. Con eso era imposible aplicarlo
+   desde el panel: al cerrar la ventana se perdía. Ahora se escribe en las
+   columnas `descuento_motivo/formato/valor` de `cuentas`, que YA EXISTÍAN
+   —las creó `sql/2026-08-lama-cierre.sql`— y que `lamaCargar` ya trae con su
+   `select('*')`. Por eso C5 no necesitó una sola línea de SQL.
+
+   Y como vive en la cuenta, viaja por el canal en vivo: el descuento que pone
+   uno lo ve el otro en su teléfono, sin recargar.
+
+   LA RAZÓN DE FONDO ES DE ARQUEO, no de pantalla: una sola cifra que
+   explicar. Dos descuentos que se apilan obligan a decidir qué pasa cuando
+   entre los dos el total llega a cero, y le dejan al arqueo dos números que
+   pueden no cuadrar.                                                       */
+
+/* INTERRUPTOR (§2.2). Apagado, la caja del panel desaparece y el descuento
+   se sigue aplicando desde la ventana de cobro, exactamente como antes de
+   hoy. No queda un hueco: queda el comportamiento anterior.
+
+   No va en `FLAGS` a propósito: esa constante es de Stock y este chat no la
+   toca (§0.9). El día que exista el panel de configuración, se muda. */
+const LAMA_DESC_EN_PANEL = true;
+
+let LAMA_DESC = null;   // {motivo, formato, valor} mientras se edita en el panel
+
+/* El descuento de una cuenta, leído de la base. */
+function lamaDescDe(c){
+  return {motivo:  (c && c.descuento_motivo)  || '',
+          formato: (c && c.descuento_formato) || '',
+          valor:   (c && c.descuento_valor != null) ? c.descuento_valor : ''};
+}
+
+/* CUÁNTA PLATA ES, en UN SOLO LUGAR. El panel, la ventana de cobro y el
+   comprobante preguntan acá, así que no pueden discrepar. Y hace el mismo
+   recorte que `cuenta_cobrar` en la base: nunca negativo, nunca más que el
+   subtotal — un descuento no devuelve plata. */
+function lamaDescMonto(sub, d){
+  let x = 0;
+  if(d && d.formato === 'pct')  x = Math.round(sub * (+d.valor || 0) / 100);
+  if(d && d.formato === 'fijo') x = +d.valor || 0;
+  if(x < 0)   x = 0;
+  if(x > sub) x = sub;
+  return x;
+}
+
+const lamaDescHay = d => !!(d && d.formato && +d.valor > 0);
+const lamaMotivoDescNom = c => (LAMA_MOTIVOS.find(x => x.codigo === c) || {}).nombre || '';
+
+/* Cómo se lee en pantalla: "Descuento 20 % · −$2.140". El formato lo fijó
+   Jhon en A3 y es el mismo en los dos lugares. */
+function lamaDescTexto(d, monto){
+  const q = d.formato === 'pct' ? `${fmt(+d.valor || 0)} %` : plata(+d.valor || 0);
+  return `Descuento ${q} · −${plata(monto)}`;
+}
+
+/* Guarda el descuento EN LA CUENTA. Es un `update` directo, como el que ya
+   hace la precuenta: las columnas existen y `cuenta_cobrar` vuelve a calcular
+   el monto desde el servidor al cerrar, así que acá no hay nada que validar
+   que la base no revalide después. */
+async function lamaGuardarDesc(d){
+  const c = lamaCuentaDe(LAMA_SEL); if(!c) return false;
+  lamaMioEmpieza();
+  try{
+    const { error } = await sb.from('cuentas').update({
+      descuento_motivo:  d.motivo  || null,
+      descuento_formato: d.formato || null,
+      descuento_valor:   d.formato ? (+d.valor || 0) : null,
+    }).eq('id', c.id);
+    if(error){ avisar('No se pudo guardar el descuento: ' + error.message); return false; }
+    /* La copia en memoria se pone al día sola: el canal en vivo puede tardar,
+       y el número tiene que moverse cuando se toca el botón. */
+    c.descuento_motivo  = d.motivo  || null;
+    c.descuento_formato = d.formato || null;
+    c.descuento_valor   = d.formato ? (+d.valor || 0) : null;
+    return true;
+  } finally { lamaMioTermina(); }
+}
+
 function lamaCobCuentas(){
   const sub = LAMA_ITEMS.filter(i => !lamaEstaAnulado(i))
     .reduce((a,i) => a + (+i.cantidad||0) * (+i.precio||0), 0);
-  const d = LAMA_COB ? LAMA_COB.desc : null;
-  let desc = 0;
-  if(d && d.formato === 'pct')  desc = Math.round(sub * (+d.valor||0) / 100);
-  if(d && d.formato === 'fijo') desc = +d.valor || 0;
-  if(desc < 0) desc = 0;
-  if(desc > sub) desc = sub;      // un descuento no devuelve plata
+  /* De dónde sale el descuento, y el orden importa: si la ventana de cobro
+     está abierta manda lo que se está editando ahí —para que el número se
+     mueva mientras se escribe—; si no, manda lo que está guardado en la
+     cuenta, que es lo que puso el panel. Es UN descuento con dos vistas, no
+     dos descuentos. */
+  const d = LAMA_COB ? LAMA_COB.desc : lamaDescDe(lamaCuentaDe(LAMA_SEL));
+  const desc = lamaDescMonto(sub, d);
   const prop   = LAMA_COB ? LAMA_COB.propinas.reduce((a,l) => a + (+l.monto||0), 0) : 0;
   const total  = sub - desc + prop;
   const pagado = LAMA_COB ? LAMA_COB.pagos.reduce((a,l) => a + (+l.monto||0), 0) : 0;
@@ -6703,12 +6855,16 @@ async function lamaAbrirCobro(){
   await lamaCargarMedios();
   const sub = LAMA_ITEMS.filter(i => !lamaEstaAnulado(i))
     .reduce((a,i) => a + (+i.cantidad||0) * (+i.precio||0), 0);
+  /* EL DESCUENTO NACE PUESTO (C5). Si el garzón ya lo aplicó desde el panel,
+     la ventana lo muestra hecho y el monto a cobrar ya viene descontado. Antes
+     nacía vacío y había que volver a escribirlo acá. */
+  const d0 = lamaDescDe(c);
   LAMA_COB = {
     propinas: [],
     /* REGLA 3 — el monto nace con el total exacto. Sin propina todavía, el
-       total es el subtotal. */
-    pagos: [{medio:'efectivo', monto: sub}],
-    desc: {motivo:'', formato:'', valor:''},
+       total es el subtotal menos el descuento que ya estuviera puesto. */
+    pagos: [{medio:'efectivo', monto: sub - lamaDescMonto(sub, d0)}],
+    desc: d0,
     descAbierto: false,
     propSuelta: false,
   };
@@ -6756,7 +6912,7 @@ function lamaPintarCobro(){
     `<div class="lama-cob-fila"><span class="nm"><span class="q">${fmt(i.cantidad)}×</span> ${esc(i.nombre)}</span>
      <span>${plata((+i.cantidad||0)*(+i.precio||0))}</span></div>`).join('');
 
-  const motivoNom = (LAMA_MOTIVOS.find(x => x.codigo === d.motivo) || {}).nombre || '';
+  const motivoNom = lamaMotivoDescNom(d.motivo);
   const descuentoCaja = LAMA_COB.descAbierto
     ? `<div class="lama-cob-desc">
          <select data-cobdesc="motivo" aria-label="Motivo del descuento">
@@ -6774,7 +6930,9 @@ function lamaPintarCobro(){
              aria-label="Valor del descuento">
          </div>
          <div class="mbtns">
-           <button type="button" class="btn btn-gris"   data-lamaacc="desc-cancelar">Cancelar</button>
+           <button type="button" class="btn btn-gris" data-lamaacc="desc-cancelar">Cancelar</button>
+           ${lamaDescHay(lamaDescDe(lamaCuentaDe(LAMA_SEL)))
+             ? '<button type="button" class="btn btn-gris" data-lamaacc="desc-quitar">Quitar</button>' : ''}
            <button type="button" class="btn btn-orange" data-lamaacc="desc-aplicar">Aplicar</button>
          </div>
        </div>`
@@ -6896,14 +7054,28 @@ function lamaCobrarEngancharUnaVez(){
       if(!LAMA_COB.desc.formato) LAMA_COB.desc.formato = 'pct';
       lamaPintarCobro(); return;
     }
+    /* C5 · LOS DOS LUGARES SE COMPORTAN IGUAL. Cancelar cierra la caja y deja
+       lo que estaba guardado —no lo borra—; para sacarlo está Quitar. Antes
+       Cancelar vaciaba el descuento, y con el descuento viviendo ahora en la
+       cuenta eso habría borrado en silencio lo que puso el garzón en el panel. */
     if(a === 'desc-cancelar'){
-      LAMA_COB.desc = {motivo:'', formato:'', valor:''};
+      LAMA_COB.desc = lamaDescDe(lamaCuentaDe(LAMA_SEL));
       LAMA_COB.descAbierto = false;
       lamaCobRecargarPago(); lamaPintarCobro(); return;
+    }
+    if(a === 'desc-quitar'){
+      if(await lamaGuardarDesc({motivo:'', formato:'', valor:''})){
+        LAMA_COB.desc = {motivo:'', formato:'', valor:''};
+        LAMA_COB.descAbierto = false;
+        lamaCobRecargarPago(); lamaPintarCobro();
+      }
+      return;
     }
     if(a === 'desc-aplicar'){
       if(!LAMA_COB.desc.motivo){ avisar('Elige por qué se hace el descuento.'); return; }
       if(!(+LAMA_COB.desc.valor > 0)){ avisar('Escribe cuánto es el descuento.'); return; }
+      /* Se guarda EN LA CUENTA, para que el panel lo vea puesto al volver. */
+      if(!await lamaGuardarDesc(LAMA_COB.desc)) return;
       LAMA_COB.descAbierto = false;
       lamaCobRecargarPago(); lamaPintarCobro(); return;
     }
@@ -7192,6 +7364,30 @@ $('view-lama').addEventListener('click', async e => {
     else if(a === 'cobrar')        await lamaCerrar();
     else if(a === 'mas')           await lamaMas();
     else if(a === 'cerrar-carta')  lamaCerrarCarta();
+    /* C5 · EL DESCUENTO DESDE EL PANEL. Se edita en una copia (`LAMA_DESC`) y
+       recién al Aplicar se escribe en la cuenta: así Cancelar deja las cosas
+       exactamente como estaban, incluso si ya había un descuento puesto. */
+    else if(a === 'desc-p-abrir'){
+      const cd = lamaCuentaDe(LAMA_SEL);
+      LAMA_DESC = lamaDescDe(cd);
+      if(!LAMA_DESC.formato) LAMA_DESC.formato = 'pct';
+      lamaPintarPanel();
+      const cv = $('lama-desc-valor'); if(cv) cv.focus();
+    }
+    else if(a === 'desc-p-cancelar'){ LAMA_DESC = null; lamaPintarPanel(); }
+    else if(a === 'desc-p-quitar'){
+      if(await lamaGuardarDesc({motivo:'', formato:'', valor:''})){
+        LAMA_DESC = null; lamaPintarPanel();
+        aviso('Descuento quitado');
+      }
+    }
+    else if(a === 'desc-p-aplicar'){
+      if(!LAMA_DESC.motivo){ avisar('Elige por qué se hace el descuento.'); return; }
+      if(!(+LAMA_DESC.valor > 0)){ avisar('Escribe cuánto es el descuento.'); return; }
+      if(await lamaGuardarDesc(LAMA_DESC)){
+        LAMA_DESC = null; lamaPintarPanel();
+      }
+    }
     else if(a === 'pp-cancelar') { LAMA_PP = null; lamaPintarPP(); }
     else if(a === 'pp-guardar')    await lamaGuardarPP();
     else if(a === 'menu')        { LAMA_MENU = !LAMA_MENU; lamaPintarPanel(); }
@@ -7202,7 +7398,7 @@ $('view-lama').addEventListener('click', async e => {
     else if(a === 'cerrar-panel'){
       LAMA_SEL = null; LAMA_PAPEL = null; LAMA_Q = '';
       LAMA_MENU = false; LAMA_MODO = null; LAMA_ELEGIDOS = [];
-      LAMA_CARTA_ABIERTA = false;
+      LAMA_CARTA_ABIERTA = false; LAMA_DESC = null;
       lamaPintar();
     }
     return;
@@ -7225,11 +7421,27 @@ document.addEventListener('keydown', e => {
   if(LAMA_QP){ LAMA_QP = ''; lamaPintarPanel(); return; }
   if(LAMA_PP){ LAMA_PP = null; lamaPintarPP(); return; }
   if(LAMA_CARTA_ABIERTA){ lamaCerrarCarta(); return; }
+  if(LAMA_DESC){ LAMA_DESC = null; lamaPintarPanel(); return; }
   if(LAMA_MENU){ LAMA_MENU = false; lamaPintarPanel(); return; }
   if(LAMA_MODO){ lamaSalirDeMover(); }
 });
 
+/* Los campos de la caja del descuento del panel. Se anota el valor y NO se
+   repinta: repintar mientras se escribe le saca el foco al campo y en el
+   teléfono cierra el teclado — la misma lección que el buscador (C1-C2-C3). */
+$('view-lama').addEventListener('change', e => {
+  const dc = e.target.closest('[data-descampo]');
+  if(dc && LAMA_DESC){
+    LAMA_DESC[dc.dataset.descampo] = dc.value;
+    /* El formato cambia el ejemplo del campo (20 vs 3.000), así que ese sí
+       repinta; el valor no. */
+    if(dc.dataset.descampo === 'formato') lamaPintarPanel();
+  }
+});
+
 $('view-lama').addEventListener('input', e => {
+  const dv = e.target.closest('[data-descampo]');
+  if(dv && LAMA_DESC){ LAMA_DESC[dv.dataset.descampo] = dv.value; return; }
   if(e.target.id === 'lama-q'){ LAMA_Q = e.target.value; lamaPintarCartaLista(); }
   /* El buscador del panel repinta SOLO su lista. Repintar el panel entero le
      saca el foco al campo y en el teléfono el teclado se cierra en la primera

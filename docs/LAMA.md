@@ -551,10 +551,45 @@ como corridos, el plan huérfano borrado, y esta ruta en lugar de las tablas.
 
 #### F1 · Terminar el cobro — *el bloque D del atlas*
 
-**C5 · El descuento desde el panel.** Recuadro bajo "Cerrar mesa" que se
-despliega **hacia abajo, no superpuesto**: motivo → formato (% o $) → valor →
-Confirmar/Cancelar. **Un solo descuento por cuenta**, visto en dos lugares. La
-base ya lo soporta entero, así que es **solo pantalla**.
+**C5 · El descuento desde el panel. ✅ HECHO 2026-09-02.** Recuadro bajo
+"Cerrar mesa" que se despliega hacia abajo y nunca superpuesto: motivo →
+formato (% o $) → valor → Cancelar/Quitar/Aplicar.
+
+**Y salió sin una sola línea de SQL, como estaba previsto** — se comprobó
+leyendo el código, no suponiéndolo: las columnas `descuento_motivo/formato/valor`
+de `cuentas` ya existían desde `sql/2026-08-lama-cierre.sql`, y `lamaCargar` las
+trae con su `select('*')`.
+
+**LO QUE HUBO QUE CAMBIAR, y es el corazón del asunto: DÓNDE VIVE EL DATO.**
+Hasta hoy el descuento existía solo dentro de `LAMA_COB` —nacía vacío cada vez
+que se abría el cobro— y recién se guardaba al cobrar. Con eso, aplicarlo desde
+el panel era imposible: al cerrar la ventana se perdía. Ahora se escribe en la
+cuenta, y de ahí lo leen los dos lugares. Como vive en la cuenta, además
+**viaja por el canal en vivo**: lo que pone uno lo ve el otro en su teléfono.
+
+De eso salieron dos cambios que no estaban en la lista y hacían falta:
+
+| | |
+|---|---|
+| El cálculo tiene **un solo dueño** | `lamaDescMonto()`. El panel, el cobro y el comprobante preguntan ahí, así que no pueden discrepar. Hace el mismo recorte que `cuenta_cobrar` en la base: nunca negativo, nunca más que el subtotal |
+| **Cancelar dejó de borrar** | Antes vaciaba el descuento. Con el descuento viviendo en la cuenta, eso habría borrado en silencio lo que puso el garzón en el panel. Ahora Cancelar cierra la caja y deja lo guardado; para sacarlo está **Quitar**. Los dos lugares se comportan igual |
+
+**Interruptor** (§2.2): `LAMA_DESC_EN_PANEL`. Apagado, la caja del panel
+desaparece y el descuento se sigue aplicando desde la ventana de cobro,
+exactamente como antes de hoy — **no queda un hueco, queda lo anterior**. No va
+en `FLAGS` a propósito: esa constante es de Stock y este chat no la toca (§0.9).
+
+**Prueba: `pruebas/lama-descuento.mjs`, 21 casos.** Lo que más se prueba no es
+la cajita: es **dónde queda el dato**, mirando el `update` que sale a la base y
+no el HTML. Incluye el interruptor apagado en las dos mitades (que la caja no
+esté **y** que el cobro siga teniendo la suya), y está probada contra el código
+viejo: ahí el botón del panel no existe.
+
+⚠️ **Un tropiezo que vale anotar, porque va a volver a pasar:** `avisar()` **no
+es un toast** — abre la ventana modal de la app y tapa el panel hasta que
+alguien la cierra. La prueba daba seis timeouts seguidos y parecía un bug de la
+caja del descuento; era el aviso haciendo bien su trabajo. En una prueba, después
+de un `avisar()` hay que cerrar `#ask-ok`.
 
 **A1 · Pago parcial por producto.** Lo más grande, y **no es solo frontend**.
 
