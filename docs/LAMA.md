@@ -16,6 +16,7 @@
 | Dónde | Qué hay |
 |---|---|
 | **Regla de despliegue** | Lama va a `master` apenas pasa las pruebas |
+| **La rutina de noche** | esta sesión se despierta sola a las 03:00 y sigue la ruta |
 | **Qué es, en una frase** | y por qué está escondida |
 | **Etapas 1 y 4** | lo que ya está terminado |
 | **Las dos vueltas del 31 de agosto** | la limpieza, y los colores medidos de Fudo |
@@ -62,6 +63,50 @@ publicar sin pensarlo dos veces.
 Lama estén en verde, y **comparar la batería contra una línea base** sacada de
 `origin/master` con `git worktree`. Decir "no toqué Stock" es una intención;
 comparar dos corridas es un dato.
+
+### LA RUTINA DE NOCHE — esta sesión se despierta sola a las 03:00
+
+*(Creada el 2026-09-02 a pedido de Jhon, que no puede mirar el chat durante sus
+turnos.)*
+
+| | |
+|---|---|
+| Trigger | `trig_0113wW8VvBFhcvDtApDUSSYz` · *Llamita Lama — construir de noche* |
+| Cuándo | `0 7 * * *` en **UTC** = **03:00 de Chile**, todos los días |
+| Sobre qué | **la MISMA sesión** (`session_01AFS6zizEKYe4nd8chvUAjh`), no una nueva |
+| Qué manda | *"Seguí con el próximo punto pendiente de `docs/LAMA.md`…"* |
+
+**Por qué la misma sesión y no una nueva, que es lo contrario de las revisiones
+de salud:** una auditoría se beneficia de llegar sin memoria —lee el repo y
+juzga—, pero **construir se beneficia de recordar**. El modelo del pago parcial,
+los nombres ya acordados, por qué `cuenta_cobrar` se llama así: nada de eso está
+escrito en ningún lado con el detalle con que se discutió. Una sesión nueva cada
+noche volvería a preguntar lo ya contestado.
+
+**Por qué las 03:00 y no otra hora.** Los turnos de Jhon son 09:00–15:30 unos
+días y 15:00–21:00 otros, así que la ventana libre de la semana entera es
+**21:00–09:00**. Se elige el **centro**, no un borde, por una razón concreta: el
+cron se evalúa en UTC y **Chile cambia a horario de verano el 5 de septiembre**
+(UTC−4 → UTC−3), así que el horario local **se corre una hora sola**. Desde el
+centro eso es inofensivo (03:00 pasa a 04:00, con 5 horas de margen); desde un
+borde habría que acordarse de reprogramarlo, y nadie se acuerda.
+
+⚠️ **DOS COSAS QUE HAY QUE SABER, y son limitaciones reales:**
+
+1. **No manda aviso al teléfono, y no se puede.** El servidor **rechaza** las
+   notificaciones en las rutinas que disparan sobre una sesión existente: solo
+   las admiten las que abren sesión nueva. **Disparar sobre esta sesión y
+   recibir aviso son mutuamente excluyentes.** Hay que abrir el chat para ver
+   qué se hizo. Las revisiones de salud sí avisan, porque abren sesión nueva.
+2. **Si la sesión queda pidiendo permiso, la rutina se despierta y se queda
+   esperando** a alguien que no está, y se pierde la noche sin que nadie se
+   entere. No es hipotético: es lo que el propio esquema advierte para las
+   sesiones autónomas.
+
+**Y cómo se cruza con la revisión de salud de Lama**, que corre lunes, miércoles
+y viernes a las 06:00 de Chile: **tres horas después de esta.** O sea que esos
+días la revisión audita el trabajo de la misma noche. El orden es el correcto y
+no es casualidad que convenga — construir primero, revisar después.
 
 ### Qué es, en una frase
 
