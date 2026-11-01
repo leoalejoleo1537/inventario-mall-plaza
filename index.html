@@ -4,13 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
 <title>Inventario</title>
-<link rel="manifest" href="manifest.json" media="(prefers-color-scheme: light)">
-<link rel="manifest" href="manifest-dark.json" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#0F1E31">
-<link rel="icon" type="image/png" href="icons/icon-192.png" media="(prefers-color-scheme: light)">
-<link rel="icon" type="image/png" href="icons/icon-192-dark.png" media="(prefers-color-scheme: dark)">
-<link rel="apple-touch-icon" href="icons/icon-180.png" media="(prefers-color-scheme: light)">
-<link rel="apple-touch-icon" href="icons/icon-180-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="manifest" id="app-manifest" href="manifest.json">
+<link rel="icon" type="image/png" id="app-icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" id="app-apple-touch-icon" href="icons/icon-180.png">
+<script>
+  /* Safari de iPhone no respeta de forma fiable `media` en apple-touch-icon:
+     expone un ÚNICO recurso correcto antes de que la persona agregue la PWA. */
+  (function(){
+    const oscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if(!oscuro) return;
+    document.getElementById('app-manifest').href = 'manifest-dark.json';
+    document.getElementById('app-icon').href = 'icons/icon-192-dark.png';
+    document.getElementById('app-apple-touch-icon').href = 'icons/icon-180-dark.png';
+  })();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Llamita">
