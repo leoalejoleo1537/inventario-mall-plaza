@@ -28,6 +28,10 @@
 <!-- Excel se usa solo al descargar. `defer` permite pintar el inicio y el
      logo antes de terminar de bajar esta biblioteca pesada. -->
 <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- El QR se genera en este mismo dispositivo. Las dos copias locales son
+     qrcode-generator 2.0.4 (MIT): la URL nunca viaja a un servicio externo. -->
+<script defer src="vendor/qrcode-generator/qrcode.js"></script>
+<script defer src="vendor/qrcode-generator/qrcode_UTF8.js"></script>
 <style>
   /* ══════════ PALETA "ACERO" (Jhon, 2026-08-20) ══════════
      Elegida entre cinco celestes, con este argumento: es la que más contraste
@@ -249,7 +253,7 @@
           transform:translateX(-100%);transition:transform .22s cubic-bezier(.2,.7,.3,1);
           display:flex;flex-direction:column;padding:18px 0 14px;overflow-y:auto;box-shadow:2px 0 24px rgba(15,30,49,.18)}
   .drawer.open{transform:translateX(0)}
-  .drawer-top{padding:0 20px 14px;border-bottom:1px solid var(--border);margin-bottom:6px}
+  .drawer-top{position:relative;padding:0 62px 14px 20px;border-bottom:1px solid var(--border);margin-bottom:6px}
   .drawer-sede{font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px}
   .drawer-sec{font-size:12px;color:var(--muted);font-weight:700;padding:14px 20px 6px}
   .drawer-item{display:flex;align-items:center;gap:14px;width:100%;padding:13px 20px;border:none;background:none;
@@ -262,6 +266,33 @@
   .drawer-salir{width:40px;height:40px;border:none;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .drawer-salir svg{width:21px;height:21px}
   .drawer .live{display:inline-flex;background:var(--gray-bg);border-radius:999px;color:var(--gray-fg);padding:5px 11px;font-size:12.5px}
+  .drawer-qr{position:absolute;top:0;right:15px;width:38px;height:38px;border:0;border-radius:12px;
+    background:var(--gray-bg);color:var(--sec-filo);display:grid;place-items:center;cursor:pointer;padding:0;
+    transition:transform .12s ease,background .15s ease}
+  .drawer-qr:active{transform:scale(.92);background:var(--border)}
+  .drawer-qr svg{width:20px;height:20px;display:block}
+
+  /* Compartir la app. La ventana usa el mismo desenfoque de todo el proyecto
+     y el QR queda blanco puro para que cualquier cámara lo lea bien. */
+  .overlay.qr-overlay{z-index:120}
+  .qr-dialog{position:relative;width:min(100%,360px);max-height:calc(100vh - 32px);overflow:auto;
+    padding:24px 23px 20px;border-radius:20px;background:var(--card);box-shadow:0 18px 52px rgba(15,30,49,.28);
+    text-align:center;animation:qr-entra .24s cubic-bezier(.2,.9,.3,1.06)}
+  .qr-x{position:absolute;top:9px;right:9px;width:36px;height:36px;display:grid;place-items:center;border:0;
+    border-radius:999px;background:transparent;color:var(--muted);font-size:23px;cursor:pointer}
+  .qr-x:active{background:var(--gray-bg);transform:scale(.94)}
+  .qr-titulo{margin:2px 34px 4px;font-size:18px;color:var(--navy)}
+  .qr-ayuda{margin:0 0 14px;color:var(--muted);font-size:12px}
+  .qr-code{display:flex;align-items:center;justify-content:center;width:252px;height:252px;max-width:100%;
+    margin:0 auto 13px;border-radius:14px;background:#fff}
+  .qr-code svg{display:block;width:240px;height:240px;max-width:100%;max-height:100%;shape-rendering:crispEdges}
+  .qr-copy{width:100%;height:42px;border:0;border-radius:11px;background:var(--gray-bg);color:var(--navy);
+    font:800 13px/1 -apple-system,Segoe UI,Roboto,Arial,sans-serif;cursor:pointer}
+  .qr-copy:active{transform:scale(.97)}
+  .qr-feedback{min-height:16px;margin:7px 0 0;color:var(--green-fg);font-size:11px}
+  .qr-feedback.error{color:var(--red-fg)}
+  @keyframes qr-entra{from{opacity:0;transform:scale(.9) translateY(8px)}to{opacity:1;transform:none}}
+  @media(max-width:520px){.qr-dialog{padding:23px 19px 18px}.qr-code{width:236px;height:236px}.qr-code svg{width:224px;height:224px}}
   /* En computadora el menú deja de ser una ventana temporal y pasa a formar
      parte de la arquitectura. Queda un poco más angosto que el panel móvil y
      libera el resto de la pantalla para trabajar con dos rondas a la vez. */
@@ -1444,8 +1475,27 @@
      posición real del botón, así el gesto y lo que aparece se sienten unidos. */
   @keyframes brotar{ from{opacity:0;transform:scale(.965) translateY(-8px)} to{opacity:1;transform:none} }
   #list.brota{animation:brotar .26s cubic-bezier(.22,.8,.3,1)}
+
+  /* Entrada de una sede: el contenido no cae armado de golpe. Se prepara
+     invisible mientras llegan secciones/productos y luego cada bloque sube
+     desde una escala menor, como capas que se acomodan en la superficie. */
+  #view-inv.inv-espera > *{opacity:0;transform:scale(.97) translateY(12px)}
+  #view-inv.inv-revela > *{animation:inv-escama .34s cubic-bezier(.2,.82,.3,1) both}
+  #view-inv.inv-revela > :nth-child(2){animation-delay:.035s}
+  #view-inv.inv-revela > :nth-child(3){animation-delay:.07s}
+  #view-inv.inv-revela > :nth-child(4){animation-delay:.105s}
+  #view-inv.inv-revela > :nth-child(5){animation-delay:.14s}
+  #view-inv.inv-revela > :nth-child(6){animation-delay:.175s}
+  #view-inv.inv-revela > :nth-child(7){animation-delay:.21s}
+  #view-inv.inv-revela > :nth-child(8){animation-delay:.245s}
+  @keyframes inv-escama{from{opacity:0;transform:scale(.97) translateY(12px);filter:blur(2px)}
+                         to{opacity:1;transform:none;filter:none}}
   @media (prefers-reduced-motion: reduce){
     #list.brota{animation:none}
+    #view-inv.inv-espera > *{opacity:0;transform:none}
+    #view-inv.inv-revela > *,.qr-dialog{animation:none}
+    .drawer-qr,.qr-copy,.qr-x{transition:none}
+    .drawer-qr:active,.qr-copy:active,.qr-x:active{transform:none}
     .tipo{transition:none}
     .tipo:active{transform:none}
     .csede{transition:none}
@@ -2613,6 +2663,9 @@
   <div class="drawer-top">
     <div class="drawer-sede" id="drawerSede">—</div>
     <span class="live" id="live"><span class="dot"></span><span id="liveText">—</span></span>
+    <button type="button" class="drawer-qr" id="drawerQr" data-accion="qr" aria-label="Compartir aplicación" title="Compartir aplicación" aria-haspopup="dialog" aria-controls="qr-overlay">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 3.5h6v6h-6zM14.5 3.5h6v6h-6zM3.5 14.5h6v6h-6z"></path><path d="M14.5 14.5h2v2h-2zM18.5 14.5h2v6h-6v-2M18.5 18.5h2"></path></svg>
+    </button>
   </div>
 
   <div class="drawer-sec">Atajos</div>
@@ -2652,6 +2705,18 @@
     </button>
   </div>
 </aside>
+
+<!-- Compartir abre siempre la URL pública, nunca una sesión ni una sede. -->
+<div class="overlay overlay-blur qr-overlay" id="qr-overlay" aria-hidden="true">
+  <section class="qr-dialog" id="qr-dialog" role="dialog" aria-modal="true" aria-labelledby="qr-titulo" tabindex="-1">
+    <button type="button" class="qr-x" id="qr-x" aria-label="Cerrar">×</button>
+    <h2 class="qr-titulo" id="qr-titulo">Compartir Llamita</h2>
+    <p class="qr-ayuda">Escanea con la cámara</p>
+    <div class="qr-code" id="qr-code" role="img" aria-label="Código QR para abrir Llamita"></div>
+    <button type="button" class="qr-copy" id="qr-copy">Copiar enlace</button>
+    <p class="qr-feedback" id="qr-feedback" role="status" aria-live="polite"></p>
+  </section>
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -3899,6 +3964,8 @@ const FLAGS = {
   tareas: { angamos:true, plaza:false, central:false },
   inicioVisual: true,       // false = vuelve a abrir sin portada de teléfono
   trabajoVisible: true,    // false = las esperas breves vuelven al bloque simple
+  compartirQr: true,       // false = el botón desaparece del panel lateral
+  entradaSuave: true,      // false = el inventario vuelve a aparecer de golpe
 };
 /* EL INTERRUPTOR MANDA, y FLAGS es solo el valor de fábrica. Antes eran dos
    dueños —FLAGS decidía si mostrar el botón y el interruptor solo sabía
@@ -4090,10 +4157,60 @@ function pedirTexto(titulo, valor){
   });
 }
 
+/* ---------------- compartir la aplicación ----------------
+   El QR lleva a la portada pública, sin credenciales, sede ni parámetros.
+   Se genera localmente: abrir esta ventana no consulta ningún servidor. */
+const APP_URL_PUBLICA='https://inventario-plaza-v2.vercel.app/';
+let qrFeedbackTimer=null;
+function abrirQrApp(){
+  if(!FLAGS.compartirQr)return;
+  const panel=$('qr-overlay'),codigo=$('qr-code'),feedback=$('qr-feedback');
+  feedback.textContent='';feedback.classList.remove('error');
+  if(window.qrcode){
+    const qr=qrcode(0,'M');qr.addData(APP_URL_PUBLICA,'Byte');qr.make();
+    codigo.innerHTML=qr.createSvgTag({cellSize:7,margin:4,scalable:true});
+  }else codigo.textContent='No se pudo generar el código.';
+  panel.classList.add('open');panel.setAttribute('aria-hidden','false');
+  requestAnimationFrame(()=>$('qr-x').focus());
+}
+function cerrarQrApp(){
+  const panel=$('qr-overlay');if(!panel.classList.contains('open'))return;
+  panel.classList.remove('open');panel.setAttribute('aria-hidden','true');
+  /* En teléfono el panel ya se cerró al abrir el QR, así que devolver el
+     foco a su botón lo dejaría fuera de la pantalla. En computadora el
+     panel es fijo y sí corresponde volver al icono que inició la acción. */
+  (matchMedia('(min-width:1100px)').matches ? $('drawerQr') : $('btnMenu')).focus();
+}
+$('qr-x').addEventListener('click',cerrarQrApp);
+$('qr-overlay').addEventListener('click',e=>{if(e.target===$('qr-overlay'))cerrarQrApp();});
+$('qr-copy').addEventListener('click',async()=>{
+  const feedback=$('qr-feedback');let copiado=false;
+  try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(APP_URL_PUBLICA);copiado=true;}}catch(_){ }
+  if(!copiado){
+    const campo=document.createElement('textarea');campo.value=APP_URL_PUBLICA;campo.setAttribute('readonly','');
+    campo.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(campo);campo.select();
+    try{copiado=document.execCommand('copy');}catch(_){ }campo.remove();
+  }
+  feedback.classList.toggle('error',!copiado);
+  feedback.textContent=copiado?'Enlace copiado':'No se pudo copiar';
+  clearTimeout(qrFeedbackTimer);
+  if(copiado)qrFeedbackTimer=setTimeout(()=>{feedback.textContent='';},2200);
+});
+document.addEventListener('keydown',e=>{
+  const panel=$('qr-overlay');if(!panel.classList.contains('open'))return;
+  if(e.key==='Escape'){cerrarQrApp();return;}
+  if(e.key==='Tab'){
+    const primero=$('qr-x'),ultimo=$('qr-copy');
+    if(e.shiftKey&&document.activeElement===primero){e.preventDefault();ultimo.focus();}
+    else if(!e.shiftKey&&document.activeElement===ultimo){e.preventDefault();primero.focus();}
+  }
+});
+
 /* ---------------- menú lateral ---------------- */
 function pintarIdentidadMenu(){
   $('drawerSede').textContent = SEDE ? SEDES[SEDE].label : '—';
   $('drawerUser').textContent = NOMBRE ? saludo() : '—';
+  $('drawerQr').style.display = FLAGS.compartirQr ? '' : 'none';
 }
 function abrirMenu(){
   pintarIdentidadMenu();
@@ -4110,6 +4227,7 @@ $('drawer').addEventListener('click',e=>{
   if(a==='historial')      pickTab('hist');
   if(a==='ajustes')        pickTab('ajustes');
   if(a==='cambiar-sede')   showGate();
+  if(a==='qr')             abrirQrApp();
 });
 
 /* Pregunta de sí/no con la cara de la app. El confirm() del navegador pinta
@@ -4226,7 +4344,34 @@ function cerrarDetalle(){
 let vistaActual = 'inv';
 
 /* ---------------- selección de sede ---------------- */
-function pickSede(s){
+let ENTRADA_INV_RUN=0, entradaInvTimer=null;
+function prepararEntradaInventario(){
+  const vista=$('view-inv');
+  clearTimeout(entradaInvTimer);
+  vista.classList.remove('inv-revela');
+  if(FLAGS.entradaSuave){
+    vista.classList.add('inv-espera');
+    vista.setAttribute('aria-busy','true');
+  }else{
+    vista.classList.remove('inv-espera');
+    vista.setAttribute('aria-busy','false');
+  }
+}
+function revelarEntradaInventario(run){
+  if(run!==ENTRADA_INV_RUN)return;       // ya se abrió otra sede
+  const vista=$('view-inv');
+  vista.classList.remove('inv-espera');
+  vista.setAttribute('aria-busy','false');
+  if(!FLAGS.entradaSuave)return;
+  void vista.offsetWidth;                // reinicia la secuencia al reingresar
+  vista.classList.add('inv-revela');
+  entradaInvTimer=setTimeout(()=>{
+    if(run===ENTRADA_INV_RUN) vista.classList.remove('inv-revela');
+  },700);
+}
+async function pickSede(s){
+  const entrada=++ENTRADA_INV_RUN;
+  prepararEntradaInventario();
   SEDE = s;
   $('topTitle').textContent = SEDES[s].label;
   $('topSede').textContent = TITULOS.inv;
@@ -4290,17 +4435,27 @@ function pickSede(s){
   REPARTOS=[]; cajasAbiertas.clear(); setModoEdicion(false);   // se recupera abajo si estaba puesto
   $('body-cerrados').style.display='none';
   $('repartos-abiertos').innerHTML='';
-  cargarPermisos();
-  cargarTareas();
-  cargarSecciones();
-  loadData();
-  loadRepartos();
-  revisarMotor();          // si el motor está caído, se ve al entrar
+  /* Secciones tiene que llegar antes que los productos: decide las columnas
+     AM/PM. Las demás lecturas son independientes y viajan juntas. La vista
+     se revela cuando todas resolvieron; el tope evita una pantalla escondida
+     para siempre si una conexión queda pendiente. */
+  const productos=(async()=>{await cargarSecciones();await loadData();})();
+  const cargas=[cargarPermisos(),cargarTareas(),productos,loadRepartos(),revisarMotor()];
   subscribeRealtime();
   if(presChannel){ try{ presChannel.track({nombre:NOMBRE, sede:SEDE}); }catch(e){} }  // avisa en qué sede estoy
+  try{
+    await conTiempo(Promise.allSettled(cargas),15,'La apertura de la sede');
+  }catch(e){
+    console.warn('La sede se mostró con algunas cargas pendientes.',e);
+  }
+  revelarEntradaInventario(entrada);
 }
 function showGate(){
   if(channel){ sb.removeChannel(channel); channel=null; }
+  ENTRADA_INV_RUN++;
+  clearTimeout(entradaInvTimer);
+  $('view-inv').classList.remove('inv-espera','inv-revela');
+  $('view-inv').setAttribute('aria-busy','false');
   SEDE=null;
   $('gate').classList.remove('hidden');
   $('liveText').textContent='—';
@@ -10462,10 +10617,9 @@ $('adm-nuevo').addEventListener('click', async ()=>{
         'Ir a Bodega')) return;
     /* Cambiar de sede es lo mismo que hace el selector de siempre: se
        apoya en pickSede en vez de escribir otra forma de hacerlo. */
-    pickSede('central');
-    /* pickSede deja la app en Inventario y recargando; se espera a que
-       termine, si no la pestaña Enlaces se pinta sobre datos viejos. */
-    await new Promise(r=>setTimeout(r, 400));
+    /* pickSede deja la app en Inventario y espera las lecturas esenciales;
+       Enlaces ya no depende de una pausa arbitraria de 400 ms. */
+    await pickSede('central');
   }
   pickTab('enlaces');
   setTimeout(()=>{ const c = $('enl-n-nombre'); if(c) c.focus(); }, 300);

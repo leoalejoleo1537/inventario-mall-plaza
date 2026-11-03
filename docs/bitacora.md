@@ -8,6 +8,17 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **Compartir la aplicación deja de depender de buscar el
+  enlace.** El panel lateral incorpora un acceso compacto que genera en el
+  mismo dispositivo un QR hacia la portada pública de Llamita; nunca incluye
+  sesión, sede ni credenciales y no envía la URL a servicios externos. La
+  ventana conserva el desenfoque de la app, permite copiar el enlace y se
+  maneja por toque, teclado y lector de pantalla. Al entrar a una sede, el
+  inventario espera sus lecturas esenciales y luego aparece por capas con una
+  escala breve; un tope de 15 segundos impide que una conexión pendiente lo
+  deje oculto. Ambas mejoras respetan movimiento reducido y tienen interruptor
+  en `FLAGS`. No cambió ninguna tabla, permiso ni escritura de inventario.
+
 - **2026-11-03** — **La aplicación ya no abre en blanco en el teléfono.** Si
   una apertura fría tarda más de 280 ms, aparece el logo original sobre navy
   mientras se recupera la sesión; una apertura rápida no muestra ninguna
