@@ -2270,8 +2270,50 @@
   @keyframes girar{to{transform:rotate(360deg)}}
   .cargando-txt{font-size:15px;font-weight:800;color:var(--text)}
   .cargando-sub{font-size:12px;color:var(--muted);margin-top:3px}
+  /* Actualizar no es una espera muda. Cada renglón representa trabajo que ya
+     existe en actualizarTodo(): catálogo, ventas, descuento, empuje y
+     relectura. La ventana enseña cuatro a la vez y corre la lista, sin crecer
+     hasta tapar el teléfono. */
+  .sync-work-caja{width:min(424px,100%);background:var(--card);border-radius:22px;
+    box-shadow:0 18px 55px rgba(15,30,49,.28),0 3px 10px rgba(15,30,49,.08);padding:21px 20px 18px}
+  .sync-work-cab{display:flex;align-items:center;gap:12px}
+  .sync-work-marca{width:40px;height:40px;flex:0 0 40px;border-radius:13px;background:var(--gray-bg);
+    display:grid;place-items:center;color:var(--sec-filo)}
+  .sync-work-marca svg{width:21px;height:21px}
+  .sync-work-copy{flex:1;min-width:0}.sync-work-copy h2{font-size:17px;line-height:1.2;margin:0;color:var(--navy)}
+  .sync-work-copy p{font-size:10.5px;color:var(--muted);margin:3px 0 0}
+  .sync-work-cuenta{font-size:10px;font-weight:800;color:var(--sec-filo);background:var(--gray-bg);
+    border-radius:999px;padding:5px 8px;white-space:nowrap}
+  .sync-work-progreso{height:4px;background:var(--gray-bg);border-radius:999px;overflow:hidden;margin:16px 0 11px}
+  .sync-work-progreso i{display:block;height:100%;width:0;background:var(--orange);border-radius:inherit;
+    transition:width .38s cubic-bezier(.2,.8,.3,1)}
+  .sync-work-ventana{height:224px;overflow:hidden;position:relative}
+  .sync-work-track{transition:transform .35s cubic-bezier(.2,.8,.3,1)}
+  .sync-work-paso{height:56px;display:grid;grid-template-columns:29px minmax(0,1fr);gap:10px;align-items:center;
+    padding:5px 4px;border-radius:11px;color:var(--muted);transition:opacity .25s,background .25s,color .25s}
+  .sync-work-paso+.sync-work-paso{border-top:1px solid rgba(15,30,49,.07)}
+  .sync-work-bullet{width:25px;height:25px;border-radius:9px;background:var(--gray-bg);display:grid;place-items:center;
+    font-size:11px;font-weight:850;color:var(--gray-fg);transition:background .25s,color .25s,transform .25s}
+  .sync-work-paso strong{display:block;font-size:12.5px;color:inherit}
+  .sync-work-paso small{display:block;font-size:9.5px;margin-top:2px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sync-work-paso.done{color:var(--navy)}.sync-work-paso.done .sync-work-bullet{background:var(--green-bg);color:var(--green-fg)}
+  .sync-work-paso.active{background:#FFF4EE;color:var(--orange-dark)}
+  .sync-work-paso.active .sync-work-bullet{background:var(--orange);color:#fff;box-shadow:0 0 0 5px rgba(220,68,5,.1)}
+  .sync-work-paso.active .sync-work-bullet::after{content:"";width:8px;height:8px;border:2px solid rgba(255,255,255,.5);
+    border-top-color:#fff;border-radius:50%;animation:girar .75s linear infinite}
+  .sync-work-paso.done .sync-work-bullet::after{content:"✓";font-size:14px}
+  .sync-work-paso.fail{color:var(--red-fg);background:var(--red-bg)}
+  .sync-work-paso.fail .sync-work-bullet{background:var(--red-fg);color:#fff}.sync-work-paso.fail .sync-work-bullet::after{content:"×";font-size:16px}
+  .sync-work-paso.skip{opacity:.68}.sync-work-paso.skip .sync-work-bullet::after{content:"—"}
+  .sync-work-paso.done .sync-work-num,.sync-work-paso.active .sync-work-num,.sync-work-paso.fail .sync-work-num,.sync-work-paso.skip .sync-work-num{display:none}
+  .sync-work-pie{min-height:35px;margin-top:8px;border-top:1px solid var(--border);padding-top:12px;color:var(--muted);font-size:10.5px}
+  .sync-work-caja.ok .sync-work-pie{color:var(--green-fg);font-weight:750}
+  .sync-work-caja.aviso .sync-work-pie{color:var(--amber-fg);font-weight:750}
+  @media(max-width:520px){.sync-work-caja{padding:18px 15px 15px;border-radius:19px}.sync-work-copy h2{font-size:16px}}
   @media (prefers-reduced-motion: reduce){
     .rueda{animation-duration:2s}
+    .sync-work-progreso i,.sync-work-track,.sync-work-paso,.sync-work-bullet{transition:none!important}
+    .sync-work-paso.active .sync-work-bullet::after{animation:none}
     .adm-btn:active,.adm-fila:active,.adm-x:active{transform:none}
   }
 
@@ -2639,6 +2681,29 @@
     <div class="rueda"></div>
     <div class="cargando-txt" id="cargando-txt">Actualizando Fudo…</div>
     <div class="cargando-sub">No cierres la app</div>
+  </div>
+</div>
+
+<!-- ---- Actualizar: el trabajo real, visible paso a paso. Esta ventana es
+     exclusiva del botón superior; las demás esperas breves conservan el
+     cargador pequeño de arriba. ---- -->
+<div class="overlay overlay-blur" id="overlay-sync-work" role="dialog" aria-modal="true" aria-labelledby="sync-work-title">
+  <div class="sync-work-caja" id="sync-work-caja">
+    <div class="sync-work-cab">
+      <span class="sync-work-marca" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"></path></svg></span>
+      <div class="sync-work-copy"><h2 id="sync-work-title">Poniendo todo al día</h2><p id="sync-work-sub">Puedes seguir el trabajo paso a paso</p></div>
+      <span class="sync-work-cuenta" id="sync-work-cuenta">1 de 6</span>
+    </div>
+    <div class="sync-work-progreso" aria-hidden="true"><i id="sync-work-barra"></i></div>
+    <div class="sync-work-ventana"><div class="sync-work-track" id="sync-work-track" aria-live="polite">
+      <div class="sync-work-paso waiting" data-sync-paso="0"><span class="sync-work-bullet"><span class="sync-work-num">1</span></span><div><strong>Conectando con Fudo</strong><small>Cuenta del local</small></div></div>
+      <div class="sync-work-paso waiting" data-sync-paso="1"><span class="sync-work-bullet"><span class="sync-work-num">2</span></span><div><strong>Sincronizando el catálogo</strong><small>Esperando conexión</small></div></div>
+      <div class="sync-work-paso waiting" data-sync-paso="2"><span class="sync-work-bullet"><span class="sync-work-num">3</span></span><div><strong>Leyendo ventas nuevas</strong><small>Esperando catálogo</small></div></div>
+      <div class="sync-work-paso waiting" data-sync-paso="3"><span class="sync-work-bullet"><span class="sync-work-num">4</span></span><div><strong>Actualizando el inventario</strong><small>Esperando ventas</small></div></div>
+      <div class="sync-work-paso waiting" data-sync-paso="4"><span class="sync-work-bullet"><span class="sync-work-num">5</span></span><div><strong>Enviando el stock a Fudo</strong><small>Esperando el cálculo</small></div></div>
+      <div class="sync-work-paso waiting" data-sync-paso="5"><span class="sync-work-bullet"><span class="sync-work-num">6</span></span><div><strong>Releyendo la pantalla</strong><small>Esperando la sincronización</small></div></div>
+    </div></div>
+    <div class="sync-work-pie" id="sync-work-pie">No cierres la aplicación mientras termina.</div>
   </div>
 </div>
 
@@ -9988,6 +10053,58 @@ function trabajando(txt){
 }
 function listo(){ $('overlay-cargando').classList.remove('open'); }
 
+/* El botón ⟳ ya tenía seis trabajos reales, pero los escondía detrás de una
+   rueda. Estos ayudantes solo presentan su estado: no inician consultas, no
+   cambian el orden y no deciden si un fallo detiene o deja seguir. */
+const SYNC_WORK_DEFAULT = [
+  'Cuenta del local','Esperando conexión','Esperando catálogo',
+  'Esperando ventas','Esperando el cálculo','Esperando la sincronización'
+];
+const syncWorkFilas = () => [...document.querySelectorAll('[data-sync-paso]')];
+const syncWorkPausa = ms => matchMedia('(prefers-reduced-motion: reduce)').matches
+  ? Promise.resolve() : new Promise(r=>setTimeout(r,ms));
+function syncWorkEnfocar(i){
+  const filas=syncWorkFilas(),finales=filas.filter(x=>/\b(done|fail|skip)\b/.test(x.className)).length;
+  $('sync-work-cuenta').textContent=Math.min(i+1,filas.length)+' de '+filas.length;
+  $('sync-work-barra').style.width=(100*finales/filas.length)+'%';
+  const desde=Math.max(0,Math.min(i-1,filas.length-4));
+  $('sync-work-track').style.transform=`translateY(${-desde*56}px)`;
+}
+function syncWorkEstado(i,estado,detalle){
+  const fila=syncWorkFilas()[i];if(!fila)return;
+  fila.className='sync-work-paso '+estado;
+  if(detalle!=null) fila.querySelector('small').textContent=detalle;
+  syncWorkEnfocar(i);
+}
+function syncWorkActivo(i,detalle){syncWorkEstado(i,'active',detalle)}
+function syncWorkListo(i,detalle){syncWorkEstado(i,'done',detalle)}
+function syncWorkFallo(i,detalle){syncWorkEstado(i,'fail',detalle)}
+function syncWorkOmitido(i,detalle){syncWorkEstado(i,'skip',detalle)}
+function syncWorkAbrir(){
+  const filas=syncWorkFilas();
+  filas.forEach((f,i)=>{f.className='sync-work-paso waiting';f.querySelector('small').textContent=SYNC_WORK_DEFAULT[i]});
+  $('sync-work-caja').className='sync-work-caja';
+  $('sync-work-title').textContent='Poniendo todo al día';
+  $('sync-work-sub').textContent='Puedes seguir el trabajo paso a paso';
+  $('sync-work-pie').textContent='No cierres la aplicación mientras termina.';
+  $('sync-work-barra').style.width='0%';$('sync-work-track').style.transform='translateY(0)';
+  syncWorkActivo(0,'Cuenta '+(SEDES[SEDE]?.label||'del local'));
+  $('overlay-sync-work').classList.add('open');
+}
+function syncWorkCerrar(){$('overlay-sync-work').classList.remove('open')}
+async function syncWorkTerminar(conAvisos){
+  const filas=syncWorkFilas();
+  filas.forEach((f,i)=>{if(f.classList.contains('waiting')||f.classList.contains('active'))syncWorkOmitido(i,'No alcanzó a ejecutarse')});
+  $('sync-work-cuenta').textContent=filas.length+' de '+filas.length;
+  $('sync-work-barra').style.width='100%';$('sync-work-track').style.transform=`translateY(${-(filas.length-4)*56}px)`;
+  $('sync-work-title').textContent=conAvisos?'Actualización con avisos':'Actualización completa';
+  $('sync-work-sub').textContent=conAvisos?'Revisa el mensaje que aparecerá a continuación':'Todo quedó sincronizado';
+  $('sync-work-pie').textContent=conAvisos?'Terminó, pero una etapa necesita atención.':'Listo · Fudo y Llamita están al día';
+  $('sync-work-caja').classList.add(conAvisos?'aviso':'ok');
+  await syncWorkPausa(650);
+  syncWorkCerrar();
+}
+
 /* Llama a una Edge Function con la sesión del usuario. Si la sesión se
    murió (pasa con la cuenta compartida), lo dice con esas palabras en vez
    de un error críptico. */
@@ -14665,7 +14782,7 @@ const PASOS_SYNC = [
         sb.functions.invoke('fudo-sync-productos',{body:{sede:SEDE}}), 60, 'El catálogo de Fudo');
       if(error) throw error;
       if(!data || !data.ok) throw new Error((data && data.error) || 'sin respuesta');
-      return '';   // el catálogo es trabajo de fondo: no se informa si salió bien
+      return {logro:'', datos:data};   // la cifra alimenta el progreso visible
     }
   },
   {
@@ -14677,7 +14794,7 @@ const PASOS_SYNC = [
       if(!data || !data.ok) throw new Error((data && data.error) || 'sin respuesta');
       const v = juzgarVentas(data);
       if(v.grave){ const e = new Error(v.texto); e.grave = true; throw e; }
-      return v.texto;
+      return {logro:v.texto, datos:data};
     }
   },
   {
@@ -14703,11 +14820,13 @@ const PASOS_SYNC = [
          automática hace sola cada 15 minutos. Y los que ven que a Fudo le
          falta stock son los del mesón, no jefatura.
          Lo único que se comprueba es que haya un Fudo al otro lado. */
-      if(SEDE !== 'plaza' && SEDE !== 'angamos') return '';
+      if(SEDE !== 'plaza' && SEDE !== 'angamos')
+        return {logro:'', omitido:true, motivo:'No corresponde a esta sede'};
       /* Punto 1 de la doctrina: esto lo aprieta cualquiera. Lo único que
          puede apagarlo es que alguien lo haya hecho a mano en Ajustes,
          cuenta por cuenta. */
-      if(!puedeEnFudo('boton')) return '';
+      if(!puedeEnFudo('boton'))
+        return {logro:'', omitido:true, motivo:'Desactivado en Ajustes'};
       /* Este es el más largo de los tres: le escribe a Fudo producto por
          producto. 150 s es de sobra para los ~230 de una sede. */
       const {data,error} = await conTiempo(
@@ -14726,8 +14845,8 @@ const PASOS_SYNC = [
          este quedó. Decirlo importa igual — "quedan 90" es información;
          quedarse callado es justo lo que hacía el 504. */
       const quedan = data.pendientes ? ' · quedan ' + data.pendientes : '';
-      return data.actualizados ? data.actualizados + ' en Fudo' + quedan
-           : (data.pendientes ? 'quedan ' + data.pendientes + ' por mandar a Fudo' : '');
+      return {datos:data, logro:data.actualizados ? data.actualizados + ' en Fudo' + quedan
+           : (data.pendientes ? 'quedan ' + data.pendientes + ' por mandar a Fudo' : '')};
     }
   },
 ];
@@ -14758,22 +14877,53 @@ async function actualizarTodo(){
      que se apaga para trabajar se vuelve a encender en un `finally`, no al
      final del camino feliz. */
   try{
-    /* Ventana de "trabajando" con el fondo desenfocado, no un avisito.
-       Desde que este botón además le escribe a Fudo, tarda unos segundos y
-       hace algo que sale de la app: tiene que verse que está ocurriendo, y
-       nadie tiene que poder apretarlo dos veces mientras tanto. */
-    trabajando('Actualizando…');
+    /* La ventana ya no es una rueda muda: cada respuesta alimenta la fila que
+       de verdad terminó. Sigue bloqueando el doble toque igual que antes. */
+    syncWorkAbrir();
 
     const logros = [], fallos = [], graves = [], motivos = [];
+    const motivoCorto = e => String((e&&e.message)||'No respondió').slice(0,90);
     const t0 = new Date(Date.now() - 5000).toISOString();   // 5 s de holgura por el reloj
     for(const paso of PASOS_SYNC){
+      if(paso.nombre==='ventas') syncWorkActivo(2,'Consultando las ventas cerradas');
+      if(paso.nombre==='fudo') syncWorkActivo(4,'Calculando y enviando el stock');
       try{
         const r = await paso.fn();
-        if(r) logros.push(r);
+        if(r&&r.logro) logros.push(r.logro);
+        if(paso.nombre==='productos'){
+          syncWorkListo(0,'Conexión confirmada');
+          syncWorkActivo(1,'Guardando el catálogo del local');
+          await syncWorkPausa(110);
+          const n=Number(r?.datos?.productos_sincronizados);
+          syncWorkListo(1,Number.isFinite(n)?fmt(n)+' productos revisados':'Catálogo actualizado');
+        }else if(paso.nombre==='ventas'){
+          const ven=Number(r?.datos?.ventas_leidas)||0;
+          syncWorkListo(2,ven?fmt(ven)+' venta'+(ven===1?'':'s')+' encontrada'+(ven===1?'':'s'):'Sin ventas nuevas');
+          syncWorkActivo(3,'Aplicando las ventas al inventario');
+          await syncWorkPausa(110);
+          const mov=Number(r?.datos?.movimientos_generados)||0;
+          const it=Number(r?.datos?.items_procesados)||0;
+          syncWorkListo(3,r?.datos?.modo==='real'
+            ? (mov?fmt(mov)+' descuento'+(mov===1?'':'s')+' aplicado'+(mov===1?'':'s'):'Inventario sin cambios')
+            : fmt(it)+' ítem'+(it===1?'':'s')+' revisado'+(it===1?'':'s')+' · modo prueba');
+        }else if(paso.nombre==='fudo'){
+          if(r?.omitido) syncWorkOmitido(4,r.motivo||'No corresponde');
+          else{
+            const n=Number(r?.datos?.actualizados)||0,p=Number(r?.datos?.pendientes)||0;
+            syncWorkListo(4,n
+              ? fmt(n)+' producto'+(n===1?'':'s')+' actualizado'+(n===1?'':'s')+(p?' · quedan '+fmt(p):'')
+              : (p?'Quedan '+fmt(p)+' por enviar':'Fudo ya estaba al día'));
+          }
+        }
       }catch(e){
         console.error('Falló la sincronización de ' + paso.nombre, e);
         fallos.push(paso.nombre);
         motivos.push((e && e.message) || ('Falló ' + paso.nombre));
+        if(paso.nombre==='productos'){
+          syncWorkFallo(0,motivoCorto(e));syncWorkOmitido(1,'Catálogo no actualizado');
+        }else if(paso.nombre==='ventas'){
+          syncWorkFallo(2,motivoCorto(e));syncWorkOmitido(3,'No se aplicaron ventas');
+        }else if(paso.nombre==='fudo') syncWorkFallo(4,motivoCorto(e));
         /* Un corte de señal se avisa con un toast; que el motor no descuente
            es otra cosa y tiene que detener a quien esté mirando.
 
@@ -14790,6 +14940,8 @@ async function actualizarTodo(){
 
     // La pantalla se relee SIEMPRE, aunque algún paso haya fallado:
     // puede haber cambios de otros dispositivos igual.
+    let relecturaFallo=false;
+    syncWorkActivo(5,'Inventario, repartos y secciones');
     try{
       ultimaRecarga = 0;                       // salta el freno de recargas seguidas
       /* También con tope: si la base tarda, la pantalla se queda con los
@@ -14797,13 +14949,17 @@ async function actualizarTodo(){
       await conTiempo(resincronizar(), 45, 'La relectura de la pantalla');
       if($('view-recetas').style.display !== 'none')
         await conTiempo(loadRecetas(), 45, 'La lectura de recetas');
-    }catch(e){ console.error('No se pudo releer la pantalla', e); }
+      syncWorkListo(5,'Inventario y repartos al día');
+    }catch(e){
+      relecturaFallo=true;syncWorkFallo(5,motivoCorto(e));
+      console.error('No se pudo releer la pantalla', e);
+    }
 
     /* La ventana de "trabajando" se cierra ACÁ, antes de los avisos: si se
        cerrara recién en el finally, el "✓" y el detalle del empuje saldrían
        debajo del desenfoque. En el finally se vuelve a cerrar por si algo de
        acá abajo revienta — cerrarla dos veces no hace nada. */
-    listo();
+    await syncWorkTerminar(!!fallos.length||relecturaFallo);
 
     if(graves.length){
       avisar('El inventario no se está descontando\n\n' + graves.join('\n\n'));
@@ -14823,7 +14979,7 @@ async function actualizarTodo(){
     }
     mostrarEmpuje();
   } finally {
-    listo();
+    syncWorkCerrar(); listo();
     btn.disabled = false; btn.classList.remove('girando');
     actualizando = false;
   }

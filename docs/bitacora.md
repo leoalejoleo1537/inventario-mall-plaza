@@ -8,6 +8,15 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **Actualizar deja de ser una rueda muda.** El botón ⟳
+  muestra ahora el trabajo que ya hacía: conexión y catálogo de Fudo, ventas
+  leídas, descuentos aplicados, stock enviado y relectura de la pantalla. Las
+  cifras salen de las respuestas reales de las Edge Functions; un paso fallido
+  se marca en su propia fila y después se conserva el aviso detallado que ya
+  existía. Se ven cuatro etapas como máximo y la lista avanza sola en teléfono
+  y computadora. No cambió ninguna tabla, función, permiso, tiempo máximo ni
+  el orden crítico catálogo → ventas → Fudo.
+
 - **2026-11-03** — **Bodega deja de trabajar dentro de una columna de 900
   px.** Las vistas Enviar y Enlaces pasan a usar el mismo ancho disponible de
   1.600 px que Inventario y Mermas. El cambio sólo afecta la composición en
