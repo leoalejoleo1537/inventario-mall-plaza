@@ -8,6 +8,8 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-02** — **Resumen de panes y sándwiches para WhatsApp.** Jhon probó el texto copiado con el equipo: los asteriscos quedaban visibles y las fechas entre paréntesis no permitían decidir qué estaba vencido. El botón de copiar ahora entrega un bloque por producto con stock total y una línea por cada fecha, ordenada de la más antigua a la más nueva: 🔴 vencido, 🟡 vence hoy, 🟢 vigente. Las fechas van como `04 nov`, sin Markdown ni enlaces automáticos de WhatsApp. Las unidades sin fecha se indican sin color. Es solo texto; no cambia inventario, lotes, permisos ni el formato anterior disponible mediante el interruptor. La prueba `pruebas/resumen-sandwiches.mjs` verifica cantidades, estados y reversión.
+
 - **2026-08-28** — **Una meta contaba capuchinos creyendo que eran aguas.** Jhon:
   *"el agua Bosqua de Angamos vendió más de 80 y en la meta me aparecen sólo
   dos"*. Su hipótesis era que cerrar una meta borraba el conteo; no era eso, y

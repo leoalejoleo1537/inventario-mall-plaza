@@ -9079,9 +9079,6 @@ async function descontarDeBodega(repartoId){
 }
 
 /* ---------------- resumen de sándwiches para WhatsApp ----------------
-   Copia al portapapeles una línea por fecha, con su cantidad:
-     Croasan 5
-     Fv. 27/07/26
    Es SOLO texto: no toca el inventario ni cambia ningún nombre en la base. */
 /* Para el equipo "Mechada" y "Plateada" son el mismo producto: en el resumen
    van con un solo nombre (lo pidió Jhon). Afecta únicamente el texto copiado. */
@@ -9099,63 +9096,43 @@ function marcaUrgencia(iso){
   const dias = Math.round((new Date(iso+'T12:00') - new Date(hoyISO()+'T12:00'))/86400000);
   return dias <= 0 ? ' '+URGE : '';
 }
-/* ---- EL FORMATO NUEVO, pedido por Jhon el 2026-08-22 ----
-
-   El de antes gastaba DOS renglones por cada fecha:
-
-       Croasan 5
-       Fv. 27/07/26
-       Croasan 4
-       Fv. 28/07/26
-
-   Con nueve productos y tres fechas cada uno, eso son más de cincuenta
-   líneas en WhatsApp — hay que hacer scroll para leer una sola cosa. Jhon:
-   "es demasiado complejo para tomar decisiones rápidas en Wapp".
-
-   El nuevo pone UN renglón por producto y las fechas en fila:
-
-       - Croissant JQ: **1** (24/08) · **4** (25/08) · **7** (26/08)
-
-   Los mismos datos en una quinta parte del espacio, y —lo que importa— con
-   el producto como unidad de lectura en vez de la fecha. Quien lee quiere
-   saber "cuánto croissant hay", no "qué vence el 25".
-
-   Se ordena por fecha, la más próxima primero: lo que hay que sacar hoy va
-   al principio de su línea.
-
-   ⚠️ SE MANTIENE la marca de lo vencido y lo que vence hoy. No estaba en el
-   formato que mandó Jhon, pero esconderla sería quitarle a este mensaje su
-   parte más delicada — es la sección de la que sale que se bote comida o se
-   venda comida vencida (§0.3). Va pegada a la fecha, no al nombre, porque
-   con varias fechas por línea hay que saber CUÁL es la urgente. */
+/* Un bloque por producto y una línea por fecha. El círculo pertenece al lote,
+   no al producto: puede haber unidades vencidas y vigentes en el mismo stock.
+   Sin Markdown ni fechas numéricas que WhatsApp convierta en enlaces. */
 function resumenSeccionNuevo(sec){
   const items = DATA.filter(p=>(p.rubro||'Sin sección')===sec)
     .sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}));
-  const hoy = fmtDiaMes(hoyISO());
+  const hoy = hoyISO();
+  const cabecera = 'PANES Y SÁNDWICHES · ' + fmtDiaMes(hoy).toUpperCase();
   const lineas = [];
+  const fechaLinea = (cantidad, vencimiento) => {
+    const n = fmt(cantidad);
+    if(vencimiento < hoy) return '🔴 ' + n + ' u. vencida' + (cantidad === 1 ? '' : 's') + ' · ' + fmtDiaMes(vencimiento);
+    if(vencimiento === hoy) return '🟡 ' + n + ' u. vence' + (cantidad === 1 ? '' : 'n') + ' hoy';
+    return '🟢 ' + n + ' u. vence' + (cantidad === 1 ? '' : 'n') + ' · ' + fmtDiaMes(vencimiento);
+  };
   items.forEach(p=>{
+    if((+p.stock_actual||0) <= 0) return;
     const nom = nombreResumen(p.producto);
     const ls = lotesDe(p.id).filter(l=>l.vencimiento && (+l.cantidad||0) > 0)
       .sort((a,b)=>String(a.vencimiento).localeCompare(String(b.vencimiento)));
+    let detalles;
     if(ls.length){
-      lineas.push('- ' + nom + ': ' + ls.map(l=>
-        '**' + fmt(+l.cantidad||0) + '** (' + fmtDiaMes(l.vencimiento) + marcaUrgencia(l.vencimiento) + ')'
-      ).join(' · '));
-    } else if(hasVenc && p.vencimiento && (+p.stock_actual||0) > 0){
-      lineas.push('- ' + nom + ': **' + fmt(p.stock_actual) + '** ('
-        + fmtDiaMes(p.vencimiento) + marcaUrgencia(p.vencimiento) + ')');
-    } else if((+p.stock_actual||0) > 0){
-      /* S/F = sin fecha. Hay unidades y nadie les puso día; igual tienen que
-         verse, porque son las que se van a vender igual. */
-      lineas.push('- ' + nom + ': **' + fmt(p.stock_actual) + '** (S/F)');
+      detalles = ls.map(l=>fechaLinea(+l.cantidad, l.vencimiento));
+    } else if(hasVenc && p.vencimiento){
+      detalles = [fechaLinea(+p.stock_actual, p.vencimiento)];
+    } else {
+      /* Sin fecha no equivale a vigente: se informa sin círculo de color. */
+      detalles = ['Sin fecha: ' + fmt(p.stock_actual) + ' u.'];
     }
+    lineas.push(nom + ' · Stock ' + fmt(p.stock_actual) + '\n' + detalles.join('\n'));
   });
-  if(!lineas.length) return '**Stock / Vencimientos ' + hoy + '**\n\nNo hay nada con stock en ' + sec + '.';
-  return '**Stock / Vencimientos ' + hoy + '**\n\n' + lineas.join('\n');
+  if(!lineas.length) return cabecera + '\n\nSin stock en ' + sec + '.';
+  return cabecera + '\n\n' + lineas.join('\n\n');
 }
 
-/* 24/08 — día y mes, sin año. En un mensaje que se lee hoy, el año es ruido. */
-const fmtDiaMes = iso => { const [,m,d] = String(iso).split('-'); return `${d}/${m}`; };
+/* Evita que WhatsApp subraye 04/11 como enlace. */
+const fmtDiaMes = iso => { const [,m,d] = String(iso).split('-'); return `${d} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][+m-1]}`; };
 
 /* ---- el formato de siempre, por si se apaga el nuevo ----
    Apagar el interruptor devuelve EXACTAMENTE esto, que es lo que había
@@ -12627,8 +12604,8 @@ const INTERRUPTORES = [
     tit:'Lista de tareas del turno',
     sub:'El botón de tareas en la barra de arriba.' },
   { clave:'resumen_nuevo', porSede:['plaza','angamos'], defecto:true,
-    tit:'Resumen de sándwiches · formato corto',
-    sub:'Un renglón por producto con sus fechas en fila. Apagado, vuelve el de dos líneas por fecha.' },
+    tit:'Resumen de sándwiches · formato visual',
+    sub:'Un bloque por producto, con un círculo por fecha. Apagado, vuelve el formato anterior.' },
   { clave:'modo_enlazar', porSede:[''], defecto:false,
     tit:'Recetas · el modo Enlazar',
     sub:'Servía para ponerse al día con los enlaces que faltaban. Se enciende si entra una sede nueva.' },
