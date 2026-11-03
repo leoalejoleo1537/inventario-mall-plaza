@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Propuesta · Actualización visible</title>
+<style>
+  :root{
+    --navy:#0f1e31;--orange:#e23f00;--orange-dark:#c93600;--bg:#e9eef5;--card:#fdfefe;
+    --line:#d5deea;--muted:#607083;--steel:#41628c;--green:#237a4b;--green-bg:#e6f4eb;
+    --shadow:0 18px 55px rgba(15,30,49,.2),0 3px 10px rgba(15,30,49,.08)
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--navy);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;padding-left:252px}
+  button{font:inherit}
+  .demo-note{position:fixed;z-index:4;left:272px;bottom:18px;background:rgba(15,30,49,.82);color:#fff;border-radius:999px;padding:8px 12px;font-size:10px;font-weight:750;letter-spacing:.3px}
+  .drawer{position:fixed;inset:0 auto 0 0;width:252px;background:#fff;border-right:1px solid var(--line);padding:20px;display:flex;flex-direction:column}
+  .drawer h2{font-size:18px;margin:0 0 7px}.live{display:inline-flex;align-items:center;gap:7px;background:#e6ecf4;border-radius:99px;padding:5px 10px;color:var(--muted);font-size:12px;width:max-content}.live i{width:8px;height:8px;border-radius:50%;background:#47b563}
+  .dlabel{font-size:10px;font-weight:800;color:var(--muted);margin:27px 0 8px}.ditem{display:flex;gap:12px;padding:11px 0;font-size:14px;font-weight:750}.ditem b{width:20px;font-size:18px}.who{margin-top:auto;padding-top:16px;border-top:1px solid var(--line);font-size:13px;font-weight:750}
+  .top{height:72px;background:#fff;display:flex;align-items:center;padding:0 28px;border-bottom:1px solid var(--line)}
+  .title{flex:1}.title b{display:block;font-size:19px}.title span{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+  .refresh{display:flex;align-items:center;gap:8px;border:0;border-radius:99px;background:var(--orange);color:#fff;padding:11px 18px;font-weight:800;cursor:pointer;box-shadow:0 7px 18px rgba(226,63,0,.18);transition:transform .12s,background .15s}.refresh:active{transform:scale(.95);background:var(--orange-dark)}
+  .refresh svg{width:17px;height:17px}
+  .tabs{display:flex;gap:8px;padding:12px 28px}.tab{border:0;border-radius:99px;background:#fff;padding:10px 17px;font-weight:750;color:var(--navy)}.tab.home{width:43px;padding:0;background:var(--orange);color:#fff}
+  main{max-width:1600px;margin:auto;padding:10px 28px 70px}.search{height:48px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:#9aa5b2}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.metric{background:#fff;border-radius:17px;text-align:center;padding:17px;box-shadow:0 10px 25px -22px rgba(15,30,49,.7)}.metric b{display:block;font-size:22px}.metric span{font-size:11px;color:var(--muted)}
+  .sections{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:18px}.turn>span{display:block;font-size:10px;font-weight:850;letter-spacing:1.4px;color:var(--muted);margin:0 5px 9px}.section{height:62px;background:#fff;border-radius:17px;margin-bottom:9px;display:flex;align-items:center;padding:0 17px;box-shadow:inset 5px 0 var(--steel),0 12px 26px -22px rgba(15,30,49,.7);font-weight:800}.section i{margin-left:auto;font-style:normal;background:#fce9e6;color:#c0392b;border-radius:99px;padding:4px 9px;font-size:10px}
+
+  .veil{position:fixed;z-index:20;inset:0;background:rgba(15,30,49,.34);backdrop-filter:blur(5px);display:grid;place-items:center;padding:18px;opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+  .veil.open{opacity:1;visibility:visible}
+  .work{width:min(424px,100%);background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:21px 20px 18px;transform:translateY(8px) scale(.985);transition:transform .22s cubic-bezier(.2,.8,.3,1)}.veil.open .work{transform:none}
+  .work-head{display:flex;align-items:center;gap:12px}.work-mark{width:40px;height:40px;border-radius:13px;background:#e6edf6;display:grid;place-items:center;color:var(--steel)}.work-mark svg{width:21px;height:21px}.work-copy{flex:1;min-width:0}.work-copy h1{font-size:17px;margin:0;letter-spacing:-.01em}.work-copy p{font-size:11px;color:var(--muted);margin:3px 0 0}.step-count{font-size:10px;font-weight:800;color:var(--steel);background:#e6edf6;border-radius:99px;padding:5px 8px;white-space:nowrap}
+  .progress{height:4px;background:#e5ebf2;border-radius:99px;overflow:hidden;margin:16px 0 11px}.progress i{display:block;height:100%;width:0;background:var(--orange);border-radius:inherit;transition:width .38s cubic-bezier(.2,.8,.3,1)}
+  .window{height:224px;overflow:hidden;position:relative}.track{transition:transform .35s cubic-bezier(.2,.8,.3,1)}
+  .step{height:56px;display:grid;grid-template-columns:29px minmax(0,1fr);gap:10px;align-items:center;padding:5px 4px;border-radius:11px;color:var(--muted);transition:opacity .25s,background .25s,color .25s}.step+.step{border-top:1px solid rgba(15,30,49,.07)}
+  .bullet{width:25px;height:25px;border-radius:9px;background:#e7ecf2;display:grid;place-items:center;font-size:11px;font-weight:850;color:#788697;transition:background .25s,color .25s,transform .25s}.step strong{display:block;font-size:12.5px;color:inherit}.step small{display:block;font-size:9.5px;margin-top:2px;color:var(--muted)}
+  .step.done{color:var(--navy)}.step.done .bullet{background:var(--green-bg);color:var(--green)}
+  .step.active{background:#fff4ee;color:var(--orange-dark)}.step.active .bullet{background:var(--orange);color:#fff;box-shadow:0 0 0 5px rgba(226,63,0,.1)}
+  .step.active .bullet:after{content:"";width:8px;height:8px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite}
+  .step.waiting{opacity:.58}
+  .done .bullet span,.active .bullet span{display:none}.done .bullet:after{content:"✓";font-size:14px}
+  .foot{display:flex;align-items:center;min-height:39px;margin-top:8px;border-top:1px solid var(--line);padding-top:12px}.foot p{margin:0;flex:1;color:var(--muted);font-size:10.5px}.again,.close{display:none;border:0;border-radius:10px;padding:9px 12px;font-weight:800;cursor:pointer}.again{background:#e6edf6;color:var(--navy);margin-right:7px}.close{background:var(--orange);color:#fff}.work.finished .again,.work.finished .close{display:block}.work.finished .foot p{color:var(--green);font-weight:750}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media(max-width:700px){
+    body{padding-left:0}.drawer{display:none}.top{height:64px;padding:0 14px}.top:before{content:"☰";font-size:22px;margin-right:14px}.refresh{padding:10px 12px}.refresh span{display:none}.tabs{padding:9px 10px;overflow:hidden}.tab{padding:9px 13px;white-space:nowrap}.tab.home{flex:0 0 42px}.tabs .tab:last-child{display:none}
+    main{padding:6px 16px 60px}.metrics{gap:7px}.metric{padding:14px 4px}.sections{grid-template-columns:1fr;gap:12px}.turn:nth-child(2){display:none}.demo-note{left:16px;right:16px;text-align:center;bottom:12px}
+    .work{padding:18px 15px 15px;border-radius:19px}.window{height:224px}.work-copy h1{font-size:16px}
+  }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<aside class="drawer"><h2>Café Mall Plaza</h2><span class="live"><i></i> en vivo</span><div class="dlabel">ATAJOS</div><div class="ditem"><b>↶</b>Historial</div><div class="dlabel">ADMINISTRACIÓN</div><div class="ditem"><b>⚙</b>Ajustes</div><div class="dlabel">SEDE</div><div class="ditem"><b>↔</b>Cambiar sede</div><div class="who">Buenas noches, Valentina</div></aside>
+<header class="top"><div class="title"><b>Café Mall Plaza</b><span>Inventario</span></div><button class="refresh" id="refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M20 6v5h-5"/><path d="M19 11a7.5 7.5 0 1 0 .2 4"/></svg><span>Actualizar</span></button></header>
+<nav class="tabs"><button class="tab home">⌂</button><button class="tab">Reparto</button><button class="tab">Recetas</button><button class="tab">Mermas</button></nav>
+<main><div class="search">Buscar producto…</div><div class="metrics"><div class="metric"><b style="color:#c0392b">68</b><span>Crítico</span></div><div class="metric"><b style="color:#9c6209">46</b><span>Sobre-stock</span></div><div class="metric"><b>0</b><span>Sin dato</span></div></div><div class="sections"><div class="turn"><span>AM</span><div class="section">Limpieza<i>7 crít.</i></div><div class="section">Mesones<i>1 crít.</i></div><div class="section">Congelador<i>10 crít.</i></div><div class="section">Té<i>2 crít.</i></div></div><div class="turn"><span>PM</span><div class="section">Vitrina de tortas<i>19 crít.</i></div><div class="section">Sándwiches<i>7 crít.</i></div><div class="section">Vitrina de dulces<i>4 crít.</i></div><div class="section">Bebidas<i>7 crít.</i></div></div></div></main>
+<div class="demo-note">MAQUETA · tiempos y cifras de ejemplo</div>
+
+<div class="veil" id="veil" role="dialog" aria-modal="true" aria-labelledby="work-title">
+  <section class="work" id="work">
+    <div class="work-head"><span class="work-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span><div class="work-copy"><h1 id="work-title">Poniendo todo al día</h1><p id="work-sub">Puedes seguir el trabajo paso a paso</p></div><span class="step-count" id="count">1 de 6</span></div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="window"><div class="track" id="track">
+      <div class="step waiting"><span class="bullet"><span>1</span></span><div><strong>Conectando con Fudo</strong><small>Cuenta Café Mall Plaza</small></div></div>
+      <div class="step waiting"><span class="bullet"><span>2</span></span><div><strong>Sincronizando el catálogo</strong><small>228 productos revisados</small></div></div>
+      <div class="step waiting"><span class="bullet"><span>3</span></span><div><strong>Leyendo ventas nuevas</strong><small>16 ventas encontradas</small></div></div>
+      <div class="step waiting"><span class="bullet"><span>4</span></span><div><strong>Actualizando el inventario</strong><small>Ventas aplicadas en Llamita</small></div></div>
+      <div class="step waiting"><span class="bullet"><span>5</span></span><div><strong>Enviando el stock a Fudo</strong><small>37 productos actualizados</small></div></div>
+      <div class="step waiting"><span class="bullet"><span>6</span></span><div><strong>Releyendo la pantalla</strong><small>Inventario y repartos al día</small></div></div>
+    </div></div>
+    <div class="foot"><p id="foot">No cierres la aplicación mientras termina.</p><button class="again" id="again">Ver otra vez</button><button class="close" id="close">Cerrar</button></div>
+  </section>
+</div>
+<script>
+  const $=id=>document.getElementById(id),pasos=[...document.querySelectorAll('.step')];
+  let timers=[];
+  function limpiar(){timers.forEach(clearTimeout);timers=[]}
+  function estado(actual){
+    pasos.forEach((p,i)=>{p.className='step '+(i<actual?'done':i===actual?'active':'waiting')});
+    const hecho=Math.min(actual,pasos.length),numero=Math.min(actual+1,pasos.length);
+    $('count').textContent=numero+' de '+pasos.length;$('bar').style.width=(hecho/pasos.length*100)+'%';
+    const desde=Math.max(0,Math.min(actual-1,pasos.length-4));$('track').style.transform=`translateY(${-desde*56}px)`;
+  }
+  function iniciar(){
+    limpiar();$('veil').classList.add('open');$('work').classList.remove('finished');$('work-title').textContent='Poniendo todo al día';$('work-sub').textContent='Puedes seguir el trabajo paso a paso';$('foot').textContent='No cierres la aplicación mientras termina.';estado(0);
+    pasos.forEach((_,i)=>timers.push(setTimeout(()=>estado(i),i*900)));
+    timers.push(setTimeout(()=>{pasos.forEach(p=>p.className='step done');$('bar').style.width='100%';$('count').textContent='6 de 6';$('work-title').textContent='Actualización completa';$('work-sub').textContent='Todo quedó sincronizado';$('foot').textContent='Listo · Fudo y Llamita están al día';$('work').classList.add('finished')},pasos.length*900));
+  }
+  $('refresh').onclick=iniciar;$('again').onclick=iniciar;$('close').onclick=()=>{$('veil').classList.remove('open');limpiar()};
+</script>
+</body>
+</html>
