@@ -8,6 +8,16 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **La aplicación ya no abre en blanco en el teléfono.** Si
+  una apertura fría tarda más de 280 ms, aparece el logo original sobre navy
+  mientras se recupera la sesión; una apertura rápida no muestra ninguna
+  espera artificial. Excel deja de bloquear el primer dibujo y Supabase se
+  descarga después de que la interfaz ya puede pintar el logo; la sesión
+  tiene un tope visible de 12 segundos. La misma idea llega a las esperas
+  breves: ya no muestran una rueda muda, sino
+  las etapas reales que cada operación inicia, hasta cuatro. Dos banderas en
+  `FLAGS` permiten volver al comportamiento anterior sin tocar datos.
+
 - **2026-11-03** — **Actualizar deja de ser una rueda muda.** El botón ⟳
   muestra ahora el trabajo que ya hacía: conexión y catálogo de Fudo, ventas
   leídas, descuentos aplicados, stock enviado y relectura de la pantalla. Las
