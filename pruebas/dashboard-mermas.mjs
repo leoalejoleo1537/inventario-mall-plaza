@@ -25,6 +25,8 @@ await caso('el dashboard compara todas las sedes aunque se entre desde un local'
   html.includes("merLeer(periodo,'central')")&&html.includes("resumirMermas(MERMAS,'central',periodo)")||'la vista quedó acotada a la sede activa');
 await caso('no depende de una librería de gráficos',()=>
   !/chart\.js|highcharts|apexcharts/i.test(html)||'apareció una dependencia de gráficos');
+await caso('las líneas se construyen como curvas y no como segmentos angulosos',()=>
+  html.includes('camino+=` C${c1x.toFixed(2)}')||'falta la curva cúbica');
 await caso('respeta reducir movimiento',()=>
   html.includes('@media(prefers-reduced-motion:reduce)')||'falta la regla de movimiento reducido');
 
@@ -146,6 +148,12 @@ await caso('el historial separa Mall Plaza y Parque Angamos en dos líneas',asyn
   const r=await page.evaluate(()=>MERMAS_RESUMEN.historialVencimientos.reduce((a,d)=>({plaza:a.plaza+d.plaza,angamos:a.angamos+d.angamos,total:a.total+d.total}),{plaza:0,angamos:0,total:0}));
   return (n===2&&r.plaza===5&&r.angamos===4&&r.total===9)||`${n} líneas · ${JSON.stringify(r)}`;
 });
+await caso('abre en Semana para que la tendencia histórica sea legible',async()=>
+  (await page.getAttribute('[data-mer-historia-escala="semana"]','aria-pressed'))==='true'||'no abrió en Semana');
+await caso('las dos sedes usan líneas continuas y suavizadas',async()=>{
+  const rutas=await page.locator('#mermas-historia .mer-historia-linea').evaluateAll(xs=>xs.map(x=>({d:x.getAttribute('d'),clase:x.className.baseVal})));
+  return (rutas.length===2&&rutas.every(x=>x.d.includes(' C')&&!x.clase.includes('trazos')))||JSON.stringify(rutas);
+});
 await caso('la merma vencida deshecha tampoco entra a la línea histórica',async()=>{
   const r=await page.evaluate(()=>MERMAS_RESUMEN.historialVencimientos.reduce((a,d)=>a+d.total,0));return r===9||r;
 });
@@ -159,6 +167,23 @@ await caso('el botón Total fusiona ambas sedes en una línea',async()=>{
   return (n===1&&p==='true')||`${n} líneas · pressed ${p}`;
 });
 await page.click('[data-mer-historia-modo="sedes"]');
+await page.click('[data-mer-historia-escala="semana"]');
+await caso('Semana agrupa sin perder unidades',async()=>await page.evaluate(()=>
+  MERMAS_HISTORIA_VISIBLE.length===5&&MERMAS_HISTORIA_VISIBLE.reduce((a,d)=>a+d.total,0)===9
+)||'agrupación semanal incorrecta');
+await page.click('[data-mer-historia-escala="mes"]');
+await caso('Mes agrupa octubre y noviembre',async()=>await page.evaluate(()=>
+  MERMAS_HISTORIA_VISIBLE.length===2&&MERMAS_HISTORIA_VISIBLE.reduce((a,d)=>a+d.total,0)===9
+)||'agrupación mensual incorrecta');
+await page.click('[data-mer-historia-escala="año"]');
+await caso('Año permanece disponible aunque sólo exista un punto',async()=>await page.evaluate(()=>
+  MERMAS_HISTORIA_VISIBLE.length===1&&MERMAS_HISTORIA_VISIBLE[0].total===9
+)||'agrupación anual incorrecta');
+await page.click('[data-mer-historia-escala="dia"]');
+await caso('Día recupera los treinta puntos del período',async()=>await page.evaluate(()=>
+  MERMAS_HISTORIA_VISIBLE.length===30&&MERMAS_HISTORIA_VISIBLE.reduce((a,d)=>a+d.total,0)===9
+)||'agrupación diaria incorrecta');
+await page.click('[data-mer-historia-escala="semana"]');
 if(process.env.CAPTURAR_MERMAS){
   await page.waitForTimeout(500);
   await page.screenshot({path:'/tmp/dashboard-mermas-desktop.png',fullPage:true});

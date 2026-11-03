@@ -8,10 +8,21 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **Las líneas dejan de ser dientes y se pueden leer en
+  distintas escalas.** El historial de vencimientos usa curvas cúbicas
+  suavizadas que conservan los valores reales de cada punto. Mall Plaza y
+  Parque Angamos se comparan con dos líneas continuas; color y leyenda las
+  distinguen sin sugerir que una serie está incompleta. Día, Semana, Mes y Año
+  agrupan las mismas unidades sin inventar datos, y los períodos con poca
+  historia permanecen disponibles aunque sólo produzcan uno o dos puntos. La
+  lectura inicial es semanal, que evita convertir cada día aislado en un pico;
+  Día sigue disponible cuando se necesita precisión operativa.
+  Esta forma queda registrada como regla para futuras gráficas de líneas.
+
 - **2026-11-03** — **El historial de vencimientos ya muestra la dirección del
-  problema.** El dashboard de Mermas incorpora una línea diaria para Mall
-  Plaza y otra discontinua para Parque Angamos, además de un botón que las
-  reúne en un total. Una respuesta breve compara las dos últimas ventanas
+  problema.** El dashboard de Mermas incorpora una serie para Mall Plaza y
+  otra para Parque Angamos, además de un botón que las reúne en un total. Una
+  respuesta breve compara las dos últimas ventanas
   equivalentes y señala si las unidades aumentan, disminuyen o permanecen
   estables. La serie respeta 7 días, 30 días y Todo, usa fechas de Chile,
   completa los días sin movimientos con cero y excluye mermas deshechas. El

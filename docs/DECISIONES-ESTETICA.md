@@ -17,6 +17,7 @@
 | **Pestañas** | El naranja **viaja** en vez de saltar |
 | **Turnos AM/PM** | Ya no son una caja gris: solo el rótulo. Envolver tarjetas en un recuadro devolvía el encajonado |
 | **Animaciones** | Filas escalonadas al abrir · el número late cuando el stock cambia solo |
+| **Gráficas de líneas** | Curvas suavizadas, sin vértices duros. Cuando comparan sedes, todas las líneas son continuas; el color y la leyenda distinguen cada serie |
 | **El "+"** | Ofrece crear desde Bodega, enlazado. Preguntando, no saltando solo |
 
 **Probado con `pruebas/estetica-no-rompio-nada.mjs`**, que existe por lo que

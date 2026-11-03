@@ -558,12 +558,17 @@
     font:inherit;font-size:10.5px;font-weight:800;cursor:pointer}
   .mer-historia-modo button.on{background:var(--navy);color:#fff}
   .mer-historia-modo button:focus-visible{outline:3px solid rgba(65,98,140,.3);outline-offset:2px}
+  .mer-historia-filtros{display:flex;justify-content:flex-end;margin:-3px 0 10px}
+  .mer-historia-escala{display:flex;gap:3px;padding:3px;background:var(--bg);border-radius:10px}
+  .mer-historia-escala button{min-height:34px;padding:6px 11px;border:0;border-radius:8px;background:transparent;color:var(--muted);
+    font:inherit;font-size:10.5px;font-weight:800;cursor:pointer}
+  .mer-historia-escala button.on{background:var(--navy);color:#fff}
+  .mer-historia-escala button:focus-visible{outline:3px solid rgba(65,98,140,.3);outline-offset:2px}
   .mer-historia-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-3px 0 12px}
   .mer-historia-meta>span{font-size:10px;color:var(--muted)}
   .mer-historia-leyenda{display:flex;align-items:center;gap:13px;flex-wrap:wrap}
   .mer-historia-leyenda span{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:var(--muted)}
   .mer-historia-leyenda i{display:block;width:22px;height:0;border-top:3px solid var(--mer-linea);border-radius:99px}
-  .mer-historia-leyenda i.trazos{border-top-style:dashed}
   .mer-historia-grafico{display:grid;grid-template-columns:38px minmax(0,1fr);grid-template-rows:220px 24px;column-gap:8px;min-width:0}
   .mer-historia-y{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding:0 0 1px;
     color:var(--muted);font-size:9px;font-variant-numeric:tabular-nums}
@@ -573,7 +578,6 @@
   .mer-historia-linea{fill:none;stroke:var(--mer-linea);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;
     vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1;
     transition:stroke-dashoffset .38s cubic-bezier(.2,.8,.3,1)}
-  .mer-historia-linea.trazos{stroke-dasharray:.035 .018;stroke-dashoffset:1}
   .mer-historia-grafico.lista .mer-historia-linea{stroke-dashoffset:0}
   .mer-historia-punto{position:absolute;left:var(--mer-x);top:var(--mer-y);width:22px;height:22px;transform:translate(-50%,-50%);
     border:0;border-radius:50%;background:transparent;cursor:pointer;padding:0}
@@ -583,6 +587,7 @@
   .mer-historia-punto:focus-visible{outline:3px solid rgba(65,98,140,.3);outline-offset:1px}
   .mer-historia-x{grid-column:2;display:flex;align-items:flex-end;justify-content:space-between;color:var(--muted);
     font-size:9px;font-variant-numeric:tabular-nums;min-width:0}
+  .mer-historia-x.una{justify-content:center}
   .mer-historia-sin{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:12px;text-align:center;pointer-events:none}
   .mer-ranking{display:grid;gap:4px}
   .mer-producto{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:9px;align-items:center;width:100%;padding:8px 7px;
@@ -640,12 +645,15 @@
     .mer-sede{grid-template-columns:75px minmax(60px,1fr) 30px;gap:8px}
     .mer-fila{grid-template-columns:minmax(0,1fr) 58px}.mer-recientes{max-height:390px}
     .mer-historia .mer-panel-cab{align-items:flex-start}.mer-historia-respuesta{width:100%;margin-left:0;justify-content:space-between}
-    .mer-historia-modo{margin-left:auto}.mer-historia-modo button{min-height:42px}.mer-historia-meta{align-items:flex-start;flex-direction:column;gap:5px}
+    .mer-historia-modo{margin-left:auto}.mer-historia-modo button{min-height:42px}
+    .mer-historia-filtros{justify-content:stretch;margin-top:1px}.mer-historia-escala{width:100%}.mer-historia-escala button{flex:1;min-height:42px;padding-left:5px;padding-right:5px}
+    .mer-historia-meta{align-items:flex-start;flex-direction:column;gap:5px}
     .mer-historia-grafico{grid-template-columns:31px minmax(0,1fr);grid-template-rows:190px 22px;column-gap:6px}
     .mer-historia-leyenda{gap:9px}.mer-historia-leyenda i{width:17px}
   }
   @media(prefers-reduced-motion:reduce){
-    .mer-dashboard,.mer-kpi,.mer-panel,.mer-relleno,.mer-producto .mini-pista i,.mer-tooltip,.mer-periodos button,.mer-historia-linea{transition:none!important}
+    .mer-dashboard,.mer-kpi,.mer-panel,.mer-relleno,.mer-producto .mini-pista i,.mer-tooltip,.mer-periodos button,.mer-historia-linea,
+    .mer-historia-modo button,.mer-historia-escala button{transition:none!important}
     .mer-kpi,.mer-panel{opacity:1!important;transform:none!important}
     .mer-relleno,.mer-producto .mini-pista i{transform:scaleX(var(--mer-pct,0))!important}
     .mer-anillo-seg{animation:none!important;transition:none!important}
@@ -5052,6 +5060,8 @@ let MERMAS_CARGA_ID = 0;
 let MERMAS_RESUMEN = null;
 let MERMAS_TOOLTIP_FIJO = null;
 let MERMAS_HISTORIA_MODO = 'sedes';
+let MERMAS_HISTORIA_ESCALA = 'semana';
+let MERMAS_HISTORIA_VISIBLE = [];
 
 const merHoySantiago = () => new Intl.DateTimeFormat('en-CA',{
   timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'
@@ -5112,6 +5122,31 @@ function merHistorialVencimientos(rows,periodo=MERMAS_PERIODO){
   });
   porDia.forEach(d=>{d.total=d.plaza+d.angamos;});
   return [...porDia.values()];
+}
+
+function merInicioSemana(fecha){
+  const d=new Date(fecha+'T12:00:00Z'),desdeLunes=(d.getUTCDay()+6)%7;
+  d.setUTCDate(d.getUTCDate()-desdeLunes);return d.toISOString().slice(0,10);
+}
+function merAgruparHistoria(historial,escala=MERMAS_HISTORIA_ESCALA){
+  if(escala==='dia')return historial.map(d=>({...d}));
+  const grupos=new Map();
+  historial.forEach(d=>{
+    const fecha=escala==='semana'?merInicioSemana(d.fecha):escala==='mes'?d.fecha.slice(0,7)+'-01':d.fecha.slice(0,4)+'-01-01';
+    if(!grupos.has(fecha))grupos.set(fecha,{fecha,plaza:0,angamos:0,total:0});
+    const g=grupos.get(fecha);g.plaza+=d.plaza;g.angamos+=d.angamos;g.total+=d.total;
+  });
+  return [...grupos.values()];
+}
+function merEtiquetaGrupo(fecha,escala=MERMAS_HISTORIA_ESCALA,larga=false){
+  const d=new Date(fecha+'T12:00:00Z');
+  if(escala==='dia')return new Intl.DateTimeFormat('es-CL',larga?{dateStyle:'long',timeZone:'UTC'}:{day:'2-digit',month:'short',timeZone:'UTC'}).format(d).replace('.','');
+  if(escala==='semana')return (larga?'Semana del ':'Sem. ')+new Intl.DateTimeFormat('es-CL',{day:'2-digit',month:'short',timeZone:'UTC'}).format(d).replace('.','');
+  if(escala==='mes'){
+    const texto=new Intl.DateTimeFormat('es-CL',{month:larga?'long':'short',year:'numeric',timeZone:'UTC'}).format(d).replace('.','');
+    return texto.charAt(0).toUpperCase()+texto.slice(1);
+  }
+  return fecha.slice(0,4);
 }
 
 function merTendenciaVencimientos(historial){
@@ -5221,38 +5256,48 @@ function merMaxHistoria(valor){
   const paso=Math.max(1,(base<=1?1:base<=2?2:base<=5?5:10)*potencia);
   return paso*4;
 }
-function merFechaEje(fecha){
-  return new Intl.DateTimeFormat('es-CL',{day:'2-digit',month:'short',timeZone:'UTC'}).format(new Date(fecha+'T12:00:00Z')).replace('.','');
-}
 function merCaminoHistoria(historial,clave,maximo){
-  return historial.map((d,i)=>{
-    const x=historial.length===1?500:10+i/(historial.length-1)*980,y=96-(d[clave]/maximo*92);
-    return `${i?'L':'M'}${x.toFixed(2)} ${y.toFixed(2)}`;
-  }).join(' ');
+  const puntos=historial.map((d,i)=>({
+    x:historial.length===1?500:10+i/(historial.length-1)*980,
+    y:96-(d[clave]/maximo*92)
+  }));
+  if(!puntos.length)return '';
+  if(puntos.length===1)return `M${puntos[0].x.toFixed(2)} ${puntos[0].y.toFixed(2)}`;
+  const limitar=(n,a,b)=>Math.max(Math.min(a,b),Math.min(Math.max(a,b),n)),suavidad=.95;
+  let camino=`M${puntos[0].x.toFixed(2)} ${puntos[0].y.toFixed(2)}`;
+  for(let i=0;i<puntos.length-1;i++){
+    const p0=puntos[i-1]||puntos[i],p1=puntos[i],p2=puntos[i+1],p3=puntos[i+2]||p2;
+    const c1x=p1.x+(p2.x-p0.x)/6*suavidad,c2x=p2.x-(p3.x-p1.x)/6*suavidad;
+    const c1y=limitar(p1.y+(p2.y-p0.y)/6*suavidad,p1.y,p2.y);
+    const c2y=limitar(p2.y-(p3.y-p1.y)/6*suavidad,p1.y,p2.y);
+    camino+=` C${c1x.toFixed(2)} ${c1y.toFixed(2)} ${c2x.toFixed(2)} ${c2y.toFixed(2)} ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  return camino;
 }
 
 function pintarMermasHistoria(resumen=MERMAS_RESUMEN){
   if(!resumen)return;
-  const historial=resumen.historialVencimientos||[],modo=MERMAS_HISTORIA_MODO;
+  const historial=merAgruparHistoria(resumen.historialVencimientos||[],MERMAS_HISTORIA_ESCALA),modo=MERMAS_HISTORIA_MODO;
+  MERMAS_HISTORIA_VISIBLE=historial;
   const claves=modo==='total'?['total']:['plaza','angamos'];
   const maxValor=Math.max(0,...historial.flatMap(d=>claves.map(k=>d[k]))),maximo=merMaxHistoria(maxValor);
   const tendencia=merTendenciaVencimientos(historial),colores={plaza:'var(--navy)',angamos:'var(--sec-filo)',total:'var(--navy)'};
   const nombres={plaza:'Mall Plaza',angamos:'Parque Angamos',total:'Total'};
-  const lineas=claves.map(k=>`<path class="mer-historia-linea${k==='angamos'?' trazos':''}" pathLength="1"
+  const lineas=claves.map(k=>`<path class="mer-historia-linea" pathLength="1"
     style="--mer-linea:${colores[k]}" d="${merCaminoHistoria(historial,k,maximo)}"></path>`).join('');
   const guias=[4,27,50,73,96].map(y=>`<line class="mer-historia-guia" x1="10" y1="${y}" x2="990" y2="${y}"></line>`).join('');
   const puntos=historial.map((d,i)=>{
     if(!d.total)return '';
     const x=historial.length===1?50:1+i/(historial.length-1)*98,valor=modo==='total'?d.total:Math.max(d.plaza,d.angamos),y=96-(valor/maximo*92);
     return `<button type="button" class="mer-historia-punto mer-tip-objetivo" data-mer-tooltip="historia" data-mer-key="${d.fecha}"
-      aria-label="${esc(merFechaEje(d.fecha))}: Mall Plaza ${fmt(d.plaza)}, Parque Angamos ${fmt(d.angamos)}, total ${fmt(d.total)} unidades"
+      aria-label="${esc(merEtiquetaGrupo(d.fecha,MERMAS_HISTORIA_ESCALA,true))}: Mall Plaza ${fmt(d.plaza)}, Parque Angamos ${fmt(d.angamos)}, total ${fmt(d.total)} unidades"
       aria-describedby="mermas-tooltip" style="--mer-x:${x.toFixed(2)}%;--mer-y:${y.toFixed(2)}%"></button>`;
   }).join('');
-  const indices=[0,Math.floor((historial.length-1)/3),Math.floor((historial.length-1)*2/3),historial.length-1]
+  const indices=(historial.length<=4?historial.map((_,i)=>i):[0,Math.floor((historial.length-1)/3),Math.floor((historial.length-1)*2/3),historial.length-1])
     .filter((x,i,a)=>x>=0&&a.indexOf(x)===i);
-  const etiquetas=indices.map(i=>`<span>${merFechaEje(historial[i].fecha)}</span>`).join('');
+  const etiquetas=indices.map(i=>`<span>${merEtiquetaGrupo(historial[i].fecha,MERMAS_HISTORIA_ESCALA)}</span>`).join('');
   const yEtiquetas=[maximo,maximo*.75,maximo*.5,maximo*.25,0].map(n=>`<span>${fmt(n)}</span>`).join('');
-  const leyenda=claves.map(k=>`<span><i class="${k==='angamos'?'trazos':''}" style="--mer-linea:${colores[k]}"></i>${nombres[k]}</span>`).join('');
+  const leyenda=claves.map(k=>`<span><i style="--mer-linea:${colores[k]}"></i>${nombres[k]}</span>`).join('');
   const totalVencido=historial.reduce((s,d)=>s+d.total,0);
   const el=$('mermas-historia');
   el.innerHTML=`<div class="mer-panel-cab"><h2>Vencimientos en el tiempo</h2><div class="mer-historia-respuesta">
@@ -5261,12 +5306,15 @@ function pintarMermasHistoria(resumen=MERMAS_RESUMEN){
         <button type="button" data-mer-historia-modo="sedes" class="${modo==='sedes'?'on':''}" aria-pressed="${modo==='sedes'}">Por sede</button>
         <button type="button" data-mer-historia-modo="total" class="${modo==='total'?'on':''}" aria-pressed="${modo==='total'}">Total</button>
       </div></div></div>
+    <div class="mer-historia-filtros"><div class="mer-historia-escala" role="group" aria-label="Agrupar vencimientos por período">
+      ${[['dia','Día'],['semana','Semana'],['mes','Mes'],['año','Año']].map(([k,n])=>`<button type="button" data-mer-historia-escala="${k}" class="${MERMAS_HISTORIA_ESCALA===k?'on':''}" aria-pressed="${MERMAS_HISTORIA_ESCALA===k}">${n}</button>`).join('')}
+    </div></div>
     <div class="mer-historia-meta"><div class="mer-historia-leyenda">${leyenda}</div><span>${esc(tendencia.nota)} · ${fmt(totalVencido)} unidades</span></div>
     <div class="mer-historia-grafico" role="group" aria-label="Historial diario de unidades mermadas por vencimiento">
       <div class="mer-historia-y" aria-hidden="true">${yEtiquetas}</div><div class="mer-historia-trama">
         <svg class="mer-historia-svg" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">${guias}${lineas}</svg>${puntos}
         ${totalVencido?'':'<div class="mer-historia-sin">Sin vencimientos en este período</div>'}
-      </div><div class="mer-historia-x" aria-hidden="true">${etiquetas}</div></div>`;
+      </div><div class="mer-historia-x${historial.length===1?' una':''}" aria-hidden="true">${etiquetas}</div></div>`;
   const grafico=el.querySelector('.mer-historia-grafico');
   requestAnimationFrame(()=>requestAnimationFrame(()=>grafico.classList.add('lista')));
 }
@@ -5395,8 +5443,8 @@ function merContenidoTooltip(obj){
       <div class="linea"><span>Causa principal</span><span>${motivo?esc(MOT_MERMA_TXT[motivo[0]]||motivo[0])+' · '+fmt(motivo[1]):'—'}</span></div>`;
   }
   if(tipo==='historia'){
-    const d=MERMAS_RESUMEN.historialVencimientos.find(x=>x.fecha===clave);if(!d)return '';
-    return `<strong>${esc(merFechaEje(d.fecha))} · ${fmt(d.total)} unidades</strong>
+    const d=MERMAS_HISTORIA_VISIBLE.find(x=>x.fecha===clave);if(!d)return '';
+    return `<strong>${esc(merEtiquetaGrupo(d.fecha,MERMAS_HISTORIA_ESCALA,true))} · ${fmt(d.total)} unidades</strong>
       <div class="linea"><span>Mall Plaza</span><span>${fmt(d.plaza)}</span></div>
       <div class="linea"><span>Parque Angamos</span><span>${fmt(d.angamos)}</span></div>
       <div class="linea"><span>Total</span><span>${fmt(d.total)}</span></div>`;
@@ -5436,8 +5484,14 @@ $('mermas-periodos').addEventListener('click',e=>{
 });
 
 $('mermas-historia').addEventListener('click',e=>{
-  const b=e.target.closest('[data-mer-historia-modo]');if(!b||b.dataset.merHistoriaModo===MERMAS_HISTORIA_MODO)return;
-  MERMAS_HISTORIA_MODO=b.dataset.merHistoriaModo;merOcultarTooltip(true);pintarMermasHistoria();
+  const modo=e.target.closest('[data-mer-historia-modo]');
+  if(modo&&modo.dataset.merHistoriaModo!==MERMAS_HISTORIA_MODO){
+    MERMAS_HISTORIA_MODO=modo.dataset.merHistoriaModo;merOcultarTooltip(true);pintarMermasHistoria();return;
+  }
+  const escala=e.target.closest('[data-mer-historia-escala]');
+  if(escala&&escala.dataset.merHistoriaEscala!==MERMAS_HISTORIA_ESCALA){
+    MERMAS_HISTORIA_ESCALA=escala.dataset.merHistoriaEscala;merOcultarTooltip(true);pintarMermasHistoria();
+  }
 });
 
 $('mermas-dashboard').addEventListener('pointerover',e=>{
