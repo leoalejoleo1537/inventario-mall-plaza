@@ -238,6 +238,17 @@
   .drawer-salir{width:40px;height:40px;border:none;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .drawer-salir svg{width:21px;height:21px}
   .drawer .live{display:inline-flex;background:var(--gray-bg);border-radius:999px;color:var(--gray-fg);padding:5px 11px;font-size:12.5px}
+  /* En computadora el menú deja de ser una ventana temporal y pasa a formar
+     parte de la arquitectura. Queda un poco más angosto que el panel móvil y
+     libera el resto de la pantalla para trabajar con dos rondas a la vez. */
+  @media (min-width:1100px){
+    body{padding-left:280px}
+    .drawer{width:280px;max-width:none;transform:none;z-index:19;box-shadow:none;border-right:1px solid var(--border)}
+    .scrim,.scrim.open{display:none}
+    #btnMenu{display:none}
+    .topbar .inner,.tabs .inner{max-width:1600px}
+    #view-inv{max-width:1600px}
+  }
   /* ---------- aviso transitorio ---------- */
   .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);background:var(--navy);color:#fff;
          padding:11px 18px;border-radius:999px;font-size:13.5px;font-weight:600;z-index:70;max-width:88%;
@@ -1421,6 +1432,10 @@
      igual de bien y pesa cero. */
   .turno{background:transparent;border-radius:0;padding:0;margin-bottom:20px}
   .turno-lbl{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.13em;padding:0 4px 9px}
+  @media (min-width:1100px){
+    .inv-turnos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+    .inv-turnos .turno{min-width:0;margin-bottom:0}
+  }
   /* Lo urgente SÍ conserva su caja: ahí el fondo no es decoración, es lo que
      dice "esto está fuera de su sección y por eso está acá arriba". */
   .turno-urg{background:var(--gray-bg);border-radius:16px;padding:11px 10px 3px}
@@ -3854,9 +3869,12 @@ function pedirTexto(titulo, valor){
 }
 
 /* ---------------- menú lateral ---------------- */
-function abrirMenu(){
+function pintarIdentidadMenu(){
   $('drawerSede').textContent = SEDE ? SEDES[SEDE].label : '—';
-  $('drawerUser').textContent = saludo();
+  $('drawerUser').textContent = NOMBRE ? saludo() : '—';
+}
+function abrirMenu(){
+  pintarIdentidadMenu();
   $('drawer').classList.add('open'); $('scrim').classList.add('open');
 }
 function cerrarMenu(){ $('drawer').classList.remove('open'); $('scrim').classList.remove('open'); }
@@ -3992,6 +4010,7 @@ function pickSede(s){
   $('topTitle').textContent = SEDES[s].label;
   $('topSede').textContent = TITULOS.inv;
   $('footText').textContent = SEDES[s].label + ' · sincronizado en tiempo real';
+  pintarIdentidadMenu();
   // reset estado/filtros
   DATA=[]; filterState=null; modalProd=null; carrito=[];
   /* los conteos de las otras sedes se descartan al cambiar de sede: si no, al
@@ -9234,12 +9253,12 @@ function render(){
     : '';
   /* Al mirar UN tipo, AM/PM no significa nada: no se está contando el turno,
      se está mirando "todas las tortas". Los turnos vuelven al soltar el tipo. */
-  /* En BODEGA no hay turnos AM/PM: no se cuenta por turno, se cuenta la
-     bodega entera. Separarla en dos bloques era una división prestada de los
-     locales que ahí no significa nada. En Plaza y Angamos sigue igual. */
-  const cuerpo = (tipoSel || SEDE==='central')
+  /* En escritorio las dos rondas viven lado a lado. La misma composición se
+     usa en Bodega: allí también permite recorrer las secciones sin desperdiciar
+     la mitad derecha de la pantalla. En teléfono el grid vuelve a una columna. */
+  const cuerpo = tipoSel
     ? bloqueUrg + orden.map(secHTML).join('')
-    : bloqueUrg + bloque('AM', orden.filter(esAM)) + bloque('PM', orden.filter(s=>!esAM(s)));
+    : bloqueUrg + `<div class="inv-turnos">${bloque('AM', orden.filter(esAM))}${bloque('PM', orden.filter(s=>!esAM(s)))}</div>`;
   listEl.innerHTML = cuerpo || '<div class="empty">No hay productos que coincidan.</div>';
 }
 async function loadData(){

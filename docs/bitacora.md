@@ -8,6 +8,13 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **El inventario de computadora aprovecha el ancho.** En
+  pantallas desde 1.100 px el menú lateral queda fijo, con 280 px, y muestra
+  sede, accesos, presencia y usuario sin exigir abrirlo. El área de trabajo se
+  amplía y las rondas AM/PM se presentan en dos columnas, también en Bodega.
+  En teléfono las rondas conservan el orden vertical y el menú sigue siendo
+  una capa superpuesta, para no quitar ancho a las tarjetas de productos.
+
 - **2026-11-03** — **Mermas pasa de libro a tablero de decisión.** La vista
   conserva el detalle auditable, pero abre con la respuesta: unidades y
   registros del período, causa, sede y producto más afectados. Los períodos
