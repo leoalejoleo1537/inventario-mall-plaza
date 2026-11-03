@@ -8,6 +8,12 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **Bodega deja de trabajar dentro de una columna de 900
+  px.** Las vistas Enviar y Enlaces pasan a usar el mismo ancho disponible de
+  1.600 px que Inventario y Mermas. El cambio sólo afecta la composición en
+  computadora: conserva el orden, los controles, los datos y el ancho natural
+  del teléfono.
+
 - **2026-11-03** — **Vencimientos útiles sin convertir el inventario en otra
   lista.** El concepto aprobado pasa a la pantalla real: una píldora plegable
   resume únicamente los lotes vencidos y los que vencen hoy, separados en

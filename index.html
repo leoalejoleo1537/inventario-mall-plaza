@@ -340,6 +340,11 @@
   }
   /* ---------- layout ---------- */
   .wrap{max-width:900px;margin:0 auto;padding:14px 16px 90px}
+  /* Enviar y Enlaces son superficies de trabajo de Bodega, no formularios
+     angostos: tienen selectores, listas y estados que se comparan en la misma
+     vista. En escritorio usan el mismo ancho de 1600 px que Inventario y
+     Mermas; en teléfono el ancho sigue siendo naturalmente el disponible. */
+  #view-repcentral,#view-enlaces{max-width:1600px}
   .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
   input[type=text],select,input[type=date]{flex:1;min-width:150px;height:42px;padding:0 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--card);color:var(--text)}
   .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
