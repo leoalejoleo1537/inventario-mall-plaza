@@ -8,6 +8,14 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **Stock cero deja de producir falsos vencimientos.** Una
+  fecha residual puede conservarse en el producto o en sus lotes para
+  auditoría y corrección, pero ya no se muestra en la tarjeta, no entra al
+  resumen plegable y no se copia mientras `stock_actual` sea cero o menor.
+  La búsqueda principal incorpora una X táctil que aparece sólo cuando hay
+  texto, limpia el filtro completo y conserva el foco para buscar el siguiente
+  producto. No se borraron lotes ni se modificó la base de datos.
+
 - **2026-11-03** — **El inicio respira y después se quita del camino.** En una
   apertura fría desde teléfono, el logo aparece desde el primer dibujo y se
   conserva durante un mínimo de dos segundos mientras la sesión se recupera

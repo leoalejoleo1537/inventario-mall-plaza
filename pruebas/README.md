@@ -30,6 +30,7 @@ dice qué caso falló.
 | `pantalla-sana.mjs` | Que no haya dos elementos con el mismo `id` y que todo `$('algo')` apunte a algo que existe. Sale del bug de `rec-cancelar` duplicado: el Cancelar del editor de recetas se quedó sin manejador, no dio error en ninguna parte, y simplemente no cerraba. |
 | `mermas.mjs` | La vista previa de la merma: el renglón que se lee justo antes de apretar. Que no deje mermar más de lo que hay (regla 0.2) y que la cuenta de "quedan N de M" no mienta, decimales incluidos. |
 | `dashboard-mermas.mjs` | El tablero analítico: períodos, KPIs, anillo, barras, ranking, auditoría, Excel completo, deshacer y adaptación al teléfono. |
+| `vencimiento-stock-cero.mjs` | Que una fecha residual no muestre ni contabilice como vencido un producto cuyo stock real ya llegó a cero. |
 | `critico-por-sede.mjs` | Las tarjetas de Bodega. Sobre todo **que una lectura fallida muestre "—" y nunca 0**: un 0 diría "a esa sede no le falta nada" justo cuando no lo sabemos, y el reparto se armaría dejando ese local afuera. Además comprueba que la tarjeta use la MISMA regla de crítico que la pantalla del local, extrayendo `estado()` del archivo real. |
 
 > ⚠️ Esta tabla venía **cinco archivos atrasada** (`permiso-por-sede`,

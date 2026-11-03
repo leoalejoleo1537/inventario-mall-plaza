@@ -52,6 +52,7 @@ const LOTES = {
 const ctx = {
   DATA, hasVenc:true,
   lotesDe: id => LOTES[id] || [],
+  tieneStock: p => Number(p&&p.stock_actual) > 0,
   hoyISO: () => HOY,
   fmt: n => { const x=+n||0; return Number.isInteger(x)?String(x):String(x).replace('.',','); },
   normNombre: t => String(t||'').toLowerCase().normalize('NFD')
@@ -122,8 +123,10 @@ caso('un producto en 0 no ocupa espacio', () =>
 caso('una fecha residual no revive un producto con stock 0', () => {
   LOTES[6] = [{cantidad:1,vencimiento:'2026-08-24'}];
   const conResidual = mk('resumenSeccionNuevo')('Sándwiches');
+  const conResidualViejo = mk('resumenSeccionViejo')('Sándwiches');
   delete LOTES[6];
-  return !conResidual.includes('Se acabó') || 'copió una fecha sin stock';
+  return (!conResidual.includes('Se acabó') && !conResidualViejo.includes('Se acabó'))
+    || 'algún formato copió una fecha sin stock';
 });
 caso('no se cuela otra sección', () =>
   !nuevo.includes('otra sección') || 'trajo productos de otra sección');

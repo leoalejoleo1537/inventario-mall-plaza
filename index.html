@@ -401,6 +401,17 @@
   #view-repcentral,#view-enlaces{max-width:1600px}
   .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
   input[type=text],select,input[type=date]{flex:1;min-width:150px;height:42px;padding:0 14px;border:1px solid var(--border);border-radius:10px;font-size:15px;background:var(--card);color:var(--text)}
+  /* Limpiar una búsqueda es parte de buscar, no una acción aparte. La X vive
+     dentro del mismo campo, tiene área táctil completa y sólo aparece cuando
+     hay algo que borrar. */
+  .busca-principal{position:relative}
+  .busca-principal #q{padding-right:50px}
+  .busca-limpiar{position:absolute;z-index:1;top:0;right:1px;width:42px;height:42px;border:0;
+    border-radius:10px;background:transparent;color:var(--muted);font:500 23px/1 -apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    display:grid;place-items:center;cursor:pointer;padding:0;transition:background .14s ease,transform .12s ease}
+  .busca-limpiar[hidden]{display:none}
+  .busca-limpiar:active{background:var(--gray-bg);transform:scale(.92)}
+  @media (prefers-reduced-motion:reduce){.busca-limpiar{transition:none}.busca-limpiar:active{transform:none}}
   .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
   /* con la tarjeta de Urgente son cuatro; si la columna no existe en la base,
      se queda en tres y la pantalla se ve igual que antes */
@@ -2876,8 +2887,9 @@
 
 <!-- ================= INVENTARIO ================= -->
 <div class="wrap" id="view-inv">
-  <div class="controls busca" data-busca="inv">
+  <div class="controls busca busca-principal" data-busca="inv">
     <input type="text" id="q" placeholder="Buscar producto…">
+    <button type="button" class="busca-limpiar" id="q-clear" aria-label="Limpiar búsqueda" title="Limpiar búsqueda" hidden>×</button>
   </div>
   <!-- solo en Bodega: cuánto le falta a cada local. Ver .csedes en el estilo -->
   <div class="csedes" id="critSedes" style="display:none"></div>
@@ -3591,6 +3603,10 @@ function estado(p){
   if (maxOk(p) && a > p.stock_max) return 'sobre';
   return 'ok';
 }
+/* Una fecha sólo describe unidades que existen. Puede quedar una fecha vieja
+   en el producto o en sus lotes después de agotar el stock; conservarla sirve
+   para editar/auditar, pero mostrarla con 0 crea un falso vencimiento. */
+const tieneStock = p => Number(p&&p.stock_actual) > 0;
 const CFG = {
   critico:{bg:'var(--red-bg)',fg:'var(--red-fg)',t:'Crítico'},
   ok:{bg:'var(--green-bg)',fg:'var(--green-fg)',t:'En rango'},
@@ -3644,7 +3660,7 @@ function etiquetaVenc(iso){
    sándwiches hay que ver el detalle completo sin abrir la ficha: cuántos
    vencen y qué día, para cada fecha. Ver regla 0.3 del archivo madre. */
 function vencsHTML(p){
-  if (!esPerec(p)) return '';
+  if (!esPerec(p) || !tieneStock(p)) return '';
   const ls = lotesDe(p.id).filter(l=>l.vencimiento);
   if (ls.length){
     const chips = ls.map(l=>{
@@ -3679,7 +3695,7 @@ function invResumenVencimientos(){
     if(fecha&&(!actual.fecha||fecha<actual.fecha))actual.fecha=fecha;
     mapa.set(clave,actual);
   };
-  DATA.filter(esPerec).forEach(p=>{
+  DATA.filter(p=>esPerec(p)&&tieneStock(p)).forEach(p=>{
     const todosLotes=lotesDe(p.id);
     const lotes=todosLotes.filter(l=>l.vencimiento&&l.vencimiento<=hoy);
     if(todosLotes.length){
@@ -4385,7 +4401,7 @@ async function pickSede(s){
   CRITICOS={}; CRIT_TOPE={};
   $('critSedes').style.display='none'; $('critSedes').innerHTML='';
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
-  qEl.value=''; openSecs=new Set();
+  qEl.value=''; actualizarLimpiarBusqueda(); openSecs=new Set();
   $('rq').value=''; $('reparto-results').innerHTML=''; $('carrito-box').style.display='none';
   /* Bodega no vende, así que no tiene recetas: la pestaña ni se ofrece.
      Es solo esconder el botón — no se toca ni una receta de nadie, y en Plaza
@@ -9945,7 +9961,7 @@ function resumenSeccionNuevo(sec){
     return '🟢 ' + n + ' u. vence' + (cantidad === 1 ? '' : 'n') + ' · ' + fmtDiaMes(vencimiento);
   };
   items.forEach(p=>{
-    if((+p.stock_actual||0) <= 0) return;
+    if(!tieneStock(p)) return;
     const nom = nombreResumen(p.producto);
     const ls = lotesDe(p.id).filter(l=>l.vencimiento && (+l.cantidad||0) > 0)
       .sort((a,b)=>String(a.vencimiento).localeCompare(String(b.vencimiento)));
@@ -9975,6 +9991,7 @@ function resumenSeccionViejo(sec){
     .sort((a,b)=>a.producto.localeCompare(b.producto,'es',{sensitivity:'base'}));
   const lineas=[];
   items.forEach(p=>{
+    if(!tieneStock(p)) return;
     const nom=nombreResumen(p.producto);
     const ls=lotesDe(p.id).filter(l=>l.vencimiento);
     if(ls.length){
@@ -10050,6 +10067,7 @@ function soltarFiltros(){
    todas las secciones cerradas */
 function irAlInicio(){
   qEl.value='';
+  actualizarLimpiarBusqueda();
   filterState=null; tipoSel=null;
   document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
   renderTipos();
@@ -10057,8 +10075,17 @@ function irAlInicio(){
   render();
   window.scrollTo({top:0});
 }
+function actualizarLimpiarBusqueda(){ $('q-clear').hidden=!qEl.value; }
 qEl.addEventListener('focus',()=>{ if(soltarFiltros()) render(); });
-qEl.addEventListener('input',()=>{ soltarFiltros(); render(); ajustarMetaPortada(); });
+qEl.addEventListener('input',()=>{
+  actualizarLimpiarBusqueda();soltarFiltros();render();ajustarMetaPortada();
+});
+$('q-clear').addEventListener('click',()=>{
+  qEl.value='';
+  actualizarLimpiarBusqueda();
+  soltarFiltros();render();ajustarMetaPortada();
+  qEl.focus();
+});
 document.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>{
   const f=c.dataset.f; filterState=filterState===f?null:f;
   document.querySelectorAll('.mcard').forEach(x=>x.classList.toggle('sel',x.dataset.f===filterState));
@@ -10955,7 +10982,7 @@ $('n-guardar').addEventListener('click', async()=>{
     }
     if(data && data[0]) DATA.push(data[0]);
     closeNuevo(); metrics(); render();
-    qEl.value=nombre; filterState=null;
+    qEl.value=nombre; actualizarLimpiarBusqueda(); filterState=null;
     document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('sel'));
     render();
   } finally { btn.disabled=false; btn.textContent='Agregar'; }
