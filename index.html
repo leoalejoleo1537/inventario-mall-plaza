@@ -1575,10 +1575,18 @@
   /* Vencimientos del día: una píldora desplegable, con tres filas visibles
      por estado. Si hay más, cada lista se desplaza por separado y el bloque
      nunca se come el inventario completo. */
-  .inv-venc{display:none;background:var(--card);border-radius:16px;box-shadow:var(--sombra);margin:12px 0;overflow:hidden}
-  .inv-venc-toggle{display:flex;align-items:center;gap:10px;width:100%;padding:13px 15px;border:0;background:transparent;
+  .inv-venc{--inv-venc-rgb:84,103,125;--inv-venc-color:var(--gray-fg);display:none;position:relative;isolation:isolate;
+    background:var(--card);border-radius:16px;box-shadow:var(--sombra),0 10px 30px -22px rgba(var(--inv-venc-rgb),.18);margin:12px 0;overflow:hidden}
+  .inv-venc.estado-verde{--inv-venc-rgb:46,125,50;--inv-venc-color:var(--green-fg)}
+  .inv-venc.estado-ambar{--inv-venc-rgb:169,106,0;--inv-venc-color:var(--amber-fg)}
+  .inv-venc.estado-rojo{--inv-venc-rgb:200,54,42;--inv-venc-color:var(--red-fg)}
+  .inv-venc::before{content:'';position:absolute;z-index:-1;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse 210px 95px at 30px 2px,rgba(var(--inv-venc-rgb),.075),rgba(194,164,119,.025) 48%,transparent 76%)}
+  .inv-venc-toggle{position:relative;display:flex;align-items:center;gap:10px;width:100%;padding:13px 15px;border:0;background:transparent;
     color:var(--text);font:inherit;text-align:left;cursor:pointer}
-  .inv-venc-ico{width:31px;height:31px;flex:0 0 31px;border-radius:10px;display:grid;place-items:center;background:var(--gray-bg);color:var(--sec-filo);font-size:16px}
+  .inv-venc-ico{width:31px;height:31px;flex:0 0 31px;border-radius:10px;display:grid;place-items:center;
+    background:rgba(var(--inv-venc-rgb),.075);color:var(--inv-venc-color);box-shadow:0 6px 18px -13px rgba(var(--inv-venc-rgb),.55)}
+  .inv-venc-ico svg{width:17px;height:17px;display:block}
   .inv-venc-titulo{flex:1;min-width:0}.inv-venc-titulo b{display:block;font-size:13.5px}.inv-venc-titulo small{display:block;margin-top:2px;color:var(--muted);font-size:10px}
   .inv-venc-flecha{color:var(--muted);font-size:15px;transition:transform .18s ease}.inv-venc.cerrado .inv-venc-flecha{transform:rotate(-90deg)}
   .inv-venc-cuerpo{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 12px}.inv-venc.cerrado .inv-venc-cuerpo{display:none}
@@ -1592,6 +1600,8 @@
   .inv-venc-fila:first-child{border-top:0}.inv-venc-prod{min-width:0}.inv-venc-prod b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px}
   .inv-venc-prod small,.inv-venc-cant small{display:block;color:var(--muted);font-size:9px;margin-top:2px}.inv-venc-cant{text-align:right;white-space:nowrap}.inv-venc-cant b{font-size:11.5px}
   .inv-venc-vacio{height:55px;display:grid;place-items:center;color:var(--muted);font-size:10.5px}
+  .inv-venc-sin{grid-column:1/-1;min-height:66px;display:grid;place-items:center;border-radius:13px;background:rgba(var(--inv-venc-rgb),.045);
+    color:var(--green-fg);font-size:11.5px;font-weight:700;text-align:center}
   @media(max-width:520px){
     .inv-venc-cuerpo{grid-template-columns:1fr;padding:0 10px 10px}.inv-venc-toggle{padding:12px}
   }
@@ -2951,7 +2961,7 @@
   </div>
   <section class="inv-venc cerrado" id="inv-vencimientos">
     <button type="button" class="inv-venc-toggle" id="inv-venc-toggle" aria-expanded="false" aria-controls="inv-venc-cuerpo">
-      <span class="inv-venc-ico" aria-hidden="true">◷</span><span class="inv-venc-titulo"><b>Vencimientos de hoy</b><small id="inv-venc-resumen">—</small></span><span class="inv-venc-flecha" aria-hidden="true">⌄</span>
+      <span class="inv-venc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path></svg></span><span class="inv-venc-titulo"><b>Vencimientos de hoy</b><small id="inv-venc-resumen">—</small></span><span class="inv-venc-flecha" aria-hidden="true">⌄</span>
     </button>
     <div class="inv-venc-cuerpo" id="inv-venc-cuerpo"></div>
   </section>
@@ -3759,14 +3769,21 @@ function invResumenVencimientos(){
   const ordenar=(a,b)=>String(a.fecha).localeCompare(String(b.fecha))||a.producto.localeCompare(b.producto,'es',{sensitivity:'base'});
   return {vencidos:[...vencidos.values()].sort(ordenar),hoy:[...hoyM.values()].sort(ordenar)};
 }
+function invEstadoVencimientos(r){
+  const vencidas=(r.vencidos||[]).reduce((n,x)=>n+(+x.cantidad||0),0);
+  const hoy=(r.hoy||[]).reduce((n,x)=>n+(+x.cantidad||0),0);
+  const unidades=n=>fmt(n)+' '+(n===1?'unidad':'unidades');
+  if(vencidas>0)return {estado:'rojo',resumen:unidades(vencidas)+' vencida'+(vencidas===1?'':'s')+(hoy?' · '+unidades(hoy)+' vencen hoy':'')};
+  if(hoy>0)return {estado:'ambar',resumen:unidades(hoy)+' vencen hoy'};
+  return {estado:'verde',resumen:'Sin vencimientos pendientes'};
+}
 function pintarVencimientos(){
   const card=$('inv-vencimientos');if(!card)return;
-  const r=invResumenVencimientos(),todos=[...r.vencidos,...r.hoy];
-  if(!todos.length){card.style.display='none';return;}
-  const total=todos.reduce((n,x)=>n+x.cantidad,0);
+  const r=invResumenVencimientos(),todos=[...r.vencidos,...r.hoy],estado=invEstadoVencimientos(r);
   card.style.display='block';card.classList.toggle('cerrado',!INV_VENC_ABIERTO);
+  card.classList.remove('estado-verde','estado-ambar','estado-rojo');card.classList.add('estado-'+estado.estado);
   $('inv-venc-toggle').setAttribute('aria-expanded',String(INV_VENC_ABIERTO));
-  $('inv-venc-resumen').textContent=fmt(total)+' unidades necesitan atención';
+  $('inv-venc-resumen').textContent=estado.resumen;
   const grupo=(clase,titulo,items,vacio)=>{
     const unidades=items.reduce((n,x)=>n+x.cantidad,0);
     const filas=items.length?items.map(x=>`<div class="inv-venc-fila"><div class="inv-venc-prod"><b>${esc(x.producto)}</b><small>${esc(x.rubro)}</small></div>
@@ -3775,7 +3792,9 @@ function pintarVencimientos(){
     return `<section class="inv-venc-grupo ${clase}"><div class="inv-venc-gcab"><i class="inv-venc-punto"></i><span>${titulo}</span><span>${items.length} producto${items.length===1?'':'s'} · ${fmt(unidades)} un.</span></div>
       <div class="inv-venc-lista" tabindex="0" aria-label="${titulo}: ${items.length} productos">${filas}</div></section>`;
   };
-  $('inv-venc-cuerpo').innerHTML=grupo('rojo','Vencidos',r.vencidos,'Nada vencido')+grupo('ambar','Vencen hoy',r.hoy,'Nada vence hoy');
+  $('inv-venc-cuerpo').innerHTML=todos.length
+    ?grupo('rojo','Vencidos',r.vencidos,'Nada vencido')+grupo('ambar','Vencen hoy',r.hoy,'Nada vence hoy')
+    :'<div class="inv-venc-sin">Todo al día</div>';
 }
 $('inv-venc-toggle').addEventListener('click',()=>{
   INV_VENC_ABIERTO=!INV_VENC_ABIERTO;

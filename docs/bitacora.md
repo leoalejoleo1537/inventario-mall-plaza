@@ -8,6 +8,14 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **La portada de vencimientos funciona como una
+  notificación, no como un reloj.** La cabecera reemplaza el símbolo circular
+  por una campana y conserva siempre una señal de estado: verde cuando no hay
+  pendientes, ámbar cuando únicamente vencen productos hoy y rojo si existe
+  al menos un vencido. Un halo beige teñido acompaña el estado con opacidad
+  muy baja; informa sin competir con críticos, navegación ni acciones. La
+  tarjeta sana permanece visible con “Todo al día” en lugar de desaparecer.
+
 - **2026-11-03** — **Las líneas dejan de ser dientes y se pueden leer en
   distintas escalas.** El historial de vencimientos usa curvas cúbicas
   suavizadas que conservan los valores reales de cada punto. Mall Plaza y
