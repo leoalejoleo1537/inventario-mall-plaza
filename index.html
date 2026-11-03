@@ -393,6 +393,138 @@
           text-decoration:none;margin-top:2px}
   .cs-hay .rep-deshacer{display:block;margin-top:3px}
 
+  /* ---- DASHBOARD DE MERMAS ----
+     No trae otra estética a la app: usa Acero, las mismas tarjetas sin borde,
+     el mismo navy para selección y los colores que ya significan alerta. */
+  .mer-head{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .mer-titulo{flex:1;min-width:210px}
+  .mer-titulo .sobre{font-size:10.5px;font-weight:800;letter-spacing:.75px;text-transform:uppercase;color:var(--sec-filo)}
+  .mer-titulo h1{font-size:27px;line-height:1.08;letter-spacing:-.035em;margin:4px 0 3px;color:var(--navy)}
+  .mer-titulo p{font-size:11.5px;color:var(--muted);margin:0}
+  .mer-acciones{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+  .mer-periodos{display:flex;gap:4px;padding:4px;background:var(--card);border-radius:13px;box-shadow:var(--sombra)}
+  .mer-periodos button{min-height:42px;border:0;border-radius:10px;padding:8px 12px;background:transparent;color:var(--muted);
+    font:inherit;font-size:12.5px;font-weight:750;cursor:pointer;transition:background .18s,color .18s,transform .12s}
+  .mer-periodos button:active{transform:scale(.95)}
+  .mer-periodos button.on{background:var(--navy);color:#fff}
+  .mer-periodos button:focus-visible,.mer-tip-objetivo:focus-visible{outline:3px solid rgba(65,98,140,.3);outline-offset:2px}
+  .mer-exportando{opacity:.68;pointer-events:none}
+  .mer-dashboard{transition:opacity .18s ease}
+  .mer-dashboard.cargando{opacity:.54;pointer-events:none}
+  .mer-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-bottom:12px}
+  .mer-kpi,.mer-panel{background:var(--card);border:0;border-radius:16px;box-shadow:var(--sombra);min-width:0}
+  .mer-kpi{padding:13px 13px 12px;opacity:0;transform:translateY(8px);
+    transition:opacity .24s ease,transform .24s cubic-bezier(.2,.8,.3,1);transition-delay:calc(var(--mer-i,0)*35ms)}
+  .mer-kpi .et{display:block;font-size:9.5px;line-height:1.2;font-weight:800;letter-spacing:.35px;color:var(--muted);text-transform:uppercase}
+  .mer-kpi .val{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:20px;line-height:1.08;
+    font-weight:800;color:var(--navy);letter-spacing:-.025em;margin:7px 0 4px;overflow-wrap:anywhere}
+  .mer-kpi:first-child .val{color:var(--red-fg);font-size:25px}
+  .mer-kpi .nota{display:block;font-size:10px;line-height:1.28;color:var(--muted)}
+  .mer-dashboard.lista .mer-kpi,.mer-dashboard.lista .mer-panel{opacity:1;transform:none}
+  .mer-graficas{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(270px,.75fr);gap:12px;margin-bottom:12px}
+  .mer-inferior{display:grid;grid-template-columns:minmax(0,.88fr) minmax(0,1.12fr);gap:12px}
+  .mer-panel{padding:15px;opacity:0;transform:translateY(8px);transition:opacity .24s ease,transform .24s cubic-bezier(.2,.8,.3,1);
+    transition-delay:calc(var(--mer-i,0)*35ms)}
+  .mer-panel-cab{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+  .mer-panel h2{font-size:14.5px;line-height:1.2;margin:0;color:var(--navy)}
+  .mer-panel-cab span{margin-left:auto;font-size:10.5px;color:var(--muted);white-space:nowrap}
+  .mer-vacio{display:grid;place-items:center;min-height:130px;color:var(--muted);font-size:13px;text-align:center}
+  .mer-sedes{display:grid;gap:13px;padding:2px 0}
+  .mer-sede{display:grid;grid-template-columns:minmax(78px,110px) minmax(70px,1fr) 34px;align-items:center;gap:10px;
+    width:100%;padding:5px 2px;border:0;border-radius:10px;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+  .mer-sede:hover,.mer-sede:focus-visible,.mer-sede.activo{background:var(--bg)}
+  .mer-sede .nm{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mer-pista{height:13px;border-radius:999px;background:var(--gray-bg);overflow:hidden}
+  .mer-relleno{display:block;width:100%;height:100%;border-radius:inherit;background:var(--sec-filo);transform:scaleX(0);transform-origin:left center;
+    transition:transform .3s cubic-bezier(.2,.8,.3,1);transition-delay:calc(var(--mer-i,0)*40ms)}
+  .mer-dashboard.lista .mer-relleno{transform:scaleX(var(--mer-pct,0))}
+  .mer-sede .num{text-align:right;font-size:12px;font-weight:800;color:var(--navy);font-variant-numeric:tabular-nums}
+  .mer-anillo-wrap{display:grid;grid-template-columns:minmax(145px,.8fr) minmax(125px,1fr);align-items:center;gap:11px;min-height:188px}
+  .mer-anillo{width:min(178px,100%);aspect-ratio:1;margin:auto;overflow:visible}
+  .mer-anillo-base{fill:none;stroke:var(--gray-bg);stroke-width:15}
+  .mer-anillo-seg{fill:none;stroke-width:15;cursor:pointer;transform:rotate(-90deg);transform-box:view-box;transform-origin:center;
+    transition:opacity .15s,stroke-width .15s}
+  .mer-anillo-seg:hover,.mer-anillo-seg:focus,.mer-anillo-seg.activo{opacity:.78;stroke-width:18;outline:none}
+  .mer-anillo-seg[data-mer-clase="vencimiento"]{stroke:var(--red-fg)}
+  .mer-anillo-seg[data-mer-clase="daño"]{stroke:var(--amber-fg)}
+  .mer-anillo-seg[data-mer-clase="robo"]{stroke:var(--navy)}
+  .mer-anillo-seg[data-mer-clase="otro"]{stroke:var(--sec-filo)}
+  .mer-anillo-seg[data-mer-clase="desconocido"]{stroke:var(--muted)}
+  .mer-dashboard.lista .mer-anillo-seg{animation:mer-anillo-entra .3s cubic-bezier(.2,.8,.3,1) backwards;
+    animation-delay:calc(var(--mer-i,0)*45ms)}
+  @keyframes mer-anillo-entra{from{stroke-dasharray:0 100;opacity:.25}}
+  .mer-anillo-total{font-size:18px;font-weight:850;fill:var(--navy);text-anchor:middle;font-variant-numeric:tabular-nums}
+  .mer-anillo-sub{font-size:7px;font-weight:700;fill:var(--muted);text-anchor:middle;text-transform:uppercase;letter-spacing:.4px}
+  .mer-leyenda{display:grid;gap:7px}
+  .mer-leyenda button{display:grid;grid-template-columns:9px minmax(0,1fr) auto;align-items:center;gap:7px;width:100%;min-height:34px;
+    padding:5px 6px;border:0;border-radius:9px;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+  .mer-leyenda button:hover,.mer-leyenda button:focus-visible,.mer-leyenda button.activo{background:var(--bg)}
+  .mer-leyenda .punto{width:9px;height:9px;border-radius:50%;background:var(--mer-color)}
+  .mer-leyenda .nom{font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mer-leyenda .dat{font-size:10.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .mer-ranking{display:grid;gap:4px}
+  .mer-producto{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:9px;align-items:center;width:100%;padding:8px 7px;
+    border:0;border-radius:11px;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+  .mer-producto:hover,.mer-producto:focus-visible,.mer-producto.activo{background:var(--bg)}
+  .mer-producto .pos{width:22px;height:22px;border-radius:8px;display:grid;place-items:center;background:var(--gray-bg);color:var(--gray-fg);
+    font-size:10px;font-weight:850}
+  .mer-producto .cuerpo{min-width:0}
+  .mer-producto .nombre{display:block;font-size:12px;font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mer-producto .mini-pista{height:5px;border-radius:999px;background:var(--gray-bg);overflow:hidden;margin-top:5px}
+  .mer-producto .mini-pista i{display:block;width:100%;height:100%;border-radius:inherit;background:var(--sec-filo);transform:scaleX(0);transform-origin:left;
+    transition:transform .3s cubic-bezier(.2,.8,.3,1);transition-delay:calc(var(--mer-i,0)*35ms)}
+  .mer-dashboard.lista .mer-producto .mini-pista i{transform:scaleX(var(--mer-pct,0))}
+  .mer-producto .dato{text-align:right;white-space:nowrap}
+  .mer-producto .dato b{display:block;font-size:12px;color:var(--navy)}
+  .mer-producto .dato small{font-size:9.5px;color:var(--muted)}
+  .mer-recientes{max-height:clamp(286px,42vh,410px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    scrollbar-gutter:stable;padding-right:3px}
+  .mer-recientes::-webkit-scrollbar{width:6px}
+  .mer-recientes::-webkit-scrollbar-thumb{background:var(--border);border-radius:999px}
+  .mer-fila{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;padding:9px 3px;border-top:1px solid var(--border)}
+  .mer-fila:first-child{border-top:0;padding-top:2px}
+  .mer-fila.off{opacity:.55}
+  .mer-fila .prod{font-size:12.5px;font-weight:750;color:var(--text);line-height:1.25}
+  .mer-fila .meta{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px;font-size:10.5px;color:var(--muted)}
+  .mer-motivo{display:inline-flex;border-radius:999px;padding:3px 7px;background:var(--gray-bg);color:var(--gray-fg);font-size:9.5px;font-weight:800}
+  .mer-motivo[data-motivo="vencimiento"]{background:var(--red-bg);color:var(--red-fg)}
+  .mer-motivo[data-motivo="daño"]{background:var(--amber-bg);color:var(--amber-fg)}
+  .mer-motivo[data-motivo="robo"]{background:var(--gray-bg);color:var(--navy)}
+  .mer-fila .lado{text-align:right;white-space:nowrap}
+  .mer-fila .cant{display:block;font-size:13px;font-weight:850;color:var(--navy)}
+  .mer-fila .rep-deshacer{border:0;background:transparent;color:var(--orange);font:inherit;font-size:10.5px;font-weight:800;padding:5px 0;cursor:pointer}
+  .mer-fila .deshecha{display:block;font-size:10px;color:var(--muted);margin-top:4px}
+  .mer-tooltip{position:fixed;z-index:10000;width:min(276px,calc(100vw - 24px));padding:11px 13px;border-radius:12px;background:var(--card);
+    box-shadow:0 12px 32px rgba(15,30,49,.24);color:var(--text);font-size:11px;line-height:1.42;pointer-events:none;
+    opacity:0;visibility:hidden;transform:translateY(4px);transition:opacity .15s,transform .15s}
+  .mer-tooltip.on{opacity:1;visibility:visible;transform:none}
+  .mer-tooltip strong{display:block;color:var(--navy);font-size:12.5px;margin-bottom:4px}
+  .mer-tooltip .linea{display:flex;justify-content:space-between;gap:10px;margin-top:3px}
+  .mer-tooltip .linea span:last-child{text-align:right;color:var(--muted)}
+  .mer-tooltip .ultimas{margin:7px 0 0;padding:7px 0 0;border-top:1px solid var(--border);list-style:none}
+  .mer-tooltip .ultimas li{display:flex;justify-content:space-between;gap:8px;margin-top:3px}
+  .mer-tooltip .ultimas span:last-child{color:var(--muted);white-space:nowrap}
+  @media(max-width:820px){
+    .mer-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .mer-kpi:nth-child(5){grid-column:span 2}
+    .mer-graficas,.mer-inferior{grid-template-columns:1fr}
+  }
+  @media(max-width:520px){
+    .mer-head{align-items:flex-start}.mer-acciones{width:100%;justify-content:space-between}
+    .mer-periodos{flex:1}.mer-periodos button{flex:1;padding-left:7px;padding-right:7px}
+    .mer-acciones>.btn{min-height:42px}
+    .mer-kpi{padding:11px}.mer-kpi .val{font-size:18px}.mer-kpi:first-child .val{font-size:23px}
+    .mer-panel{padding:13px}.mer-anillo-wrap{grid-template-columns:145px minmax(0,1fr);gap:5px}
+    .mer-sede{grid-template-columns:75px minmax(60px,1fr) 30px;gap:8px}
+    .mer-fila{grid-template-columns:minmax(0,1fr) 58px}.mer-recientes{max-height:390px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .mer-dashboard,.mer-kpi,.mer-panel,.mer-relleno,.mer-producto .mini-pista i,.mer-tooltip,.mer-periodos button{transition:none!important}
+    .mer-kpi,.mer-panel{opacity:1!important;transform:none!important}
+    .mer-relleno,.mer-producto .mini-pista i{transform:scaleX(var(--mer-pct,0))!important}
+    .mer-anillo-seg{animation:none!important;transition:none!important}
+  }
+
   /* ---- ENLACES (solo Bodega) ----
      Copiado de la maqueta que Jhon aprobó (docs/propuesta-enlaces.html).
      Es una PÁGINA, no una ventana emergente: él lo pidió así y tiene razón,
@@ -2891,13 +3023,38 @@
 
 </div>
 
-<!-- ================= MERMAS (solo Bodega) ================= -->
+<!-- ================= MERMAS ================= -->
 <div class="wrap" id="view-mermas" style="display:none">
-  <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
-    <div style="flex:1;font-weight:800;font-size:16px" id="mermas-total">—</div>
-    <button class="btn btn-orange btn-sm" id="btnMermasExcel">Descargar Excel</button>
+  <div class="mer-head">
+    <div class="mer-titulo">
+      <div class="sobre">Inventario · Mermas</div>
+      <h1>Lo que se perdió</h1>
+      <p>Datos disponibles desde el 04 oct 2026</p>
+    </div>
+    <div class="mer-acciones">
+      <div class="mer-periodos" id="mermas-periodos" role="group" aria-label="Período de análisis">
+        <button type="button" data-mer-periodo="7" aria-pressed="false">7 días</button>
+        <button type="button" class="on" data-mer-periodo="30" aria-pressed="true">30 días</button>
+        <button type="button" data-mer-periodo="all" aria-pressed="false">Todo</button>
+      </div>
+      <button class="btn btn-orange btn-sm" id="btnMermasExcel">Descargar Excel</button>
+    </div>
   </div>
-  <div id="mermas-list"><div class="empty">Cargando…</div></div>
+  <div class="mer-dashboard" id="mermas-dashboard" aria-busy="false">
+    <section class="mer-kpis" id="mermas-kpis" aria-label="Resumen de mermas"></section>
+    <section class="mer-graficas">
+      <article class="mer-panel" id="mermas-sedes" style="--mer-i:5"></article>
+      <article class="mer-panel" id="mermas-motivos" style="--mer-i:6"></article>
+    </section>
+    <section class="mer-inferior">
+      <article class="mer-panel" id="mermas-productos" style="--mer-i:7"></article>
+      <article class="mer-panel" id="mermas-recientes" style="--mer-i:8">
+        <div class="mer-panel-cab"><h2>Últimas mermas</h2><span id="mermas-total">—</span></div>
+        <div class="mer-recientes" id="mermas-list" role="region" aria-label="Últimas diez mermas" tabindex="0"><div class="empty">Cargando…</div></div>
+      </article>
+    </section>
+  </div>
+  <div class="mer-tooltip" id="mermas-tooltip" role="tooltip" aria-hidden="true"></div>
 </div>
 
 <!-- ================= LLAMITA LAMA · el área de ventas =================
@@ -3875,7 +4032,7 @@ function pickSede(s){
      el lado seguro del error. */
   $('tabLama').style.display      = 'none';
   document.querySelector('.tab[data-tab="reparto"]').style.display = s==='central' ? 'none' : '';
-  MERMAS=[]; ENLACES=[]; SEDE_PROD={};
+  MERMAS=[]; MERMAS_RESUMEN=null; MERMAS_CARGA_ID++; ENLACES=[]; SEDE_PROD={};
   repcCarritos={plaza:[],angamos:[]}; repcAbiertos={plaza:[],angamos:[]};
   entCarrito=[]; entUltimas=[];
   // volver a la pestaña Inventario
@@ -4423,70 +4580,308 @@ $('m-mermar').addEventListener('click', ()=>{ if(modalProd) abrirMerma(modalProd
 
 /* ---------------- la pestaña ---------------- */
 let MERMAS = [];
-async function loadMermas(){
-  if(!SEDE) return;
-  /* En bodega se ven las de las TRES sedes: es el cuadro de mando de
-     Adriana y ahí "cuánto se está botando" es una pregunta del negocio,
-     no de un local. En Plaza y en Angamos, cada uno ve lo suyo. */
-  /* No hay tope artificial: el libro de mermas es histórico y el Excel
-     tiene que poder entregar todos sus años, no solo los últimos 500. Se
-     lee por páginas porque PostgREST protege cada respuesta individual. */
-  const porPagina = 1000;
-  const todas = [];
-  let desde = 0;
-  let error = null;
-  while(true){
-    let q = sb.from('movimientos').select('*').eq('tipo','merma');
-    if(SEDE!=='central') q = q.eq('sede', SEDE);
-    const r = await q.order('created_at',{ascending:false})
-      .range(desde, desde + porPagina - 1);
-    if(r.error){ error=r.error; break; }
-    const pagina = r.data||[];
-    todas.push(...pagina);
-    if(pagina.length < porPagina) break;
-    desde += pagina.length;
+const MOT_MERMA_TXT = Object.fromEntries(MOTIVOS_MERMA);
+const MERMAS_COLUMNAS = 'id,sede,producto_id,producto,tipo,cantidad,motivo,nota,quien,created_at,detalle,deshecha_at,deshecha_por';
+let MERMAS_PERIODO = '30';
+let MERMAS_PERIODO_OK = '30';
+let MERMAS_CARGA_ID = 0;
+let MERMAS_RESUMEN = null;
+let MERMAS_TOOLTIP_FIJO = null;
+
+const merHoySantiago = () => new Intl.DateTimeFormat('en-CA',{
+  timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'
+}).format(new Date());
+
+/* Convierte la medianoche chilena a UTC sin asumir -03 o -04: el cambio de
+   hora ocurre justo en los bordes que un dashboard no puede contar dos veces. */
+function merInicioDiaISO(fecha){
+  const objetivo=Date.parse(fecha+'T00:00:00Z');
+  let candidato=objetivo;
+  for(let i=0;i<2;i++){
+    const partes=new Intl.DateTimeFormat('en-CA',{
+      timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit',
+      hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
+    }).formatToParts(new Date(candidato));
+    const p=Object.fromEntries(partes.map(x=>[x.type,x.value]));
+    const localUTC=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute,+p.second);
+    candidato+=objetivo-localUTC;
   }
-  if(error){
-    MERMAS=[];
-    $('mermas-list').innerHTML='<div class="empty">No se pudo leer el registro de mermas.</div>';
-    $('mermas-total').textContent='—';
-    console.error('mermas', error); return;
-  }
-  MERMAS = todas;
-  pintarMermas();
+  return new Date(candidato).toISOString();
 }
 
-const MOT_MERMA_TXT = Object.fromEntries(MOTIVOS_MERMA);
+function merRango(periodo){
+  if(periodo==='all') return {desde:null,hasta:null};
+  const hoy=merHoySantiago(),dias=periodo==='7'?7:30;
+  const inicio=new Date(hoy+'T12:00:00Z');
+  inicio.setUTCDate(inicio.getUTCDate()-dias+1);
+  const desde=new Intl.DateTimeFormat('en-CA',{
+    timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'
+  }).format(inicio);
+  const despues=new Date(hoy+'T12:00:00Z');
+  despues.setUTCDate(despues.getUTCDate()+1);
+  return {desde:merInicioDiaISO(desde),hasta:merInicioDiaISO(despues.toISOString().slice(0,10))};
+}
 
-function pintarMermas(){
-  const vivas = MERMAS.filter(m=>!m.deshecha_at);
-  $('mermas-total').textContent = vivas.length
-    ? vivas.length + (vivas.length===1?' merma':' mermas')
-    : 'Sin mermas';
-  if(!MERMAS.length){
-    $('mermas-list').innerHTML='<div class="empty">Todavía no hay mermas registradas.</div>';
+/* Una página de PostgREST puede tener un máximo configurado. Por eso incluso
+   "Todo" se lee en bloques ordenados y nunca vuelve a ser "los primeros N". */
+async function merLeer(periodo, sede=SEDE){
+  const {desde,hasta}=merRango(periodo),todas=[];
+  const porPagina=1000;
+  let offset=0;
+  while(true){
+    let q=sb.from('movimientos').select(MERMAS_COLUMNAS).eq('tipo','merma');
+    if(sede!=='central') q=q.eq('sede',sede);
+    if(desde) q=q.gte('created_at',desde);
+    if(hasta) q=q.lt('created_at',hasta);
+    const r=await q.order('created_at',{ascending:false}).range(offset,offset+porPagina-1);
+    if(r.error) return {data:null,error:r.error};
+    const pagina=r.data||[];
+    todas.push(...pagina);
+    if(pagina.length<porPagina) break;
+    offset+=pagina.length;
+  }
+  return {data:todas,error:null};
+}
+
+function merEtiquetaSede(sede){
+  return (SEDES[sede]||{}).corto||(SEDES[sede]||{}).label||sede||'Sin sede';
+}
+
+function resumirMermas(rows,sedeVista=SEDE){
+  const activas=rows.filter(m=>!m.deshecha_at);
+  const sedes=new Map(),motivos=new Map(),productos=new Map();
+  const sedesBase=sedeVista==='central'?['plaza','angamos','central']:[sedeVista];
+  sedesBase.filter(Boolean).forEach(s=>sedes.set(s,{clave:s,nombre:merEtiquetaSede(s),unidades:0,registros:0,ultimas:[]}));
+  let unidades=0;
+  activas.forEach(m=>{
+    const cantidad=Math.abs(+m.cantidad||0),ts=Date.parse(m.created_at)||0;
+    unidades+=cantidad;
+    if(!sedes.has(m.sede)) sedes.set(m.sede,{clave:m.sede,nombre:merEtiquetaSede(m.sede),unidades:0,registros:0,ultimas:[]});
+    const sd=sedes.get(m.sede);sd.unidades+=cantidad;sd.registros++;sd.ultimas.push(m);
+    const motivo=m.motivo||'otro';
+    if(!motivos.has(motivo)) motivos.set(motivo,{clave:motivo,nombre:MOT_MERMA_TXT[motivo]||motivo,unidades:0,registros:0});
+    const mt=motivos.get(motivo);mt.unidades+=cantidad;mt.registros++;
+    const clave=normNombre(m.producto)||String(m.producto_id||m.producto||'sin-producto');
+    if(!productos.has(clave)) productos.set(clave,{clave,nombre:m.producto||'Producto sin nombre',unidades:0,registros:0,ultima:0,sedes:{},motivos:{}});
+    const pr=productos.get(clave);pr.unidades+=cantidad;pr.registros++;
+    pr.sedes[m.sede]=(pr.sedes[m.sede]||0)+cantidad;
+    pr.motivos[motivo]=(pr.motivos[motivo]||0)+cantidad;
+    if(ts>=pr.ultima){pr.ultima=ts;pr.nombre=m.producto||pr.nombre;}
+  });
+  const orden=(a,b)=>b.unidades-a.unidades||b.registros-a.registros||(b.ultima||0)-(a.ultima||0)||a.nombre.localeCompare(b.nombre,'es');
+  const ranking=[...productos.values()].sort(orden);
+  const sedesOrden=[...sedes.values()];
+  sedesOrden.forEach(s=>s.ultimas.sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)));
+  const motivosOrden=[...motivos.values()].sort((a,b)=>b.unidades-a.unidades||b.registros-a.registros||a.nombre.localeCompare(b.nombre,'es'));
+  const sedeTop=sedesOrden.filter(s=>s.unidades>0).sort(orden)[0]||null;
+  const motivoTop=motivosOrden[0]||null;
+  const recientes=[...rows].sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)).slice(0,10);
+  return {unidades,registros:activas.length,activas,sedes:sedesOrden,motivos:motivosOrden,productos:ranking,recientes,
+    sedeTop,motivoTop,productoTop:ranking[0]||null,totalOperaciones:rows.length};
+}
+
+const merPorcentaje=(parte,total)=>total?Math.round(parte/total*100):0;
+const merFechaHora=iso=>new Intl.DateTimeFormat('es-CL',{
+  timeZone:'America/Santiago',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'
+}).format(new Date(iso)).replace('.','');
+const merFechaCorta=iso=>new Intl.DateTimeFormat('es-CL',{
+  timeZone:'America/Santiago',day:'2-digit',month:'short'
+}).format(new Date(iso)).replace('.','');
+
+function merClaseMotivo(motivo){
+  return ['vencimiento','daño','robo','otro'].includes(motivo)?motivo:'desconocido';
+}
+function merColorMotivo(motivo){
+  return motivo==='vencimiento'?'var(--red-fg)':motivo==='daño'?'var(--amber-fg)':
+    motivo==='robo'?'var(--navy)':motivo==='otro'?'var(--sec-filo)':'var(--muted)';
+}
+
+function merMarcarPeriodo(){
+  document.querySelectorAll('[data-mer-periodo]').forEach(b=>{
+    const on=b.dataset.merPeriodo===MERMAS_PERIODO;
+    b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));
+  });
+}
+
+function merAnimar(){
+  const d=$('mermas-dashboard');
+  d.classList.remove('lista');
+  void d.offsetWidth;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add('lista')));
+}
+
+function pintarMermas(resumen=MERMAS_RESUMEN){
+  if(!resumen)return;
+  merOcultarTooltip(true);
+  const pctMotivo=resumen.motivoTop?merPorcentaje(resumen.motivoTop.unidades,resumen.unidades):0;
+  const kpis=[
+    ['Unidades mermadas',fmt(resumen.unidades),'En el período'],
+    ['Registros activos',fmt(resumen.registros),resumen.registros===1?'1 operación vigente':fmt(resumen.registros)+' operaciones vigentes'],
+    ['Causa principal',resumen.motivoTop?resumen.motivoTop.nombre:'—',resumen.motivoTop?fmt(resumen.motivoTop.unidades)+' unidades · '+pctMotivo+'%':'Sin datos'],
+    ['Sede más afectada',resumen.sedeTop?resumen.sedeTop.nombre:'—',resumen.sedeTop?fmt(resumen.sedeTop.unidades)+' unidades':'Sin datos'],
+    ['Producto más mermado',resumen.productoTop?resumen.productoTop.nombre:'—',resumen.productoTop?fmt(resumen.productoTop.unidades)+' unidades · '+fmt(resumen.productoTop.registros)+' registros':'Sin datos'],
+  ];
+  $('mermas-kpis').innerHTML=kpis.map(([et,val,nota],i)=>`<article class="mer-kpi" style="--mer-i:${i}">
+    <span class="et">${esc(et)}</span><strong class="val">${esc(String(val))}</strong><span class="nota">${esc(nota)}</span></article>`).join('');
+
+  const maxSede=Math.max(1,...resumen.sedes.map(s=>s.unidades));
+  $('mermas-sedes').innerHTML=`<div class="mer-panel-cab"><h2>Mermas por sede</h2><span>${fmt(resumen.unidades)} unidades</span></div>
+    <div class="mer-sedes">${resumen.sedes.map((s,i)=>`<button type="button" class="mer-sede mer-tip-objetivo" data-mer-tooltip="sede"
+      data-mer-key="${esc(s.clave)}" aria-describedby="mermas-tooltip" style="--mer-i:${i}">
+      <span class="nm">${esc(s.nombre)}</span><span class="mer-pista"><i class="mer-relleno" style="--mer-pct:${s.unidades/maxSede}"></i></span>
+      <span class="num">${fmt(s.unidades)}</span></button>`).join('')}</div>`;
+
+  if(!resumen.motivos.length){
+    $('mermas-motivos').innerHTML='<div class="mer-panel-cab"><h2>Motivos</h2></div><div class="mer-vacio">Sin mermas en este período.</div>';
+  }else{
+    let offset=0;
+    const segmentos=resumen.motivos.map((m,i)=>{
+      const pct=resumen.unidades?m.unidades/resumen.unidades*100:0,actual=offset;offset+=pct;
+      return `<circle class="mer-anillo-seg mer-tip-objetivo" data-mer-tooltip="motivo" data-mer-key="${esc(m.clave)}"
+        data-mer-clase="${merClaseMotivo(m.clave)}" aria-label="${esc(m.nombre)}: ${fmt(m.unidades)} unidades, ${merPorcentaje(m.unidades,resumen.unidades)} por ciento"
+        aria-describedby="mermas-tooltip" tabindex="0" cx="60" cy="60" r="46" pathLength="100"
+        stroke-dasharray="${pct} ${100-pct}" stroke-dashoffset="${-actual}" style="--mer-i:${i}"></circle>`;
+    }).join('');
+    const leyenda=resumen.motivos.map(m=>`<button type="button" class="mer-tip-objetivo" data-mer-tooltip="motivo" data-mer-key="${esc(m.clave)}"
+      aria-describedby="mermas-tooltip"><i class="punto" style="--mer-color:${merColorMotivo(m.clave)}"></i><span class="nom">${esc(m.nombre)}</span>
+      <span class="dat">${fmt(m.unidades)} · ${merPorcentaje(m.unidades,resumen.unidades)}%</span></button>`).join('');
+    $('mermas-motivos').innerHTML=`<div class="mer-panel-cab"><h2>Motivos</h2><span>Participación</span></div>
+      <div class="mer-anillo-wrap"><svg class="mer-anillo" viewBox="0 0 120 120" role="img" aria-label="Distribución de motivos de merma">
+        <circle class="mer-anillo-base" cx="60" cy="60" r="46"></circle>${segmentos}
+        <text class="mer-anillo-total" x="60" y="58">${fmt(resumen.unidades)}</text><text class="mer-anillo-sub" x="60" y="70">UNIDADES</text>
+      </svg><div class="mer-leyenda">${leyenda}</div></div>`;
+  }
+
+  const top=resumen.productos.slice(0,5),maxProducto=Math.max(1,...top.map(p=>p.unidades));
+  $('mermas-productos').innerHTML=`<div class="mer-panel-cab"><h2>Productos con mayor pérdida</h2><span>Top ${top.length}</span></div>${top.length
+    ?`<div class="mer-ranking">${top.map((p,i)=>`<button type="button" class="mer-producto mer-tip-objetivo" data-mer-tooltip="producto"
+      data-mer-key="${esc(p.clave)}" aria-describedby="mermas-tooltip"><span class="pos">${i+1}</span><span class="cuerpo"><span class="nombre">${esc(p.nombre)}</span>
+      <span class="mini-pista"><i style="--mer-pct:${p.unidades/maxProducto};--mer-i:${i}"></i></span></span><span class="dato"><b>${fmt(p.unidades)} un.</b>
+      <small>${fmt(p.registros)} reg.</small></span></button>`).join('')}</div>`
+    :'<div class="mer-vacio">Sin productos en este período.</div>'}`;
+
+  $('mermas-total').textContent=resumen.totalOperaciones?`${resumen.recientes.length} de ${resumen.totalOperaciones}`:'Sin registros';
+  $('mermas-list').innerHTML=resumen.recientes.length?resumen.recientes.map(m=>{
+    const motivo=m.motivo||'otro',sede=SEDE==='central'?merEtiquetaSede(m.sede)+' · ':'';
+    return `<div class="mer-fila${m.deshecha_at?' off':''}"><div><div class="prod">${esc(m.producto||'—')}</div><div class="meta">
+      <span>${esc(sede+merFechaHora(m.created_at))}</span><span class="mer-motivo" data-motivo="${esc(motivo)}">${esc(MOT_MERMA_TXT[motivo]||motivo)}</span>
+      ${m.quien?`<span>${esc(m.quien)}</span>`:''}</div></div><div class="lado"><span class="cant">${fmt(Math.abs(+m.cantidad||0))} un.</span>${
+        m.deshecha_at?'<span class="deshecha">Deshecha</span>':`<button type="button" class="rep-deshacer" data-desmerma="${m.id}">Deshacer</button>`}</div></div>`;
+  }).join(''):'<div class="mer-vacio">Sin mermas en este período.</div>';
+  merAnimar();
+}
+
+function merPintarError(){
+  $('mermas-kpis').innerHTML='';
+  $('mermas-sedes').innerHTML='<div class="mer-vacio">No se pudo cargar el análisis.</div>';
+  $('mermas-motivos').innerHTML='<div class="mer-vacio">No se pudo cargar el análisis.</div>';
+  $('mermas-productos').innerHTML='<div class="mer-vacio">No se pudo cargar el análisis.</div>';
+  $('mermas-list').innerHTML='<div class="mer-vacio">Revisa la conexión e inténtalo nuevamente.</div>';
+  $('mermas-total').textContent='—';
+  merAnimar();
+}
+
+async function loadMermas(){
+  if(!SEDE)return;
+  const carga=++MERMAS_CARGA_ID,periodo=MERMAS_PERIODO,dashboard=$('mermas-dashboard');
+  dashboard.classList.add('cargando');dashboard.setAttribute('aria-busy','true');
+  if(!MERMAS_RESUMEN){
+    $('mermas-kpis').innerHTML='<div class="empty" style="grid-column:1/-1">Cargando análisis…</div>';
+    $('mermas-sedes').innerHTML='<div class="mer-vacio">Cargando…</div>';
+    $('mermas-motivos').innerHTML='<div class="mer-vacio">Cargando…</div>';
+    $('mermas-productos').innerHTML='<div class="mer-vacio">Cargando…</div>';
+  }
+  const {data,error}=await merLeer(periodo);
+  if(carga!==MERMAS_CARGA_ID)return;
+  dashboard.classList.remove('cargando');dashboard.setAttribute('aria-busy','false');
+  if(error){
+    console.error('mermas',error);
+    MERMAS_PERIODO=MERMAS_PERIODO_OK;merMarcarPeriodo();
+    if(MERMAS_RESUMEN) aviso('No se pudo actualizar el análisis. Se conserva el período anterior.');
+    else{merPintarError();aviso('No se pudo cargar el análisis. Revisa la conexión.');}
     return;
   }
-  // agrupadas por día: es como se lee un libro de registro
-  const dias = [...new Set(MERMAS.map(m=>m.created_at.slice(0,10)))];
-  $('mermas-list').innerHTML = dias.map(d=>{
-    const delDia = MERMAS.filter(m=>m.created_at.slice(0,10)===d);
-    return `<div class="turno">
-      <div class="turno-lbl">${fmtFecha(d).toUpperCase()}</div>
-      ${delDia.map(m=>`<div class="cs-fila${m.deshecha_at?' cs-off':''}">
-        <span class="cs-nm">${esc(m.producto)}
-          <span class="cs-sec">${SEDE==='central' && m.sede!=='central'
-              ? esc((SEDES[m.sede]||{}).label||m.sede)+' · ' : ''}${
-            esc(MOT_MERMA_TXT[m.motivo]||m.motivo||'—')}${
-            m.nota?' · '+esc(m.nota):''}${m.quien?' · '+esc(m.quien):''}</span></span>
-        <span class="cs-hay">${fmt(Math.abs(m.cantidad))}${
-          m.deshecha_at
-            ? '<span class="cs-des">deshecha</span>'
-            : `<button type="button" class="rep-deshacer" data-desmerma="${m.id}">Deshacer</button>`}</span>
-      </div>`).join('')}
-    </div>`;
-  }).join('');
+  MERMAS=data||[];MERMAS_PERIODO_OK=periodo;MERMAS_RESUMEN=resumirMermas(MERMAS,SEDE);
+  pintarMermas(MERMAS_RESUMEN);
 }
+
+function merContenidoTooltip(obj){
+  if(!MERMAS_RESUMEN)return '';
+  const tipo=obj.dataset.merTooltip,clave=obj.dataset.merKey;
+  if(tipo==='sede'){
+    const s=MERMAS_RESUMEN.sedes.find(x=>x.clave===clave);if(!s)return '';
+    const ultimas=s.ultimas.slice(0,3).map(m=>`<li><span>${esc(m.producto||'—')}</span><span>${fmt(Math.abs(+m.cantidad||0))} · ${esc(merFechaCorta(m.created_at))}</span></li>`).join('');
+    return `<strong>${esc(s.nombre)} · ${fmt(s.unidades)} unidades</strong><div>${fmt(s.registros)} registros activos</div>${
+      ultimas?`<ul class="ultimas">${ultimas}</ul>`:'<div class="ultimas">Sin mermas en el período.</div>'}`;
+  }
+  if(tipo==='motivo'){
+    const m=MERMAS_RESUMEN.motivos.find(x=>x.clave===clave);if(!m)return '';
+    return `<strong>${esc(m.nombre)}</strong><div class="linea"><span>Unidades</span><span>${fmt(m.unidades)}</span></div>
+      <div class="linea"><span>Participación</span><span>${merPorcentaje(m.unidades,MERMAS_RESUMEN.unidades)}%</span></div>
+      <div class="linea"><span>Registros</span><span>${fmt(m.registros)}</span></div>`;
+  }
+  if(tipo==='producto'){
+    const p=MERMAS_RESUMEN.productos.find(x=>x.clave===clave);if(!p)return '';
+    const sede=Object.entries(p.sedes).sort((a,b)=>b[1]-a[1])[0],motivo=Object.entries(p.motivos).sort((a,b)=>b[1]-a[1])[0];
+    return `<strong>${esc(p.nombre)} · ${fmt(p.unidades)} unidades</strong><div class="linea"><span>Registros</span><span>${fmt(p.registros)}</span></div>
+      <div class="linea"><span>Sede principal</span><span>${sede?esc(merEtiquetaSede(sede[0]))+' · '+fmt(sede[1]):'—'}</span></div>
+      <div class="linea"><span>Causa principal</span><span>${motivo?esc(MOT_MERMA_TXT[motivo[0]]||motivo[0])+' · '+fmt(motivo[1]):'—'}</span></div>`;
+  }
+  return '';
+}
+
+function merMarcarTooltip(obj,on){
+  document.querySelectorAll('#view-mermas .mer-tip-objetivo').forEach(x=>{
+    const mismo=x.dataset.merTooltip===obj?.dataset.merTooltip&&x.dataset.merKey===obj?.dataset.merKey;
+    x.classList.toggle('activo',!!on&&mismo);
+  });
+}
+
+function merMostrarTooltip(obj){
+  const html=merContenidoTooltip(obj);if(!html)return;
+  const t=$('mermas-tooltip');merMarcarTooltip(obj,true);t.innerHTML=html;
+  t.setAttribute('aria-hidden','false');t.classList.add('on');
+  const r=obj.getBoundingClientRect(),tr=t.getBoundingClientRect(),m=10;
+  const left=Math.max(m,Math.min(innerWidth-tr.width-m,r.left+r.width/2-tr.width/2));
+  let top=r.bottom+8;if(top+tr.height>innerHeight-m)top=r.top-tr.height-8;
+  top=Math.max(m,Math.min(innerHeight-tr.height-m,top));
+  t.style.left=left+'px';t.style.top=top+'px';
+}
+
+function merOcultarTooltip(forzar=false){
+  if(MERMAS_TOOLTIP_FIJO&&!forzar)return;
+  const t=$('mermas-tooltip');if(!t)return;
+  t.classList.remove('on');t.setAttribute('aria-hidden','true');
+  document.querySelectorAll('#view-mermas .mer-tip-objetivo.activo').forEach(x=>x.classList.remove('activo'));
+  if(forzar)MERMAS_TOOLTIP_FIJO=null;
+}
+
+$('mermas-periodos').addEventListener('click',e=>{
+  const b=e.target.closest('[data-mer-periodo]');if(!b||b.dataset.merPeriodo===MERMAS_PERIODO)return;
+  MERMAS_PERIODO=b.dataset.merPeriodo;merMarcarPeriodo();loadMermas();
+});
+
+$('mermas-dashboard').addEventListener('pointerover',e=>{
+  const obj=e.target.closest('.mer-tip-objetivo');if(obj)merMostrarTooltip(obj);
+});
+$('mermas-dashboard').addEventListener('pointerout',e=>{
+  const obj=e.target.closest('.mer-tip-objetivo');if(!obj)return;
+  if(e.relatedTarget&&obj.contains(e.relatedTarget))return;
+  merOcultarTooltip();
+});
+$('mermas-dashboard').addEventListener('focusin',e=>{const obj=e.target.closest('.mer-tip-objetivo');if(obj)merMostrarTooltip(obj);});
+$('mermas-dashboard').addEventListener('focusout',e=>{const obj=e.target.closest('.mer-tip-objetivo');if(obj)merOcultarTooltip();});
+$('mermas-dashboard').addEventListener('click',e=>{
+  const obj=e.target.closest('.mer-tip-objetivo');if(!obj)return;
+  if(MERMAS_TOOLTIP_FIJO===obj){MERMAS_TOOLTIP_FIJO=null;merOcultarTooltip(true);}
+  else{MERMAS_TOOLTIP_FIJO=obj;merMostrarTooltip(obj);}
+});
+document.addEventListener('pointerdown',e=>{
+  if(!MERMAS_TOOLTIP_FIJO)return;
+  if(e.target.closest('.mer-tip-objetivo')||e.target.closest('#mermas-tooltip'))return;
+  merOcultarTooltip(true);
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')merOcultarTooltip(true);});
 
 $('mermas-list').addEventListener('click', async e=>{
   const b = e.target.closest('[data-desmerma]'); if(!b) return;
@@ -8669,23 +9064,40 @@ $('enl-crear').addEventListener('click', async ()=>{
   prepararNuevo();          // el formulario queda limpio para el siguiente
 });
 
-$('btnMermasExcel').addEventListener('click',()=>{
-  if(!MERMAS.length){ avisar('No hay mermas que descargar.'); return; }
-  const rows = MERMAS.map(m=>({
-    'Fecha': fmtFecha(m.created_at.slice(0,10)),
-    'Hora': new Date(m.created_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}),
-    'Producto': m.producto,
-    'Cantidad': Math.abs(m.cantidad),
-    'Motivo': MOT_MERMA_TXT[m.motivo]||m.motivo||'',
-    'Detalle': m.nota||'',
-    'Quién': m.quien||'',
-    'Deshecha': m.deshecha_at ? 'SÍ' : '',
-  }));
-  const ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=[{wch:11},{wch:7},{wch:34},{wch:9},{wch:13},{wch:28},{wch:16},{wch:9}];
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Mermas');
-  XLSX.writeFile(wb,`mermas-bodega-${hoyISO()}.xlsx`);
+$('btnMermasExcel').addEventListener('click',async()=>{
+  const b=$('btnMermasExcel'),texto=b.textContent;
+  b.disabled=true;b.classList.add('mer-exportando');b.textContent='Preparando…';
+  try{
+    /* El filtro visual no recorta la planilla: la decisión aprobada es que
+       Excel siga siendo el libro completo de la sede que está abierta. */
+    const {data,error}=await merLeer('all');
+    if(error){console.error('excel mermas',error);avisar('No se pudo preparar el historial.');return;}
+    if(!data.length){avisar('No hay mermas que descargar.');return;}
+    const fechaLocal=iso=>new Intl.DateTimeFormat('en-CA',{
+      timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'
+    }).format(new Date(iso));
+    const horaLocal=iso=>new Intl.DateTimeFormat('es-CL',{
+      timeZone:'America/Santiago',hour:'2-digit',minute:'2-digit',hourCycle:'h23'
+    }).format(new Date(iso));
+    const rows=data.map(m=>({
+      'Fecha':fmtFecha(fechaLocal(m.created_at)),
+      'Hora':horaLocal(m.created_at),
+      'Sede':merEtiquetaSede(m.sede),
+      'Producto':m.producto,
+      'Cantidad':Math.abs(m.cantidad),
+      'Motivo':MOT_MERMA_TXT[m.motivo]||m.motivo||'',
+      'Detalle':m.nota||'',
+      'Quién':m.quien||'',
+      'Deshecha':m.deshecha_at?'SÍ':'',
+    }));
+    const ws=XLSX.utils.json_to_sheet(rows);
+    ws['!cols']=[{wch:11},{wch:7},{wch:16},{wch:34},{wch:9},{wch:13},{wch:28},{wch:16},{wch:9}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Mermas');
+    XLSX.writeFile(wb,`mermas-historial-completo-${hoyISO()}.xlsx`);
+  }finally{
+    b.disabled=false;b.classList.remove('mer-exportando');b.textContent=texto;
+  }
 });
 function rowHTML(p, conSeccion){
   const e=estado(p),cf=CFG[e];

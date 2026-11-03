@@ -8,6 +8,20 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **Mermas pasa de libro a tablero de decisión.** La vista
+  conserva el detalle auditable, pero abre con la respuesta: unidades y
+  registros del período, causa, sede y producto más afectados. Los períodos
+  de 7 días, 30 días y todo se calculan con límites de Chile; Bodega agrega
+  las tres sedes y cada cafetería conserva su propio alcance. Barras, anillo y
+  ranking nacen del historial real, excluyen las operaciones deshechas de las
+  estadísticas y las mantienen visibles en las últimas diez para auditoría.
+  Los detalles responden a mouse, teclado y toque; el movimiento es breve y se
+  apaga con `prefers-reduced-motion`. Excel sigue siendo deliberadamente el
+  libro completo, sin obedecer al filtro visual. No se agregó tabla, librería
+  de gráficos ni escritura nueva. `pruebas/dashboard-mermas.mjs` protege
+  cálculos, empates, sedes, horario de Santiago, fallos, auditoría, Excel,
+  deshacer y los tres tamaños de pantalla.
+
 - **2026-11-03** — **El libro de mermas deja de caducar.** La limpieza de
   madrugada borraba *toda* fila de `movimientos` después de 30 días. Eso era
   correcto para los movimientos transitorios, pero también borraba las mermas:

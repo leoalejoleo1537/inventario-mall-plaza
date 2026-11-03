@@ -27,7 +27,7 @@ caso('la limpieza excluye explícitamente las mermas',
 caso('hay índice para leer el libro histórico por fecha',
   migracion.includes('movimientos_merma_created_at_idx'));
 caso('la pantalla lee todas las páginas, no una sola',
-  carga.includes('.range(desde, desde + porPagina - 1)') && carga.includes('todas.push(...pagina)'));
+  html.includes('.range(offset,offset+porPagina-1)') && html.includes('todas.push(...pagina)'));
 caso('la pantalla no vuelve al tope de 500', !carga.includes('.limit(500)'));
 caso('el prototipo muestra el producto más mermado',
   prototipo.includes('PRODUCTO MÁS MERMADO'));
