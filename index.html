@@ -75,14 +75,14 @@
   body.sin-seleccion{user-select:none;-webkit-user-select:none}
   body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
   /* En teléfono, una apertura fría nunca vuelve a ser una pantalla vacía.
-     La portada espera 280 ms antes de aparecer: si la app abre rápido nadie
-     la ve; si la red o la sesión tardan, conserva una señal de vida real.
-     El logo es el archivo entregado, no una versión redibujada. */
+     La portada aparece desde el primer dibujo y permanece cerca de dos
+     segundos como mínimo: deja respirar la marca y evita un destello tan
+     corto que parece un fallo. El logo es el archivo entregado, no una
+     versión redibujada. */
   .startup-splash{display:none}
   @media(max-width:760px){
     .startup-splash{position:fixed;inset:0;z-index:200;background:var(--navy);display:grid;
-      place-content:center;justify-items:center;gap:18px;opacity:0;
-      animation:startup-aparece .2s ease .28s forwards;transition:opacity .18s ease}
+      place-content:center;justify-items:center;gap:18px;opacity:1;transition:opacity .18s ease}
     .startup-splash.saliendo{opacity:0;pointer-events:none;animation:none}
     .startup-splash img{width:96px;height:96px;border-radius:25px;display:block;
       box-shadow:0 16px 38px rgba(0,0,0,.2)}
@@ -93,12 +93,11 @@
       opacity:0;pointer-events:none;border:0;border-radius:999px;background:#fff;color:var(--navy);
       font:800 13px/1 -apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:12px 18px;
       animation:startup-retry 1ms step-end 12s forwards}
-    @keyframes startup-aparece{to{opacity:1}}
     @keyframes startup-linea{from{transform:translateX(0)}to{transform:translateX(122%)}}
     @keyframes startup-retry{to{opacity:1;pointer-events:auto}}
   }
   @media(max-width:760px) and (prefers-reduced-motion:reduce){
-    .startup-splash{animation:startup-aparece 1ms linear .28s forwards;transition:none}
+    .startup-splash{transition:none}
     .startup-linea::after{animation:none;width:100%;opacity:.72}
   }
   /* ---------- pantalla de selección (gate, estilo FUDO) ---------- */
@@ -2542,8 +2541,8 @@
 </head>
 <body>
 
-<!-- En escritorio no existe. En teléfono aparece solo si el arranque supera
-     280 ms y se retira apenas termina la comprobación de la sesión. -->
+<!-- En escritorio no existe. En teléfono acompaña toda apertura fría durante
+     al menos dos segundos y permanece si recuperar la sesión tarda más. -->
 <div class="startup-splash" id="startup-splash" role="status" aria-label="Abriendo Llamita">
   <img src="icons/icon-192-dark.png" alt="" width="96" height="96">
   <span class="startup-linea" aria-hidden="true"></span>
@@ -2887,8 +2886,8 @@
     <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
     <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
   </div>
-  <section class="inv-venc" id="inv-vencimientos">
-    <button type="button" class="inv-venc-toggle" id="inv-venc-toggle" aria-expanded="true" aria-controls="inv-venc-cuerpo">
+  <section class="inv-venc cerrado" id="inv-vencimientos">
+    <button type="button" class="inv-venc-toggle" id="inv-venc-toggle" aria-expanded="false" aria-controls="inv-venc-cuerpo">
       <span class="inv-venc-ico" aria-hidden="true">◷</span><span class="inv-venc-titulo"><b>Vencimientos de hoy</b><small id="inv-venc-resumen">—</small></span><span class="inv-venc-flecha" aria-hidden="true">⌄</span>
     </button>
     <div class="inv-venc-cuerpo" id="inv-venc-cuerpo"></div>
@@ -3664,7 +3663,10 @@ function vencsHTML(p){
    dos fechas antiguas aparece una sola vez con la suma, y conserva la fecha
    más vieja para que la urgencia no se pierda. Un producto puede aparecer en
    ambos lados cuando tiene unidades vencidas y otras que vencen hoy. */
-let INV_VENC_ABIERTO = sessionStorage.getItem('invVencAbierto') !== '0';
+/* Cada apertura de la aplicación empieza replegada. Si la persona la abre,
+   la elección se conserva mientras esta sesión de la app siga viva, pero una
+   apertura fría vuelve al resumen compacto que pidió Jhon. */
+let INV_VENC_ABIERTO = false;
 const invVencFecha = iso => {
   const [,m,d]=String(iso||'').split('-');
   return `${d||'—'} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][+m-1]||''}`.trim();
@@ -3709,7 +3711,6 @@ function pintarVencimientos(){
 }
 $('inv-venc-toggle').addEventListener('click',()=>{
   INV_VENC_ABIERTO=!INV_VENC_ABIERTO;
-  sessionStorage.setItem('invVencAbierto',INV_VENC_ABIERTO?'1':'0');
   pintarVencimientos();
 });
 
@@ -4470,7 +4471,6 @@ async function doLogin(){
   const err=$('login-err'); err.style.display='none';
   if(!email||!pass){ err.textContent='Escribe tu correo y contraseña.'; err.style.display='block'; return; }
   const btn=$('login-btn'); btn.disabled=true; btn.textContent='Entrando…';
-  trabajando('Verificando tu cuenta…');
   try{
     const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
     if(error){
@@ -4478,7 +4478,7 @@ async function doLogin(){
       err.style.display='block'; return;
     }
     onLogin(data.user);
-  } finally { listo(); btn.disabled=false; btn.textContent='Entrar'; }
+  } finally { btn.disabled=false; btn.textContent='Entrar'; }
 }
 function onLogin(user){
   USER=user;
@@ -10286,13 +10286,18 @@ function repintarSinPerderElFoco(pintar){
   try{ const v = n.value.length; n.setSelectionRange(v, v); }catch(e){}
 }
 
-/* Portada de arranque: el retraso de CSS evita el destello cuando todo abre
-   rápido. La función solo la retira; no agrega esperas artificiales. */
+/* Portada de arranque: en teléfono conserva la marca dos segundos desde que
+   comenzó la navegación. No retrasa las lecturas: sesión, recursos e interfaz
+   cargan por debajo al mismo tiempo. Si demoran más, la portada los espera. */
+const PORTADA_MIN_MS=2000;
 function cerrarInicio(){
   const el=$('startup-splash');if(!el)return;
-  if(!FLAGS.inicioVisual || !matchMedia('(max-width:760px)').matches ||
-     matchMedia('(prefers-reduced-motion:reduce)').matches){ el.remove();return; }
-  el.classList.add('saliendo');setTimeout(()=>el.remove(),190);
+  if(!FLAGS.inicioVisual || !matchMedia('(max-width:760px)').matches){el.remove();return;}
+  const espera=Math.max(0,PORTADA_MIN_MS-performance.now());
+  setTimeout(()=>{
+    if(matchMedia('(prefers-reduced-motion:reduce)').matches){el.remove();return;}
+    el.classList.add('saliendo');setTimeout(()=>el.remove(),190);
+  },espera);
 }
 
 function textoTrabajo(txt){

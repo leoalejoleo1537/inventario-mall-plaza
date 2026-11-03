@@ -8,6 +8,16 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **El inicio respira y después se quita del camino.** En una
+  apertura fría desde teléfono, el logo aparece desde el primer dibujo y se
+  conserva durante un mínimo de dos segundos mientras la sesión se recupera
+  por debajo; si la red tarda más, continúa visible hasta terminar. Al escribir
+  usuario y contraseña ya no aparece el cargador general de tareas: el propio
+  botón `Entrando…` comunica la espera sin fingir que existe un proceso largo.
+  El resumen de vencimientos nace replegado en cada nueva apertura y conserva
+  cualquier apertura manual sólo mientras la página siga viva. No cambió
+  Supabase Auth, la sesión, los lotes ni ninguna consulta.
+
 - **2026-11-03** — **Compartir la aplicación deja de depender de buscar el
   enlace.** El panel lateral incorpora un acceso compacto que genera en el
   mismo dispositivo un QR hacia la portada pública de Llamita; nunca incluye
