@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prototipo · Mermas</title>
+<style>
+  :root{--navy:#0F1E31;--orange:#DC4405;--bg:#E9EEF5;--card:#FDFEFF;--border:#D6DFEB;--text:#121E2C;--muted:#61707F;--red:#C0392B;--red-bg:#FCE9E6;--green:#2E7D32;--green-bg:#E4F1E5;--amber:#9C6209;--amber-bg:#FDF0DE;--blue:#41628C;--shadow:0 2px 4px rgba(20,40,70,.04),0 12px 26px -18px rgba(20,40,70,.34)}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  .bar{height:64px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 max(20px,calc((100vw - 1180px)/2));gap:10px}.brand{width:30px;height:30px;border-radius:10px;background:var(--orange);color:#fff;display:grid;place-items:center;font-weight:900}.bar strong{font-size:15px}.bar span{font-size:12px;color:var(--muted)}
+  main{max-width:1180px;margin:0 auto;padding:30px 20px 42px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--blue);text-transform:uppercase}.head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px}.head h1{font-size:31px;letter-spacing:-.035em;margin:5px 0 4px}.head p{margin:0;color:var(--muted);font-size:13px}.range{display:flex;gap:6px;background:var(--card);padding:5px;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow)}.range button{border:0;border-radius:8px;background:transparent;padding:8px 11px;color:var(--muted);font:700 12px inherit}.range button.on{color:#fff;background:var(--navy)}
+  .notice{display:flex;align-items:center;gap:9px;margin-bottom:14px;padding:10px 12px;border-radius:12px;background:var(--amber-bg);color:#765313;font-size:12px}.notice b{font-size:14px}.notice strong{font-weight:800}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}.kpi,.panel{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}.kpi{padding:13px 14px;min-width:0}.kpi label{display:block;color:var(--muted);font-size:11px;font-weight:700}.kpi b{display:block;font-size:27px;line-height:1.05;margin:8px 0 4px;letter-spacing:-.035em}.kpi small{color:var(--muted);font-size:11px}.kpi .red{color:var(--red)}
+  .grid{display:grid;grid-template-columns:1.28fr .92fr;gap:12px;margin-bottom:12px}.panel{padding:16px}.panel h2{font-size:14px;margin:0}.panel p{font-size:11px;color:var(--muted);margin:5px 0 15px}.bars{display:grid;gap:14px}.bar-row{display:grid;grid-template-columns:88px 1fr 40px;align-items:center;gap:10px;font-size:12px}.track{height:13px;background:var(--bg);border-radius:99px;overflow:hidden}.fill{height:100%;background:var(--blue);border-radius:99px}.fill.orange{background:var(--orange)}.fill.red{background:var(--red)}.bar-row b{text-align:right;font-size:12px}
+  .reasons{display:grid;gap:12px}.reason{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:12px}.reason .track{grid-column:1/3;height:8px}.reason b{font-size:12px}.reason span{color:var(--muted)}
+  .lower{display:grid;grid-template-columns:.9fr 1.3fr;gap:12px}.list{margin:0;padding:0;list-style:none}.list li{padding:11px 0;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;font-size:12px}.list li:first-child{border-top:0;padding-top:0}.list small{display:block;color:var(--muted);font-size:11px;margin-top:3px}.pill{align-self:start;white-space:nowrap;border-radius:99px;padding:4px 8px;background:var(--red-bg);color:var(--red);font-weight:800;font-size:11px}
+  table{border-collapse:collapse;width:100%;font-size:12px}th{text-align:left;color:var(--muted);font-size:10px;letter-spacing:.03em;text-transform:uppercase;padding:0 0 9px}td{padding:10px 0;border-top:1px solid var(--border)}td:last-child,th:last-child{text-align:right}.reason-pill{font-size:10px;font-weight:800;border-radius:99px;padding:4px 7px;background:var(--amber-bg);color:var(--amber)}.reason-pill.red{background:var(--red-bg);color:var(--red)}
+  .foot{color:var(--muted);font-size:11px;text-align:center;margin-top:16px}
+  @media(max-width:780px){.bar{height:56px;padding:0 16px}.head{display:block}.head h1{font-size:27px}.range{margin-top:15px;width:max-content}.kpis{grid-template-columns:repeat(2,1fr)}.kpi:last-child{grid-column:span 2}.grid,.lower{grid-template-columns:1fr}.panel{padding:14px}main{padding:22px 14px 32px}.notice{align-items:flex-start}.table-wrap{overflow:auto}.table-wrap table{min-width:500px}.bar-row{grid-template-columns:74px 1fr 35px}}
+</style>
+</head>
+<body>
+<header class="bar"><div class="brand">L</div><div><strong>Llamita</strong><br><span>Prototipo de análisis</span></div></header>
+<main>
+  <div class="head">
+    <div><div class="eyebrow">Inventario · Mermas</div><h1>Lo que se perdió</h1><p>Resumen de pérdidas de stock por sede, motivo y producto.</p></div>
+    <div class="range"><button>7 días</button><button class="on">30 días</button><button>Todo</button></div>
+  </div>
+
+  <div class="notice"><b>◷</b><span><strong>Historial disponible desde el 04 oct.</strong> Desde ahora, cada merma queda guardada para el análisis.</span></div>
+
+  <section class="kpis">
+    <article class="kpi"><label>UNIDADES MERMADAS</label><b class="red">48</b><small>En el período elegido</small></article>
+    <article class="kpi"><label>REGISTROS</label><b>33</b><small>17 días con actividad</small></article>
+    <article class="kpi"><label>CAUSA PRINCIPAL</label><b>22</b><small>unidades por vencimiento</small></article>
+    <article class="kpi"><label>SEDE MÁS AFECTADA</label><b>29</b><small>unidades · Mall Plaza</small></article>
+    <article class="kpi"><label>PRODUCTO MÁS MERMADO</label><b>3</b><small>unidades · Cannolis Pistacho</small></article>
+  </section>
+
+  <section class="grid">
+    <article class="panel"><h2>Mermas por sede</h2><p>Unidades registradas durante el período.</p><div class="bars">
+      <div class="bar-row"><span>Mall Plaza</span><div class="track"><div class="fill" style="width:100%"></div></div><b>29</b></div>
+      <div class="bar-row"><span>Angamos</span><div class="track"><div class="fill" style="width:66%"></div></div><b>19</b></div>
+      <div class="bar-row"><span>Bodega</span><div class="track"><div class="fill" style="width:0%"></div></div><b>0</b></div>
+    </div></article>
+    <article class="panel"><h2>Motivos</h2><p>Qué explica las 48 unidades mermadas.</p><div class="reasons">
+      <div class="reason"><span>Vencimiento</span><b>22 · 46%</b><div class="track"><div class="fill red" style="width:46%"></div></div></div>
+      <div class="reason"><span>Daño</span><b>17 · 35%</b><div class="track"><div class="fill orange" style="width:35%"></div></div></div>
+      <div class="reason"><span>Otro</span><b>9 · 19%</b><div class="track"><div class="fill" style="width:19%"></div></div></div>
+    </div></article>
+  </section>
+
+  <section class="lower">
+    <article class="panel"><h2>Productos que se repiten</h2><p>Sirve para decidir qué producto revisar primero.</p><ul class="list">
+      <li><span>Cannolis Chips Chocolate<small>2 registros</small></span><span class="pill">3 un.</span></li>
+      <li><span>Cannolis Pistacho<small>3 registros</small></span><span class="pill">3 un.</span></li>
+      <li><span>Macarrons Vitrina<small>1 registro</small></span><span class="pill">3 un.</span></li>
+      <li><span>Mini donas<small>2 registros</small></span><span class="pill">3 un.</span></li>
+    </ul></article>
+    <article class="panel"><h2>Últimas mermas</h2><p>La lista queda acotada; el historial completo se descarga en Excel.</p><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Producto</th><th>Motivo</th><th>Cant.</th></tr></thead><tbody>
+      <tr><td>01 nov</td><td>Mini donas</td><td><span class="reason-pill">Daño</span></td><td>1</td></tr>
+      <tr><td>31 oct</td><td>Cannolis Pistacho</td><td><span class="reason-pill red">Vencimiento</span></td><td>1</td></tr>
+      <tr><td>30 oct</td><td>Maicenitos</td><td><span class="reason-pill">Daño</span></td><td>1</td></tr>
+      <tr><td>29 oct</td><td>Macarrons Vitrina</td><td><span class="reason-pill red">Vencimiento</span></td><td>3</td></tr>
+    </tbody></table></div></article>
+  </section>
+  <p class="foot">Maqueta visual · Datos de referencia del historial real al 02 nov 2026 · No escribe ni modifica datos.</p>
+</main>
+</body>
+</html>

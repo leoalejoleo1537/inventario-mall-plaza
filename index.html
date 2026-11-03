@@ -4428,17 +4428,31 @@ async function loadMermas(){
   /* En bodega se ven las de las TRES sedes: es el cuadro de mando de
      Adriana y ahí "cuánto se está botando" es una pregunta del negocio,
      no de un local. En Plaza y en Angamos, cada uno ve lo suyo. */
-  let q = sb.from('movimientos').select('*').eq('tipo','merma');
-  if(SEDE!=='central') q = q.eq('sede', SEDE);
-  const {data,error} = await q
-    .order('created_at',{ascending:false}).limit(500);
+  /* No hay tope artificial: el libro de mermas es histórico y el Excel
+     tiene que poder entregar todos sus años, no solo los últimos 500. Se
+     lee por páginas porque PostgREST protege cada respuesta individual. */
+  const porPagina = 1000;
+  const todas = [];
+  let desde = 0;
+  let error = null;
+  while(true){
+    let q = sb.from('movimientos').select('*').eq('tipo','merma');
+    if(SEDE!=='central') q = q.eq('sede', SEDE);
+    const r = await q.order('created_at',{ascending:false})
+      .range(desde, desde + porPagina - 1);
+    if(r.error){ error=r.error; break; }
+    const pagina = r.data||[];
+    todas.push(...pagina);
+    if(pagina.length < porPagina) break;
+    desde += pagina.length;
+  }
   if(error){
     MERMAS=[];
     $('mermas-list').innerHTML='<div class="empty">No se pudo leer el registro de mermas.</div>';
     $('mermas-total').textContent='—';
     console.error('mermas', error); return;
   }
-  MERMAS = data||[];
+  MERMAS = todas;
   pintarMermas();
 }
 

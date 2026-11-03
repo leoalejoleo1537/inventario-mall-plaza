@@ -8,6 +8,17 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **El libro de mermas deja de caducar.** La limpieza de
+  madrugada borraba *toda* fila de `movimientos` después de 30 días. Eso era
+  correcto para los movimientos transitorios, pero también borraba las mermas:
+  justo la evidencia necesaria para decidir compras, vencimientos y productos
+  problemáticos. La tarea conserva ahora indefinidamente las filas
+  `tipo='merma'` y mantiene la limpieza de los demás movimientos. La pantalla
+  y el Excel leen el libro por páginas de 1.000 filas, sin el tope de 500.
+  No es posible reconstruir desde esa tabla lo ya eliminado antes del cambio;
+  desde este punto cada merma queda disponible para el análisis. La prueba
+  `pruebas/historial-mermas-permanente.mjs` protege ambas reglas.
+
 - **2026-11-02** — **Resumen de panes y sándwiches para WhatsApp.** Jhon probó el texto copiado con el equipo: los asteriscos quedaban visibles y las fechas entre paréntesis no permitían decidir qué estaba vencido. El botón de copiar ahora entrega un bloque por producto con stock total y una línea por cada fecha, ordenada de la más antigua a la más nueva: 🔴 vencido, 🟡 vence hoy, 🟢 vigente. Las fechas van como `04 nov`, sin Markdown ni enlaces automáticos de WhatsApp. Las unidades sin fecha se indican sin color. Es solo texto; no cambia inventario, lotes, permisos ni el formato anterior disponible mediante el interruptor. La prueba `pruebas/resumen-sandwiches.mjs` verifica cantidades, estados y reversión.
 
 - **2026-08-28** — **Una meta contaba capuchinos creyendo que eran aguas.** Jhon:
