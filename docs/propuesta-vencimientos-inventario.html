@@ -37,8 +37,9 @@
   .due{border-radius:13px;padding:11px 12px}.due.red{background:var(--red-bg)}.due.amber{background:var(--amber-bg)}
   .due-title{display:flex;align-items:center;gap:8px;margin-bottom:7px}.dot{width:9px;height:9px;border-radius:50%}.red .dot{background:var(--red)}.amber .dot{background:var(--amber)}
   .due-title b{font-size:12px}.due-title span{margin-left:auto;font-size:10px;font-weight:800}.red .due-title span{color:var(--red)}.amber .due-title span{color:var(--amber)}
-  .due-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;padding:8px 0;border-top:1px solid rgba(15,30,49,.09)}
-  .due-row:first-of-type{border-top:0}.product{min-width:0}.product b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}.product small{color:var(--muted);font-size:9.5px}.qty{text-align:right}.qty b{display:block;font-size:12px}.qty small{font-size:9px;color:var(--muted)}
+  .due-list{max-height:159px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}.due-list::-webkit-scrollbar{width:5px}.due-list::-webkit-scrollbar-thumb{background:rgba(84,103,125,.3);border-radius:99px}
+  .due-row{height:53px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;padding:7px 2px;border-top:1px solid rgba(15,30,49,.09)}
+  .due-row:first-child{border-top:0}.product{min-width:0}.product b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}.product small{color:var(--muted);font-size:9.5px}.qty{text-align:right}.qty b{display:block;font-size:12px}.qty small{font-size:9px;color:var(--muted)}
   .types{display:flex;gap:7px;overflow:hidden;margin:13px 2px}.type{white-space:nowrap;background:var(--card);border:1px solid var(--border);border-radius:99px;padding:7px 12px;font-size:11px;font-weight:750}.type span{color:var(--muted)}
   .turns{display:grid;grid-template-columns:1fr 1fr;gap:20px}.turn-label{font-size:10px;font-weight:850;letter-spacing:1.5px;color:var(--muted);margin:0 4px 9px}
   .section{background:var(--card);border-radius:17px;box-shadow:var(--shadow),inset 5px 0 var(--steel);padding:16px 17px;margin-bottom:9px;display:flex;font-size:14px;font-weight:800}.section em{margin-left:auto;font-style:normal;color:var(--red);background:var(--red-bg);padding:3px 9px;border-radius:99px;font-size:10px}
@@ -65,15 +66,21 @@
   <section class="expiry" id="expiry">
     <button class="expiry-head" id="toggle"><span class="clock">◷</span><span class="heading"><strong>Vencimientos de hoy</strong><small>14 unidades necesitan atención</small></span><span class="demo">DATOS DE EJEMPLO</span><span class="chev">⌄</span></button>
     <div class="expiry-body">
-      <div class="due red"><div class="due-title"><i class="dot"></i><b>Vencidos</b><span>3 productos · 6 un.</span></div>
+      <div class="due red"><div class="due-title"><i class="dot"></i><b>Vencidos</b><span>5 productos · 9 un.</span></div><div class="due-list" tabindex="0" aria-label="Vencidos: 5 productos">
         <div class="due-row"><div class="product"><b>Torta Matilda</b><small>Vitrina de tortas</small></div><div class="qty"><b>2 un.</b><small>01 nov</small></div></div>
         <div class="due-row"><div class="product"><b>Leche de almendras</b><small>Leches</small></div><div class="qty"><b>3 un.</b><small>02 nov</small></div></div>
         <div class="due-row"><div class="product"><b>Sándwich Azapa</b><small>Sándwiches</small></div><div class="qty"><b>1 un.</b><small>02 nov</small></div></div>
+        <div class="due-row"><div class="product"><b>Cheesecake Maracuyá</b><small>Vitrina de tortas</small></div><div class="qty"><b>2 un.</b><small>02 nov</small></div></div>
+        <div class="due-row"><div class="product"><b>Leche descremada</b><small>Leches</small></div><div class="qty"><b>1 un.</b><small>02 nov</small></div></div>
+        </div>
       </div>
-      <div class="due amber"><div class="due-title"><i class="dot"></i><b>Vencen hoy</b><span>3 productos · 8 un.</span></div>
+      <div class="due amber"><div class="due-title"><i class="dot"></i><b>Vencen hoy</b><span>5 productos · 12 un.</span></div><div class="due-list" tabindex="0" aria-label="Vencen hoy: 5 productos">
         <div class="due-row"><div class="product"><b>Cannoli Pistacho</b><small>Vitrina de dulces</small></div><div class="qty"><b>4 un.</b><small>hoy</small></div></div>
         <div class="due-row"><div class="product"><b>Torta Amor</b><small>Vitrina de tortas</small></div><div class="qty"><b>2 un.</b><small>hoy</small></div></div>
         <div class="due-row"><div class="product"><b>Sándwich Apaltado</b><small>Sándwiches</small></div><div class="qty"><b>2 un.</b><small>hoy</small></div></div>
+        <div class="due-row"><div class="product"><b>Brownie sin azúcar</b><small>Vitrina de dulces</small></div><div class="qty"><b>3 un.</b><small>hoy</small></div></div>
+        <div class="due-row"><div class="product"><b>Pan masa madre</b><small>Sándwiches</small></div><div class="qty"><b>1 un.</b><small>hoy</small></div></div>
+        </div>
       </div>
     </div>
   </section>

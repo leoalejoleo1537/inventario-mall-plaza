@@ -8,6 +8,16 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **Vencimientos útiles sin convertir el inventario en otra
+  lista.** El concepto aprobado pasa a la pantalla real: una píldora plegable
+  resume únicamente los lotes vencidos y los que vencen hoy, separados en
+  rojo y ámbar. Cada lado agrupa por producto y suma sus unidades; conserva la
+  fecha más antigua para ordenar la urgencia. La altura termina exactamente en
+  tres productos y, si existen más, sólo esa lista se desplaza. El estado
+  abierto o cerrado se recuerda durante la sesión. Es una lectura de
+  `producto_lotes`: no escribe stock, no cambia el registro de vencimientos ni
+  incorpora otra consulta a Supabase.
+
 - **2026-11-03** — **El menú de escritorio pierde duplicados y gana espacio.**
   Se retiró el segundo botón Actualizar del panel lateral, que pasa de 280 a
   252 px en computadora y de 320 a 300 px como capa móvil. La navegación de

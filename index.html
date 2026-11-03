@@ -1432,6 +1432,29 @@
      igual de bien y pesa cero. */
   .turno{background:transparent;border-radius:0;padding:0;margin-bottom:20px}
   .turno-lbl{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.13em;padding:0 4px 9px}
+  /* Vencimientos del día: una píldora desplegable, con tres filas visibles
+     por estado. Si hay más, cada lista se desplaza por separado y el bloque
+     nunca se come el inventario completo. */
+  .inv-venc{display:none;background:var(--card);border-radius:16px;box-shadow:var(--sombra);margin:12px 0;overflow:hidden}
+  .inv-venc-toggle{display:flex;align-items:center;gap:10px;width:100%;padding:13px 15px;border:0;background:transparent;
+    color:var(--text);font:inherit;text-align:left;cursor:pointer}
+  .inv-venc-ico{width:31px;height:31px;flex:0 0 31px;border-radius:10px;display:grid;place-items:center;background:var(--gray-bg);color:var(--sec-filo);font-size:16px}
+  .inv-venc-titulo{flex:1;min-width:0}.inv-venc-titulo b{display:block;font-size:13.5px}.inv-venc-titulo small{display:block;margin-top:2px;color:var(--muted);font-size:10px}
+  .inv-venc-flecha{color:var(--muted);font-size:15px;transition:transform .18s ease}.inv-venc.cerrado .inv-venc-flecha{transform:rotate(-90deg)}
+  .inv-venc-cuerpo{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 12px}.inv-venc.cerrado .inv-venc-cuerpo{display:none}
+  .inv-venc-grupo{min-width:0;border-radius:13px;padding:10px 11px}.inv-venc-grupo.rojo{background:var(--red-bg)}.inv-venc-grupo.ambar{background:var(--amber-bg)}
+  .inv-venc-gcab{display:flex;align-items:center;gap:7px;height:25px;font-size:11.5px;font-weight:800}
+  .inv-venc-punto{width:8px;height:8px;border-radius:50%;flex:none}.rojo .inv-venc-punto{background:var(--red-fg)}.ambar .inv-venc-punto{background:var(--amber-fg)}
+  .inv-venc-gcab span:last-child{margin-left:auto;font-size:9.5px}.rojo .inv-venc-gcab span:last-child{color:var(--red-fg)}.ambar .inv-venc-gcab span:last-child{color:var(--amber-fg)}
+  .inv-venc-lista{max-height:165px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
+  .inv-venc-lista::-webkit-scrollbar{width:5px}.inv-venc-lista::-webkit-scrollbar-thumb{background:rgba(84,103,125,.3);border-radius:999px}
+  .inv-venc-fila{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;height:55px;border-top:1px solid rgba(15,30,49,.09);padding:6px 2px}
+  .inv-venc-fila:first-child{border-top:0}.inv-venc-prod{min-width:0}.inv-venc-prod b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px}
+  .inv-venc-prod small,.inv-venc-cant small{display:block;color:var(--muted);font-size:9px;margin-top:2px}.inv-venc-cant{text-align:right;white-space:nowrap}.inv-venc-cant b{font-size:11.5px}
+  .inv-venc-vacio{height:55px;display:grid;place-items:center;color:var(--muted);font-size:10.5px}
+  @media(max-width:520px){
+    .inv-venc-cuerpo{grid-template-columns:1fr;padding:0 10px 10px}.inv-venc-toggle{padding:12px}
+  }
   @media (min-width:1100px){
     .inv-turnos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
     .inv-turnos .turno{min-width:0;margin-bottom:0}
@@ -2663,6 +2686,12 @@
     <div class="mcard" data-f="sobre"><div class="n" id="c-sobre" style="color:var(--amber-fg)">0</div><div class="l">Sobre-stock</div></div>
     <div class="mcard" data-f="sindato"><div class="n" id="c-sindato" style="color:var(--gray-fg)">0</div><div class="l">Sin dato</div></div>
   </div>
+  <section class="inv-venc" id="inv-vencimientos">
+    <button type="button" class="inv-venc-toggle" id="inv-venc-toggle" aria-expanded="true" aria-controls="inv-venc-cuerpo">
+      <span class="inv-venc-ico" aria-hidden="true">◷</span><span class="inv-venc-titulo"><b>Vencimientos de hoy</b><small id="inv-venc-resumen">—</small></span><span class="inv-venc-flecha" aria-hidden="true">⌄</span>
+    </button>
+    <div class="inv-venc-cuerpo" id="inv-venc-cuerpo"></div>
+  </section>
   <!-- La meta viva, arriba del inventario. Una competencia que hay que ir
        a buscar a Ajustes no compite con nada. -->
   <div id="metaPortada" style="display:none"></div>
@@ -3425,6 +3454,59 @@ function vencsHTML(p){
   const e = etiquetaVenc(p.vencimiento);
   return `<div class="vencs"><span class="${e.cls}">V ${e.txt}</span></div>`;
 }
+
+/* La portada de vencimientos resume PRODUCTOS, no lotes: si un producto tiene
+   dos fechas antiguas aparece una sola vez con la suma, y conserva la fecha
+   más vieja para que la urgencia no se pierda. Un producto puede aparecer en
+   ambos lados cuando tiene unidades vencidas y otras que vencen hoy. */
+let INV_VENC_ABIERTO = sessionStorage.getItem('invVencAbierto') !== '0';
+const invVencFecha = iso => {
+  const [,m,d]=String(iso||'').split('-');
+  return `${d||'—'} ${['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][+m-1]||''}`.trim();
+};
+function invResumenVencimientos(){
+  const hoy=hoyISO(),vencidos=new Map(),hoyM=new Map();
+  const sumar=(mapa,p,cantidad,fecha)=>{
+    const clave=String(p.id),actual=mapa.get(clave)||{id:p.id,producto:p.producto,rubro:p.rubro||'Sin sección',cantidad:0,fecha};
+    actual.cantidad+=+cantidad||0;
+    if(fecha&&(!actual.fecha||fecha<actual.fecha))actual.fecha=fecha;
+    mapa.set(clave,actual);
+  };
+  DATA.filter(esPerec).forEach(p=>{
+    const todosLotes=lotesDe(p.id);
+    const lotes=todosLotes.filter(l=>l.vencimiento&&l.vencimiento<=hoy);
+    if(todosLotes.length){
+      lotes.forEach(l=>sumar(l.vencimiento<hoy?vencidos:hoyM,p,l.cantidad,l.vencimiento));
+    }else if(hasVenc&&p.vencimiento&&p.vencimiento<=hoy&&(+p.stock_actual||0)>0){
+      sumar(p.vencimiento<hoy?vencidos:hoyM,p,p.stock_actual,p.vencimiento);
+    }
+  });
+  const ordenar=(a,b)=>String(a.fecha).localeCompare(String(b.fecha))||a.producto.localeCompare(b.producto,'es',{sensitivity:'base'});
+  return {vencidos:[...vencidos.values()].sort(ordenar),hoy:[...hoyM.values()].sort(ordenar)};
+}
+function pintarVencimientos(){
+  const card=$('inv-vencimientos');if(!card)return;
+  const r=invResumenVencimientos(),todos=[...r.vencidos,...r.hoy];
+  if(!todos.length){card.style.display='none';return;}
+  const total=todos.reduce((n,x)=>n+x.cantidad,0);
+  card.style.display='block';card.classList.toggle('cerrado',!INV_VENC_ABIERTO);
+  $('inv-venc-toggle').setAttribute('aria-expanded',String(INV_VENC_ABIERTO));
+  $('inv-venc-resumen').textContent=fmt(total)+' unidades necesitan atención';
+  const grupo=(clase,titulo,items,vacio)=>{
+    const unidades=items.reduce((n,x)=>n+x.cantidad,0);
+    const filas=items.length?items.map(x=>`<div class="inv-venc-fila"><div class="inv-venc-prod"><b>${esc(x.producto)}</b><small>${esc(x.rubro)}</small></div>
+      <div class="inv-venc-cant"><b>${fmt(x.cantidad)} un.</b><small>${clase==='ambar'?'hoy':esc(invVencFecha(x.fecha))}</small></div></div>`).join('')
+      :`<div class="inv-venc-vacio">${esc(vacio)}</div>`;
+    return `<section class="inv-venc-grupo ${clase}"><div class="inv-venc-gcab"><i class="inv-venc-punto"></i><span>${titulo}</span><span>${items.length} producto${items.length===1?'':'s'} · ${fmt(unidades)} un.</span></div>
+      <div class="inv-venc-lista" tabindex="0" aria-label="${titulo}: ${items.length} productos">${filas}</div></section>`;
+  };
+  $('inv-venc-cuerpo').innerHTML=grupo('rojo','Vencidos',r.vencidos,'Nada vencido')+grupo('ambar','Vencen hoy',r.hoy,'Nada vence hoy');
+}
+$('inv-venc-toggle').addEventListener('click',()=>{
+  INV_VENC_ABIERTO=!INV_VENC_ABIERTO;
+  sessionStorage.setItem('invVencAbierto',INV_VENC_ABIERTO?'1':'0');
+  pintarVencimientos();
+});
 
 /* ---------------- saludo según la hora ---------------- */
 function saludo(){
@@ -9291,14 +9373,15 @@ let lotesRun = 0;
 async function loadLotes(){
   const mio = ++lotesRun;
   const ids=DATA.map(d=>d.id);
-  if(!ids.length){ LOTES={}; return; }
+  if(!ids.length){ LOTES={}; pintarVencimientos(); return; }
   const {data,error}=await sb.from('producto_lotes').select('id,producto_id,cantidad,vencimiento').in('producto_id',ids);
   if(mio !== lotesRun) return;          // llegó una lectura más nueva: esta quedó vieja
-  if(error){ hasLotes=false; return; }
+  if(error){ hasLotes=false; LOTES={}; pintarVencimientos(); return; }
   hasLotes=true;
   const nuevo={};
   (data||[]).forEach(l=>{ (nuevo[l.producto_id]=nuevo[l.producto_id]||[]).push(l); });
   LOTES=nuevo;
+  pintarVencimientos();
 }
 /* ---------------- traducir el error de una Edge Function ----------------
 
