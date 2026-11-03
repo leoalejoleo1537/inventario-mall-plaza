@@ -8,6 +8,16 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **El historial de vencimientos ya muestra la dirección del
+  problema.** El dashboard de Mermas incorpora una línea diaria para Mall
+  Plaza y otra discontinua para Parque Angamos, además de un botón que las
+  reúne en un total. Una respuesta breve compara las dos últimas ventanas
+  equivalentes y señala si las unidades aumentan, disminuyen o permanecen
+  estables. La serie respeta 7 días, 30 días y Todo, usa fechas de Chile,
+  completa los días sin movimientos con cero y excluye mermas deshechas. El
+  detalle diario funciona con mouse, teclado y toque; no se agregó una
+  librería, tabla ni consulta adicional.
+
 - **2026-11-03** — **Stock cero deja de producir falsos vencimientos.** Una
   fecha residual puede conservarse en el producto o en sus lotes para
   auditoría y corrección, pero ya no se muestra en la tarjeta, no entra al

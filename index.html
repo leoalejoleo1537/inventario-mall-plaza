@@ -546,6 +546,44 @@
   .mer-leyenda .punto{width:9px;height:9px;border-radius:50%;background:var(--mer-color)}
   .mer-leyenda .nom{font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .mer-leyenda .dat{font-size:10.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .mer-historia{margin-bottom:12px}
+  .mer-historia .mer-panel-cab{align-items:center;flex-wrap:wrap}
+  .mer-historia-respuesta{display:flex;align-items:center;gap:8px;margin-left:auto}
+  .mer-tendencia{display:inline-flex;align-items:center;gap:5px;min-height:30px;padding:5px 9px;border-radius:999px;
+    background:var(--gray-bg);color:var(--gray-fg);font-size:10.5px;font-weight:800;white-space:nowrap}
+  .mer-tendencia.subiendo{background:var(--red-bg);color:var(--red-fg)}
+  .mer-tendencia.bajando{background:var(--green-bg);color:var(--green-fg)}
+  .mer-historia-modo{display:flex;gap:3px;padding:3px;background:var(--bg);border-radius:10px}
+  .mer-historia-modo button{min-height:34px;padding:6px 10px;border:0;border-radius:8px;background:transparent;color:var(--muted);
+    font:inherit;font-size:10.5px;font-weight:800;cursor:pointer}
+  .mer-historia-modo button.on{background:var(--navy);color:#fff}
+  .mer-historia-modo button:focus-visible{outline:3px solid rgba(65,98,140,.3);outline-offset:2px}
+  .mer-historia-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-3px 0 12px}
+  .mer-historia-meta>span{font-size:10px;color:var(--muted)}
+  .mer-historia-leyenda{display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+  .mer-historia-leyenda span{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;color:var(--muted)}
+  .mer-historia-leyenda i{display:block;width:22px;height:0;border-top:3px solid var(--mer-linea);border-radius:99px}
+  .mer-historia-leyenda i.trazos{border-top-style:dashed}
+  .mer-historia-grafico{display:grid;grid-template-columns:38px minmax(0,1fr);grid-template-rows:220px 24px;column-gap:8px;min-width:0}
+  .mer-historia-y{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding:0 0 1px;
+    color:var(--muted);font-size:9px;font-variant-numeric:tabular-nums}
+  .mer-historia-trama{position:relative;min-width:0}
+  .mer-historia-svg{display:block;width:100%;height:100%;overflow:visible}
+  .mer-historia-guia{stroke:var(--border);stroke-width:1;vector-effect:non-scaling-stroke}
+  .mer-historia-linea{fill:none;stroke:var(--mer-linea);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;
+    vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1;
+    transition:stroke-dashoffset .38s cubic-bezier(.2,.8,.3,1)}
+  .mer-historia-linea.trazos{stroke-dasharray:.035 .018;stroke-dashoffset:1}
+  .mer-historia-grafico.lista .mer-historia-linea{stroke-dashoffset:0}
+  .mer-historia-punto{position:absolute;left:var(--mer-x);top:var(--mer-y);width:22px;height:22px;transform:translate(-50%,-50%);
+    border:0;border-radius:50%;background:transparent;cursor:pointer;padding:0}
+  .mer-historia-punto::after{content:'';position:absolute;inset:7px;border-radius:50%;background:var(--card);border:2px solid var(--navy);
+    box-shadow:0 1px 4px rgba(15,30,49,.18);transition:transform .14s}
+  .mer-historia-punto:hover::after,.mer-historia-punto:focus-visible::after,.mer-historia-punto.activo::after{transform:scale(1.55)}
+  .mer-historia-punto:focus-visible{outline:3px solid rgba(65,98,140,.3);outline-offset:1px}
+  .mer-historia-x{grid-column:2;display:flex;align-items:flex-end;justify-content:space-between;color:var(--muted);
+    font-size:9px;font-variant-numeric:tabular-nums;min-width:0}
+  .mer-historia-sin{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:12px;text-align:center;pointer-events:none}
   .mer-ranking{display:grid;gap:4px}
   .mer-producto{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:9px;align-items:center;width:100%;padding:8px 7px;
     border:0;border-radius:11px;background:transparent;color:var(--text);font:inherit;text-align:left;cursor:pointer}
@@ -601,12 +639,17 @@
     .mer-panel{padding:13px}.mer-anillo-wrap{grid-template-columns:145px minmax(0,1fr);gap:5px}
     .mer-sede{grid-template-columns:75px minmax(60px,1fr) 30px;gap:8px}
     .mer-fila{grid-template-columns:minmax(0,1fr) 58px}.mer-recientes{max-height:390px}
+    .mer-historia .mer-panel-cab{align-items:flex-start}.mer-historia-respuesta{width:100%;margin-left:0;justify-content:space-between}
+    .mer-historia-modo{margin-left:auto}.mer-historia-modo button{min-height:42px}.mer-historia-meta{align-items:flex-start;flex-direction:column;gap:5px}
+    .mer-historia-grafico{grid-template-columns:31px minmax(0,1fr);grid-template-rows:190px 22px;column-gap:6px}
+    .mer-historia-leyenda{gap:9px}.mer-historia-leyenda i{width:17px}
   }
   @media(prefers-reduced-motion:reduce){
-    .mer-dashboard,.mer-kpi,.mer-panel,.mer-relleno,.mer-producto .mini-pista i,.mer-tooltip,.mer-periodos button{transition:none!important}
+    .mer-dashboard,.mer-kpi,.mer-panel,.mer-relleno,.mer-producto .mini-pista i,.mer-tooltip,.mer-periodos button,.mer-historia-linea{transition:none!important}
     .mer-kpi,.mer-panel{opacity:1!important;transform:none!important}
     .mer-relleno,.mer-producto .mini-pista i{transform:scaleX(var(--mer-pct,0))!important}
     .mer-anillo-seg{animation:none!important;transition:none!important}
+    .mer-historia-linea{stroke-dashoffset:0!important}
   }
 
   /* ---- ENLACES (solo Bodega) ----
@@ -3301,9 +3344,10 @@
       <article class="mer-panel" id="mermas-sedes" style="--mer-i:5"></article>
       <article class="mer-panel" id="mermas-motivos" style="--mer-i:6"></article>
     </section>
+    <article class="mer-panel mer-historia" id="mermas-historia" style="--mer-i:7"></article>
     <section class="mer-inferior">
-      <article class="mer-panel" id="mermas-productos" style="--mer-i:7"></article>
-      <article class="mer-panel" id="mermas-recientes" style="--mer-i:8">
+      <article class="mer-panel" id="mermas-productos" style="--mer-i:8"></article>
+      <article class="mer-panel" id="mermas-recientes" style="--mer-i:9">
         <div class="mer-panel-cab"><h2>Últimas mermas</h2><span id="mermas-total">—</span></div>
         <div class="mer-recientes" id="mermas-list" role="region" aria-label="Últimas diez mermas" tabindex="0"><div class="empty">Cargando…</div></div>
       </article>
@@ -5007,6 +5051,7 @@ let MERMAS_PERIODO_OK = '30';
 let MERMAS_CARGA_ID = 0;
 let MERMAS_RESUMEN = null;
 let MERMAS_TOOLTIP_FIJO = null;
+let MERMAS_HISTORIA_MODO = 'sedes';
 
 const merHoySantiago = () => new Intl.DateTimeFormat('en-CA',{
   timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'
@@ -5042,6 +5087,46 @@ function merRango(periodo){
   return {desde:merInicioDiaISO(desde),hasta:merInicioDiaISO(despues.toISOString().slice(0,10))};
 }
 
+const merDiaSantiago=iso=>new Intl.DateTimeFormat('en-CA',{
+  timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'
+}).format(new Date(iso));
+function merSumarDias(fecha,dias){
+  const d=new Date(fecha+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+dias);return d.toISOString().slice(0,10);
+}
+
+/* Serie diaria de vencimientos. Los ceros se completan a propósito: sin ellos
+   una línea uniría dos mermas lejanas y fingiría actividad entre ambas. */
+function merHistorialVencimientos(rows,periodo=MERMAS_PERIODO){
+  const hoy=merHoySantiago();
+  let inicio;
+  if(periodo==='all'){
+    const fechas=rows.map(m=>m.created_at&&merDiaSantiago(m.created_at)).filter(Boolean).sort();
+    inicio=fechas[0]||hoy;
+  }else inicio=merSumarDias(hoy,-(periodo==='7'?6:29));
+  if(inicio>hoy)inicio=hoy;
+  const porDia=new Map();
+  for(let fecha=inicio;fecha<=hoy;fecha=merSumarDias(fecha,1))porDia.set(fecha,{fecha,plaza:0,angamos:0,total:0});
+  rows.filter(m=>!m.deshecha_at&&m.motivo==='vencimiento'&&(m.sede==='plaza'||m.sede==='angamos')).forEach(m=>{
+    const fecha=merDiaSantiago(m.created_at),dia=porDia.get(fecha);if(!dia)return;
+    dia[m.sede]+=Math.abs(+m.cantidad||0);
+  });
+  porDia.forEach(d=>{d.total=d.plaza+d.angamos;});
+  return [...porDia.values()];
+}
+
+function merTendenciaVencimientos(historial){
+  const valores=historial.map(d=>d.total),total=valores.reduce((a,b)=>a+b,0);
+  if(!total)return {clase:'estable',icono:'→',texto:'Sin vencimientos',nota:'No hay unidades en el período'};
+  const ventana=Math.min(7,Math.floor(valores.length/2));
+  if(!ventana)return {clase:'estable',icono:'→',texto:'Sin comparación',nota:'Aún falta otro día'};
+  const anterior=valores.slice(-ventana*2,-ventana).reduce((a,b)=>a+b,0);
+  const reciente=valores.slice(-ventana).reduce((a,b)=>a+b,0),dif=reciente-anterior;
+  const lapso=ventana===1?'día anterior':ventana+' días anteriores';
+  if(dif>0)return {clase:'subiendo',icono:'↑',texto:'Aumentando',nota:fmt(dif)+' más que los '+lapso};
+  if(dif<0)return {clase:'bajando',icono:'↓',texto:'Disminuyendo',nota:fmt(Math.abs(dif))+' menos que los '+lapso};
+  return {clase:'estable',icono:'→',texto:'Estable',nota:'Igual que los '+lapso};
+}
+
 /* Una página de PostgREST puede tener un máximo configurado. Por eso incluso
    "Todo" se lee en bloques ordenados y nunca vuelve a ser "los primeros N". */
 async function merLeer(periodo, sede=SEDE){
@@ -5067,7 +5152,7 @@ function merEtiquetaSede(sede){
   return (SEDES[sede]||{}).corto||(SEDES[sede]||{}).label||sede||'Sin sede';
 }
 
-function resumirMermas(rows,sedeVista=SEDE){
+function resumirMermas(rows,sedeVista=SEDE,periodo=MERMAS_PERIODO){
   const activas=rows.filter(m=>!m.deshecha_at);
   const sedes=new Map(),motivos=new Map(),productos=new Map();
   const sedesBase=sedeVista==='central'?['plaza','angamos','central']:[sedeVista];
@@ -5097,7 +5182,8 @@ function resumirMermas(rows,sedeVista=SEDE){
   const motivoTop=motivosOrden[0]||null;
   const recientes=[...rows].sort((a,b)=>Date.parse(b.created_at)-Date.parse(a.created_at)).slice(0,10);
   return {unidades,registros:activas.length,activas,sedes:sedesOrden,motivos:motivosOrden,productos:ranking,recientes,
-    sedeTop,motivoTop,productoTop:ranking[0]||null,totalOperaciones:rows.length};
+    sedeTop,motivoTop,productoTop:ranking[0]||null,totalOperaciones:rows.length,
+    historialVencimientos:merHistorialVencimientos(rows,periodo)};
 }
 
 const merPorcentaje=(parte,total)=>total?Math.round(parte/total*100):0;
@@ -5128,6 +5214,61 @@ function merAnimar(){
   d.classList.remove('lista');
   void d.offsetWidth;
   requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add('lista')));
+}
+
+function merMaxHistoria(valor){
+  const crudo=Math.max(1,valor)/4,potencia=10**Math.floor(Math.log10(crudo)),base=crudo/potencia;
+  const paso=Math.max(1,(base<=1?1:base<=2?2:base<=5?5:10)*potencia);
+  return paso*4;
+}
+function merFechaEje(fecha){
+  return new Intl.DateTimeFormat('es-CL',{day:'2-digit',month:'short',timeZone:'UTC'}).format(new Date(fecha+'T12:00:00Z')).replace('.','');
+}
+function merCaminoHistoria(historial,clave,maximo){
+  return historial.map((d,i)=>{
+    const x=historial.length===1?500:10+i/(historial.length-1)*980,y=96-(d[clave]/maximo*92);
+    return `${i?'L':'M'}${x.toFixed(2)} ${y.toFixed(2)}`;
+  }).join(' ');
+}
+
+function pintarMermasHistoria(resumen=MERMAS_RESUMEN){
+  if(!resumen)return;
+  const historial=resumen.historialVencimientos||[],modo=MERMAS_HISTORIA_MODO;
+  const claves=modo==='total'?['total']:['plaza','angamos'];
+  const maxValor=Math.max(0,...historial.flatMap(d=>claves.map(k=>d[k]))),maximo=merMaxHistoria(maxValor);
+  const tendencia=merTendenciaVencimientos(historial),colores={plaza:'var(--navy)',angamos:'var(--sec-filo)',total:'var(--navy)'};
+  const nombres={plaza:'Mall Plaza',angamos:'Parque Angamos',total:'Total'};
+  const lineas=claves.map(k=>`<path class="mer-historia-linea${k==='angamos'?' trazos':''}" pathLength="1"
+    style="--mer-linea:${colores[k]}" d="${merCaminoHistoria(historial,k,maximo)}"></path>`).join('');
+  const guias=[4,27,50,73,96].map(y=>`<line class="mer-historia-guia" x1="10" y1="${y}" x2="990" y2="${y}"></line>`).join('');
+  const puntos=historial.map((d,i)=>{
+    if(!d.total)return '';
+    const x=historial.length===1?50:1+i/(historial.length-1)*98,valor=modo==='total'?d.total:Math.max(d.plaza,d.angamos),y=96-(valor/maximo*92);
+    return `<button type="button" class="mer-historia-punto mer-tip-objetivo" data-mer-tooltip="historia" data-mer-key="${d.fecha}"
+      aria-label="${esc(merFechaEje(d.fecha))}: Mall Plaza ${fmt(d.plaza)}, Parque Angamos ${fmt(d.angamos)}, total ${fmt(d.total)} unidades"
+      aria-describedby="mermas-tooltip" style="--mer-x:${x.toFixed(2)}%;--mer-y:${y.toFixed(2)}%"></button>`;
+  }).join('');
+  const indices=[0,Math.floor((historial.length-1)/3),Math.floor((historial.length-1)*2/3),historial.length-1]
+    .filter((x,i,a)=>x>=0&&a.indexOf(x)===i);
+  const etiquetas=indices.map(i=>`<span>${merFechaEje(historial[i].fecha)}</span>`).join('');
+  const yEtiquetas=[maximo,maximo*.75,maximo*.5,maximo*.25,0].map(n=>`<span>${fmt(n)}</span>`).join('');
+  const leyenda=claves.map(k=>`<span><i class="${k==='angamos'?'trazos':''}" style="--mer-linea:${colores[k]}"></i>${nombres[k]}</span>`).join('');
+  const totalVencido=historial.reduce((s,d)=>s+d.total,0);
+  const el=$('mermas-historia');
+  el.innerHTML=`<div class="mer-panel-cab"><h2>Vencimientos en el tiempo</h2><div class="mer-historia-respuesta">
+      <span class="mer-tendencia ${tendencia.clase}">${tendencia.icono} ${tendencia.texto}</span>
+      <div class="mer-historia-modo" role="group" aria-label="Vista de vencimientos">
+        <button type="button" data-mer-historia-modo="sedes" class="${modo==='sedes'?'on':''}" aria-pressed="${modo==='sedes'}">Por sede</button>
+        <button type="button" data-mer-historia-modo="total" class="${modo==='total'?'on':''}" aria-pressed="${modo==='total'}">Total</button>
+      </div></div></div>
+    <div class="mer-historia-meta"><div class="mer-historia-leyenda">${leyenda}</div><span>${esc(tendencia.nota)} · ${fmt(totalVencido)} unidades</span></div>
+    <div class="mer-historia-grafico" role="group" aria-label="Historial diario de unidades mermadas por vencimiento">
+      <div class="mer-historia-y" aria-hidden="true">${yEtiquetas}</div><div class="mer-historia-trama">
+        <svg class="mer-historia-svg" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">${guias}${lineas}</svg>${puntos}
+        ${totalVencido?'':'<div class="mer-historia-sin">Sin vencimientos en este período</div>'}
+      </div><div class="mer-historia-x" aria-hidden="true">${etiquetas}</div></div>`;
+  const grafico=el.querySelector('.mer-historia-grafico');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>grafico.classList.add('lista')));
 }
 
 function pintarMermas(resumen=MERMAS_RESUMEN){
@@ -5172,6 +5313,8 @@ function pintarMermas(resumen=MERMAS_RESUMEN){
       </svg><div class="mer-leyenda">${leyenda}</div></div>`;
   }
 
+  pintarMermasHistoria(resumen);
+
   const top=resumen.productos.slice(0,5),maxProducto=Math.max(1,...top.map(p=>p.unidades));
   $('mermas-productos').innerHTML=`<div class="mer-panel-cab"><h2>Productos con mayor pérdida</h2><span>Top ${top.length}</span></div>${top.length
     ?`<div class="mer-ranking">${top.map((p,i)=>`<button type="button" class="mer-producto mer-tip-objetivo" data-mer-tooltip="producto"
@@ -5195,6 +5338,7 @@ function merPintarError(){
   $('mermas-kpis').innerHTML='';
   $('mermas-sedes').innerHTML='<div class="mer-vacio">No se pudo cargar el análisis.</div>';
   $('mermas-motivos').innerHTML='<div class="mer-vacio">No se pudo cargar el análisis.</div>';
+  $('mermas-historia').innerHTML='<div class="mer-vacio">No se pudo cargar el historial de vencimientos.</div>';
   $('mermas-productos').innerHTML='<div class="mer-vacio">No se pudo cargar el análisis.</div>';
   $('mermas-list').innerHTML='<div class="mer-vacio">Revisa la conexión e inténtalo nuevamente.</div>';
   $('mermas-total').textContent='—';
@@ -5209,6 +5353,7 @@ async function loadMermas(){
     $('mermas-kpis').innerHTML='<div class="empty" style="grid-column:1/-1">Cargando análisis…</div>';
     $('mermas-sedes').innerHTML='<div class="mer-vacio">Cargando…</div>';
     $('mermas-motivos').innerHTML='<div class="mer-vacio">Cargando…</div>';
+    $('mermas-historia').innerHTML='<div class="mer-vacio">Cargando…</div>';
     $('mermas-productos').innerHTML='<div class="mer-vacio">Cargando…</div>';
   }
   /* El dashboard es una vista comparativa de operación: también desde un
@@ -5223,7 +5368,7 @@ async function loadMermas(){
     else{merPintarError();aviso('No se pudo cargar el análisis. Revisa la conexión.');}
     return;
   }
-  MERMAS=data||[];MERMAS_PERIODO_OK=periodo;MERMAS_RESUMEN=resumirMermas(MERMAS,'central');
+  MERMAS=data||[];MERMAS_PERIODO_OK=periodo;MERMAS_RESUMEN=resumirMermas(MERMAS,'central',periodo);
   pintarMermas(MERMAS_RESUMEN);
 }
 
@@ -5248,6 +5393,13 @@ function merContenidoTooltip(obj){
     return `<strong>${esc(p.nombre)} · ${fmt(p.unidades)} unidades</strong><div class="linea"><span>Registros</span><span>${fmt(p.registros)}</span></div>
       <div class="linea"><span>Sede principal</span><span>${sede?esc(merEtiquetaSede(sede[0]))+' · '+fmt(sede[1]):'—'}</span></div>
       <div class="linea"><span>Causa principal</span><span>${motivo?esc(MOT_MERMA_TXT[motivo[0]]||motivo[0])+' · '+fmt(motivo[1]):'—'}</span></div>`;
+  }
+  if(tipo==='historia'){
+    const d=MERMAS_RESUMEN.historialVencimientos.find(x=>x.fecha===clave);if(!d)return '';
+    return `<strong>${esc(merFechaEje(d.fecha))} · ${fmt(d.total)} unidades</strong>
+      <div class="linea"><span>Mall Plaza</span><span>${fmt(d.plaza)}</span></div>
+      <div class="linea"><span>Parque Angamos</span><span>${fmt(d.angamos)}</span></div>
+      <div class="linea"><span>Total</span><span>${fmt(d.total)}</span></div>`;
   }
   return '';
 }
@@ -5281,6 +5433,11 @@ function merOcultarTooltip(forzar=false){
 $('mermas-periodos').addEventListener('click',e=>{
   const b=e.target.closest('[data-mer-periodo]');if(!b||b.dataset.merPeriodo===MERMAS_PERIODO)return;
   MERMAS_PERIODO=b.dataset.merPeriodo;merMarcarPeriodo();loadMermas();
+});
+
+$('mermas-historia').addEventListener('click',e=>{
+  const b=e.target.closest('[data-mer-historia-modo]');if(!b||b.dataset.merHistoriaModo===MERMAS_HISTORIA_MODO)return;
+  MERMAS_HISTORIA_MODO=b.dataset.merHistoriaModo;merOcultarTooltip(true);pintarMermasHistoria();
 });
 
 $('mermas-dashboard').addEventListener('pointerover',e=>{

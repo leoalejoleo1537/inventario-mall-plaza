@@ -22,7 +22,7 @@ await caso('ignora respuestas viejas al cambiar rápido de período',()=>
 await caso('Excel pide todo el historial y no reutiliza el período visible',()=>
   html.includes("const {data,error}=await merLeer('all')")||'Excel quedó atado al filtro');
 await caso('el dashboard compara todas las sedes aunque se entre desde un local',()=>
-  html.includes("merLeer(periodo,'central')")&&html.includes("resumirMermas(MERMAS,'central')")||'la vista quedó acotada a la sede activa');
+  html.includes("merLeer(periodo,'central')")&&html.includes("resumirMermas(MERMAS,'central',periodo)")||'la vista quedó acotada a la sede activa');
 await caso('no depende de una librería de gráficos',()=>
   !/chart\.js|highcharts|apexcharts/i.test(html)||'apareció una dependencia de gráficos');
 await caso('respeta reducir movimiento',()=>
@@ -141,6 +141,24 @@ await caso('hover de sede muestra sus productos recientes',async()=>{
 await caso('el anillo tiene segmentos y cantidades visibles',async()=>{
   const n=await page.locator('.mer-anillo-seg').count(),t=await page.locator('.mer-leyenda').innerText();return (n>=3&&t.includes('Vencimiento'))||`${n} · ${t}`;
 });
+await caso('el historial separa Mall Plaza y Parque Angamos en dos líneas',async()=>{
+  const n=await page.locator('#mermas-historia .mer-historia-linea').count();
+  const r=await page.evaluate(()=>MERMAS_RESUMEN.historialVencimientos.reduce((a,d)=>({plaza:a.plaza+d.plaza,angamos:a.angamos+d.angamos,total:a.total+d.total}),{plaza:0,angamos:0,total:0}));
+  return (n===2&&r.plaza===5&&r.angamos===4&&r.total===9)||`${n} líneas · ${JSON.stringify(r)}`;
+});
+await caso('la merma vencida deshecha tampoco entra a la línea histórica',async()=>{
+  const r=await page.evaluate(()=>MERMAS_RESUMEN.historialVencimientos.reduce((a,d)=>a+d.total,0));return r===9||r;
+});
+await page.hover('#mermas-historia .mer-historia-punto');
+await caso('el detalle diario muestra ambas sedes y el total',async()=>{
+  const t=await page.locator('#mermas-tooltip').innerText();return (t.includes('Mall Plaza')&&t.includes('Parque Angamos')&&t.includes('Total'))||t;
+});
+await page.click('[data-mer-historia-modo="total"]');
+await caso('el botón Total fusiona ambas sedes en una línea',async()=>{
+  const n=await page.locator('#mermas-historia .mer-historia-linea').count(),p=await page.getAttribute('[data-mer-historia-modo="total"]','aria-pressed');
+  return (n===1&&p==='true')||`${n} líneas · pressed ${p}`;
+});
+await page.click('[data-mer-historia-modo="sedes"]');
 if(process.env.CAPTURAR_MERMAS){
   await page.waitForTimeout(500);
   await page.screenshot({path:'/tmp/dashboard-mermas-desktop.png',fullPage:true});
@@ -167,6 +185,9 @@ await page.click('[data-mer-periodo="all"]');
 await page.waitForFunction(()=>document.querySelector('#mermas-productos .mer-producto')?.innerText.includes('Producto antiguo'));
 await caso('Todo incluye las 50 unidades antiguas',async()=>
   (await page.locator('#mermas-kpis').innerText()).includes('69')||'no dio 69');
+await caso('Todo incorpora también el vencimiento antiguo a la historia',async()=>{
+  const n=await page.evaluate(()=>MERMAS_RESUMEN.historialVencimientos.reduce((a,d)=>a+d.total,0));return n===59||n;
+});
 await caso('el alcance local sólo resume las filas de su cafetería',async()=>await page.evaluate(async()=>{
   const r=await merLeer('all','plaza'),s=resumirMermas(r.data,'plaza');
   return s.sedes.length===1&&s.sedes[0].clave==='plaza'&&s.unidades===65;
@@ -196,7 +217,8 @@ await caso('Deshacer sigue llamando la misma función de base',async()=>{
   const r=await page.evaluate(()=>window.__rpcs);return r.some(x=>x.nombre==='deshacer_merma')||JSON.stringify(r);
 });
 await caso('un período vacío produce ceros reales',async()=>await page.evaluate(()=>{
-  const r=resumirMermas([],'plaza');return r.unidades===0&&r.registros===0&&r.productos.length===0&&r.recientes.length===0;
+  const r=resumirMermas([],'plaza','7');return r.unidades===0&&r.registros===0&&r.productos.length===0&&r.recientes.length===0
+    &&r.historialVencimientos.length===7&&r.historialVencimientos.every(d=>d.total===0);
 })||'estado vacío incorrecto');
 
 console.log('\nResponsive, movimiento y salud:');
@@ -224,6 +246,9 @@ await caso('en teléfono no aparece desplazamiento horizontal',async()=>
 await page.emulateMedia({reducedMotion:'reduce'});
 await caso('movimiento reducido deja el anillo quieto',async()=>{
   const n=await page.locator('.mer-anillo-seg').first().evaluate(e=>getComputedStyle(e).animationName);return n==='none'||n;
+});
+await caso('movimiento reducido dibuja la línea sin transición',async()=>{
+  const t=await page.locator('.mer-historia-linea').first().evaluate(e=>getComputedStyle(e).transitionDuration);return t==='0s'||t;
 });
 await caso('sin errores JavaScript',()=>errores.length===0||errores.slice(0,3).join(' · '));
 
