@@ -397,6 +397,9 @@
      No trae otra estética a la app: usa Acero, las mismas tarjetas sin borde,
      el mismo navy para selección y los colores que ya significan alerta. */
   .mer-head{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  /* El inventario general es angosto para que las listas se lean cómodas;
+     el tablero necesita el ancho disponible para comparar sedes y gráficas. */
+  #view-mermas{max-width:1600px}
   .mer-titulo{flex:1;min-width:210px}
   .mer-titulo .sobre{font-size:10.5px;font-weight:800;letter-spacing:.75px;text-transform:uppercase;color:var(--sec-filo)}
   .mer-titulo h1{font-size:27px;line-height:1.08;letter-spacing:-.035em;margin:4px 0 3px;color:var(--navy)}
@@ -4791,7 +4794,9 @@ async function loadMermas(){
     $('mermas-motivos').innerHTML='<div class="mer-vacio">Cargando…</div>';
     $('mermas-productos').innerHTML='<div class="mer-vacio">Cargando…</div>';
   }
-  const {data,error}=await merLeer(periodo);
+  /* El dashboard es una vista comparativa de operación: también desde un
+     local debe mostrar Mall Plaza, Parque Angamos y Bodega. */
+  const {data,error}=await merLeer(periodo,'central');
   if(carga!==MERMAS_CARGA_ID)return;
   dashboard.classList.remove('cargando');dashboard.setAttribute('aria-busy','false');
   if(error){
@@ -4801,7 +4806,7 @@ async function loadMermas(){
     else{merPintarError();aviso('No se pudo cargar el análisis. Revisa la conexión.');}
     return;
   }
-  MERMAS=data||[];MERMAS_PERIODO_OK=periodo;MERMAS_RESUMEN=resumirMermas(MERMAS,SEDE);
+  MERMAS=data||[];MERMAS_PERIODO_OK=periodo;MERMAS_RESUMEN=resumirMermas(MERMAS,'central');
   pintarMermas(MERMAS_RESUMEN);
 }
 

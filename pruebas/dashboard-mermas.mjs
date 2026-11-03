@@ -21,6 +21,8 @@ await caso('ignora respuestas viejas al cambiar rápido de período',()=>
   html.includes('if(carga!==MERMAS_CARGA_ID)return;')||'falta el identificador de carga');
 await caso('Excel pide todo el historial y no reutiliza el período visible',()=>
   html.includes("const {data,error}=await merLeer('all')")||'Excel quedó atado al filtro');
+await caso('el dashboard compara todas las sedes aunque se entre desde un local',()=>
+  html.includes("merLeer(periodo,'central')")&&html.includes("resumirMermas(MERMAS,'central')")||'la vista quedó acotada a la sede activa');
 await caso('no depende de una librería de gráficos',()=>
   !/chart\.js|highcharts|apexcharts/i.test(html)||'apareció una dependencia de gráficos');
 await caso('respeta reducir movimiento',()=>
@@ -101,7 +103,7 @@ await page.route('**/xlsx.full.min.js',r=>r.fulfill({status:200,contentType:'app
 const errores=[];page.on('pageerror',e=>errores.push(String(e)));
 await page.goto(`http://127.0.0.1:${puerto}/index.html`);
 await page.waitForTimeout(350);
-await page.click('.gate-btn[data-sede="central"]');
+await page.click('.gate-btn[data-sede="plaza"]');
 await page.waitForTimeout(700);
 await page.click('#tabMermas');
 await page.waitForFunction(()=>document.querySelectorAll('#mermas-kpis .mer-kpi').length===5);
@@ -185,8 +187,8 @@ await page.evaluate(()=>{window.__failMermas=false});
 
 console.log('\nExcel y acción esencial:');
 await page.click('#btnMermasExcel');await page.waitForFunction(()=>Array.isArray(window.__xlsx));
-await caso('Excel descarga las 14 operaciones, incluida la antigua y la deshecha',async()=>{
-  const r=await page.evaluate(()=>window.__xlsx);return (r.length===14&&r.some(x=>x.Producto==='Producto antiguo')&&r.some(x=>x.Deshecha==='SÍ'))||r.length;
+await caso('Excel descarga las 13 operaciones de Mall Plaza, incluida la antigua y la deshecha',async()=>{
+  const r=await page.evaluate(()=>window.__xlsx);return (r.length===13&&r.some(x=>x.Producto==='Producto antiguo')&&r.some(x=>x.Deshecha==='SÍ'))||r.length;
 });
 await page.evaluate(()=>{window.preguntar=async()=>true});
 await page.click('#mermas-list [data-desmerma]');await page.waitForTimeout(150);
