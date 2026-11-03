@@ -8,6 +8,15 @@
 
 ## 11. Bitácora (cambios importantes, lo más reciente arriba)
 
+- **2026-11-03** — **El menú de escritorio pierde duplicados y gana espacio.**
+  Se retiró el segundo botón Actualizar del panel lateral, que pasa de 280 a
+  252 px en computadora y de 320 a 300 px como capa móvil. La navegación de
+  Inventario, Reparto, Recetas y Mermas deja el contenedor angosto y se alinea
+  al inicio del área de trabajo. La propuesta de vencimientos queda separada
+  en `docs/propuesta-vencimientos-inventario.html`: un bloque contraíble con
+  vencidos en rojo y “vence hoy” en ámbar, todavía con datos ficticios y sin
+  conexión a producción.
+
 - **2026-11-03** — **El inventario de computadora aprovecha el ancho.** En
   pantallas desde 1.100 px el menú lateral queda fijo, con 280 px, y muestra
   sede, accesos, presencia y usuario sin exigir abrirlo. El área de trabajo se

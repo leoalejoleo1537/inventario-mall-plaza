@@ -221,7 +221,7 @@
   /* ---------- menú lateral ---------- */
   .scrim{position:fixed;inset:0;background:rgba(10,20,35,.45);opacity:0;pointer-events:none;transition:opacity .2s;z-index:60}
   .scrim.open{opacity:1;pointer-events:auto}
-  .drawer{position:fixed;top:0;left:0;bottom:0;width:82%;max-width:320px;background:#fff;z-index:61;
+  .drawer{position:fixed;top:0;left:0;bottom:0;width:82%;max-width:300px;background:#fff;z-index:61;
           transform:translateX(-100%);transition:transform .22s cubic-bezier(.2,.7,.3,1);
           display:flex;flex-direction:column;padding:18px 0 14px;overflow-y:auto;box-shadow:2px 0 24px rgba(15,30,49,.18)}
   .drawer.open{transform:translateX(0)}
@@ -242,8 +242,8 @@
      parte de la arquitectura. Queda un poco más angosto que el panel móvil y
      libera el resto de la pantalla para trabajar con dos rondas a la vez. */
   @media (min-width:1100px){
-    body{padding-left:280px}
-    .drawer{width:280px;max-width:none;transform:none;z-index:19;box-shadow:none;border-right:1px solid var(--border)}
+    body{padding-left:252px}
+    .drawer{width:252px;max-width:none;transform:none;z-index:19;box-shadow:none;border-right:1px solid var(--border)}
     .scrim,.scrim.open{display:none}
     #btnMenu{display:none}
     .topbar .inner,.tabs .inner{max-width:1600px}
@@ -313,7 +313,7 @@
   /* La fila SE CORRE, no recorta. En Bodega son cinco pestañas y con
      flex-shrink los nombres terminaban en "Enviar a loc…", que es peor que
      tener que deslizar: un nombre a medias hay que adivinarlo. */
-  .tabs .inner{position:relative;max-width:900px;margin:0 auto;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .tabs .inner{position:relative;max-width:1600px;margin:0 auto;display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .tabs .inner::-webkit-scrollbar{display:none}
   /* EL NARANJA VIAJA, no salta. Son 340 milisegundos y convierten un cambio
      brusco en un movimiento que el ojo puede seguir. El carril se MIDE del
@@ -2490,10 +2490,6 @@
   </div>
 
   <div class="drawer-sec">Atajos</div>
-  <button type="button" class="drawer-item" id="drActualizar" data-accion="actualizar">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
-    Actualizar
-  </button>
   <!-- Historial se mudó de pestaña al menú: metía ruido arriba y casi no se
        usa. Sigue funcionando igual, solo cambió de dónde se entra. -->
   <button type="button" class="drawer-item" data-accion="historial">
@@ -3885,7 +3881,6 @@ $('drawer').addEventListener('click',e=>{
   const it=e.target.closest('[data-accion]'); if(!it) return;
   const a=it.dataset.accion;
   cerrarMenu();
-  if(a==='actualizar')     actualizarTodo();
   if(a==='historial')      pickTab('hist');
   if(a==='ajustes')        pickTab('ajustes');
   if(a==='cambiar-sede')   showGate();
@@ -4036,12 +4031,8 @@ function pickSede(s){
      nombre para los mismos dos trabajos. En Plaza y Angamos, al revés. */
   $('tabRecepcion').style.display = s==='central' ? '' : 'none';
   /* Bodega no está conectada a Fudo: no tiene cuenta, no tiene ventas y no
-     tiene nada que sincronizar. El botón Actualizar ahí no fallaba, pero
-     prometía algo que no puede pasar — y un botón que no hace nada es peor
-     que uno que no está (Jhon, 2026-08-21). Se esconden los DOS: el de la
-     barra y el atajo del menú. Los de Ajustes no se tocan. */
+     tiene nada que sincronizar. El botón Actualizar de la barra se esconde. */
   $('btnActualizar').style.display  = s==='central' ? 'none' : '';
-  $('drActualizar').style.display   = s==='central' ? 'none' : '';
 
   $('tabEnvios').style.display    = s==='central' ? '' : 'none';
   /* Solo Angamos manda a Plaza. Al revés no: Plaza no tiene excedente que

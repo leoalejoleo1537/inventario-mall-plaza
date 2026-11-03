@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Propuesta · Vencimientos en inventario</title>
+<style>
+  :root{
+    --navy:#0F1E31;--orange:#DC4405;--bg:#E9EEF5;--card:#FDFEFF;--border:#D6DFEB;
+    --text:#121E2C;--muted:#61707F;--red-bg:#FCE9E6;--red:#C0392B;
+    --amber-bg:#FDF0DE;--amber:#9C6209;--steel:#41628C;
+    --shadow:0 2px 4px rgba(20,40,70,.04),0 12px 26px -18px rgba(20,40,70,.34)
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding-left:252px}
+  button{font:inherit}
+  .drawer{position:fixed;inset:0 auto 0 0;width:252px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;padding:18px 0 14px}
+  .drawer-head{padding:0 16px 15px;border-bottom:1px solid var(--border)}
+  .drawer-head b{display:block;font-size:17px;margin-bottom:7px}.live{display:inline-flex;gap:6px;align-items:center;padding:5px 10px;border-radius:99px;background:#E1E8F1;color:#54677D;font-size:12px}
+  .live i{width:8px;height:8px;border-radius:50%;background:#4CAF50}.label{padding:18px 16px 7px;font-size:11px;font-weight:800;color:var(--muted)}
+  .drawer-item{display:flex;align-items:center;gap:12px;padding:12px 16px;font-weight:700;font-size:14px}.drawer-item svg{width:20px;color:var(--navy)}
+  .drawer-online{padding:0 16px;color:var(--muted);font-size:13px;line-height:1.6}.drawer-foot{margin-top:auto;padding:14px 16px 0;border-top:1px solid var(--border);font-size:13px;font-weight:750}
+  .top{height:62px;background:var(--card);display:flex;align-items:center;padding:0 18px 0 32px;box-shadow:0 1px 0 var(--border)}
+  .top .menu{display:none}.title{flex:1}.title b{display:block;font-size:18px}.title span{font-size:12px;color:var(--muted);font-weight:650}
+  .refresh{border:0;border-radius:99px;background:var(--orange);color:white;font-weight:800;padding:11px 18px}
+  .tabs{padding:10px 18px}.tabs-inner{max-width:1600px;margin:auto;display:flex;gap:7px}.tab{border:0;background:var(--card);padding:10px 17px;border-radius:99px;font-weight:750;color:var(--navy)}
+  .tab.home{width:42px;padding:0;background:var(--orange);color:white;font-size:19px}
+  main{max-width:1600px;margin:auto;padding:4px 18px 90px}.search{height:48px;border:1px solid var(--border);border-radius:12px;background:var(--card);display:flex;align-items:center;padding:0 16px;color:#98A4B1}
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.metric{background:var(--card);border-radius:18px;text-align:center;padding:16px;box-shadow:var(--shadow)}
+  .metric b{display:block;font-size:22px}.metric span{font-size:11px;color:var(--muted)}.metric.red b{color:var(--red)}.metric.amber b{color:var(--amber)}
+  .expiry{margin-top:12px;background:var(--card);border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+  .expiry-head{width:100%;border:0;background:transparent;padding:14px 16px;display:flex;align-items:center;gap:10px;text-align:left;cursor:pointer;color:var(--text)}
+  .expiry-head .clock{width:31px;height:31px;border-radius:10px;background:#E5EBF3;color:var(--steel);display:grid;place-items:center;font-size:16px}
+  .expiry-head .heading{flex:1}.expiry-head strong{display:block;font-size:14px}.expiry-head small{display:block;margin-top:2px;color:var(--muted);font-size:10px}
+  .demo{border-radius:99px;padding:4px 8px;background:#E5EBF3;color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.4px}.chev{font-size:15px;color:var(--muted);transition:transform .18s}.expiry.cerrado .chev{transform:rotate(-90deg)}
+  .expiry-body{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px 12px}.expiry.cerrado .expiry-body{display:none}
+  .due{border-radius:13px;padding:11px 12px}.due.red{background:var(--red-bg)}.due.amber{background:var(--amber-bg)}
+  .due-title{display:flex;align-items:center;gap:8px;margin-bottom:7px}.dot{width:9px;height:9px;border-radius:50%}.red .dot{background:var(--red)}.amber .dot{background:var(--amber)}
+  .due-title b{font-size:12px}.due-title span{margin-left:auto;font-size:10px;font-weight:800}.red .due-title span{color:var(--red)}.amber .due-title span{color:var(--amber)}
+  .due-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;align-items:center;padding:8px 0;border-top:1px solid rgba(15,30,49,.09)}
+  .due-row:first-of-type{border-top:0}.product{min-width:0}.product b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}.product small{color:var(--muted);font-size:9.5px}.qty{text-align:right}.qty b{display:block;font-size:12px}.qty small{font-size:9px;color:var(--muted)}
+  .types{display:flex;gap:7px;overflow:hidden;margin:13px 2px}.type{white-space:nowrap;background:var(--card);border:1px solid var(--border);border-radius:99px;padding:7px 12px;font-size:11px;font-weight:750}.type span{color:var(--muted)}
+  .turns{display:grid;grid-template-columns:1fr 1fr;gap:20px}.turn-label{font-size:10px;font-weight:850;letter-spacing:1.5px;color:var(--muted);margin:0 4px 9px}
+  .section{background:var(--card);border-radius:17px;box-shadow:var(--shadow),inset 5px 0 var(--steel);padding:16px 17px;margin-bottom:9px;display:flex;font-size:14px;font-weight:800}.section em{margin-left:auto;font-style:normal;color:var(--red);background:var(--red-bg);padding:3px 9px;border-radius:99px;font-size:10px}
+  .fab{position:fixed;right:26px;bottom:24px;width:56px;height:56px;border:0;border-radius:50%;background:var(--orange);color:#fff;font-size:28px;box-shadow:0 8px 20px rgba(220,68,5,.28)}
+  @media(max-width:1099px){
+    body{padding-left:0}.drawer{display:none}.top{padding-left:14px}.top .menu{display:block;border:0;background:transparent;font-size:23px;margin-right:10px}.tabs{padding:8px 10px}.tabs-inner{overflow:auto}.tab{padding:9px 13px}.tab.home{flex:0 0 42px}
+    main{padding:5px 16px 90px}.expiry-body,.turns{grid-template-columns:1fr}.metrics{gap:8px}.metric{padding:13px 6px}.types{overflow:auto}.due{padding:10px}.expiry-head{padding:13px}
+  }
+</style>
+</head>
+<body>
+<aside class="drawer">
+  <div class="drawer-head"><b>Café Mall Plaza</b><span class="live"><i></i> en vivo</span></div>
+  <div class="label">Atajos</div><div class="drawer-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5M3 13a9 9 0 1 0 3-7.7L3 8M12 7v5l3 2"/></svg>Historial</div>
+  <div class="label">Administración</div><div class="drawer-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>Ajustes</div>
+  <div class="label">Sede</div><div class="drawer-item">↔&nbsp; Cambiar sede</div><div class="label">En línea</div><div class="drawer-online">Jhon · Café Mall Plaza<br>Valentina · Café Mall Plaza</div>
+  <div class="drawer-foot">Buenas noches, Valentina</div>
+</aside>
+<header class="top"><button class="menu">☰</button><div class="title"><b>Café Mall Plaza</b><span>Inventario</span></div><button class="refresh">↻&nbsp; Actualizar</button></header>
+<nav class="tabs"><div class="tabs-inner"><button class="tab home">⌂</button><button class="tab">Reparto</button><button class="tab">Recetas</button><button class="tab">Mermas</button></div></nav>
+<main>
+  <div class="search">Buscar producto…</div>
+  <div class="metrics"><div class="metric red"><b>68</b><span>Crítico</span></div><div class="metric amber"><b>46</b><span>Sobre-stock</span></div><div class="metric"><b>0</b><span>Sin dato</span></div></div>
+  <section class="expiry" id="expiry">
+    <button class="expiry-head" id="toggle"><span class="clock">◷</span><span class="heading"><strong>Vencimientos de hoy</strong><small>14 unidades necesitan atención</small></span><span class="demo">DATOS DE EJEMPLO</span><span class="chev">⌄</span></button>
+    <div class="expiry-body">
+      <div class="due red"><div class="due-title"><i class="dot"></i><b>Vencidos</b><span>3 productos · 6 un.</span></div>
+        <div class="due-row"><div class="product"><b>Torta Matilda</b><small>Vitrina de tortas</small></div><div class="qty"><b>2 un.</b><small>01 nov</small></div></div>
+        <div class="due-row"><div class="product"><b>Leche de almendras</b><small>Leches</small></div><div class="qty"><b>3 un.</b><small>02 nov</small></div></div>
+        <div class="due-row"><div class="product"><b>Sándwich Azapa</b><small>Sándwiches</small></div><div class="qty"><b>1 un.</b><small>02 nov</small></div></div>
+      </div>
+      <div class="due amber"><div class="due-title"><i class="dot"></i><b>Vencen hoy</b><span>3 productos · 8 un.</span></div>
+        <div class="due-row"><div class="product"><b>Cannoli Pistacho</b><small>Vitrina de dulces</small></div><div class="qty"><b>4 un.</b><small>hoy</small></div></div>
+        <div class="due-row"><div class="product"><b>Torta Amor</b><small>Vitrina de tortas</small></div><div class="qty"><b>2 un.</b><small>hoy</small></div></div>
+        <div class="due-row"><div class="product"><b>Sándwich Apaltado</b><small>Sándwiches</small></div><div class="qty"><b>2 un.</b><small>hoy</small></div></div>
+      </div>
+    </div>
+  </section>
+  <div class="types"><span class="type">Cafetería <span>37</span></span><span class="type">Envases <span>35</span></span><span class="type">Insumos <span>27</span></span><span class="type">Bollería <span>16</span></span><span class="type">Limpieza <span>15</span></span><span class="type">Sándwiches <span>11</span></span></div>
+  <div class="turns"><div><div class="turn-label">AM</div><div class="section">Limpieza<em>7 crít.</em></div><div class="section">Mesones<em>1 crít.</em></div><div class="section">Congelador<em>10 crít.</em></div><div class="section">Té<em>2 crít.</em></div></div><div><div class="turn-label">PM</div><div class="section">Vitrina de tortas<em>19 crít.</em></div><div class="section">Sándwiches<em>7 crít.</em></div><div class="section">Vitrina de dulces<em>4 crít.</em></div><div class="section">Bebidas<em>7 crít.</em></div></div></div>
+</main>
+<button class="fab">+</button>
+<script>document.getElementById('toggle').onclick=()=>document.getElementById('expiry').classList.toggle('cerrado')</script>
+</body>
+</html>
